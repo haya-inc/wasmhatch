@@ -5,12 +5,16 @@ export interface WorkspaceFile {
 
 export interface WorkspaceStore {
   listFiles(): Promise<string[]>;
+  listBaselineFiles(): Promise<string[]>;
   readFile(path: string): Promise<string>;
+  readBaselineFile(path: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
+  replaceBaseline(files: WorkspaceFile[]): Promise<void>;
   replaceAll(files: WorkspaceFile[]): Promise<void>;
 }
 
 const FALLBACK_KEY = "wasmhatch-workspace-v1";
+const FALLBACK_BASELINE_KEY = "wasmhatch-baseline-v1";
 
 export function normalizeWorkspacePath(input: string): string {
   const normalized = input.replaceAll("\\", "/").replace(/^\.\//, "");
@@ -28,23 +32,34 @@ export function normalizeWorkspacePath(input: string): string {
 }
 
 class LocalStorageWorkspace implements WorkspaceStore {
-  private load(): Record<string, string> {
-    const saved = localStorage.getItem(FALLBACK_KEY);
+  private load(key = FALLBACK_KEY): Record<string, string> {
+    const saved = localStorage.getItem(key);
     return saved ? (JSON.parse(saved) as Record<string, string>) : {};
   }
 
-  private save(files: Record<string, string>) {
-    localStorage.setItem(FALLBACK_KEY, JSON.stringify(files));
+  private save(files: Record<string, string>, key = FALLBACK_KEY) {
+    localStorage.setItem(key, JSON.stringify(files));
   }
 
   async listFiles() {
     return Object.keys(this.load()).sort();
   }
 
+  async listBaselineFiles() {
+    return Object.keys(this.load(FALLBACK_BASELINE_KEY)).sort();
+  }
+
   async readFile(path: string) {
     const normalized = normalizeWorkspacePath(path);
     const content = this.load()[normalized];
     if (content === undefined) throw new Error(`File not found: ${normalized}`);
+    return content;
+  }
+
+  async readBaselineFile(path: string) {
+    const normalized = normalizeWorkspacePath(path);
+    const content = this.load(FALLBACK_BASELINE_KEY)[normalized];
+    if (content === undefined) throw new Error(`Baseline file not found: ${normalized}`);
     return content;
   }
 
@@ -55,20 +70,27 @@ class LocalStorageWorkspace implements WorkspaceStore {
   }
 
   async replaceAll(files: WorkspaceFile[]) {
-    this.save(Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content])));
+    const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
+    this.save(next);
+    this.save(next, FALLBACK_BASELINE_KEY);
+  }
+
+  async replaceBaseline(files: WorkspaceFile[]) {
+    const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
+    this.save(next, FALLBACK_BASELINE_KEY);
   }
 }
 
 class OpfsWorkspace implements WorkspaceStore {
-  private async root() {
+  private async root(name = "wasmhatch-workspace") {
     const originRoot = await navigator.storage.getDirectory();
-    return originRoot.getDirectoryHandle("wasmhatch-workspace", { create: true });
+    return originRoot.getDirectoryHandle(name, { create: true });
   }
 
-  private async fileHandle(path: string, create = false) {
+  private async fileHandle(path: string, create = false, rootName = "wasmhatch-workspace") {
     const parts = normalizeWorkspacePath(path).split("/");
     const fileName = parts.pop()!;
-    let directory = await this.root();
+    let directory = await this.root(rootName);
 
     for (const part of parts) {
       directory = await directory.getDirectoryHandle(part, { create });
@@ -77,7 +99,7 @@ class OpfsWorkspace implements WorkspaceStore {
     return directory.getFileHandle(fileName, { create });
   }
 
-  async listFiles() {
+  private async listRoot(rootName: string) {
     const files: string[] = [];
     const walk = async (directory: FileSystemDirectoryHandle, prefix = "") => {
       const iterableDirectory = directory as FileSystemDirectoryHandle & {
@@ -89,8 +111,16 @@ class OpfsWorkspace implements WorkspaceStore {
         else await walk(handle, path);
       }
     };
-    await walk(await this.root());
+    await walk(await this.root(rootName));
     return files.sort();
+  }
+
+  async listFiles() {
+    return this.listRoot("wasmhatch-workspace");
+  }
+
+  async listBaselineFiles() {
+    return this.listRoot("wasmhatch-baseline");
   }
 
   async readFile(path: string) {
@@ -98,8 +128,17 @@ class OpfsWorkspace implements WorkspaceStore {
     return (await handle.getFile()).text();
   }
 
+  async readBaselineFile(path: string) {
+    const handle = await this.fileHandle(path, false, "wasmhatch-baseline");
+    return (await handle.getFile()).text();
+  }
+
   async writeFile(path: string, content: string) {
-    const handle = await this.fileHandle(path, true);
+    await this.writeToRoot(path, content, "wasmhatch-workspace");
+  }
+
+  private async writeToRoot(path: string, content: string, rootName: string) {
+    const handle = await this.fileHandle(path, true, rootName);
     const writable = await handle.createWritable();
     await writable.write(content);
     await writable.close();
@@ -109,7 +148,19 @@ class OpfsWorkspace implements WorkspaceStore {
     const originRoot = await navigator.storage.getDirectory();
     await originRoot.removeEntry("wasmhatch-workspace", { recursive: true }).catch(() => undefined);
     await originRoot.getDirectoryHandle("wasmhatch-workspace", { create: true });
-    for (const file of files) await this.writeFile(file.path, file.content);
+    for (const file of files) {
+      await this.writeToRoot(file.path, file.content, "wasmhatch-workspace");
+    }
+    await this.replaceBaseline(files);
+  }
+
+  async replaceBaseline(files: WorkspaceFile[]) {
+    const originRoot = await navigator.storage.getDirectory();
+    await originRoot.removeEntry("wasmhatch-baseline", { recursive: true }).catch(() => undefined);
+    await originRoot.getDirectoryHandle("wasmhatch-baseline", { create: true });
+    for (const file of files) {
+      await this.writeToRoot(file.path, file.content, "wasmhatch-baseline");
+    }
   }
 }
 

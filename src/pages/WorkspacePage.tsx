@@ -5,6 +5,7 @@ import {
   Check,
   ChevronRight,
   Download,
+  FileDiff,
   FileCode2,
   FileText,
   FolderGit2,
@@ -20,6 +21,7 @@ import {
 import { createZipArchive, fetchGitHubRepository, readZipArchive } from "../lib/archive";
 import { runAnthropicAgent, type FileProposal } from "../lib/agent";
 import { createReadableDiff } from "../lib/diff";
+import { buildWorkspacePatch } from "../lib/patch";
 import {
   createWorkspaceStore,
   sampleWorkspace,
@@ -35,6 +37,11 @@ function fileIcon(path: string) {
 
 export function WorkspacePage() {
   const store = useRef<WorkspaceStore>(createWorkspaceStore());
+  const initialization = useRef<Promise<{
+    files: string[];
+    selectedPath: string;
+    content: string;
+  }> | null>(null);
   const archiveInput = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<string[]>([]);
   const [selectedPath, setSelectedPath] = useState("");
@@ -71,18 +78,32 @@ export function WorkspacePage() {
 
   useEffect(() => {
     let active = true;
-    const initialize = async () => {
+    initialization.current ??= (async () => {
       let current = await store.current.listFiles();
       if (!current.length) {
         await store.current.replaceAll(sampleWorkspace);
         current = await store.current.listFiles();
+      } else if (!(await store.current.listBaselineFiles()).length) {
+        const migratedFiles = await Promise.all(
+          current.map(async (path) => ({ path, content: await store.current.readFile(path) }))
+        );
+        await store.current.replaceBaseline(migratedFiles);
       }
-      if (active) {
-        setFiles(current);
-        await selectFile(current[0]);
-      }
-    };
-    void initialize().catch((error) => setNotice(error instanceof Error ? error.message : "Workspace failed to load."));
+      const initialPath = current[0] || "";
+      const content = initialPath ? await store.current.readFile(initialPath) : "";
+      return { files: current, selectedPath: initialPath, content };
+    })();
+    void initialization.current
+      .then((result) => {
+        if (!active) return;
+        setFiles(result.files);
+        setSelectedPath(result.selectedPath);
+        setEditor(result.content);
+        setSavedEditor(result.content);
+      })
+      .catch((error) => {
+        if (active) setNotice(error instanceof Error ? error.message : "Workspace failed to load.");
+      });
     return () => { active = false; };
   }, []);
 
@@ -130,6 +151,15 @@ export function WorkspacePage() {
     }
   };
 
+  const download = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   const exportWorkspace = async () => {
     const workspaceFiles: WorkspaceFile[] = await Promise.all(
       files.map(async (path) => ({ path, content: await store.current.readFile(path) }))
@@ -138,13 +168,18 @@ export function WorkspacePage() {
     const blob = new Blob([zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength) as ArrayBuffer], {
       type: "application/zip"
     });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "wasmhatch-workspace.zip";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    download(blob, "wasmhatch-workspace.zip");
     setNotice("Workspace exported as a zip archive.");
+  };
+
+  const exportPatch = async () => {
+    const { patch, changedFileCount } = await buildWorkspacePatch(store.current);
+    if (!patch) {
+      setNotice("No changes from the imported baseline to export.");
+      return;
+    }
+    download(new Blob([`${patch}\n`], { type: "text/x-diff;charset=utf-8" }), "wasmhatch.patch");
+    setNotice(`Exported ${changedFileCount} changed file(s) as a patch.`);
   };
 
   const stageProposal = async (next: FileProposal) => {
@@ -213,7 +248,8 @@ export function WorkspacePage() {
         <a href={import.meta.env.BASE_URL} className="workspace-brand"><span>WH</span><strong>WasmHatch</strong></a>
         <div className="workspace-title"><FolderGit2 size={15} /> browser-workspace <ChevronRight size={13} /> <b>{selectedPath || "loading"}</b></div>
         <div className="workspace-state"><i /> {status}</div>
-        <button className="icon-label-button" onClick={() => void exportWorkspace()}><Download size={15} /> Export</button>
+        <button className="icon-label-button" onClick={() => void exportPatch()}><FileDiff size={15} /> Patch</button>
+        <button className="icon-label-button" onClick={() => void exportWorkspace()}><Download size={15} /> Zip</button>
         <a className="icon-button" href="https://github.com/haya-inc/wasmhatch" aria-label="Open GitHub"><GitFork size={18} /></a>
       </header>
 

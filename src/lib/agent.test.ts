@@ -28,8 +28,11 @@ describe("runAnthropicAgent", () => {
 
     const workspace: WorkspaceStore = {
       listFiles: vi.fn().mockResolvedValue(["src/a.ts"]),
+      listBaselineFiles: vi.fn().mockResolvedValue(["src/a.ts"]),
       readFile: vi.fn().mockResolvedValue("export const a = 1;\n"),
+      readBaselineFile: vi.fn().mockResolvedValue("export const a = 1;\n"),
       writeFile: vi.fn(),
+      replaceBaseline: vi.fn(),
       replaceAll: vi.fn()
     };
     let proposal: FileProposal | undefined;

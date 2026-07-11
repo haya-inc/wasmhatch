@@ -453,11 +453,11 @@ from documented commands.
 Exit evidence: the sample task produces a staged patch, the user approves it,
 and the changed file survives reload.
 
-### Milestone 2: Shareable contribution workflow — next
+### Milestone 2: Shareable contribution workflow — in progress
 
-- Make `repo`, `ref`, and `task` deep links complete and documented
-- Publish an `Open in WasmHatch` badge and URL builder
-- Add baseline snapshots and patch-file export
+- Complete and document `ref` deep links (`repo` and `task` are available)
+- Publish an `Open in WasmHatch` badge and URL builder — complete
+- Add persistent baseline snapshots and patch-file export — complete
 - Add deterministic fixtures for agent tool-call failures and limits
 - Add three real small OSS example tasks
 

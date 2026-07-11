@@ -20,7 +20,7 @@ immediately.
 - No account is required.
 - Project files use browser-managed storage (OPFS where supported).
 - Public GitHub repositories and zip archives can be imported.
-- Text files can be edited and exported as a zip.
+- Text files can be edited and exported as a standard unified patch or zip.
 - Claude can list and read files through explicit tools.
 - Agent writes are staged until the user approves a visible diff.
 - A no-key local demo exercises the complete review flow.
@@ -45,8 +45,9 @@ npm run build
 
 ## Add an Open in WasmHatch link
 
-The first alpha accepts `repo` and `task` query parameters. The repository field
-and task composer are prefilled; the visitor explicitly starts the import.
+The project page includes a URL and badge builder. It accepts `repo` and `task`
+query parameters, prefills the repository and task, and leaves the visitor in
+control of starting the import.
 
 ```markdown
 [![Open in WasmHatch](https://haya-inc.github.io/wasmhatch/open-in-wasmhatch.svg)](https://haya-inc.github.io/wasmhatch/?view=workspace&repo=OWNER/REPOSITORY&task=DESCRIBE%20A%20SMALL%20CHANGE)
@@ -56,6 +57,22 @@ Encode the task as a URL query value and keep it focused enough to review as one
 patch. Automatic repository fetching is intentionally not triggered by merely
 opening a link.
 
+## Export a patch
+
+WasmHatch records a separate baseline whenever a sample, GitHub repository, or
+zip archive is imported. Manual and agent-approved edits change only the working
+tree. Use **Patch** in the workspace header to download the difference as
+`wasmhatch.patch`:
+
+```bash
+git apply --check wasmhatch.patch
+git apply wasmhatch.patch
+```
+
+The baseline is stored separately in OPFS and survives reload. The patch can
+represent modified, added, and removed text files; the current UI does not yet
+expose file deletion.
+
 ## Current capability matrix
 
 | Capability | Status |
@@ -64,9 +81,11 @@ opening a link.
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |
 | Manual editing and persistence | Available |
+| Persistent import baseline and unified patch export | Available |
 | Review-before-write agent proposals | Available |
 | Anthropic Messages API tool loop | Alpha, BYOK |
-| Shareable `repo` and `task` parameters | Alpha |
+| Share URL and badge builder | Available |
+| Shareable `repo` and `task` parameters | Available |
 | Local-directory write-back | Planned |
 | Browser command runtime | Under evaluation; not required for the core flow |
 | Git commit and pull-request creation | Planned |

@@ -1,18 +1,53 @@
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   Check,
   Code2,
+  Copy,
   GitFork,
   ShieldCheck,
   Sparkles,
   TerminalSquare
 } from "lucide-react";
+import { createBadgeMarkdown, createWorkspaceShareUrl } from "../lib/share";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 
 export function LandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const workspaceUrl = `${homeUrl}?view=workspace`;
+  const [shareRepo, setShareRepo] = useState("haya-inc/wasmhatch");
+  const [shareTask, setShareTask] = useState("Improve one focused part of the README");
+  const [copied, setCopied] = useState<"url" | "badge" | "error" | null>(null);
+  const absoluteHomeUrl = new URL(homeUrl, window.location.origin).toString();
+  const shareUrl = useMemo(
+    () => createWorkspaceShareUrl(absoluteHomeUrl, shareRepo, shareTask),
+    [absoluteHomeUrl, shareRepo, shareTask]
+  );
+  const badgeMarkdown = createBadgeMarkdown(
+    shareUrl,
+    new URL("open-in-wasmhatch.svg", absoluteHomeUrl).toString()
+  );
+
+  const copyText = async (value: string, kind: "url" | "badge") => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+    } catch {
+      const temporary = document.createElement("textarea");
+      temporary.value = value;
+      temporary.setAttribute("readonly", "");
+      temporary.style.position = "fixed";
+      temporary.style.opacity = "0";
+      document.body.append(temporary);
+      temporary.select();
+      const succeeded = document.execCommand("copy");
+      temporary.remove();
+      setCopied(succeeded ? kind : "error");
+    }
+    window.setTimeout(() => setCopied(null), 1600);
+  };
 
   return (
     <main className="landing">
@@ -130,6 +165,46 @@ export function LandingPage() {
             <h3>Approve the patch</h3>
             <p>Every proposed write stops at a visible diff. Accept it, keep editing, or export the workspace.</p>
           </article>
+        </div>
+      </section>
+
+      <section className="share-section" id="share" aria-labelledby="share-title">
+        <div className="section-label">For maintainers</div>
+        <div className="share-intro">
+          <h2 id="share-title">Make a task<br />one click away.</h2>
+          <p>
+            Build a link that opens WasmHatch with the repository and contribution task
+            already in place. Visitors remain in control of the import.
+          </p>
+        </div>
+        <div className="share-builder">
+          <label>
+            <span>01 / Repository</span>
+            <input value={shareRepo} onChange={(event) => setShareRepo(event.target.value)} placeholder="owner/repository" />
+          </label>
+          <label>
+            <span>02 / Focused task</span>
+            <textarea value={shareTask} onChange={(event) => setShareTask(event.target.value)} />
+          </label>
+          <div className="share-output">
+            <span>03 / Share</span>
+            <code>{shareUrl}</code>
+            <div>
+              <button onClick={() => void copyText(shareUrl, "url")}>
+                {copied === "url" ? <Check size={15} /> : <Copy size={15} />}
+                {copied === "url" ? "Copied URL" : copied === "error" ? "Select URL above" : "Copy URL"}
+              </button>
+              <button onClick={() => void copyText(badgeMarkdown, "badge")}>
+                {copied === "badge" ? <Check size={15} /> : <Copy size={15} />}
+                {copied === "badge" ? "Copied badge" : "Copy badge Markdown"}
+              </button>
+              <a href={shareUrl}>Open link <ArrowRight size={15} /></a>
+            </div>
+          </div>
+          <div className="badge-preview">
+            <p>README badge preview</p>
+            <img src={`${homeUrl}open-in-wasmhatch.svg`} alt="Open in WasmHatch" />
+          </div>
         </div>
       </section>
 
