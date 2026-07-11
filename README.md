@@ -91,7 +91,8 @@ cover parsing, security UX, editor UX, import provenance, and accessibility.
 WasmHatch does not use third-party analytics. If you trial the workflow on an
 external public repository or publish a task link or badge, add it to the
 [opt-in adoption registry](https://github.com/haya-inc/wasmhatch/issues/9).
-Reports that expose friction or failed trials are as useful as successful ones.
+Include time-to-first-diff and whether export was reached when possible. Reports
+that expose friction or failed trials are as useful as successful ones.
 
 ## Where WasmHatch fits
 
