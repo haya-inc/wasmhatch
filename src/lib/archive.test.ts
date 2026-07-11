@@ -20,6 +20,8 @@ describe("archive utilities", () => {
   it("parses GitHub repository references", () => {
     expect(parseGitHubRepository("haya-inc/wasmhatch")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
     expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch.git")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
+    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch.git/")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
+    expect(parseGitHubRepository("haya-inc/wasmhatch.git/")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
   });
 
   it("filters common binary repository files", () => {
