@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { exampleTasks } from "./examples";
+import { exampleTasks, getExampleIssueNumber } from "./examples";
 
 describe("exampleTasks", () => {
   it("contains three unique, revision-pinned contribution tasks", () => {
@@ -9,6 +9,13 @@ describe("exampleTasks", () => {
       expect(example.ref).toMatch(/^[a-f0-9]{40}$/);
       expect(example.task.length).toBeGreaterThan(80);
     }
-    expect(exampleTasks[0].issueUrl).toBe("https://github.com/haya-inc/wasmhatch/issues/1");
+    expect(exampleTasks[0].issueUrl).toBe("https://github.com/haya-inc/wasmhatch/issues/4");
+  });
+
+  it("derives a display number only from canonical GitHub issue URLs", () => {
+    expect(getExampleIssueNumber("https://github.com/haya-inc/wasmhatch/issues/42")).toBe("42");
+    expect(getExampleIssueNumber("https://example.com/haya-inc/wasmhatch/issues/42")).toBe("");
+    expect(getExampleIssueNumber("https://github.com/haya-inc/wasmhatch/pull/42")).toBe("");
+    expect(getExampleIssueNumber()).toBe("");
   });
 });

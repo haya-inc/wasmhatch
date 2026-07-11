@@ -464,6 +464,8 @@ and the changed file survives reload.
 - Preserve validated GitHub Issue context through patch export and handoff — complete
 - Publish a branded social preview with canonical share metadata — complete
 - Publish a source-backed product landscape and adoption decision guide — complete
+- Land the first external contribution through issue #1 and PR #2 — complete
+- Replace the completed task with revision-pinned `good first issue` #4 — complete
 
 Exit condition: an external repository can link to a focused task and a new
 visitor can export a patch in under three minutes.
@@ -530,7 +532,8 @@ the core repository-to-patch flow.
 - At least 20 external repositories trial the workflow and 10 publish a task
   link or badge.
 - At least 30% of started sample sessions reach patch or zip export.
-- Five external contributors land a change before the first beta.
+- Five external contributors land a change before the first beta — progress: 1/5
+  through PR #2.
 - No confirmed API-key persistence or workspace-loss defect remains open.
 - The primary flow completes without a command runtime.
 

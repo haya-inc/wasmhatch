@@ -10,7 +10,7 @@ import {
   TerminalSquare
 } from "lucide-react";
 import { createBadgeMarkdown, createWorkspaceShareUrl } from "../lib/share";
-import { exampleTasks } from "../data/examples";
+import { exampleTasks, getExampleIssueNumber } from "../data/examples";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 const landscapeUrl = `${repositoryUrl}/blob/main/docs/landscape.md`;
@@ -215,6 +215,7 @@ export function LandingPage() {
         </div>
         <div className="example-list">
           {exampleTasks.map((example, index) => {
+            const issueNumber = getExampleIssueNumber(example.issueUrl);
             const url = createWorkspaceShareUrl(
               absoluteHomeUrl,
               example.repository,
@@ -234,9 +235,9 @@ export function LandingPage() {
                   <p>{example.description}</p>
                 </div>
                 <div className="example-actions">
-                  {example.issueUrl && (
+                  {example.issueUrl && issueNumber && (
                     <a href={example.issueUrl} aria-label={`View the GitHub issue for ${example.title}`}>
-                      Issue #1
+                      Issue #{issueNumber}
                     </a>
                   )}
                   <a href={url} aria-label={`Open ${example.title} in WasmHatch`}>

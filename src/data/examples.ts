@@ -1,3 +1,5 @@
+import { normalizeGitHubIssueUrl } from "../lib/share";
+
 export interface ExampleTask {
   repository: string;
   ref: string;
@@ -8,16 +10,21 @@ export interface ExampleTask {
   issueUrl?: string;
 }
 
+export function getExampleIssueNumber(issueUrl?: string) {
+  const normalized = normalizeGitHubIssueUrl(issueUrl || "");
+  return normalized.match(/\/issues\/(\d+)$/)?.[1] || "";
+}
+
 export const exampleTasks: ExampleTask[] = [
   {
     repository: "haya-inc/wasmhatch",
-    ref: "e4a2cf2e312e5035dfc31f8439bade27bec7e78a",
-    title: "Harden GitHub URL parsing",
-    description: "Fix a real normalization edge case and add focused regression coverage.",
+    ref: "3b4a3876b1ff47e9d954f570ec6a79913c1a1da8",
+    title: "Handle copied GitHub URLs",
+    description: "Accept query strings and fragments without weakening host or path validation.",
     task:
-      "Update parseGitHubRepository so a GitHub URL ending in .git/ is normalized to the repository name without .git. Add a regression test and keep the change focused.",
-    scope: "Parser + test",
-    issueUrl: "https://github.com/haya-inc/wasmhatch/issues/1"
+      "Update parseGitHubRepository so GitHub repository URLs with a query string or fragment, such as ?tab=readme-ov-file or #readme, still normalize to owner/repository. Preserve existing shorthand and .git handling, reject non-GitHub hosts and nested paths, and add focused regression tests.",
+    scope: "Parser + tests",
+    issueUrl: "https://github.com/haya-inc/wasmhatch/issues/4"
   },
   {
     repository: "haya-inc/create-knowledge-kit",
