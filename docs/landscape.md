@@ -1,60 +1,89 @@
-# Product landscape and fit
+# Business Agent Landscape
 
-Verified against official product documentation on 2026-07-12.
+Updated: 2026-07-12
 
-WasmHatch is not intended to replace a cloud development environment, a full
-browser IDE, or an autonomous command-running agent. Its narrow job is to turn a
-small public issue into a reviewed, exportable text patch with the least possible
-setup and a visible trust boundary.
+WasmHatch is a browser-native AI operator for foreground business work. It is
+not a coding workspace, general workflow server, or replacement for mature
+automation platforms.
 
-## Comparison
+## Comparable products
 
-| Surface | Primary job | Execution boundary | Change path |
+| Product | Strength | Runtime model | Implication for WasmHatch |
 | --- | --- | --- | --- |
-| **WasmHatch** | Focused public issue to reviewable patch | No command runtime in the core flow; files use browser-managed storage | Explicit write review, then patch or zip export |
-| [github.dev](https://docs.github.com/en/codespaces/the-githubdev-web-based-editor) | Lightweight repository editing in a browser | Browser sandbox with no compute or integrated terminal | Signed-in commit, push, and pull request |
-| [GitHub Codespaces](https://docs.github.com/en/codespaces/about-codespaces/deep-dive) | Full project development, build, test, and debug | Dev container hosted on a dedicated virtual machine | Normal Git branch, commit, push, and pull-request flow |
-| [WebContainers](https://webcontainers.io/api) | Build products that need a Node.js runtime in the browser | In-browser Node.js runtime and virtual filesystem | Defined by the application embedding the API |
-| [OpenHands](https://docs.openhands.dev/openhands/usage/sandboxes/overview) | Delegate file editing and command execution to an agent | Docker, process, or remote sandbox | Agent-managed workspace and execution results |
+| [Activepieces](https://github.com/activepieces/activepieces) | Large typed connector ecosystem, AI agents, code steps, MCP tools | Server/self-hosted | Validate connector pieces, human input, and AI-selected tools; do not compete on connector count |
+| [Windmill](https://www.windmill.dev/docs/core_concepts/ai_agents) | Scripts, workflows, approvals, and scripts exposed as agent tools | Server/self-hosted workers | Validate scripts-as-tools and effect approvals; differentiate with foreground browser execution |
+| [n8n](https://docs.n8n.io/advanced-ai/) | Visual workflows, integrations, and AI nodes | Server/cloud | Validate demand for broad orchestration; avoid recreating a visual DAG builder initially |
+| [Google Apps Script](https://developers.google.com/apps-script/guides/sheets) | Spreadsheet-adjacent scripting and scheduled automation | Google-hosted | Validate spreadsheet automation; differentiate with provider-neutral local sandbox and visible effects |
+| [Pyodide](https://github.com/pyodide/pyodide) | Mature Python distribution in the browser | Browser Wasm | Candidate second runner for data-science-heavy pilot workloads |
+| [Wasmer JS](https://docs.wasmer.io/sdk/wasmer-js/) | WASI/WASIX programs, filesystem, subprocesses, and interpreters in browser | Browser Wasm | Candidate for packaged CLI tools; broader than the initial JSON transform contract |
 
-CodeSandbox belongs to the cloud-development-environment category: its official
-[Dev Container announcement](https://codesandbox.io/blog/introducing-dev-container-support-in-codesandbox)
-describes running projects in cloud infrastructure and preparing a shareable,
-full-featured environment. That is a broader job than WasmHatch's runtime-free
-issue-to-patch path.
+## Chosen wedge
 
-## Choose WasmHatch when
+WasmHatch starts where server automation products are weakest:
 
-- the source is a public GitHub repository or a zip archive;
-- the task is small enough to review as a focused text patch;
-- a contributor should not need a preconfigured VM, container, or local toolchain;
-- the maintainer wants the exact revision, task, and GitHub Issue to travel in one
-  link;
-- every model-proposed write should stop at an explicit diff review.
+- a user is present in the browser;
+- credentials do not need durable storage;
+- the task operates on a bounded spreadsheet or business dataset;
+- generated transformation logic can run locally;
+- external writes benefit from a precise before/after review;
+- the user wants to inspect model egress and tool effects.
 
-## Choose another surface when
+This wedge supports a static deployment and avoids requiring an account,
+workflow server, or credential vault for the first useful experience.
 
-- **Use github.dev** when direct GitHub commit and pull-request creation matters
-  more than a provider-neutral patch handoff.
-- **Use Codespaces or another cloud development environment** when the task must
-  install dependencies, build, test, debug, or run services.
-- **Use WebContainers** when the product itself needs to execute Node.js tools in
-  the browser.
-- **Use OpenHands or another sandboxed coding agent** when autonomous command
-  execution is central to the task.
+## What not to build first
 
-## Current boundary
+- Hundreds of connectors.
+- A generic visual workflow canvas.
+- Background schedules and webhook infrastructure.
+- A full POSIX or Node.js runtime in the browser.
+- Autonomous writes without an approval model.
+- Durable organization credential storage.
 
-WasmHatch currently supports bounded public-repository import, manual editing,
-Anthropic BYOK file tools, explicit proposal review, persistent baselines, and
-patch or zip export. It does not yet provide private-repository authentication,
-command execution, direct commits, or pull-request creation. Those omissions are
-deliberate until their security, licensing, and contributor-value tradeoffs are
-proven.
+## Technology choices
 
-## Adoption hypothesis
+### QuickJS/Wasm first
 
-The project succeeds if maintainers can attach an **Open in WasmHatch** link to a
-small issue and first-time contributors can produce a valid patch before setting
-up the full repository. Runtime-first tools remain the right next step when the
-patch needs project-specific validation.
+The first sandbox accepts a synchronous JavaScript function and JSON-compatible
+input. It is small enough to audit, has no host functions, and covers common
+spreadsheet transformations.
+
+### Pyodide on demonstrated demand
+
+Pyodide is useful when pilots require pandas, scientific packages, or existing
+Python logic. Its larger payload and file-level MPL-2.0 obligations make it a
+separate optional runner rather than the default.
+
+### No WebContainer dependency
+
+WebContainer is optimized for Node.js development environments rather than
+business-data transformation. Its runtime is hosted by StackBlitz and
+commercial production usage requires a separate license. It is not part of the
+WasmHatch core architecture.
+
+Official references:
+
+- https://webcontainers.io/enterprise
+- https://webcontainers.io/guides/api-support
+
+### Server only for durable autonomy
+
+If pilots require schedules, webhooks, service accounts, refresh tokens, or
+non-CORS APIs, WasmHatch will introduce a self-hostable server adapter. That
+adapter should borrow proven isolation and orchestration patterns rather than
+turn the browser application into an implicit cloud service.
+
+## OSS success strategy
+
+The initial community artifact should be the connector and policy contract, not
+the UI alone. Useful external contributions include:
+
+- connector implementations with typed schemas and fixtures;
+- transformation examples with deterministic input/output cases;
+- policy and approval primitives;
+- redaction and model-egress tests;
+- local workbook adapters;
+- pilot reports that include rejected or failed operations.
+
+Success is demonstrated by repeat business workflows and trustworthy effects,
+not GitHub issue-to-patch conversion.

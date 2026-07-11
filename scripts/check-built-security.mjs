@@ -12,10 +12,10 @@ const requiredDirectives = [
   "object-src 'none'",
   "frame-src 'none'",
   "form-action 'none'",
-  "script-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self'",
-  "connect-src 'self' https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com",
-  "worker-src 'none'"
+  "connect-src 'self' https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com",
+  "worker-src 'self'"
 ];
 
 for (const directive of requiredDirectives) {

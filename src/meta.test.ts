@@ -24,7 +24,7 @@ describe("public sharing metadata", () => {
     const sitemap = readFileSync("public/sitemap.xml", "utf8");
 
     expect(html).toContain("<noscript>");
-    expect(html).toContain("open-source, browser-native coding workspace");
+    expect(html).toContain("open-source, browser-native AI operator");
     expect(robots).toContain(`Sitemap: ${projectUrl}sitemap.xml`);
     expect(sitemap).toContain(`<loc>${projectUrl}</loc>`);
     expect(sitemap).toContain("<lastmod>2026-07-12</lastmod>");
@@ -43,9 +43,11 @@ describe("public sharing metadata", () => {
     const plan = readFileSync("docs/plan.md", "utf8");
     const viteConfig = readFileSync("vite.config.ts", "utf8");
 
-    expect(readme).toContain("does **not** ship WebAssembly, Rust,\nor Web Workers");
-    expect(plan).toContain("There is no worker boundary or Wasm module.");
-    expect(plan).toContain("CSP deliberately sets `worker-src 'none'`");
-    expect(viteConfig).toContain('"worker-src \'none\'"');
+    expect(readme).toContain("QuickJS compiled to Wasm and executed in a Web Worker");
+    expect(plan).toContain("A browser-native AI operator for visible, permissioned business work");
+    expect(plan).toContain("no host functions, network, DOM, OPFS, OAuth token, or model client");
+    expect(viteConfig).toContain('"worker-src \'self\'"');
+    expect(viteConfig).toContain("'wasm-unsafe-eval'");
+    expect(viteConfig).toContain("https://sheets.googleapis.com");
   });
 });

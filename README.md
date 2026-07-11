@@ -1,43 +1,40 @@
 # WasmHatch
 
-> From issue to patch. No setup in between.
+> Browser-native AI operations with explicit effects.
 
-[![WasmHatch — from issue to patch, no setup in between](public/social-preview.png)](https://haya-inc.github.io/wasmhatch/#examples)
+[Open the business-operator foundation slice](https://haya-inc.github.io/wasmhatch/?view=operator)
 
-WasmHatch is an open-source, browser-native coding workspace for small, focused
-contributions. Import a public GitHub repository or zip archive, let an AI agent
-inspect selected files through bounded tools, review every proposed write as a
-diff, and export the result without installing a local toolchain.
+WasmHatch is an open-source, browser-native AI operator for general business
+work. It gives an AI typed access to spreadsheets and future business APIs,
+runs generated data transformations inside a resource-limited Wasm sandbox,
+and stops external writes for an explicit effect review.
 
-The project is an early alpha. The browser workspace and review loop work; full
-command execution and direct pull-request creation do not yet.
+The initial product is foreground-only: the user keeps the tab open, credentials
+remain in connector memory, and every write requires approval. Background
+schedules, refresh-token storage, webhooks, and non-CORS APIs belong to an
+optional future server adapter rather than the static application.
 
-Despite the project name, the current alpha does **not** ship WebAssembly, Rust,
-or Web Workers. It is a React and TypeScript application running on the browser
-main thread, and the production CSP sets `worker-src 'none'`. The longer-term
-Claude Code-like path does require a permissioned command runtime. WebContainer,
-Wasm/WASI workers, and an optional remote sandbox are candidate adapters; Wasm
-alone does not provide a shell, process model, Git, or package manager.
+The foundation slice now ships:
 
-## Why WasmHatch
+- a Google Sheets value-range connector with credentials isolated from scripts;
+- QuickJS compiled to Wasm and executed in a Web Worker;
+- CPU, memory, source, input, and output limits;
+- spreadsheet-shaped JSON transformations with no `fetch`, DOM, or host access;
+- cell-level write previews with explicit approve/reject controls; and
+- a per-tab audit trail for reads, scripts, and writes.
 
-First-time contributors often lose more time configuring a repository than
-making the change. WasmHatch is aimed at projects that want to put an **Open in
-WasmHatch** link next to a small issue and give contributors a useful workspace
-immediately.
+Google OAuth UI and the business AI planner are the next milestones. The current
+operator accepts a development access token for connector testing and clearly
+labels that limitation.
 
-- No account is required.
-- Project files use browser-managed storage (OPFS where supported).
-- Public GitHub repositories and zip archives can be imported.
-- Text files can be edited and exported as a standard unified patch or zip.
-- Browser storage usage is visible and can be cleared with an export-first option.
-- The active storage backend, durability, origin quota, and persistence request are visible.
-- Claude can list and read files through explicit tools.
-- Agent writes are staged until the user approves a visible diff.
-- Common credential paths are denied to the agent and model-bound reads are logged.
-- Agent reads use bounded line ranges and every run has request and token budgets.
-- Storage deletion uses a keyboard-contained native dialog with safe initial focus.
-- A no-key local demo exercises the complete review flow.
+See the current [product plan](docs/plan.md) and [business-agent landscape](docs/landscape.md).
+
+## Legacy coding workspace
+
+The earlier issue-to-patch coding workspace remains available at
+`?view=workspace` during migration. The sections below document that legacy
+surface and are retained so its existing users and in-progress changes are not
+disrupted. It is no longer the product direction.
 
 ## Try it locally
 

@@ -1,8 +1,11 @@
 import { lazy, Suspense } from "react";
-import { LandingPage } from "./pages/LandingPage";
+import { BusinessLandingPage } from "./pages/BusinessLandingPage";
 
 const WorkspacePage = lazy(() =>
   import("./pages/WorkspacePage").then((module) => ({ default: module.WorkspacePage }))
+);
+const OperatorPage = lazy(() =>
+  import("./pages/OperatorPage").then((module) => ({ default: module.OperatorPage }))
 );
 
 export function App() {
@@ -11,7 +14,14 @@ export function App() {
     ? window.location.pathname.slice(basePath.length)
     : window.location.pathname.slice(1);
   const requestedView = new URLSearchParams(window.location.search).get("view");
-  if (!route.startsWith("workspace") && requestedView !== "workspace") return <LandingPage />;
+  if (route.startsWith("operator") || requestedView === "operator") {
+    return (
+      <Suspense fallback={<div className="route-loading">Opening operator…</div>}>
+        <OperatorPage />
+      </Suspense>
+    );
+  }
+  if (!route.startsWith("workspace") && requestedView !== "workspace") return <BusinessLandingPage />;
 
   return (
     <Suspense fallback={<div className="route-loading">Hatching workspace…</div>}>

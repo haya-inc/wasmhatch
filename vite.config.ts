@@ -17,12 +17,12 @@ export default defineConfig(({ command, mode }) => ({
             "object-src 'none'",
             "frame-src 'none'",
             "form-action 'none'",
-            "script-src 'self'",
+            "script-src 'self' 'wasm-unsafe-eval'",
             stylePolicy,
             "img-src 'self' data:",
             "font-src 'self'",
-            `connect-src 'self' https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com${developmentConnect}`,
-            "worker-src 'none'",
+            `connect-src 'self' https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com${developmentConnect}`,
+            "worker-src 'self'",
             "manifest-src 'self'"
           ].join("; ");
           return [{

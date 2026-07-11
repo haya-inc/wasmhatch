@@ -1,7 +1,7 @@
 {
   "name": "wasmhatch",
   "private": true,
-  "version": "0.12.0",
+  "version": "0.13.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -13,8 +13,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@jitl/quickjs-wasmfile-release-sync": "^0.32.0",
     "fflate": "^0.8.2",
     "lucide-react": "^1.24.0",
+    "quickjs-emscripten-core": "^0.32.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
