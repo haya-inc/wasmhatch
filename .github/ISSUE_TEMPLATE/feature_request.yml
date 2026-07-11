@@ -1,0 +1,22 @@
+name: Feature request
+description: Propose a focused improvement to the repository-to-patch workflow
+title: "feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Contributor problem
+      description: What setup or contribution friction does this remove?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Smallest useful outcome
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Security, licensing, or browser constraints
