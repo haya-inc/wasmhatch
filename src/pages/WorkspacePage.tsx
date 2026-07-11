@@ -66,6 +66,7 @@ export function WorkspacePage() {
     selectedPath: string;
     content: string;
   }> | null>(null);
+  const fileSelection = useRef(0);
   const archiveInput = useRef<HTMLInputElement>(null);
   const agentAbort = useRef<AbortController | null>(null);
   const storageDialog = useRef<HTMLDialogElement>(null);
@@ -80,7 +81,7 @@ export function WorkspacePage() {
   const [repoRef, setRepoRef] = useState(searchParams.get("ref") || "");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("claude-sonnet-4-6");
-  const [status, setStatus] = useState("Ready");
+  const [status, setStatus] = useState("Opening workspace");
   const [answer, setAnswer] = useState(
     linkedRepository
       ? "Import the pinned source, then edit files manually or connect Claude for a focused change."
@@ -89,6 +90,8 @@ export function WorkspacePage() {
   const [proposal, setProposal] = useState<FileProposal | null>(null);
   const [proposalBefore, setProposalBefore] = useState("");
   const [busy, setBusy] = useState(false);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
+  const [fileLoading, setFileLoading] = useState(false);
   const [agentRunning, setAgentRunning] = useState(false);
   const [notice, setNotice] = useState("");
   const [patchExported, setPatchExported] = useState(false);
@@ -113,10 +116,17 @@ export function WorkspacePage() {
   };
 
   const selectFile = async (path: string) => {
-    const content = await store.current.readFile(path);
-    setSelectedPath(path);
-    setEditor(content);
-    setSavedEditor(content);
+    const selection = ++fileSelection.current;
+    setFileLoading(true);
+    try {
+      const content = await store.current.readFile(path);
+      if (selection !== fileSelection.current) return;
+      setSelectedPath(path);
+      setEditor(content);
+      setSavedEditor(content);
+    } finally {
+      if (selection === fileSelection.current) setFileLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -147,11 +157,15 @@ export function WorkspacePage() {
         setEditor(result.content);
         setSavedEditor(result.content);
         setDemoAvailable(isSampleFileList(result.files) && !linkedRepository);
+        setWorkspaceReady(true);
+        setFileLoading(false);
+        setStatus("Ready");
       })
       .catch((error) => {
         if (!active) return;
         setNotice(error instanceof Error ? error.message : "Workspace failed to load.");
         setStatus("Storage unavailable");
+        setFileLoading(false);
         setAnswer("Browser storage could not be initialized. Check site-data permissions or use a supported browser.");
       });
     return () => {
@@ -180,7 +194,7 @@ export function WorkspacePage() {
   };
 
   const importRepository = async () => {
-    if (!repo.trim()) return;
+    if (!workspaceReady || !repo.trim()) return;
     setBusy(true);
     setStatus("Importing from GitHub");
     try {
@@ -205,7 +219,12 @@ export function WorkspacePage() {
 
   const importArchive = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !workspaceReady) {
+      event.target.value = "";
+      return;
+    }
+    setBusy(true);
+    setStatus("Importing archive");
     try {
       const imported = readZipArchive(new Uint8Array(await file.arrayBuffer()));
       if (!imported.length) throw new Error("No supported text files were found.");
@@ -221,6 +240,8 @@ export function WorkspacePage() {
       setNotice(error instanceof Error ? error.message : "Archive import failed.");
     } finally {
       event.target.value = "";
+      setBusy(false);
+      setStatus("Ready");
     }
   };
 
@@ -423,8 +444,8 @@ export function WorkspacePage() {
         <a href={import.meta.env.BASE_URL} className="workspace-brand"><span>WH</span><strong>WasmHatch</strong></a>
         <div className="workspace-title"><FolderGit2 size={15} /> browser-workspace <ChevronRight size={13} /> <b>{selectedPath || "empty"}</b></div>
         <div className="workspace-state"><i /> {status}</div>
-        <button className="icon-label-button" onClick={() => void exportPatch()}><FileDiff size={15} /> Patch</button>
-        <button className="icon-label-button" onClick={() => void exportWorkspace()}><Download size={15} /> Zip</button>
+        <button className="icon-label-button" onClick={() => void exportPatch()} disabled={!workspaceReady || busy}><FileDiff size={15} /> Patch</button>
+        <button className="icon-label-button" onClick={() => void exportWorkspace()} disabled={!workspaceReady || busy}><Download size={15} /> Zip</button>
         <a className="icon-button" href="https://github.com/haya-inc/wasmhatch" aria-label="Open GitHub"><GitFork size={18} /></a>
       </header>
 
@@ -433,15 +454,15 @@ export function WorkspacePage() {
           <div className="panel-heading"><span>Workspace</span><small>{files.length} files</small></div>
           <div className="import-form">
             <label htmlFor="repo">Public GitHub repository</label>
-            <div><input id="repo" value={repo} onChange={(event) => setRepo(event.target.value)} placeholder="owner/repository" /><button onClick={() => void importRepository()} disabled={busy} aria-label="Import repository"><ArrowLeft className="import-arrow" size={16} /></button></div>
+            <div><input id="repo" value={repo} onChange={(event) => setRepo(event.target.value)} placeholder="owner/repository" /><button onClick={() => void importRepository()} disabled={!workspaceReady || busy} aria-label="Import repository"><ArrowLeft className="import-arrow" size={16} /></button></div>
             <label htmlFor="repo-ref">Git ref <span>optional</span></label>
             <input id="repo-ref" className="ref-input" value={repoRef} onChange={(event) => setRepoRef(event.target.value)} placeholder="branch, tag, or commit" />
-            <button className="archive-button" onClick={() => archiveInput.current?.click()}><Upload size={14} /> Import zip archive</button>
-            <input ref={archiveInput} type="file" accept=".zip,application/zip" hidden onChange={(event) => void importArchive(event)} />
+            <button className="archive-button" onClick={() => archiveInput.current?.click()} disabled={!workspaceReady || busy}><Upload size={14} /> Import zip archive</button>
+            <input ref={archiveInput} type="file" accept=".zip,application/zip" hidden disabled={!workspaceReady || busy} onChange={(event) => void importArchive(event)} />
           </div>
           <nav className="file-list" aria-label="Workspace files">
             {files.map((path) => (
-              <button key={path} className={path === selectedPath ? "active" : ""} onClick={() => void selectFile(path)}>
+              <button key={path} className={path === selectedPath ? "active" : ""} onClick={() => void selectFile(path)} disabled={busy || fileLoading}>
                 {fileIcon(path)}<span>{path}</span>{proposal?.path === path && <i />}
               </button>
             ))}
@@ -453,19 +474,20 @@ export function WorkspacePage() {
                 ? "Files persist in browser-managed storage. Export anything you cannot afford to lose."
                 : "OPFS is unavailable. Using the smaller localStorage fallback; export a copy early."}
             </p>
-            <button ref={storageTrigger} onClick={() => void openStorageManager()} disabled={busy} aria-label="Manage browser storage"><HardDrive size={14} /> Manage</button>
+            <button ref={storageTrigger} onClick={() => void openStorageManager()} disabled={!workspaceReady || busy} aria-label="Manage browser storage"><HardDrive size={14} /> Manage</button>
           </div>
         </aside>
 
         <section className="editor-panel" aria-label="File editor">
           <div className="editor-tabs">
             <span className="active">{selectedPath || "No file"}{editor !== savedEditor && <i />}</span>
-            <button disabled={!selectedPath || editor === savedEditor} onClick={() => void saveEditor()}><Save size={14} /> Save</button>
+            <button disabled={!workspaceReady || busy || fileLoading || !selectedPath || editor === savedEditor} onClick={() => void saveEditor()}><Save size={14} /> Save</button>
           </div>
           <textarea
             className="code-editor"
             aria-label="Code editor"
             spellCheck={false}
+            disabled={!workspaceReady || busy || fileLoading}
             value={editor}
             onChange={(event) => setEditor(event.target.value)}
           />
@@ -560,12 +582,12 @@ export function WorkspacePage() {
             <textarea id="task" value={task} onChange={(event) => setTask(event.target.value)} />
             <div>
               {demoAvailable && (
-                <button className="demo-button" onClick={() => void runDemo()} disabled={busy}><Play size={14} /> Local demo</button>
+                <button className="demo-button" onClick={() => void runDemo()} disabled={!workspaceReady || busy}><Play size={14} /> Local demo</button>
               )}
               {agentRunning ? (
                 <button className="stop-button" onClick={cancelAgent}><X size={15} /> Stop agent</button>
               ) : (
-                <button className="run-button" onClick={() => void runAgent()} disabled={busy || !task.trim()}>
+                <button className="run-button" onClick={() => void runAgent()} disabled={!workspaceReady || busy || !task.trim()}>
                   {busy ? <LoaderCircle className="spin" size={15} /> : <Sparkles size={15} />} Run with Claude
                 </button>
               )}

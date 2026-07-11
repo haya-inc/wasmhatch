@@ -246,7 +246,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .workspace-state i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 9px rgba(217,255,67,.8); }
 .icon-label-button, .icon-button { height: 100%; border: 0; border-left: 1px solid #292c28; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #9da29a; }
 .icon-label-button { padding: 0 16px; gap: 7px; font-size: 10px; }.icon-button { width: 50px; }
-.icon-label-button:hover, .icon-button:hover { color: var(--accent); background: #171a16; }
+.icon-label-button:not(:disabled):hover, .icon-button:hover { color: var(--accent); background: #171a16; }
+.icon-label-button:disabled { opacity: .35; cursor: default; }
 .workspace-layout { height: calc(100vh - 52px); display: grid; grid-template-columns: 220px minmax(400px, 1fr) 390px; }
 .file-panel, .editor-panel, .agent-panel { min-width: 0; min-height: 0; }
 .file-panel { display: flex; flex-direction: column; border-right: 1px solid #292c28; background: #111310; }
@@ -260,13 +261,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .import-form input:focus { border-color: #69712f; }
 .import-form input.ref-input { height: 29px; border-right: 1px solid #30342f; }
 .import-form > div button { width: 32px; border: 0; background: var(--accent); color: var(--ink); cursor: pointer; }
+.import-form > div button:disabled, .archive-button:disabled, .file-list button:disabled { opacity: .35; cursor: default; }
 .import-arrow { transform: rotate(180deg); }
 .archive-button { margin-top: 8px; padding: 0; border: 0; background: none; color: #7e837b; display: flex; align-items: center; gap: 7px; font: 500 8.5px/1 var(--mono); cursor: pointer; }
-.archive-button:hover { color: var(--accent); }
+.archive-button:not(:disabled):hover { color: var(--accent); }
 .file-list { flex: 1; min-height: 0; padding: 8px 7px; overflow: auto; }
 .file-list button { position: relative; width: 100%; height: 29px; padding: 0 7px; display: flex; align-items: center; gap: 8px; border: 0; background: transparent; color: #858a82; text-align: left; font: 500 9px/1 var(--mono); cursor: pointer; }
 .file-list button span { overflow: hidden; text-overflow: ellipsis; }
-.file-list button:hover { color: #cdd1ca; background: #171a16; }
+.file-list button:not(:disabled):hover { color: #cdd1ca; background: #171a16; }
 .file-list button.active { color: #edf0e9; background: rgba(217,255,67,.065); }
 .file-list button.active::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; background: var(--accent); }
 .file-list button i { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
@@ -285,6 +287,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .editor-tabs button:disabled { opacity: .35; cursor: default; }
 .editor-tabs button:not(:disabled):hover { color: var(--accent); border-color: #67702d; }
 .code-editor { flex: 1; min-height: 0; width: 100%; resize: none; padding: 26px 29px; border: 0; outline: 0; background: radial-gradient(circle at 90% 0, rgba(217,255,67,.025), transparent 38%), #0d0f0d; color: #cfd3cc; caret-color: var(--accent); font: 500 12px/1.75 var(--mono); tab-size: 2; }
+.code-editor:disabled { cursor: wait; }
 .editor-status { height: 24px; flex: 0 0 auto; padding: 0 12px; display: flex; justify-content: flex-end; align-items: center; gap: 18px; border-top: 1px solid #292c28; color: #686d65; font: 500 7.5px/1 var(--mono); }
 .agent-panel { display: flex; flex-direction: column; border-left: 1px solid #292c28; background: #131512; }
 .agent-heading > div { display: flex; align-items: center; gap: 8px; }

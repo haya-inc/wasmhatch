@@ -469,6 +469,7 @@ and the changed file survives reload.
 - Publish five parallel, revision-pinned newcomer tasks and a claim board — complete
 - Publish an opt-in external-repository adoption registry without third-party telemetry — complete
 - Prepare a source-guided, anti-spam launch and response playbook — complete
+- Automate the revision-pinned task-link to patch-download browser path — complete
 
 Exit condition: an external repository can link to a focused task and a new
 visitor can export a patch in under three minutes.
@@ -505,7 +506,8 @@ the core repository-to-patch flow.
 - Contract tests shared by every `WorkspaceFS` implementation
 - Integration tests for OPFS using real browser contexts
 - Agent-loop fixtures for sequential, parallel, failed, and cancelled tools
-- End-to-end tests for import, edit, reload, command, diff, and export flows
+- End-to-end tests for import, edit, reload, command, diff, and export flows —
+  task context, zip import, edit, save, and patch download complete
 - Security regression tests for traversal, oversized output, malicious names,
   command injection, and secret redaction
 - Browser capability tests for OPFS, persistence, workers, directory picker,

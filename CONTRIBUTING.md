@@ -30,8 +30,14 @@ npm install
 npm run dev
 npm test
 npm run build
+npx playwright install chromium
+npm run test:e2e
 npm audit --audit-level=moderate
 ```
+
+The Playwright browser install is required once per development machine. The
+end-to-end test builds the production app and verifies the task-link-to-patch
+handoff without calling GitHub or a model provider.
 
 The primary development target is current desktop Chromium. Responsive layouts
 must also be checked at a narrow mobile viewport, even when a browser API is not
