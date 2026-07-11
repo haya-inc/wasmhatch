@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createWorkspaceStore,
   formatBytes,
+  inspectBrowserStorage,
   measureWorkspaceUsage,
   normalizeWorkspacePath,
+  requestPersistentStorage,
   type WorkspaceStore
 } from "./workspace";
 
@@ -21,6 +23,7 @@ describe("normalizeWorkspacePath", () => {
 describe("measureWorkspaceUsage", () => {
   it("counts UTF-8 content in the working tree and baseline", async () => {
     const store: WorkspaceStore = {
+      backend: "opfs",
       listFiles: vi.fn().mockResolvedValue(["a.txt", "b.txt"]),
       listBaselineFiles: vi.fn().mockResolvedValue(["a.txt"]),
       readFile: vi.fn().mockImplementation(async (path) => path === "a.txt" ? "hello" : "日本"),
@@ -52,6 +55,7 @@ describe("workspace clearing", () => {
       removeItem
     });
     const store = createWorkspaceStore();
+    expect(store.backend).toBe("local-storage");
     await store.replaceAll([{ path: "README.md", content: "private" }]);
 
     await store.clear();
@@ -59,6 +63,44 @@ describe("workspace clearing", () => {
     await expect(store.listFiles()).resolves.toEqual([]);
     await expect(store.listBaselineFiles()).resolves.toEqual([]);
     expect(removeItem).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("browser storage capabilities", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reports persistence and origin quota when supported", async () => {
+    vi.stubGlobal("navigator", {
+      storage: {
+        persisted: vi.fn().mockResolvedValue(true),
+        persist: vi.fn().mockResolvedValue(true),
+        estimate: vi.fn().mockResolvedValue({ usage: 2048, quota: 8192 })
+      }
+    });
+
+    await expect(inspectBrowserStorage()).resolves.toEqual({
+      persistence: "persistent",
+      persistenceRequestAvailable: true,
+      originUsageBytes: 2048,
+      quotaBytes: 8192
+    });
+    await expect(requestPersistentStorage()).resolves.toBe(true);
+  });
+
+  it("degrades capability reporting without a StorageManager", async () => {
+    vi.stubGlobal("navigator", {});
+    await expect(inspectBrowserStorage()).resolves.toEqual({
+      persistence: "unsupported",
+      persistenceRequestAvailable: false,
+      originUsageBytes: null,
+      quotaBytes: null
+    });
+    await expect(requestPersistentStorage()).resolves.toBeNull();
+  });
+
+  it("selects OPFS only when the directory capability exists", () => {
+    vi.stubGlobal("navigator", { storage: { getDirectory: vi.fn() } });
+    expect(createWorkspaceStore().backend).toBe("opfs");
   });
 });
 

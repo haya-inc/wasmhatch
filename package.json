@@ -1,11 +1,12 @@
 {
   "name": "wasmhatch",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/check-built-security.mjs",
+    "build:pages": "tsc -b && vite build --mode github-pages && node scripts/check-built-security.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -29,8 +29,11 @@ import { normalizeGitHubIssueUrl } from "../lib/share";
 import {
   createWorkspaceStore,
   formatBytes,
+  inspectBrowserStorage,
   measureWorkspaceUsage,
+  requestPersistentStorage,
   sampleWorkspace,
+  type BrowserStorageStatus,
   type WorkspaceFile,
   type WorkspaceStore,
   type WorkspaceUsage
@@ -86,6 +89,8 @@ export function WorkspacePage() {
   const [storageBusy, setStorageBusy] = useState(false);
   const [storageUsage, setStorageUsage] = useState<WorkspaceUsage | null>(null);
   const [modelEgress, setModelEgress] = useState<ModelEgressEvent[]>([]);
+  const [browserStorage, setBrowserStorage] = useState<BrowserStorageStatus | null>(null);
+  const storageBackend = store.current.backend;
 
   const refreshFiles = async (preferredPath?: string) => {
     const nextFiles = await store.current.listFiles();
@@ -107,6 +112,9 @@ export function WorkspacePage() {
 
   useEffect(() => {
     let active = true;
+    void inspectBrowserStorage().then((result) => {
+      if (active) setBrowserStorage(result);
+    });
     initialization.current ??= (async () => {
       let current = await store.current.listFiles();
       if (!current.length) {
@@ -132,7 +140,10 @@ export function WorkspacePage() {
         setDemoAvailable(isSampleFileList(result.files) && !linkedRepository);
       })
       .catch((error) => {
-        if (active) setNotice(error instanceof Error ? error.message : "Workspace failed to load.");
+        if (!active) return;
+        setNotice(error instanceof Error ? error.message : "Workspace failed to load.");
+        setStatus("Storage unavailable");
+        setAnswer("Browser storage could not be initialized. Check site-data permissions or use a supported browser.");
       });
     return () => {
       active = false;
@@ -221,9 +232,33 @@ export function WorkspacePage() {
     setStorageOpen(true);
     setStorageBusy(true);
     try {
-      setStorageUsage(await measureWorkspaceUsage(store.current));
+      const [usage, status] = await Promise.all([
+        measureWorkspaceUsage(store.current),
+        inspectBrowserStorage()
+      ]);
+      setStorageUsage(usage);
+      setBrowserStorage(status);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Storage usage could not be measured.");
+    } finally {
+      setStorageBusy(false);
+    }
+  };
+
+  const requestPersistence = async () => {
+    setStorageBusy(true);
+    try {
+      const granted = await requestPersistentStorage();
+      setBrowserStorage(await inspectBrowserStorage());
+      setNotice(
+        granted === null
+          ? "Persistent storage requests are unavailable in this browser."
+          : granted
+            ? "Persistent browser storage was granted for this origin."
+            : "The browser kept this origin on best-effort storage. Keep an exported copy."
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Persistent storage could not be requested.");
     } finally {
       setStorageBusy(false);
     }
@@ -386,9 +421,13 @@ export function WorkspacePage() {
               </button>
             ))}
           </nav>
-          <div className="storage-note">
-            <span>OPFS</span>
-            <p>Files persist in browser-managed storage. Export anything you cannot afford to lose.</p>
+          <div className={`storage-note${storageBackend === "local-storage" ? " fallback" : ""}`}>
+            <span>{storageBackend === "opfs" ? "OPFS" : "LOCAL"}</span>
+            <p>
+              {storageBackend === "opfs"
+                ? "Files persist in browser-managed storage. Export anything you cannot afford to lose."
+                : "OPFS is unavailable. Using the smaller localStorage fallback; export a copy early."}
+            </p>
             <button onClick={() => void openStorageManager()} disabled={busy} aria-label="Manage browser storage"><HardDrive size={14} /> Manage</button>
           </div>
         </aside>
@@ -501,16 +540,41 @@ export function WorkspacePage() {
               <button onClick={() => setStorageOpen(false)} disabled={storageBusy} aria-label="Close storage manager"><X size={16} /></button>
             </div>
             <p className="storage-dialog-copy">WasmHatch stores both your working files and an import baseline in this browser.</p>
+            <div className={`storage-capabilities${storageBackend === "local-storage" ? " fallback" : ""}`} role="status">
+              <div><span>Backend</span><strong>{storageBackend === "opfs" ? "Origin private file system" : "localStorage fallback"}</strong></div>
+              <div>
+                <span>Durability</span>
+                <strong>
+                  {browserStorage?.persistence === "persistent"
+                    ? "Persistent"
+                    : browserStorage?.persistence === "best-effort"
+                      ? "Best effort"
+                      : "Unavailable"}
+                </strong>
+              </div>
+            </div>
             <dl className="storage-usage" aria-label="Workspace storage usage">
               <div><dt>Working files</dt><dd>{storageUsage ? formatBytes(storageUsage.workingBytes) : "Measuring…"}</dd></div>
               <div><dt>Patch baseline</dt><dd>{storageUsage ? formatBytes(storageUsage.baselineBytes) : "Measuring…"}</dd></div>
               <div><dt>Total content</dt><dd>{storageUsage ? formatBytes(storageUsage.totalBytes) : "Measuring…"}</dd></div>
+              {browserStorage?.originUsageBytes !== null && browserStorage?.originUsageBytes !== undefined && (
+                <div>
+                  <dt>Whole origin</dt>
+                  <dd>
+                    {formatBytes(browserStorage.originUsageBytes)}
+                    {browserStorage.quotaBytes ? ` / ${formatBytes(browserStorage.quotaBytes)}` : ""}
+                  </dd>
+                </div>
+              )}
             </dl>
             <div className="storage-warning">
               <Trash2 size={16} />
               <p>Clearing removes both copies from this browser. This cannot be undone. The built-in sample may appear again on your next visit.</p>
             </div>
             <div className="storage-dialog-actions">
+              {browserStorage?.persistenceRequestAvailable && browserStorage.persistence !== "persistent" && (
+                <button className="persist-storage" onClick={() => void requestPersistence()} disabled={storageBusy}><ShieldCheck size={15} /> Request persistence</button>
+              )}
               <button className="export-clear" onClick={() => void clearWorkspace(true)} disabled={storageBusy || files.length === 0}><Download size={15} /> Export zip &amp; clear</button>
               <button className="clear-only" onClick={() => void clearWorkspace(false)} disabled={storageBusy || files.length === 0}><Trash2 size={15} /> Clear without export</button>
               <button onClick={() => setStorageOpen(false)} disabled={storageBusy}>Cancel</button>

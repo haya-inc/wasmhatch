@@ -18,6 +18,7 @@ describe("buildWorkspacePatch", () => {
       return value;
     };
     const store: WorkspaceStore = {
+      backend: "opfs",
       listFiles: vi.fn().mockResolvedValue([...current.keys()]),
       listBaselineFiles: vi.fn().mockResolvedValue([...baseline.keys()]),
       readFile: (path) => read(current, path),

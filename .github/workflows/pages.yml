@@ -25,7 +25,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build -- --mode github-pages
+      - run: npm run build:pages
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

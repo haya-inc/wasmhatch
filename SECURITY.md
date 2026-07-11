@@ -34,6 +34,11 @@ security fixes.
   and proposal tools. This path-based control can have false negatives and does
   not replace user review or content-level secret scanning.
 - The workspace displays a per-run ledger for user data attached to model requests.
+- The production HTML applies a default-deny meta CSP and restricts network
+  connections to the GitHub and Anthropic endpoints used by the application.
+- GitHub Pages supplies HTTPS/HSTS but does not allow this project to configure
+  response headers. Meta CSP cannot enforce header-only directives such as
+  `frame-ancestors`; this remains a documented hosting limitation.
 - OPFS data can be deleted when users clear site data.
 - Imported text files are untrusted input.
 - Browser command execution is not yet enabled.

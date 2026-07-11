@@ -254,6 +254,7 @@ button { color: inherit; }
 .file-list button i { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 .storage-note { padding: 12px; display: grid; grid-template-columns: auto 1fr; gap: 7px 9px; border-top: 1px solid #292c28; }
 .storage-note span { flex: 0 0 auto; height: 18px; padding: 0 5px; display: grid; place-items: center; border: 1px solid #3a3e38; color: var(--accent); font: 700 7px/1 var(--mono); }
+.storage-note.fallback span { border-color: #604a3a; color: #d0a276; }
 .storage-note p { margin: 0; color: #666b63; font: 500 7.5px/1.45 var(--mono); }
 .storage-note button { grid-column: 2; width: max-content; padding: 0; display: flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #8d928a; font: 600 8px/1 var(--mono); cursor: pointer; }
 .storage-note button:hover { color: var(--accent); }.storage-note button:disabled { opacity: .4; cursor: default; }
@@ -325,6 +326,10 @@ button { color: inherit; }
 .storage-dialog-heading h2 { margin: 0; color: #e0e4dc; font: 700 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; }
 .storage-dialog-heading button { border: 0; background: transparent; color: #757a72; cursor: pointer; }
 .storage-dialog-copy { margin: 0; padding: 17px 17px 12px; color: #969b93; font-size: 11px; line-height: 1.55; }
+.storage-capabilities { margin: 0 17px 13px; display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #30342f; }
+.storage-capabilities > div { min-height: 48px; padding: 9px 10px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }.storage-capabilities > div + div { border-left: 1px solid #30342f; }
+.storage-capabilities span { color: #656a62; font: 600 7px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; }.storage-capabilities strong { color: #b8bdb5; font: 600 8px/1 var(--mono); }
+.storage-capabilities.fallback strong { color: #d0a276; }
 .storage-usage { margin: 0 17px; border-top: 1px solid #30342f; }
 .storage-usage > div { min-height: 38px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #292d28; font: 600 8.5px/1 var(--mono); }
 .storage-usage dt { color: #777c74; }.storage-usage dd { margin: 0; color: #d8dcd4; }
@@ -334,6 +339,7 @@ button { color: inherit; }
 .storage-dialog-actions { padding: 16px 17px 17px; display: flex; flex-wrap: wrap; gap: 7px; }
 .storage-dialog-actions button { height: 34px; padding: 0 11px; display: flex; align-items: center; gap: 6px; border: 1px solid #383d36; background: transparent; color: #999e96; font: 700 8px/1 var(--mono); cursor: pointer; }
 .storage-dialog-actions button.export-clear { border: 0; background: var(--accent); color: var(--ink); }
+.storage-dialog-actions button.persist-storage { border-color: #596326; color: var(--accent); }
 .storage-dialog-actions button.clear-only { border-color: #604a3a; color: #d0a276; }
 .storage-dialog-actions button:last-child { margin-left: auto; }.storage-dialog-actions button:disabled { opacity: .4; cursor: default; }
 

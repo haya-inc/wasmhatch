@@ -24,6 +24,7 @@ immediately.
 - Public GitHub repositories and zip archives can be imported.
 - Text files can be edited and exported as a standard unified patch or zip.
 - Browser storage usage is visible and can be cleared with an export-first option.
+- The active storage backend, durability, origin quota, and persistence request are visible.
 - Claude can list and read files through explicit tools.
 - Agent writes are staged until the user approves a visible diff.
 - Common credential paths are denied to the agent and model-bound reads are logged.
@@ -116,10 +117,12 @@ expose file deletion.
 | Manual editing and persistence | Available |
 | Persistent import baseline and unified patch export | Available |
 | Storage usage, workspace clearing, and export-before-delete | Available |
+| OPFS fallback and browser durability diagnostics | Available |
 | Review-before-write agent proposals | Available |
 | Anthropic Messages API tool loop | Alpha, BYOK |
 | Validated, cancellable, single-proposal agent runs | Available |
 | Protected credential paths and visible model-egress ledger | Available |
+| Strict production meta CSP and build-time policy verification | Available |
 | Share URL and badge builder | Available |
 | Shareable `repo`, `ref`, `task`, and GitHub `issue` context | Available |
 | Revision-pinned real task examples | Available |
@@ -145,6 +148,10 @@ Local-first does not mean secret or offline.
 - The workspace ledger shows task text, file lists, and file reads attached to
   model requests, including their byte sizes. It does not include the static
   system prompt or API key; the key is sent only as the provider authorization header.
+- The production meta CSP denies all sources by default and allowlists only this
+  origin, GitHub API/raw content, and Anthropic API connections. GitHub Pages
+  does not support project-defined response headers, so header-only controls
+  such as `frame-ancestors` are not claimed by the current deployment.
 - The Anthropic key is not persisted. A browser application cannot turn an API
   key into a perfectly isolated secret, so use a dedicated key with a spending
   limit and revoke it after testing.

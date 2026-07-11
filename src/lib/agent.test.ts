@@ -11,6 +11,7 @@ function apiResponse(content: unknown[]) {
 
 function createWorkspace(overrides: Partial<WorkspaceStore> = {}): WorkspaceStore {
   return {
+    backend: "opfs",
     listFiles: vi.fn().mockResolvedValue(["src/a.ts"]),
     listBaselineFiles: vi.fn().mockResolvedValue(["src/a.ts"]),
     readFile: vi.fn().mockResolvedValue("export const a = 1;\n"),

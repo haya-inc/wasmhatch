@@ -3,7 +3,10 @@ export interface WorkspaceFile {
   content: string;
 }
 
+export type WorkspaceBackend = "opfs" | "local-storage";
+
 export interface WorkspaceStore {
+  readonly backend: WorkspaceBackend;
   listFiles(): Promise<string[]>;
   listBaselineFiles(): Promise<string[]>;
   readFile(path: string): Promise<string>;
@@ -12,6 +15,13 @@ export interface WorkspaceStore {
   replaceBaseline(files: WorkspaceFile[]): Promise<void>;
   replaceAll(files: WorkspaceFile[]): Promise<void>;
   clear(): Promise<void>;
+}
+
+export interface BrowserStorageStatus {
+  persistence: "persistent" | "best-effort" | "unsupported";
+  persistenceRequestAvailable: boolean;
+  originUsageBytes: number | null;
+  quotaBytes: number | null;
 }
 
 export interface WorkspaceUsage {
@@ -39,6 +49,8 @@ export function normalizeWorkspacePath(input: string): string {
 }
 
 class LocalStorageWorkspace implements WorkspaceStore {
+  readonly backend = "local-storage" as const;
+
   private load(key = FALLBACK_KEY): Record<string, string> {
     const saved = localStorage.getItem(key);
     return saved ? (JSON.parse(saved) as Record<string, string>) : {};
@@ -94,6 +106,8 @@ class LocalStorageWorkspace implements WorkspaceStore {
 }
 
 class OpfsWorkspace implements WorkspaceStore {
+  readonly backend = "opfs" as const;
+
   private async root(name = "wasmhatch-workspace") {
     const originRoot = await navigator.storage.getDirectory();
     return originRoot.getDirectoryHandle(name, { create: true });
@@ -188,6 +202,44 @@ export function createWorkspaceStore(): WorkspaceStore {
   return "storage" in navigator && "getDirectory" in navigator.storage
     ? new OpfsWorkspace()
     : new LocalStorageWorkspace();
+}
+
+export async function inspectBrowserStorage(): Promise<BrowserStorageStatus> {
+  const storage = "storage" in navigator ? navigator.storage : undefined;
+  if (!storage) {
+    return {
+      persistence: "unsupported",
+      persistenceRequestAvailable: false,
+      originUsageBytes: null,
+      quotaBytes: null
+    };
+  }
+
+  const persistenceRequestAvailable = typeof storage.persist === "function";
+  let persistence: BrowserStorageStatus["persistence"] = "unsupported";
+  if (typeof storage.persisted === "function") {
+    try {
+      persistence = await storage.persisted() ? "persistent" : "best-effort";
+    } catch { /* Capability reporting must not prevent workspace use. */ }
+  }
+
+  let originUsageBytes: number | null = null;
+  let quotaBytes: number | null = null;
+  if (typeof storage.estimate === "function") {
+    try {
+      const estimate = await storage.estimate();
+      originUsageBytes = estimate.usage ?? null;
+      quotaBytes = estimate.quota ?? null;
+    } catch { /* Quota estimates are optional browser metadata. */ }
+  }
+
+  return { persistence, persistenceRequestAvailable, originUsageBytes, quotaBytes };
+}
+
+export async function requestPersistentStorage(): Promise<boolean | null> {
+  const storage = "storage" in navigator ? navigator.storage : undefined;
+  if (!storage || typeof storage.persist !== "function") return null;
+  return storage.persist();
 }
 
 export async function measureWorkspaceUsage(store: WorkspaceStore): Promise<WorkspaceUsage> {
