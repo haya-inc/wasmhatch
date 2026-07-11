@@ -473,7 +473,7 @@ visitor can export a patch in under three minutes.
 ### Milestone 3: Alpha hardening
 
 - Add CSP and production hosting headers
-- Add workspace deletion, storage usage, and export-before-delete flows
+- Add workspace deletion, storage usage, and export-before-delete flows — complete
 - Add archive fuzzing, accessibility tests, and browser capability tests
 - Add conversation compaction, file-range reads, and cost limits
 - Add agent-run cancellation — complete

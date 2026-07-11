@@ -11,6 +11,13 @@ export interface WorkspaceStore {
   writeFile(path: string, content: string): Promise<void>;
   replaceBaseline(files: WorkspaceFile[]): Promise<void>;
   replaceAll(files: WorkspaceFile[]): Promise<void>;
+  clear(): Promise<void>;
+}
+
+export interface WorkspaceUsage {
+  workingBytes: number;
+  baselineBytes: number;
+  totalBytes: number;
 }
 
 const FALLBACK_KEY = "wasmhatch-workspace-v1";
@@ -78,6 +85,11 @@ class LocalStorageWorkspace implements WorkspaceStore {
   async replaceBaseline(files: WorkspaceFile[]) {
     const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
     this.save(next, FALLBACK_BASELINE_KEY);
+  }
+
+  async clear() {
+    localStorage.removeItem(FALLBACK_KEY);
+    localStorage.removeItem(FALLBACK_BASELINE_KEY);
   }
 }
 
@@ -162,12 +174,49 @@ class OpfsWorkspace implements WorkspaceStore {
       await this.writeToRoot(file.path, file.content, "wasmhatch-baseline");
     }
   }
+
+  async clear() {
+    const originRoot = await navigator.storage.getDirectory();
+    // Remove the baseline first so a partial failure cannot leave an old baseline
+    // paired with a newly seeded working tree on the next visit.
+    await originRoot.removeEntry("wasmhatch-baseline", { recursive: true });
+    await originRoot.removeEntry("wasmhatch-workspace", { recursive: true });
+  }
 }
 
 export function createWorkspaceStore(): WorkspaceStore {
   return "storage" in navigator && "getDirectory" in navigator.storage
     ? new OpfsWorkspace()
     : new LocalStorageWorkspace();
+}
+
+export async function measureWorkspaceUsage(store: WorkspaceStore): Promise<WorkspaceUsage> {
+  const encoder = new TextEncoder();
+  const measure = async (paths: string[], read: (path: string) => Promise<string>) => {
+    const sizes = await Promise.all(paths.map(async (path) => encoder.encode(await read(path)).byteLength));
+    return sizes.reduce((total, size) => total + size, 0);
+  };
+  const [workingPaths, baselinePaths] = await Promise.all([
+    store.listFiles(),
+    store.listBaselineFiles()
+  ]);
+  const [workingBytes, baselineBytes] = await Promise.all([
+    measure(workingPaths, (path) => store.readFile(path)),
+    measure(baselinePaths, (path) => store.readBaselineFile(path))
+  ]);
+  return { workingBytes, baselineBytes, totalBytes: workingBytes + baselineBytes };
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB"];
+  let value = bytes / 1024;
+  let unit = units[0];
+  for (let index = 1; value >= 1024 && index < units.length; index += 1) {
+    value /= 1024;
+    unit = units[index];
+  }
+  return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${unit}`;
 }
 
 export const sampleWorkspace: WorkspaceFile[] = [

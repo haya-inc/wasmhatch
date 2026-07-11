@@ -18,6 +18,7 @@ function createWorkspace(overrides: Partial<WorkspaceStore> = {}): WorkspaceStor
     writeFile: vi.fn(),
     replaceBaseline: vi.fn(),
     replaceAll: vi.fn(),
+    clear: vi.fn(),
     ...overrides
   };
 }

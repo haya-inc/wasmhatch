@@ -24,7 +24,8 @@ describe("buildWorkspacePatch", () => {
       readBaselineFile: (path) => read(baseline, path),
       writeFile: vi.fn(),
       replaceBaseline: vi.fn(),
-      replaceAll: vi.fn()
+      replaceAll: vi.fn(),
+      clear: vi.fn()
     };
 
     const result = await buildWorkspacePatch(store);

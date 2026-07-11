@@ -23,6 +23,7 @@ immediately.
 - Project files use browser-managed storage (OPFS where supported).
 - Public GitHub repositories and zip archives can be imported.
 - Text files can be edited and exported as a standard unified patch or zip.
+- Browser storage usage is visible and can be cleared with an export-first option.
 - Claude can list and read files through explicit tools.
 - Agent writes are staged until the user approves a visible diff.
 - A no-key local demo exercises the complete review flow.
@@ -113,6 +114,7 @@ expose file deletion.
 | Zip import and export | Available |
 | Manual editing and persistence | Available |
 | Persistent import baseline and unified patch export | Available |
+| Storage usage, workspace clearing, and export-before-delete | Available |
 | Review-before-write agent proposals | Available |
 | Anthropic Messages API tool loop | Alpha, BYOK |
 | Validated, cancellable, single-proposal agent runs | Available |
@@ -130,6 +132,9 @@ Local-first does not mean secret or offline.
 
 - Workspace files remain in browser-managed storage until an explicit import,
   export, or model tool result sends data elsewhere.
+- **Manage browser storage** reports the working tree and baseline separately.
+  Clearing removes both; **Export zip & clear** includes an unsaved current edit
+  before removing the stored copies.
 - The model receives only tool-requested file content, but that content does
   leave the device and is governed by the selected provider's terms.
 - The Anthropic key is not persisted. A browser application cannot turn an API

@@ -10,11 +10,13 @@ import {
   FileText,
   FolderGit2,
   GitFork,
+  HardDrive,
   KeyRound,
   LoaderCircle,
   Play,
   Save,
   Sparkles,
+  Trash2,
   Upload,
   X
 } from "lucide-react";
@@ -25,9 +27,12 @@ import { buildWorkspacePatch } from "../lib/patch";
 import { normalizeGitHubIssueUrl } from "../lib/share";
 import {
   createWorkspaceStore,
+  formatBytes,
+  measureWorkspaceUsage,
   sampleWorkspace,
   type WorkspaceFile,
-  type WorkspaceStore
+  type WorkspaceStore,
+  type WorkspaceUsage
 } from "../lib/workspace";
 
 const demoTask = "Make greet handle an empty or whitespace-only name by greeting ‘friend’. Keep the change small.";
@@ -76,6 +81,9 @@ export function WorkspacePage() {
   const [notice, setNotice] = useState("");
   const [patchExported, setPatchExported] = useState(false);
   const [demoAvailable, setDemoAvailable] = useState(!linkedRepository);
+  const [storageOpen, setStorageOpen] = useState(false);
+  const [storageBusy, setStorageBusy] = useState(false);
+  const [storageUsage, setStorageUsage] = useState<WorkspaceUsage | null>(null);
 
   const refreshFiles = async (preferredPath?: string) => {
     const nextFiles = await store.current.listFiles();
@@ -190,7 +198,12 @@ export function WorkspacePage() {
 
   const exportWorkspace = async () => {
     const workspaceFiles: WorkspaceFile[] = await Promise.all(
-      files.map(async (path) => ({ path, content: await store.current.readFile(path) }))
+      files.map(async (path) => ({
+        path,
+        content: path === selectedPath && editor !== savedEditor
+          ? editor
+          : await store.current.readFile(path)
+      }))
     );
     const zip = createZipArchive(workspaceFiles);
     const blob = new Blob([zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength) as ArrayBuffer], {
@@ -198,6 +211,47 @@ export function WorkspacePage() {
     });
     download(blob, "wasmhatch-workspace.zip");
     setNotice("Workspace exported as a zip archive.");
+  };
+
+  const openStorageManager = async () => {
+    setStorageOpen(true);
+    setStorageBusy(true);
+    try {
+      setStorageUsage(await measureWorkspaceUsage(store.current));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Storage usage could not be measured.");
+    } finally {
+      setStorageBusy(false);
+    }
+  };
+
+  const clearWorkspace = async (exportFirst: boolean) => {
+    setStorageBusy(true);
+    try {
+      if (exportFirst) await exportWorkspace();
+      await store.current.clear();
+      setFiles([]);
+      setSelectedPath("");
+      setEditor("");
+      setSavedEditor("");
+      setProposal(null);
+      setProposalBefore("");
+      setPatchExported(false);
+      setDemoAvailable(false);
+      setStorageUsage(null);
+      setStorageOpen(false);
+      setAnswer("Workspace cleared. Import a repository or zip archive to continue.");
+      setStatus("Workspace empty");
+      setNotice(
+        exportFirst
+          ? "Workspace exported, then project files and baseline were cleared."
+          : "Project files and baseline were cleared from browser storage."
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Workspace could not be cleared.");
+    } finally {
+      setStorageBusy(false);
+    }
   };
 
   const exportPatch = async () => {
@@ -300,7 +354,7 @@ export function WorkspacePage() {
     <main className="workspace-app">
       <header className="workspace-header">
         <a href={import.meta.env.BASE_URL} className="workspace-brand"><span>WH</span><strong>WasmHatch</strong></a>
-        <div className="workspace-title"><FolderGit2 size={15} /> browser-workspace <ChevronRight size={13} /> <b>{selectedPath || "loading"}</b></div>
+        <div className="workspace-title"><FolderGit2 size={15} /> browser-workspace <ChevronRight size={13} /> <b>{selectedPath || "empty"}</b></div>
         <div className="workspace-state"><i /> {status}</div>
         <button className="icon-label-button" onClick={() => void exportPatch()}><FileDiff size={15} /> Patch</button>
         <button className="icon-label-button" onClick={() => void exportWorkspace()}><Download size={15} /> Zip</button>
@@ -325,7 +379,11 @@ export function WorkspacePage() {
               </button>
             ))}
           </nav>
-          <div className="storage-note"><span>OPFS</span><p>Files persist in browser-managed storage. Export anything you cannot afford to lose.</p></div>
+          <div className="storage-note">
+            <span>OPFS</span>
+            <p>Files persist in browser-managed storage. Export anything you cannot afford to lose.</p>
+            <button onClick={() => void openStorageManager()} disabled={busy} aria-label="Manage browser storage"><HardDrive size={14} /> Manage</button>
+          </div>
         </aside>
 
         <section className="editor-panel" aria-label="File editor">
@@ -399,6 +457,32 @@ export function WorkspacePage() {
           </div>
         </aside>
       </div>
+
+      {storageOpen && (
+        <div className="storage-dialog-backdrop">
+          <section className="storage-dialog" role="dialog" aria-modal="true" aria-labelledby="storage-dialog-title">
+            <div className="storage-dialog-heading">
+              <div><HardDrive size={17} /><h2 id="storage-dialog-title">Browser storage</h2></div>
+              <button onClick={() => setStorageOpen(false)} disabled={storageBusy} aria-label="Close storage manager"><X size={16} /></button>
+            </div>
+            <p className="storage-dialog-copy">WasmHatch stores both your working files and an import baseline in this browser.</p>
+            <dl className="storage-usage" aria-label="Workspace storage usage">
+              <div><dt>Working files</dt><dd>{storageUsage ? formatBytes(storageUsage.workingBytes) : "Measuring…"}</dd></div>
+              <div><dt>Patch baseline</dt><dd>{storageUsage ? formatBytes(storageUsage.baselineBytes) : "Measuring…"}</dd></div>
+              <div><dt>Total content</dt><dd>{storageUsage ? formatBytes(storageUsage.totalBytes) : "Measuring…"}</dd></div>
+            </dl>
+            <div className="storage-warning">
+              <Trash2 size={16} />
+              <p>Clearing removes both copies from this browser. This cannot be undone. The built-in sample may appear again on your next visit.</p>
+            </div>
+            <div className="storage-dialog-actions">
+              <button className="export-clear" onClick={() => void clearWorkspace(true)} disabled={storageBusy || files.length === 0}><Download size={15} /> Export zip &amp; clear</button>
+              <button className="clear-only" onClick={() => void clearWorkspace(false)} disabled={storageBusy || files.length === 0}><Trash2 size={15} /> Clear without export</button>
+              <button onClick={() => setStorageOpen(false)} disabled={storageBusy}>Cancel</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {notice && <div className="toast" role="status"><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss"><X size={15} /></button></div>}
     </main>
