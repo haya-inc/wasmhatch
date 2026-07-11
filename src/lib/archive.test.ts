@@ -69,6 +69,18 @@ describe("archive utilities", () => {
     expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch.git")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
     expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch.git/")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
     expect(parseGitHubRepository("haya-inc/wasmhatch.git/")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
+    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch?tab=readme-ov-file")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
+    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch#readme")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
+    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch.git/?tab=readme-ov-file#readme")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
+  });
+
+  it("rejects unsupported GitHub repository references with URL suffixes", () => {
+    expect(() => parseGitHubRepository("https://example.com/haya-inc/wasmhatch?tab=readme")).toThrow(
+      "Use owner/repository or a GitHub repository URL."
+    );
+    expect(() => parseGitHubRepository("https://github.com/haya-inc/wasmhatch/issues?state=open#top")).toThrow(
+      "Use owner/repository or a GitHub repository URL."
+    );
   });
 
   it("filters common binary repository files", () => {
