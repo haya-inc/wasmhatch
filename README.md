@@ -79,6 +79,13 @@ Each task is sized for one reviewable patch and opens with the repository,
 revision, and task already filled in. These are real repositories rather than
 tutorial fixtures.
 
+## Pick a contribution
+
+The project page has a [contributor opportunity board](https://haya-inc.github.io/wasmhatch/#contribute)
+with five independent, revision-pinned `good first issue` lanes. Read and claim
+an issue before editing, then open the task directly in WasmHatch. Current lanes
+cover parsing, security UX, editor UX, import provenance, and accessibility.
+
 ## Where WasmHatch fits
 
 WasmHatch is the runtime-free path for a small public issue that can be reviewed

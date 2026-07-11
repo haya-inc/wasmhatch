@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { createBadgeMarkdown, createWorkspaceShareUrl } from "../lib/share";
 import { exampleTasks, getExampleIssueNumber } from "../data/examples";
+import { contributionTasks } from "../data/contributions";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 const landscapeUrl = `${repositoryUrl}/blob/main/docs/landscape.md`;
@@ -62,6 +63,7 @@ export function LandingPage() {
         <nav aria-label="Primary navigation">
           <a href="#how">How it works</a>
           <a href="#examples">Examples</a>
+          <a href="#contribute">Contribute</a>
           <a href="#trust">Trust model</a>
           <a href={repositoryUrl}>GitHub</a>
         </nav>
@@ -243,6 +245,48 @@ export function LandingPage() {
                   <a href={url} aria-label={`Open ${example.title} in WasmHatch`}>
                     Open task <ArrowRight size={17} />
                   </a>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="contribute-section" id="contribute" aria-labelledby="contribute-title">
+        <div className="section-label">Five contribution lanes</div>
+        <div className="contribute-heading">
+          <h2 id="contribute-title">Pick one.<br />Claim it. Ship it.</h2>
+          <div>
+            <p>
+              Each task is pinned, independently scoped, and sized for one pull request.
+              Comment <strong>I’m working on this</strong> on GitHub before editing; if it is claimed, choose another lane.
+            </p>
+            <a href={`${repositoryUrl}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`}>
+              View all open starter issues <ArrowRight size={16} />
+            </a>
+          </div>
+        </div>
+        <div className="contribution-list" aria-label="WasmHatch contribution tasks">
+          {contributionTasks.map((contribution) => {
+            const issueUrl = `${repositoryUrl}/issues/${contribution.issueNumber}`;
+            const taskUrl = createWorkspaceShareUrl(
+              absoluteHomeUrl,
+              contribution.repository,
+              contribution.task,
+              contribution.ref,
+              issueUrl
+            );
+            return (
+              <article key={contribution.issueNumber}>
+                <span className="contribution-issue">#{contribution.issueNumber}</span>
+                <div>
+                  <small>{contribution.scope}</small>
+                  <h3>{contribution.title}</h3>
+                </div>
+                <p>{contribution.description}</p>
+                <div className="contribution-actions">
+                  <a href={issueUrl}>Read &amp; claim</a>
+                  <a className="contribution-open" href={taskUrl}>Open task <ArrowRight size={15} /></a>
                 </div>
               </article>
             );

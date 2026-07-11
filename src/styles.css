@@ -164,6 +164,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .example-actions a { height: 42px; padding: 0 14px; display: inline-flex; align-items: center; gap: 12px; border: 1px solid rgba(10,11,10,.45); font: 800 9px/1 var(--mono); transition: background 180ms ease, color 180ms ease; white-space: nowrap; }
 .example-actions a:hover { background: var(--ink); color: var(--accent); }
 
+.contribute-section { padding: 125px 5vw 140px; background: #e9ece5; color: var(--ink); }
+.contribute-section .section-label { color: #747a6f; }
+.contribute-heading { display: grid; grid-template-columns: 1fr .65fr; gap: 8vw; align-items: end; margin: 30px 0 80px; }
+.contribute-heading h2 { margin: 0; font-size: clamp(58px, 7.8vw, 122px); line-height: .86; letter-spacing: -.075em; }
+.contribute-heading p { max-width: 520px; margin: 0 0 25px; color: #62685f; font-size: 17px; line-height: 1.6; }.contribute-heading p strong { color: var(--ink); }
+.contribute-heading a { display: inline-flex; align-items: center; gap: 9px; color: #637500; font: 700 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.contribution-list { border-top: 1px solid rgba(10,11,10,.25); }
+.contribution-list article { min-height: 112px; display: grid; grid-template-columns: 62px .9fr 1.1fr auto; gap: 22px; align-items: center; border-bottom: 1px solid rgba(10,11,10,.25); }
+.contribution-issue { color: #738500; font: 800 12px/1 var(--mono); }
+.contribution-list small { color: #72786e; font: 700 8px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+.contribution-list h3 { margin: 8px 0 0; font-size: 21px; letter-spacing: -.035em; }.contribution-list > article > p { margin: 0; color: #62685f; font-size: 13px; line-height: 1.45; }
+.contribution-actions { display: flex; gap: 7px; }.contribution-actions a { height: 40px; padding: 0 12px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(10,11,10,.35); font: 800 8px/1 var(--mono); white-space: nowrap; }
+.contribution-actions a:hover { background: var(--ink); color: var(--accent); }.contribution-actions a.contribution-open { border-color: var(--ink); background: var(--ink); color: var(--accent); }
+
 .share-section { padding: 125px 5vw 140px; background: #0d0f0d; color: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .share-intro { display: grid; grid-template-columns: 1fr .65fr; gap: 8vw; align-items: end; margin: 30px 0 80px; }
 .share-intro h2 { margin: 0; font-size: clamp(58px, 7.8vw, 122px); line-height: .86; letter-spacing: -.075em; }
@@ -350,6 +364,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 @media (max-width: 1050px) {
   .site-header { grid-template-columns: 1fr auto; }.site-header nav { display: none; }
   .hero { grid-template-columns: 1fr; padding-top: 118px; }.hero-copy { padding: 0; }.hero h1 { font-size: clamp(80px, 16vw, 150px); }.hero-product { width: 92%; justify-self: end; }.hero-foot { display: none; }
+  .contribution-list article { grid-template-columns: 55px .8fr 1.2fr; padding: 18px 0; }.contribution-actions { grid-column: 2 / 4; }
   .workspace-layout { grid-template-columns: 190px 1fr 340px; }.workspace-header { grid-template-columns: 190px 1fr auto auto auto; }.workspace-state { display: none; }
 }
 
@@ -359,6 +374,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   .workflow, .proof, .trust { padding: 85px 20px; }.workflow-heading { grid-template-columns: 1fr; gap: 28px; padding-bottom: 50px; }.workflow h2, .proof h2 { font-size: 16vw; }.workflow-heading p { font-size: 15px; }.workflow-sequence { grid-template-columns: 1fr; }.workflow-sequence article, .workflow-sequence article + article { min-height: auto; padding: 34px 0 40px; border-right: 0; border-bottom: 1px solid rgba(10,11,10,.2); }.workflow-sequence h3 { margin-top: 45px; }
   .fit-section { padding: 85px 20px; }.fit-heading { grid-template-columns: 1fr; gap: 28px; margin-bottom: 55px; }.fit-heading h2 { font-size: 16vw; }.fit-heading p { font-size: 15px; }.fit-list article { grid-template-columns: 42px 1fr; gap: 12px 10px; padding: 22px 0; }.fit-list h3, .fit-list p, .fit-list small { grid-column: 2; }.fit-list small { justify-self: start; text-align: left; }
   .examples-section { padding: 85px 20px; }.examples-heading { grid-template-columns: 1fr; gap: 28px; margin-bottom: 55px; }.examples-heading h2 { font-size: 16vw; }.examples-heading p { font-size: 15px; }.example-list article { grid-template-columns: 42px 1fr; gap: 18px 10px; padding: 24px 0; }.example-repo, .example-copy, .example-actions { grid-column: 2; }.example-actions { flex-wrap: wrap; }.example-copy h3 { font-size: 20px; }
+  .contribute-section { padding: 85px 20px; }.contribute-heading { grid-template-columns: 1fr; gap: 28px; margin-bottom: 55px; }.contribute-heading h2 { font-size: 16vw; }.contribute-heading p { font-size: 15px; }.contribution-list article { grid-template-columns: 42px 1fr; gap: 14px 10px; padding: 25px 0; }.contribution-list > article > p, .contribution-actions { grid-column: 2; }.contribution-actions { flex-wrap: wrap; }
   .share-section { padding: 85px 20px; }.share-intro { grid-template-columns: 1fr; gap: 28px; margin-bottom: 55px; }.share-intro h2 { font-size: 16vw; }.share-intro p { font-size: 15px; }.share-builder { grid-template-columns: 1fr; }.share-builder > label, .share-builder > label + label { min-height: 130px; padding: 24px 0; border-left: 0; }.share-output > div { flex-direction: column; align-items: stretch; }.share-output button, .share-output a { width: 100%; }.badge-preview { align-items: flex-start; flex-direction: column; gap: 18px; }
   .proof { grid-template-columns: 1fr; gap: 40px; }.proof-sticky { position: static; }.proof-log > div { min-height: 82px; grid-template-columns: 65px 1fr; }.proof-log p { font-size: 11px; }
   .trust h2 { margin-bottom: 55px; font-size: 20vw; }.trust-lines > div { min-height: 80px; grid-template-columns: 1fr auto; gap: 8px; }.trust-lines strong { grid-row: 2; font-size: 16px; }.trust-lines em { grid-column: 2; grid-row: 1 / 3; }.trust-note { margin-top: 30px; }

@@ -2,6 +2,19 @@
 
 Thanks for helping remove setup friction from open-source contribution.
 
+## Pick and claim a starter task
+
+The project page publishes a [contribution board](https://haya-inc.github.io/wasmhatch/#contribute)
+with revision-pinned `good first issue` tasks. Before editing:
+
+1. Open the GitHub issue and read its acceptance criteria.
+2. Comment **I’m working on this** to claim the lane.
+3. If another contributor already claimed it, choose another open lane.
+4. Use **Open task** to start from the pinned source, then export a patch for
+   local checks and your pull request.
+
+Claims with no update for seven days may be released so another contributor can continue.
+
 ## Before opening a pull request
 
 1. Open or find an issue for non-trivial changes.

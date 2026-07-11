@@ -167,15 +167,15 @@ bridge asynchronous browser APIs such as OPFS and `fetch` to the Wasm core.
 
 | Data | Storage | Notes |
 | --- | --- | --- |
-| Project files | OPFS | Canonical workspace for the initial release |
-| Workspace metadata | IndexedDB | Names, timestamps, indexes, permissions |
-| Conversation state | IndexedDB | Must not contain the API key |
-| UI preferences | `localStorage` | Theme and small non-sensitive values only |
+| Project files | OPFS; `localStorage` fallback | Canonical working tree and baseline |
+| Workspace metadata | Active workspace backend | Separate IndexedDB indexes are not implemented |
+| Conversation state | Memory only | Compacted during a run; never contains the API key |
+| UI preferences | Not persisted | Theme and preference persistence remain optional |
 | API key | Memory only | Cleared on reload/tab close |
 | Local directory handle | IndexedDB | Optional; permission must be rechecked |
 
-`localStorage` is not suitable for project files because it is synchronous,
-string-only, and small. OPFS supports directories, binary files, asynchronous
+`localStorage` is only a compatibility fallback for small projects because it
+is synchronous, string-only, and small. OPFS supports directories, binary files, asynchronous
 access, and fast synchronous file access from dedicated workers.
 
 ### 6.2 Workspace layout
@@ -466,6 +466,7 @@ and the changed file survives reload.
 - Publish a source-backed product landscape and adoption decision guide — complete
 - Land the first external contribution through issue #1 and PR #2 — complete
 - Replace the completed task with revision-pinned `good first issue` #4 — complete
+- Publish five parallel, revision-pinned newcomer tasks and a claim board — complete
 
 Exit condition: an external repository can link to a focused task and a new
 visitor can export a patch in under three minutes.
@@ -520,8 +521,8 @@ the core repository-to-patch flow.
 | Initial provider | Anthropic |
 | API-key persistence | None; memory only |
 | Canonical workspace | OPFS |
-| Workspace metadata | IndexedDB |
-| `localStorage` usage | Small non-sensitive UI settings only |
+| Workspace metadata | Stored with the active workspace backend |
+| `localStorage` usage | Full workspace fallback when OPFS is unavailable |
 | Local folder access | Optional File System Access adapter |
 | Agent implementation | Messages API client-tool loop |
 | Initial frontend | React, TypeScript, Vite, plain CSS |
@@ -545,7 +546,6 @@ the core repository-to-patch flow.
 
 - How should model availability be discovered without hard-coding a single
   default forever?
-- How should token and cost estimates be presented before and during a run?
 - Which write operations can eventually be auto-approved safely?
 - How should WebContainer-generated changes be synchronized efficiently after
   the initial snapshot-based implementation?
