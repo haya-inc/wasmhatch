@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import {
   ArrowLeft,
+  Bot,
   Check,
   Database,
+  KeyRound,
   Play,
   RefreshCw,
   ShieldCheck,
@@ -11,6 +13,11 @@ import {
   UploadCloud
 } from "lucide-react";
 import { runBusinessScriptInWorker } from "../lib/browser-script-runner";
+import {
+  DEFAULT_PLANNER_MODEL,
+  OpenAIPlanner,
+  type SpreadsheetPlan
+} from "../lib/business-planner";
 import {
   diffSpreadsheetRows,
   GoogleSheetsConnector,
@@ -63,6 +70,10 @@ export function OperatorPage() {
   const [previewRows, setPreviewRows] = useState<SpreadsheetRows | null>(null);
   const [task, setTask] = useState("Normalize names and regions, convert amounts to numbers, and standardize stages.");
   const [script, setScript] = useState(DEFAULT_SCRIPT);
+  const [plan, setPlan] = useState<SpreadsheetPlan | null>(null);
+  const [plannerApiKey, setPlannerApiKey] = useState("");
+  const [plannerModel, setPlannerModel] = useState(DEFAULT_PLANNER_MODEL);
+  const [planning, setPlanning] = useState(false);
   const [status, setStatus] = useState("Ready");
   const [error, setError] = useState("");
   const [source, setSource] = useState<"demo" | "google">("demo");
@@ -104,6 +115,33 @@ export function OperatorPage() {
     }
   };
 
+  const draftWithAI = async () => {
+    setPlanning(true);
+    setStatus("Drafting a bounded AI plan…");
+    setError("");
+    setPreviewRows(null);
+    try {
+      const planner = new OpenAIPlanner(plannerApiKey);
+      const nextPlan = await planner.planSpreadsheetTransform({ task, rows, model: plannerModel });
+      setPlan(nextPlan);
+      setScript(nextPlan.script);
+      setStatus("AI plan staged for review");
+      record({
+        title: "AI plan staged",
+        detail: `${nextPlan.model} · ${nextPlan.inputRows} rows / ${nextPlan.inputCells} cells sent · no credential or write`,
+        tone: "accent"
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "AI planning failed.";
+      setPlan(null);
+      setError(message);
+      setStatus("AI plan blocked");
+      record({ title: "AI plan blocked", detail: message, tone: "muted" });
+    } finally {
+      setPlanning(false);
+    }
+  };
+
   const loadGoogleSheet = async () => {
     setStatus("Reading Google Sheets…");
     setError("");
@@ -112,6 +150,7 @@ export function OperatorPage() {
       const snapshot = await connector.read({ spreadsheetId, range });
       setRows(snapshot.values);
       setPreviewRows(null);
+      setPlan(null);
       setSource("google");
       setStatus(`Loaded ${snapshot.values.length} rows from ${snapshot.range}`);
       record({
@@ -133,6 +172,7 @@ export function OperatorPage() {
     if (source === "demo") {
       setRows(previewRows);
       setPreviewRows(null);
+      setPlan(null);
       setStatus("Approved changes applied to the local demo");
       record({ title: "Local write approved", detail: `${changes.length} cells applied`, tone: "accent" });
       return;
@@ -144,6 +184,7 @@ export function OperatorPage() {
       const result = await connector.write({ spreadsheetId, range, values: previewRows });
       setRows(previewRows);
       setPreviewRows(null);
+      setPlan(null);
       setStatus(`Updated ${result.updatedCells} cells in ${result.updatedRange}`);
       record({
         title: "Google Sheets write approved",
@@ -161,6 +202,7 @@ export function OperatorPage() {
   const resetDemo = () => {
     setRows(DEMO_ROWS);
     setPreviewRows(null);
+    setPlan(null);
     setSource("demo");
     setStatus("Ready");
     setError("");
@@ -187,6 +229,20 @@ export function OperatorPage() {
           </button>
           <div className={source === "google" ? "connector-row active static" : "connector-row static"}>
             <Table2 size={16} /><span><strong>Google Sheets</strong><small>OAuth access token</small></span>
+          </div>
+          <div className="connector-row static planner-connector">
+            <Bot size={16} /><span><strong>OpenAI planner</strong><small>Responses API · optional</small></span>
+          </div>
+          <div className="connector-form planner-credentials">
+            <label>Session API key<input type="password" value={plannerApiKey} onChange={(event) => setPlannerApiKey(event.target.value)} autoComplete="off" placeholder="Memory only" aria-label="OpenAI session API key" /></label>
+            <label>Planning model
+              <select value={plannerModel} onChange={(event) => setPlannerModel(event.target.value)} aria-label="Planning model">
+                <option value="gpt-5.6-luna">GPT-5.6 Luna · efficient</option>
+                <option value="gpt-5.6-terra">GPT-5.6 Terra · balanced</option>
+                <option value="gpt-5.6-sol">GPT-5.6 Sol · highest capability</option>
+              </select>
+            </label>
+            <p>The key stays in this tab and is used only in the Authorization header. It never enters spreadsheet data, the model prompt, or the Wasm worker.</p>
           </div>
           <div className="connector-form">
             <label>Development access token<input type="password" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} autoComplete="off" placeholder="Memory only" /></label>
@@ -219,13 +275,30 @@ export function OperatorPage() {
           </div>
 
           <div className="operator-task">
-            <div className="operator-task-label"><Sparkles size={14} /><span>Task intent</span><small>planner integration next</small></div>
-            <textarea value={task} onChange={(event) => setTask(event.target.value)} aria-label="Business task" />
+            <div className="operator-task-label"><Sparkles size={14} /><span>Task intent</span><small>AI may propose; only you can run and write</small></div>
+            <textarea value={task} onChange={(event) => { setTask(event.target.value); setPlan(null); setPreviewRows(null); }} aria-label="Business task" />
+            <div className="operator-planner-actions">
+              <button onClick={() => void draftWithAI()} disabled={!plannerApiKey.trim() || !task.trim() || planning}>
+                {planning ? <RefreshCw size={14} /> : <KeyRound size={14} />}{planning ? "Drafting…" : "Draft with AI"}
+              </button>
+              <span>Explicitly sends this task and {rows.length} visible rows to OpenAI. Sheets and API credentials are excluded.</span>
+            </div>
           </div>
+
+          {plan && (
+            <div className="operator-plan" aria-label="AI transformation plan">
+              <div><Bot size={15} /><strong>Staged AI plan</strong><small>{plan.model}</small></div>
+              <h3>{plan.summary}</h3>
+              <p><b>Expected effect</b>{plan.expectedEffect}</p>
+              {!!plan.assumptions.length && <p><b>Verify assumptions</b>{plan.assumptions.join(" · ")}</p>}
+              {!!plan.warnings.length && <p className="warning"><b>Warnings</b>{plan.warnings.join(" · ")}</p>}
+              <footer>Script copied below for inspection. It has not run and no write has occurred.</footer>
+            </div>
+          )}
 
           <div className="operator-script">
             <div className="operator-task-label"><span>Sandbox script</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
-            <textarea value={script} onChange={(event) => setScript(event.target.value)} spellCheck={false} aria-label="Sandbox transformation script" />
+            <textarea value={script} onChange={(event) => { setScript(event.target.value); setPlan(null); setPreviewRows(null); }} spellCheck={false} aria-label="Sandbox transformation script" />
             <div className="operator-script-actions">
               <button onClick={() => void runScript()}><Play size={14} /> Run in Wasm sandbox</button>
               <span>Input and output are JSON-only · 750 ms CPU limit · 32 MB memory limit</span>

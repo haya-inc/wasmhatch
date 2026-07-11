@@ -35,6 +35,12 @@ require a separately deployed server adapter.
 - A local spreadsheet demo with editable tabular data.
 - A `GoogleSheetsConnector` that reads and writes Sheets API value ranges.
 - Access tokens held in connector memory and excluded from script input.
+- A provider-neutral `BusinessPlanner` boundary and OpenAI Responses API
+  adapter for natural-language spreadsheet transformation plans.
+- Strict function-call output that stages a summary, expected effect,
+  assumptions, warnings, and synchronous script without executing it.
+- Explicit model egress: the planning action sends only the visible task and a
+  bounded range; model and connector credentials stay in session memory.
 - A QuickJS runtime compiled to Wasm and loaded inside a Web Worker.
 - Synchronous JSON-to-JSON transformation scripts with CPU, memory, source,
   input, and output limits.
@@ -45,7 +51,8 @@ require a separately deployed server adapter.
 
 - Google OAuth authorization UI; the foundation screen accepts a development
   access token for manual testing.
-- An AI planner connected to connector and script tools.
+- A multi-step AI tool loop that can request connector reads, run more than one
+  transform, or revise a plan from tool results.
 - Local XLSX/CSV import in the operator surface.
 - Persisted workflows, schedules, webhooks, or background execution.
 - Refresh tokens, service accounts, team credential vaults, or organization
@@ -172,11 +179,31 @@ may be added as separate runners when pilot workloads demonstrate a need.
 
 ### 5.3 AI planner
 
-The current Anthropic loop is coding-specific and remains attached to the
-legacy workspace. It must be replaced with a business tool registry rather than
-extended with file-editing assumptions.
+The business surface now defines a provider-neutral `BusinessPlanner` and an
+`OpenAIPlanner` adapter. The first slice calls the Responses API with one forced,
+strict function tool. The model receives the task and currently visible rows,
+then may only stage:
 
-The planner's first tool set will be:
+- a plain-language summary;
+- the expected cell-level effect;
+- reviewer assumptions and warnings; and
+- a synchronous JSON transformation function.
+
+The request sets `store: false`, permits one non-parallel function call, and
+defaults to `gpt-5.6-luna` with low reasoning effort. The OpenAI API key is sent
+only in the Authorization header. The staged function remains editable and does
+not run until the user separately selects **Run in Wasm sandbox**. A successful
+run still cannot write until the write-review approval.
+
+The adapter validates task, range, response, list, and script-size bounds even
+when the API used strict output. This follows OpenAI's current recommendation to
+use function calling when a model bridges application tools and to enable strict
+mode for schema adherence:
+
+- https://developers.openai.com/api/docs/guides/function-calling
+- https://developers.openai.com/api/docs/guides/structured-outputs
+
+The next planner tool set is:
 
 | Tool | Effect | Default policy |
 | --- | --- | --- |
@@ -202,6 +229,8 @@ OPFS remains useful for:
 
 OAuth access and refresh tokens are never stored in OPFS or `localStorage`.
 Formal OAuth support must use browser session memory for the foreground alpha.
+The development OpenAI API key follows the same memory-only rule. It is never
+placed in model input, script input, URLs, logs, or browser storage.
 
 ## 6. Browser-only and server-backed modes
 
@@ -210,6 +239,8 @@ Formal OAuth support must use browser session memory for the foreground alpha.
 - User keeps the tab open.
 - OAuth uses a public browser client and short-lived access token.
 - Supported APIs must allow browser-origin requests.
+- Model access is bring-your-own-key in the alpha; the key remains in memory and
+  requests are sent directly from the foreground tab.
 - Scripts run locally.
 - Every write requires approval.
 - No WasmHatch account or server is required.
@@ -305,9 +336,12 @@ entering model or script input.
 
 ### Milestone 2: AI-directed operation
 
-- Implement the business tool registry and provider-neutral planner boundary.
-- Let the model read a granted spreadsheet range.
-- Let the model generate and run a bounded transform function.
+- Implement the provider-neutral planner boundary — complete.
+- Add an OpenAI Responses API planner with strict staged output — complete.
+- Let the model inspect an explicitly sent, already-granted range — complete.
+- Let the model generate a bounded transform function for separate review and
+  execution — complete.
+- Implement the multi-step business tool registry and loop.
 - Stage model-proposed writes behind immutable proposal IDs.
 - Display model egress, script source, tool calls, and write results together.
 - Add cancellation, request budgets, and retry behavior to the new loop.
@@ -351,9 +385,9 @@ The coding-contributor metric is retired. Initial product evidence is:
 
 ## 11. Immediate next issues
 
-1. Google Identity Services OAuth with narrow Sheets scopes.
-2. Immutable spreadsheet write proposals with source snapshot hashes.
-3. Business planner tool schemas and deterministic fixture responses.
+1. Immutable spreadsheet write proposals with source snapshot hashes.
+2. Google Identity Services OAuth with narrow Sheets scopes.
+3. Expand the staged planner into a bounded multi-step business tool loop.
 4. CSV/XLSX import into the same `SpreadsheetRows` contract.
 5. Audit export suitable for a pilot review.
 6. Replace the existing public pilot and contribution messaging.

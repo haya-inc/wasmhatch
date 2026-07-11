@@ -14,7 +14,7 @@ const requiredDirectives = [
   "form-action 'none'",
   "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self'",
-  "connect-src 'self' https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com",
+  "connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com",
   "worker-src 'self'"
 ];
 

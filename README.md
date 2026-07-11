@@ -17,15 +17,17 @@ optional future server adapter rather than the static application.
 The foundation slice now ships:
 
 - a Google Sheets value-range connector with credentials isolated from scripts;
+- an optional OpenAI Responses API planner that turns a business instruction
+  and visible rows into a strict, reviewable transformation proposal;
 - QuickJS compiled to Wasm and executed in a Web Worker;
 - CPU, memory, source, input, and output limits;
 - spreadsheet-shaped JSON transformations with no `fetch`, DOM, or host access;
 - cell-level write previews with explicit approve/reject controls; and
 - a per-tab audit trail for reads, scripts, and writes.
 
-Google OAuth UI and the business AI planner are the next milestones. The current
-operator accepts a development access token for connector testing and clearly
-labels that limitation.
+The current operator uses memory-only development credentials for Google Sheets
+and optional AI planning. Google OAuth, immutable write proposals, and the
+multi-step business tool loop are the next milestones.
 
 See the current [product plan](docs/plan.md) and [business-agent landscape](docs/landscape.md).
 

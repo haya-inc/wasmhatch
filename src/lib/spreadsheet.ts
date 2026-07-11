@@ -79,7 +79,7 @@ export class GoogleSheetsConnector implements SpreadsheetConnector {
 
   constructor(
     private readonly accessToken: string,
-    private readonly fetcher: typeof fetch = fetch
+    private readonly fetcher: typeof fetch = (input, init) => globalThis.fetch(input, init)
   ) {
     if (!accessToken.trim()) throw new Error("Google Sheets access token is required.");
   }
