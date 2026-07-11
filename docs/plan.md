@@ -466,6 +466,8 @@ and the changed file survives reload.
 - Publish a source-backed product landscape and adoption decision guide — complete
 - Land the first external contribution through issue #1 and PR #2 — complete
 - Replace the completed task with revision-pinned `good first issue` #4 — complete
+- Land the second external contribution through issue #4 and PR #10 — complete
+- Replace the completed task with revision-pinned `good first issue` #11 — complete
 - Publish five parallel, revision-pinned newcomer tasks and a claim board — complete
 - Publish an opt-in external-repository adoption registry without third-party telemetry — complete
 - Prepare a source-guided, anti-spam launch and response playbook — complete
@@ -541,8 +543,8 @@ the core repository-to-patch flow.
 - At least 20 external repositories trial the workflow and 10 publish a task
   link or badge, tracked through adoption registry issue #9.
 - At least 30% of those reported pilot sessions reach patch or zip export.
-- Five external contributors land a change before the first beta — progress: 1/5
-  through PR #2.
+- Five external contributors land a change before the first beta — progress: 2/5
+  through PRs #2 and #10.
 - No confirmed API-key persistence or workspace-loss defect remains open.
 - The primary flow completes without a command runtime.
 

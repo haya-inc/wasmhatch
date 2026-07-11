@@ -10,13 +10,13 @@ export interface ContributionTask {
 
 export const contributionTasks: ContributionTask[] = [
   {
-    issueNumber: 4,
+    issueNumber: 11,
     repository: "haya-inc/wasmhatch",
-    ref: "3b4a3876b1ff47e9d954f570ec6a79913c1a1da8",
-    title: "Handle copied GitHub URLs",
-    description: "Accept query strings and fragments without weakening repository validation.",
-    task: "Update parseGitHubRepository so GitHub repository URLs with a query string or fragment, such as ?tab=readme-ov-file or #readme, still normalize to owner/repository. Preserve existing shorthand and .git handling, reject non-GitHub hosts and nested paths, and add focused regression tests.",
-    scope: "Parser + tests"
+    ref: "b858776477085da50b488a9d83c917852f464773",
+    title: "Name exports by repository",
+    description: "Keep downloaded patches and workspaces identifiable without unsafe filenames.",
+    task: "Add a small pure helper that derives safe repository-aware download names for Patch and Zip exports. Use haya-inc-wasmhatch.patch and haya-inc-wasmhatch-workspace.zip for haya-inc/wasmhatch, preserve the current wasmhatch fallbacks for empty or unsupported input, sanitize unsafe characters, and add focused unit tests without changing export contents.",
+    scope: "Export UX + tests"
   },
   {
     issueNumber: 5,

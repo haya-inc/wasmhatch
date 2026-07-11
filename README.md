@@ -71,7 +71,7 @@ not triggered by merely opening a link.
 The [Examples section](https://haya-inc.github.io/wasmhatch/#examples) contains
 three small tasks against exact public commits:
 
-- support [copied GitHub repository URLs with query strings or fragments](https://github.com/haya-inc/wasmhatch/issues/4), published as a `good first issue`;
+- make [patch and zip filenames repository-aware](https://github.com/haya-inc/wasmhatch/issues/11), published as a `good first issue`;
 - add network-free CLI smoke tests to `create-knowledge-kit`;
 - establish the first test baseline for `create-wiki-kit`.
 

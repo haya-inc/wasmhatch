@@ -9,7 +9,7 @@ describe("exampleTasks", () => {
       expect(example.ref).toMatch(/^[a-f0-9]{40}$/);
       expect(example.task.length).toBeGreaterThan(80);
     }
-    expect(exampleTasks[0].issueUrl).toBe("https://github.com/haya-inc/wasmhatch/issues/4");
+    expect(exampleTasks[0].issueUrl).toBe("https://github.com/haya-inc/wasmhatch/issues/11");
   });
 
   it("derives a display number only from canonical GitHub issue URLs", () => {
