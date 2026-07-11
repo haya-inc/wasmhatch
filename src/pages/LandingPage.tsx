@@ -378,6 +378,7 @@ export function LandingPage() {
           <div><span>Model access</span><strong>Protected, bounded reads</strong><em>02</em></div>
           <div><span>Writes</span><strong>Staged until you approve</strong><em>03</em></div>
           <div><span>API key</span><strong>Session memory only</strong><em>04</em></div>
+          <div><span>Runtime</span><strong>React + TypeScript · no Wasm/Worker</strong><em>05</em></div>
         </div>
         <p className="trust-note">
           <ShieldCheck size={20} /> Every model-bound task, file list, and file read appears in the

@@ -12,6 +12,13 @@ diff, and export the result without installing a local toolchain.
 The project is an early alpha. The browser workspace and review loop work; full
 command execution and direct pull-request creation do not yet.
 
+Despite the project name, the current alpha does **not** ship WebAssembly, Rust,
+or Web Workers. It is a React and TypeScript application running on the browser
+main thread, and the production CSP sets `worker-src 'none'`. The longer-term
+Claude Code-like path does require a permissioned command runtime. WebContainer,
+Wasm/WASI workers, and an optional remote sandbox are candidate adapters; Wasm
+alone does not provide a shell, process model, Git, or package manager.
+
 ## Why WasmHatch
 
 First-time contributors often lose more time configuring a repository than
@@ -96,9 +103,11 @@ that expose friction or failed trials are as useful as successful ones.
 
 ## Where WasmHatch fits
 
-WasmHatch is the runtime-free path for a small public issue that can be reviewed
-as a text patch. It complements rather than replaces browser editors, cloud
-development environments, in-browser runtimes, and sandboxed coding agents.
+WasmHatch starts with a runtime-free path for a small public issue that can be
+reviewed as a text patch. That focused workflow is the adoption wedge, not the
+limit of the architecture. The longer-term goal is a permissioned browser coding
+agent that can inspect files, run project commands and tests, observe output,
+and iterate without hiding writes from the user.
 
 - Use WasmHatch for a revision-pinned issue, explicit write review, and patch handoff.
 - Use github.dev when a signed-in contributor wants to edit and commit directly.
@@ -128,6 +137,7 @@ expose file deletion.
 
 | Capability | Status |
 | --- | --- |
+| Runtime implementation | React + TypeScript on the browser main thread; no Wasm/Worker |
 | OPFS workspace with localStorage fallback | Available |
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |
@@ -148,7 +158,8 @@ expose file deletion.
 | Revision-pinned real task examples | Available |
 | Share-ready Open Graph and large-card preview | Available |
 | Local-directory write-back | Planned |
-| Browser command runtime | Under evaluation; not required for the core flow |
+| Permissioned command runtime | Planned for the Claude Code-like path; adapter not selected |
+| Wasm/WASI execution | Planned for selected portable CLI utilities, not as an OS substitute |
 | Git commit and pull-request creation | Planned |
 
 ## Trust model

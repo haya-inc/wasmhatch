@@ -37,4 +37,15 @@ describe("public sharing metadata", () => {
     expect(png.readUInt32BE(20)).toBe(630);
     expect(png.byteLength).toBeGreaterThan(20_000);
   });
+
+  it("keeps public runtime claims aligned with the shipped architecture", () => {
+    const readme = readFileSync("README.md", "utf8");
+    const plan = readFileSync("docs/plan.md", "utf8");
+    const viteConfig = readFileSync("vite.config.ts", "utf8");
+
+    expect(readme).toContain("does **not** ship WebAssembly, Rust,\nor Web Workers");
+    expect(plan).toContain("There is no worker boundary or Wasm module.");
+    expect(plan).toContain("CSP deliberately sets `worker-src 'none'`");
+    expect(viteConfig).toContain('"worker-src \'none\'"');
+  });
 });
