@@ -12,7 +12,7 @@ const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 
 export function LandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
-  const workspaceUrl = `${homeUrl}workspace`;
+  const workspaceUrl = `${homeUrl}?view=workspace`;
 
   return (
     <main className="landing">

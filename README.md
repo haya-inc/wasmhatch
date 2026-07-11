@@ -49,7 +49,7 @@ The first alpha accepts `repo` and `task` query parameters. The repository field
 and task composer are prefilled; the visitor explicitly starts the import.
 
 ```markdown
-[![Open in WasmHatch](https://haya-inc.github.io/wasmhatch/open-in-wasmhatch.svg)](https://haya-inc.github.io/wasmhatch/workspace?repo=OWNER/REPOSITORY&task=DESCRIBE%20A%20SMALL%20CHANGE)
+[![Open in WasmHatch](https://haya-inc.github.io/wasmhatch/open-in-wasmhatch.svg)](https://haya-inc.github.io/wasmhatch/?view=workspace&repo=OWNER/REPOSITORY&task=DESCRIBE%20A%20SMALL%20CHANGE)
 ```
 
 Encode the task as a URL query value and keep it focused enough to review as one

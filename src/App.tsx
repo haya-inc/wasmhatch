@@ -10,7 +10,8 @@ export function App() {
   const route = window.location.pathname.startsWith(basePath)
     ? window.location.pathname.slice(basePath.length)
     : window.location.pathname.slice(1);
-  if (!route.startsWith("workspace")) return <LandingPage />;
+  const requestedView = new URLSearchParams(window.location.search).get("view");
+  if (!route.startsWith("workspace") && requestedView !== "workspace") return <LandingPage />;
 
   return (
     <Suspense fallback={<div className="route-loading">Hatching workspace…</div>}>
