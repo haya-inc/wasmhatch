@@ -6,10 +6,11 @@ describe("share links", () => {
     const url = createWorkspaceShareUrl(
       "https://example.com/wasmhatch/",
       "haya-inc/wasmhatch",
-      "Improve the README & docs"
+      "Improve the README & docs",
+      "v0.2.0"
     );
     expect(url).toBe(
-      "https://example.com/wasmhatch/?view=workspace&repo=haya-inc%2Fwasmhatch&task=Improve+the+README+%26+docs"
+      "https://example.com/wasmhatch/?view=workspace&repo=haya-inc%2Fwasmhatch&ref=v0.2.0&task=Improve+the+README+%26+docs"
     );
   });
 

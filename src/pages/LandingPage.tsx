@@ -17,12 +17,13 @@ export function LandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const workspaceUrl = `${homeUrl}?view=workspace`;
   const [shareRepo, setShareRepo] = useState("haya-inc/wasmhatch");
+  const [shareRef, setShareRef] = useState("main");
   const [shareTask, setShareTask] = useState("Improve one focused part of the README");
   const [copied, setCopied] = useState<"url" | "badge" | "error" | null>(null);
   const absoluteHomeUrl = new URL(homeUrl, window.location.origin).toString();
   const shareUrl = useMemo(
-    () => createWorkspaceShareUrl(absoluteHomeUrl, shareRepo, shareTask),
-    [absoluteHomeUrl, shareRepo, shareTask]
+    () => createWorkspaceShareUrl(absoluteHomeUrl, shareRepo, shareTask, shareRef),
+    [absoluteHomeUrl, shareRepo, shareRef, shareTask]
   );
   const badgeMarkdown = createBadgeMarkdown(
     shareUrl,
@@ -183,11 +184,15 @@ export function LandingPage() {
             <input value={shareRepo} onChange={(event) => setShareRepo(event.target.value)} placeholder="owner/repository" />
           </label>
           <label>
-            <span>02 / Focused task</span>
+            <span>02 / Ref</span>
+            <input value={shareRef} onChange={(event) => setShareRef(event.target.value)} placeholder="default branch" />
+          </label>
+          <label>
+            <span>03 / Focused task</span>
             <textarea value={shareTask} onChange={(event) => setShareTask(event.target.value)} />
           </label>
           <div className="share-output">
-            <span>03 / Share</span>
+            <span>04 / Share</span>
             <code>{shareUrl}</code>
             <div>
               <button onClick={() => void copyText(shareUrl, "url")}>

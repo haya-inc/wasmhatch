@@ -45,12 +45,12 @@ npm run build
 
 ## Add an Open in WasmHatch link
 
-The project page includes a URL and badge builder. It accepts `repo` and `task`
-query parameters, prefills the repository and task, and leaves the visitor in
-control of starting the import.
+The project page includes a URL and badge builder. It accepts `repo`, optional
+`ref`, and `task` query parameters, prefills the repository revision and task,
+and leaves the visitor in control of starting the import.
 
 ```markdown
-[![Open in WasmHatch](https://haya-inc.github.io/wasmhatch/open-in-wasmhatch.svg)](https://haya-inc.github.io/wasmhatch/?view=workspace&repo=OWNER/REPOSITORY&task=DESCRIBE%20A%20SMALL%20CHANGE)
+[![Open in WasmHatch](https://haya-inc.github.io/wasmhatch/open-in-wasmhatch.svg)](https://haya-inc.github.io/wasmhatch/?view=workspace&repo=OWNER/REPOSITORY&ref=BRANCH_OR_TAG&task=DESCRIBE%20A%20SMALL%20CHANGE)
 ```
 
 Encode the task as a URL query value and keep it focused enough to review as one
@@ -85,7 +85,7 @@ expose file deletion.
 | Review-before-write agent proposals | Available |
 | Anthropic Messages API tool loop | Alpha, BYOK |
 | Share URL and badge builder | Available |
-| Shareable `repo` and `task` parameters | Available |
+| Shareable `repo`, `ref`, and `task` parameters | Available |
 | Local-directory write-back | Planned |
 | Browser command runtime | Under evaluation; not required for the core flow |
 | Git commit and pull-request creation | Planned |

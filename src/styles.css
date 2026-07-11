@@ -135,7 +135,7 @@ button { color: inherit; }
 .share-intro { display: grid; grid-template-columns: 1fr .65fr; gap: 8vw; align-items: end; margin: 30px 0 80px; }
 .share-intro h2 { margin: 0; font-size: clamp(58px, 7.8vw, 122px); line-height: .86; letter-spacing: -.075em; }
 .share-intro p { max-width: 500px; margin: 0; color: #92978f; font-size: 17px; line-height: 1.6; }
-.share-builder { display: grid; grid-template-columns: .8fr 1.2fr; border-top: 1px solid var(--line); }
+.share-builder { display: grid; grid-template-columns: .7fr .4fr 1.1fr; border-top: 1px solid var(--line); }
 .share-builder > label { min-height: 150px; padding: 24px 24px 24px 0; border-bottom: 1px solid var(--line); }
 .share-builder > label + label { padding-left: 30px; border-left: 1px solid var(--line); }
 .share-builder label span, .share-output > span, .badge-preview p { display: block; margin-bottom: 22px; color: #666b63; font: 700 8px/1 var(--mono); text-transform: uppercase; letter-spacing: .13em; }
@@ -204,9 +204,11 @@ footer div { justify-self: end; display: flex; gap: 24px; font: 600 9px/1 var(--
 .panel-heading small, .agent-heading small { color: #656a62; font-size: 8px; letter-spacing: .04em; text-transform: none; }
 .import-form { padding: 14px 12px; border-bottom: 1px solid #292c28; }
 .import-form label { display: block; margin-bottom: 8px; color: #71766e; font: 600 8px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+.import-form label:not(:first-child) { margin-top: 11px; }.import-form label span { float: right; color: #555a53; font-size: 7px; text-transform: none; letter-spacing: 0; }
 .import-form > div { display: flex; }
 .import-form input { width: 100%; min-width: 0; height: 31px; padding: 0 9px; border: 1px solid #30342f; border-right: 0; outline: none; background: #0b0d0b; color: #d4d8d1; font: 500 9px/1 var(--mono); }
 .import-form input:focus { border-color: #69712f; }
+.import-form input.ref-input { height: 29px; border-right: 1px solid #30342f; }
 .import-form > div button { width: 32px; border: 0; background: var(--accent); color: var(--ink); cursor: pointer; }
 .import-arrow { transform: rotate(180deg); }
 .archive-button { margin-top: 8px; padding: 0; border: 0; background: none; color: #7e837b; display: flex; align-items: center; gap: 7px; font: 500 8.5px/1 var(--mono); cursor: pointer; }

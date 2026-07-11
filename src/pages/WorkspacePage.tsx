@@ -49,6 +49,7 @@ export function WorkspacePage() {
   const [savedEditor, setSavedEditor] = useState("");
   const [task, setTask] = useState(new URLSearchParams(location.search).get("task") || demoTask);
   const [repo, setRepo] = useState(new URLSearchParams(location.search).get("repo") || "");
+  const [repoRef, setRepoRef] = useState(new URLSearchParams(location.search).get("ref") || "");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("claude-sonnet-4-6");
   const [status, setStatus] = useState("Ready");
@@ -119,12 +120,12 @@ export function WorkspacePage() {
     setBusy(true);
     setStatus("Importing from GitHub");
     try {
-      const imported = await fetchGitHubRepository(repo);
+      const imported = await fetchGitHubRepository(repo, repoRef.trim() || "HEAD");
       if (!imported.length) throw new Error("No supported text files were found.");
       await store.current.replaceAll(imported);
       setProposal(null);
       await refreshFiles(imported[0].path);
-      setAnswer(`Imported ${imported.length} text files. Describe a focused change when you are ready.`);
+      setAnswer(`Imported ${imported.length} text files${repoRef.trim() ? ` at ${repoRef.trim()}` : ""}. Describe a focused change when you are ready.`);
       setNotice("Repository imported into browser storage.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "GitHub import failed.");
@@ -259,6 +260,8 @@ export function WorkspacePage() {
           <div className="import-form">
             <label htmlFor="repo">Public GitHub repository</label>
             <div><input id="repo" value={repo} onChange={(event) => setRepo(event.target.value)} placeholder="owner/repository" /><button onClick={() => void importRepository()} disabled={busy} aria-label="Import repository"><ArrowLeft className="import-arrow" size={16} /></button></div>
+            <label htmlFor="repo-ref">Git ref <span>optional</span></label>
+            <input id="repo-ref" className="ref-input" value={repoRef} onChange={(event) => setRepoRef(event.target.value)} placeholder="branch, tag, or commit" />
             <button className="archive-button" onClick={() => archiveInput.current?.click()}><Upload size={14} /> Import zip archive</button>
             <input ref={archiveInput} type="file" accept=".zip,application/zip" hidden onChange={(event) => void importArchive(event)} />
           </div>

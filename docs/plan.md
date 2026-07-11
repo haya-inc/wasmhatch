@@ -455,7 +455,7 @@ and the changed file survives reload.
 
 ### Milestone 2: Shareable contribution workflow — in progress
 
-- Complete and document `ref` deep links (`repo` and `task` are available)
+- Complete and document `repo`, `ref`, and `task` deep links — complete
 - Publish an `Open in WasmHatch` badge and URL builder — complete
 - Add persistent baseline snapshots and patch-file export — complete
 - Add deterministic fixtures for agent tool-call failures and limits
