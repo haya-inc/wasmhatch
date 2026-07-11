@@ -22,6 +22,7 @@ import { createZipArchive, fetchGitHubRepository, readZipArchive } from "../lib/
 import { runAnthropicAgent, type FileProposal } from "../lib/agent";
 import { createReadableDiff } from "../lib/diff";
 import { buildWorkspacePatch } from "../lib/patch";
+import { normalizeGitHubIssueUrl } from "../lib/share";
 import {
   createWorkspaceStore,
   sampleWorkspace,
@@ -30,12 +31,21 @@ import {
 } from "../lib/workspace";
 
 const demoTask = "Make greet handle an empty or whitespace-only name by greeting ‘friend’. Keep the change small.";
+const samplePaths = new Set(sampleWorkspace.map((file) => file.path));
+
+function isSampleFileList(paths: string[]) {
+  return paths.length === samplePaths.size && paths.every((path) => samplePaths.has(path));
+}
 
 function fileIcon(path: string) {
   return path.endsWith(".md") ? <FileText size={15} /> : <FileCode2 size={15} />;
 }
 
 export function WorkspacePage() {
+  const searchParams = new URLSearchParams(location.search);
+  const issueUrl = normalizeGitHubIssueUrl(searchParams.get("issue") || "");
+  const issueNumber = issueUrl.split("/").pop() || "";
+  const linkedRepository = searchParams.get("repo") || "";
   const store = useRef<WorkspaceStore>(createWorkspaceStore());
   const initialization = useRef<Promise<{
     files: string[];
@@ -47,17 +57,23 @@ export function WorkspacePage() {
   const [selectedPath, setSelectedPath] = useState("");
   const [editor, setEditor] = useState("");
   const [savedEditor, setSavedEditor] = useState("");
-  const [task, setTask] = useState(new URLSearchParams(location.search).get("task") || demoTask);
-  const [repo, setRepo] = useState(new URLSearchParams(location.search).get("repo") || "");
-  const [repoRef, setRepoRef] = useState(new URLSearchParams(location.search).get("ref") || "");
+  const [task, setTask] = useState(searchParams.get("task") || demoTask);
+  const [repo, setRepo] = useState(linkedRepository);
+  const [repoRef, setRepoRef] = useState(searchParams.get("ref") || "");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("claude-sonnet-4-6");
   const [status, setStatus] = useState("Ready");
-  const [answer, setAnswer] = useState("Run the local demo or connect Claude to inspect this workspace.");
+  const [answer, setAnswer] = useState(
+    linkedRepository
+      ? "Import the pinned source, then edit files manually or connect Claude for a focused change."
+      : "Run the local demo or connect Claude to inspect this workspace."
+  );
   const [proposal, setProposal] = useState<FileProposal | null>(null);
   const [proposalBefore, setProposalBefore] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [patchExported, setPatchExported] = useState(false);
+  const [demoAvailable, setDemoAvailable] = useState(!linkedRepository);
 
   const refreshFiles = async (preferredPath?: string) => {
     const nextFiles = await store.current.listFiles();
@@ -101,6 +117,7 @@ export function WorkspacePage() {
         setSelectedPath(result.selectedPath);
         setEditor(result.content);
         setSavedEditor(result.content);
+        setDemoAvailable(isSampleFileList(result.files) && !linkedRepository);
       })
       .catch((error) => {
         if (active) setNotice(error instanceof Error ? error.message : "Workspace failed to load.");
@@ -111,6 +128,7 @@ export function WorkspacePage() {
   const saveEditor = async () => {
     if (!selectedPath) return;
     await store.current.writeFile(selectedPath, editor);
+    setPatchExported(false);
     setSavedEditor(editor);
     setNotice(`Saved ${selectedPath} locally.`);
   };
@@ -123,9 +141,11 @@ export function WorkspacePage() {
       const imported = await fetchGitHubRepository(repo, repoRef.trim() || "HEAD");
       if (!imported.length) throw new Error("No supported text files were found.");
       await store.current.replaceAll(imported);
+      setPatchExported(false);
+      setDemoAvailable(false);
       setProposal(null);
       await refreshFiles(imported[0].path);
-      setAnswer(`Imported ${imported.length} text files${repoRef.trim() ? ` at ${repoRef.trim()}` : ""}. Describe a focused change when you are ready.`);
+      setAnswer(`Imported ${imported.length} text files${repoRef.trim() ? ` at ${repoRef.trim()}` : ""}. Edit manually or connect Claude when you are ready.`);
       setNotice("Repository imported into browser storage.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "GitHub import failed.");
@@ -142,6 +162,8 @@ export function WorkspacePage() {
       const imported = readZipArchive(new Uint8Array(await file.arrayBuffer()));
       if (!imported.length) throw new Error("No supported text files were found.");
       await store.current.replaceAll(imported);
+      setPatchExported(false);
+      setDemoAvailable(false);
       setProposal(null);
       await refreshFiles(imported[0].path);
       setNotice(`Imported ${imported.length} text files from ${file.name}.`);
@@ -180,7 +202,10 @@ export function WorkspacePage() {
       return;
     }
     download(new Blob([`${patch}\n`], { type: "text/x-diff;charset=utf-8" }), "wasmhatch.patch");
-    setNotice(`Exported ${changedFileCount} changed file(s) as a patch.`);
+    setPatchExported(true);
+    setNotice(
+      `Exported ${changedFileCount} changed file(s) as a patch.${issueNumber ? ` Return to Issue #${issueNumber} when it is ready.` : ""}`
+    );
   };
 
   const stageProposal = async (next: FileProposal) => {
@@ -191,6 +216,7 @@ export function WorkspacePage() {
   };
 
   const runDemo = async () => {
+    if (!demoAvailable) return;
     setBusy(true);
     setProposal(null);
     setStatus("Reading src/greet.ts");
@@ -237,6 +263,7 @@ export function WorkspacePage() {
   const acceptProposal = async () => {
     if (!proposal) return;
     await store.current.writeFile(proposal.path, proposal.content);
+    setPatchExported(false);
     await refreshFiles(proposal.path);
     setNotice(`Applied ${proposal.path}.`);
     setProposal(null);
@@ -293,6 +320,19 @@ export function WorkspacePage() {
         <aside className="agent-panel">
           <div className="agent-heading"><div><Bot size={18} /><span>Agent</span></div><small>BYOK · local tools</small></div>
           <div className="agent-scroll">
+            {issueUrl && (
+              <section className={`issue-context${patchExported ? " patch-exported" : ""}`} aria-label="Contribution target">
+                <div><span>Contribution target</span><small>{repo || "GitHub"}</small></div>
+                <a href={issueUrl} target="_blank" rel="noreferrer">
+                  <GitFork size={14} /> Issue #{issueNumber} <ChevronRight size={13} />
+                </a>
+                <p>
+                  {patchExported
+                    ? "Patch downloaded. Apply it in a local branch, run the repository checks, then return here to discuss or open a pull request."
+                    : "Keep the acceptance criteria open while you work. Export Patch when the change is ready for local checks and a pull request."}
+                </p>
+              </section>
+            )}
             <div className="agent-intro"><Sparkles size={18} /><p>{answer}</p></div>
 
             {proposal && (
@@ -319,7 +359,9 @@ export function WorkspacePage() {
             <label htmlFor="task">Task</label>
             <textarea id="task" value={task} onChange={(event) => setTask(event.target.value)} />
             <div>
-              <button className="demo-button" onClick={() => void runDemo()} disabled={busy}><Play size={14} /> Local demo</button>
+              {demoAvailable && (
+                <button className="demo-button" onClick={() => void runDemo()} disabled={busy}><Play size={14} /> Local demo</button>
+              )}
               <button className="run-button" onClick={() => void runAgent()} disabled={busy || !task.trim()}>
                 {busy ? <LoaderCircle className="spin" size={15} /> : <Sparkles size={15} />} Run with Claude
               </button>

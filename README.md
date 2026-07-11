@@ -46,16 +46,18 @@ npm run build
 ## Add an Open in WasmHatch link
 
 The project page includes a URL and badge builder. It accepts `repo`, optional
-`ref`, and `task` query parameters, prefills the repository revision and task,
-and leaves the visitor in control of starting the import.
+`ref`, `task`, and optional `issue` query parameters, prefills the repository
+revision and task, and leaves the visitor in control of starting the import.
 
 ```markdown
-[![Open in WasmHatch](https://haya-inc.github.io/wasmhatch/open-in-wasmhatch.svg)](https://haya-inc.github.io/wasmhatch/?view=workspace&repo=OWNER/REPOSITORY&ref=BRANCH_OR_TAG&task=DESCRIBE%20A%20SMALL%20CHANGE)
+[![Open in WasmHatch](https://haya-inc.github.io/wasmhatch/open-in-wasmhatch.svg)](https://haya-inc.github.io/wasmhatch/?view=workspace&repo=OWNER/REPOSITORY&ref=BRANCH_OR_TAG&task=DESCRIBE%20A%20SMALL%20CHANGE&issue=https%3A%2F%2Fgithub.com%2FOWNER%2FREPOSITORY%2Fissues%2F123)
 ```
 
 Encode the task as a URL query value and keep it focused enough to review as one
-patch. Automatic repository fetching is intentionally not triggered by merely
-opening a link.
+patch. When supplied, `issue` must be a canonical public GitHub Issue URL; it is
+kept visible through patch export so contributors can return to the acceptance
+criteria and submission thread. Automatic repository fetching is intentionally
+not triggered by merely opening a link.
 
 ## Try a real task
 
@@ -98,7 +100,7 @@ expose file deletion.
 | Review-before-write agent proposals | Available |
 | Anthropic Messages API tool loop | Alpha, BYOK |
 | Share URL and badge builder | Available |
-| Shareable `repo`, `ref`, and `task` parameters | Available |
+| Shareable `repo`, `ref`, `task`, and GitHub `issue` context | Available |
 | Revision-pinned real task examples | Available |
 | Local-directory write-back | Planned |
 | Browser command runtime | Under evaluation; not required for the core flow |
