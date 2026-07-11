@@ -39,8 +39,13 @@ describe("createReadableDiff", () => {
         { path: "new.ts", before: "", after: "export const created = true;\n" }
       ]);
       writeFileSync(join(directory, "change.patch"), `${patch}\n`);
-      execFileSync("git", ["apply", "--check", "change.patch"], { cwd: directory });
-      execFileSync("git", ["apply", "change.patch"], { cwd: directory });
+      // core.autocrlf can rewrite endings on Windows; keep LF for a stable assert.
+      execFileSync("git", ["-c", "core.autocrlf=false", "apply", "--check", "change.patch"], {
+        cwd: directory
+      });
+      execFileSync("git", ["-c", "core.autocrlf=false", "apply", "change.patch"], {
+        cwd: directory
+      });
       expect(readFileSync(join(directory, "a.ts"), "utf8")).toBe("export const a = 2;\n");
       expect(readFileSync(join(directory, "new.ts"), "utf8")).toBe("export const created = true;\n");
     } finally {
