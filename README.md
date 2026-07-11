@@ -57,6 +57,19 @@ Encode the task as a URL query value and keep it focused enough to review as one
 patch. Automatic repository fetching is intentionally not triggered by merely
 opening a link.
 
+## Try a real task
+
+The [Examples section](https://haya-inc.github.io/wasmhatch/#examples) contains
+three small tasks against exact public commits:
+
+- fix WasmHatch's [`.git/` GitHub URL normalization edge case](https://github.com/haya-inc/wasmhatch/issues/1), published as a `good first issue`;
+- add network-free CLI smoke tests to `create-knowledge-kit`;
+- establish the first test baseline for `create-wiki-kit`.
+
+Each task is sized for one reviewable patch and opens with the repository,
+revision, and task already filled in. These are real repositories rather than
+tutorial fixtures.
+
 ## Export a patch
 
 WasmHatch records a separate baseline whenever a sample, GitHub repository, or
@@ -86,6 +99,7 @@ expose file deletion.
 | Anthropic Messages API tool loop | Alpha, BYOK |
 | Share URL and badge builder | Available |
 | Shareable `repo`, `ref`, and `task` parameters | Available |
+| Revision-pinned real task examples | Available |
 | Local-directory write-back | Planned |
 | Browser command runtime | Under evaluation; not required for the core flow |
 | Git commit and pull-request creation | Planned |

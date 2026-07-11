@@ -10,6 +10,7 @@ import {
   TerminalSquare
 } from "lucide-react";
 import { createBadgeMarkdown, createWorkspaceShareUrl } from "../lib/share";
+import { exampleTasks } from "../data/examples";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 
@@ -58,6 +59,7 @@ export function LandingPage() {
         </a>
         <nav aria-label="Primary navigation">
           <a href="#how">How it works</a>
+          <a href="#examples">Examples</a>
           <a href="#trust">Trust model</a>
           <a href={repositoryUrl}>GitHub</a>
         </nav>
@@ -166,6 +168,50 @@ export function LandingPage() {
             <h3>Approve the patch</h3>
             <p>Every proposed write stops at a visible diff. Accept it, keep editing, or export the workspace.</p>
           </article>
+        </div>
+      </section>
+
+      <section className="examples-section" id="examples" aria-labelledby="examples-title">
+        <div className="section-label">Start with a real task</div>
+        <div className="examples-heading">
+          <h2 id="examples-title">Small scope.<br />Pinned source.</h2>
+          <p>
+            Each example points to an exact public commit and a change that can be
+            reviewed as one patch. No synthetic tutorial repository required.
+          </p>
+        </div>
+        <div className="example-list">
+          {exampleTasks.map((example, index) => {
+            const url = createWorkspaceShareUrl(
+              absoluteHomeUrl,
+              example.repository,
+              example.task,
+              example.ref
+            );
+            return (
+              <article key={example.repository}>
+                <span className="example-number">0{index + 1}</span>
+                <div className="example-repo">
+                  <code>{example.repository}</code>
+                  <small>{example.ref.slice(0, 7)} · {example.scope}</small>
+                </div>
+                <div className="example-copy">
+                  <h3>{example.title}</h3>
+                  <p>{example.description}</p>
+                </div>
+                <div className="example-actions">
+                  {example.issueUrl && (
+                    <a href={example.issueUrl} aria-label={`View the GitHub issue for ${example.title}`}>
+                      Issue #1
+                    </a>
+                  )}
+                  <a href={url} aria-label={`Open ${example.title} in WasmHatch`}>
+                    Open task <ArrowRight size={17} />
+                  </a>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 

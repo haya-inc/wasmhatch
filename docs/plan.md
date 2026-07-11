@@ -459,7 +459,8 @@ and the changed file survives reload.
 - Publish an `Open in WasmHatch` badge and URL builder — complete
 - Add persistent baseline snapshots and patch-file export — complete
 - Add deterministic fixtures for agent tool-call failures and limits
-- Add three real small OSS example tasks
+- Add three real small OSS example tasks — complete
+- Publish the first revision-pinned `good first issue` with a direct WasmHatch task link — complete
 
 Exit condition: an external repository can link to a focused task and a new
 visitor can export a patch in under three minutes.
