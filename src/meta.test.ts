@@ -14,6 +14,20 @@ describe("public sharing metadata", () => {
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
     expect(html).toContain(`<meta name="twitter:image" content="${previewUrl}" />`);
     expect(html).toContain(`<link rel="canonical" href="${projectUrl}" />`);
+    expect(html).toContain('<meta name="robots" content="index, follow, max-image-preview:large" />');
+    expect(html).toContain('href="https://github.com/haya-inc/wasmhatch/releases.atom"');
+  });
+
+  it("publishes crawler discovery files and a useful no-script fallback", () => {
+    const html = readFileSync("index.html", "utf8");
+    const robots = readFileSync("public/robots.txt", "utf8");
+    const sitemap = readFileSync("public/sitemap.xml", "utf8");
+
+    expect(html).toContain("<noscript>");
+    expect(html).toContain("open-source, browser-native coding workspace");
+    expect(robots).toContain(`Sitemap: ${projectUrl}sitemap.xml`);
+    expect(sitemap).toContain(`<loc>${projectUrl}</loc>`);
+    expect(sitemap).toContain("<lastmod>2026-07-12</lastmod>");
   });
 
   it("keeps the PNG preview at the recommended 1200 by 630 dimensions", () => {

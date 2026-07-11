@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0a0b0a" />
+    <meta name="application-name" content="WasmHatch" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta
       name="description"
@@ -26,11 +28,30 @@
     <meta name="twitter:image" content="https://haya-inc.github.io/wasmhatch/social-preview.png" />
     <meta name="twitter:image:alt" content="WasmHatch — From issue to patch. No setup in between." />
     <link rel="canonical" href="https://haya-inc.github.io/wasmhatch/" />
+    <link
+      rel="alternate"
+      type="application/atom+xml"
+      title="WasmHatch releases"
+      href="https://github.com/haya-inc/wasmhatch/releases.atom"
+    />
     <link rel="icon" href="%BASE_URL%mark.svg" type="image/svg+xml" />
     <title>WasmHatch — From issue to patch, no setup</title>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <main>
+        <h1>WasmHatch</h1>
+        <p>
+          An open-source, browser-native coding workspace that turns a focused
+          GitHub issue into a reviewable patch without local setup.
+        </p>
+        <p>
+          <a href="https://github.com/haya-inc/wasmhatch">View the source and documentation on GitHub</a>
+          or enable JavaScript to open the workspace.
+        </p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
