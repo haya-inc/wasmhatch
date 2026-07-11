@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/haya-inc/wasmhatch/discussions
+    about: Use Discussions for setup help and open-ended design questions.
+  - name: Report a security vulnerability
+    url: https://github.com/haya-inc/wasmhatch/security/advisories/new
+    about: Report credential exposure, unintended data egress, or other vulnerabilities privately.
