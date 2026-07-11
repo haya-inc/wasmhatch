@@ -299,6 +299,8 @@ footer div { justify-self: end; display: flex; gap: 24px; font: 600 9px/1 var(--
 .agent-composer > div { display: flex; justify-content: flex-end; gap: 7px; margin-top: 8px; }
 .agent-composer button { height: 32px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border: 1px solid #353a33; background: transparent; color: #9ca199; font: 700 8px/1 var(--mono); cursor: pointer; }
 .agent-composer button.run-button { border: 0; background: var(--accent); color: var(--ink); }
+.agent-composer button.stop-button { border-color: #6f782f; color: var(--accent); }
+.agent-composer button.stop-button:hover { background: rgba(217,255,67,.07); }
 .agent-composer button:disabled { opacity: .45; cursor: default; }
 .spin { animation: spin 800ms linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
 .toast { position: fixed; z-index: 20; left: 50%; bottom: 22px; transform: translateX(-50%); max-width: min(540px, calc(100vw - 30px)); min-height: 42px; padding: 0 8px 0 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #40453e; background: #191c18; box-shadow: 0 16px 45px rgba(0,0,0,.35); color: #cbd0c8; font: 500 9px/1.4 var(--mono); }

@@ -53,6 +53,7 @@ export function WorkspacePage() {
     content: string;
   }> | null>(null);
   const archiveInput = useRef<HTMLInputElement>(null);
+  const agentAbort = useRef<AbortController | null>(null);
   const [files, setFiles] = useState<string[]>([]);
   const [selectedPath, setSelectedPath] = useState("");
   const [editor, setEditor] = useState("");
@@ -71,6 +72,7 @@ export function WorkspacePage() {
   const [proposal, setProposal] = useState<FileProposal | null>(null);
   const [proposalBefore, setProposalBefore] = useState("");
   const [busy, setBusy] = useState(false);
+  const [agentRunning, setAgentRunning] = useState(false);
   const [notice, setNotice] = useState("");
   const [patchExported, setPatchExported] = useState(false);
   const [demoAvailable, setDemoAvailable] = useState(!linkedRepository);
@@ -122,7 +124,10 @@ export function WorkspacePage() {
       .catch((error) => {
         if (active) setNotice(error instanceof Error ? error.message : "Workspace failed to load.");
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      agentAbort.current?.abort();
+    };
   }, []);
 
   const saveEditor = async () => {
@@ -239,8 +244,12 @@ export function WorkspacePage() {
       return;
     }
     setBusy(true);
+    setAgentRunning(true);
     setProposal(null);
     setAnswer("");
+    const controller = new AbortController();
+    agentAbort.current = controller;
+    let receivedProposal = false;
     try {
       const response = await runAnthropicAgent({
         apiKey,
@@ -248,16 +257,33 @@ export function WorkspacePage() {
         task,
         workspace: store.current,
         onStatus: setStatus,
-        onProposal: (next) => void stageProposal(next)
+        onProposal: (next) => {
+          receivedProposal = true;
+          void stageProposal(next);
+        },
+        signal: controller.signal
       });
       setAnswer(response);
-      setStatus("Agent finished");
+      setStatus(receivedProposal ? "1 change awaiting review" : "Agent finished");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Agent run failed.");
-      setStatus("Agent stopped");
+      if (error instanceof Error && error.message === "Agent run cancelled.") {
+        setAnswer("Agent run cancelled. The workspace was not changed.");
+        setStatus("Agent cancelled");
+      } else {
+        setNotice(error instanceof Error ? error.message : "Agent run failed.");
+        setStatus("Agent stopped");
+      }
     } finally {
+      if (agentAbort.current === controller) agentAbort.current = null;
+      setAgentRunning(false);
       setBusy(false);
     }
+  };
+
+  const cancelAgent = () => {
+    if (!agentAbort.current) return;
+    setStatus("Stopping agent");
+    agentAbort.current.abort();
   };
 
   const acceptProposal = async () => {
@@ -362,9 +388,13 @@ export function WorkspacePage() {
               {demoAvailable && (
                 <button className="demo-button" onClick={() => void runDemo()} disabled={busy}><Play size={14} /> Local demo</button>
               )}
-              <button className="run-button" onClick={() => void runAgent()} disabled={busy || !task.trim()}>
-                {busy ? <LoaderCircle className="spin" size={15} /> : <Sparkles size={15} />} Run with Claude
-              </button>
+              {agentRunning ? (
+                <button className="stop-button" onClick={cancelAgent}><X size={15} /> Stop agent</button>
+              ) : (
+                <button className="run-button" onClick={() => void runAgent()} disabled={busy || !task.trim()}>
+                  {busy ? <LoaderCircle className="spin" size={15} /> : <Sparkles size={15} />} Run with Claude
+                </button>
+              )}
             </div>
           </div>
         </aside>

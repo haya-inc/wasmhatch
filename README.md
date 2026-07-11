@@ -115,6 +115,7 @@ expose file deletion.
 | Persistent import baseline and unified patch export | Available |
 | Review-before-write agent proposals | Available |
 | Anthropic Messages API tool loop | Alpha, BYOK |
+| Validated, cancellable, single-proposal agent runs | Available |
 | Share URL and badge builder | Available |
 | Shareable `repo`, `ref`, `task`, and GitHub `issue` context | Available |
 | Revision-pinned real task examples | Available |

@@ -458,7 +458,7 @@ and the changed file survives reload.
 - Complete and document `repo`, `ref`, and `task` deep links — complete
 - Publish an `Open in WasmHatch` badge and URL builder — complete
 - Add persistent baseline snapshots and patch-file export — complete
-- Add deterministic fixtures for agent tool-call failures and limits
+- Add deterministic fixtures for agent tool-call failures and limits — complete
 - Add three real small OSS example tasks — complete
 - Publish the first revision-pinned `good first issue` with a direct WasmHatch task link — complete
 - Preserve validated GitHub Issue context through patch export and handoff — complete
@@ -475,7 +475,8 @@ visitor can export a patch in under three minutes.
 - Add CSP and production hosting headers
 - Add workspace deletion, storage usage, and export-before-delete flows
 - Add archive fuzzing, accessibility tests, and browser capability tests
-- Add conversation compaction, cancellation, file-range reads, and cost limits
+- Add conversation compaction, file-range reads, and cost limits
+- Add agent-run cancellation — complete
 - Add secret-file exclusions and a visible model-egress ledger
 
 Exit condition: the public alpha has documented failure modes and no known
