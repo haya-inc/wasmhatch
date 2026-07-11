@@ -13,6 +13,7 @@ import { createBadgeMarkdown, createWorkspaceShareUrl } from "../lib/share";
 import { exampleTasks } from "../data/examples";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
+const landscapeUrl = `${repositoryUrl}/blob/main/docs/landscape.md`;
 
 export function LandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
@@ -168,6 +169,37 @@ export function LandingPage() {
             <Check aria-hidden="true" />
             <h3>Approve the patch</h3>
             <p>Every proposed write stops at a visible diff. Accept it, keep editing, or export the workspace.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="fit-section" id="fit" aria-labelledby="fit-title">
+        <div className="section-label">Choose the right surface</div>
+        <div className="fit-heading">
+          <h2 id="fit-title">Not a cloud IDE.<br />A shorter path.</h2>
+          <div>
+            <p>
+              Use WasmHatch when a public issue can become one reviewed text patch.
+              Reach for a runtime-first tool when the task must build, test, or debug.
+            </p>
+            <a href={landscapeUrl}>Read the product landscape <ArrowRight size={16} /></a>
+          </div>
+        </div>
+        <div className="fit-list" aria-label="Product fit comparison">
+          <article className="fit-primary">
+            <span>01</span><h3>WasmHatch</h3><p>Focused public issue → reviewable patch</p><small>No core runtime</small>
+          </article>
+          <article>
+            <span>02</span><h3>github.dev</h3><p>Lightweight repository edit → commit or PR</p><small>Browser editor</small>
+          </article>
+          <article>
+            <span>03</span><h3>Codespaces</h3><p>Build, test, and debug a whole project</p><small>Cloud VM + dev container</small>
+          </article>
+          <article>
+            <span>04</span><h3>WebContainers</h3><p>Embed Node.js execution in a web product</p><small>In-browser runtime</small>
+          </article>
+          <article>
+            <span>05</span><h3>OpenHands</h3><p>Delegate command-running work to an agent</p><small>Sandbox runtime</small>
           </article>
         </div>
       </section>

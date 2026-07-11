@@ -74,6 +74,20 @@ Each task is sized for one reviewable patch and opens with the repository,
 revision, and task already filled in. These are real repositories rather than
 tutorial fixtures.
 
+## Where WasmHatch fits
+
+WasmHatch is the runtime-free path for a small public issue that can be reviewed
+as a text patch. It complements rather than replaces browser editors, cloud
+development environments, in-browser runtimes, and sandboxed coding agents.
+
+- Use WasmHatch for a revision-pinned issue, explicit write review, and patch handoff.
+- Use github.dev when a signed-in contributor wants to edit and commit directly.
+- Use Codespaces or another cloud environment when the change must build or run.
+- Use WebContainers when a web product needs an in-browser Node.js runtime.
+- Use a sandboxed coding agent when autonomous command execution is the main job.
+
+See the source-backed [product landscape and decision guide](docs/landscape.md).
+
 ## Export a patch
 
 WasmHatch records a separate baseline whenever a sample, GitHub repository, or
