@@ -462,6 +462,7 @@ and the changed file survives reload.
 - Add three real small OSS example tasks — complete
 - Publish the first revision-pinned `good first issue` with a direct WasmHatch task link — complete
 - Preserve validated GitHub Issue context through patch export and handoff — complete
+- Publish a branded social preview with canonical share metadata — complete
 
 Exit condition: an external repository can link to a focused task and a new
 visitor can export a patch in under three minutes.

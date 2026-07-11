@@ -2,6 +2,8 @@
 
 > From issue to patch. No setup in between.
 
+[![WasmHatch — from issue to patch, no setup in between](public/social-preview.png)](https://haya-inc.github.io/wasmhatch/#examples)
+
 WasmHatch is an open-source, browser-native coding workspace for small, focused
 contributions. Import a public GitHub repository or zip archive, let an AI agent
 inspect selected files through bounded tools, review every proposed write as a
@@ -102,6 +104,7 @@ expose file deletion.
 | Share URL and badge builder | Available |
 | Shareable `repo`, `ref`, `task`, and GitHub `issue` context | Available |
 | Revision-pinned real task examples | Available |
+| Share-ready Open Graph and large-card preview | Available |
 | Local-directory write-back | Planned |
 | Browser command runtime | Under evaluation; not required for the core flow |
 | Git commit and pull-request creation | Planned |
