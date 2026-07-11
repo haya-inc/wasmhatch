@@ -323,13 +323,13 @@ export function LandingPage() {
         <h2 id="trust-title">Local-first.<br />Not hand-wavy.</h2>
         <div className="trust-lines">
           <div><span>Workspace</span><strong>Browser-managed storage</strong><em>01</em></div>
-          <div><span>Model access</span><strong>Only tool-requested content</strong><em>02</em></div>
+          <div><span>Model access</span><strong>Protected paths excluded</strong><em>02</em></div>
           <div><span>Writes</span><strong>Staged until you approve</strong><em>03</em></div>
           <div><span>API key</span><strong>Session memory only</strong><em>04</em></div>
         </div>
         <p className="trust-note">
-          <ShieldCheck size={20} /> Browser BYOK is explicit, not magic: use a dedicated key with a
-          spend limit. WasmHatch never claims the browser is a secret vault.
+          <ShieldCheck size={20} /> Every model-bound task, file list, and file read appears in the
+          workspace ledger. Path protection is defensive, not a substitute for reviewing access.
         </p>
       </section>
 
@@ -346,7 +346,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <footer>
+      <footer className="site-footer">
         <a className="wordmark wordmark-dark" href={homeUrl}>WH<span>／01</span></a>
         <p>Browser-native tools for the next open-source contributor.</p>
         <div><a href={repositoryUrl}>GitHub</a><a href={`${repositoryUrl}/blob/main/docs/plan.md`}>Plan</a><span>Apache-2.0</span></div>

@@ -30,6 +30,10 @@ security fixes.
 
 - Browser BYOK is opt-in and not equivalent to a hardware-backed secret store.
 - Model providers receive file content returned through approved read tools.
+- Common credential paths are hidden from agent listings and rejected by read
+  and proposal tools. This path-based control can have false negatives and does
+  not replace user review or content-level secret scanning.
+- The workspace displays a per-run ledger for user data attached to model requests.
 - OPFS data can be deleted when users clear site data.
 - Imported text files are untrusted input.
 - Browser command execution is not yet enabled.

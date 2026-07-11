@@ -477,7 +477,7 @@ visitor can export a patch in under three minutes.
 - Add archive fuzzing, accessibility tests, and browser capability tests
 - Add conversation compaction, file-range reads, and cost limits
 - Add agent-run cancellation — complete
-- Add secret-file exclusions and a visible model-egress ledger
+- Add secret-file exclusions and a visible model-egress ledger — complete
 
 Exit condition: the public alpha has documented failure modes and no known
 critical trust-boundary gaps.

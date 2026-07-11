@@ -1,11 +1,17 @@
 import type { WorkspaceStore } from "./workspace";
 import { normalizeWorkspacePath } from "./workspace";
+import { isProtectedAgentPath } from "./secrets";
 
 export interface FileProposal {
   path: string;
   content: string;
   rationale: string;
 }
+
+export type ModelEgressEvent =
+  | { kind: "task"; bytes: number }
+  | { kind: "file-list"; bytes: number; paths: string[]; protectedPaths: number }
+  | { kind: "file-read"; bytes: number; path: string; truncated: boolean };
 
 interface TextBlock {
   type: "text";
@@ -46,12 +52,12 @@ const MAX_RATIONALE_LENGTH = 2_000;
 const tools = [
   {
     name: "list_files",
-    description: "List every text file currently available in the browser workspace.",
+    description: "List every agent-accessible text file in the browser workspace. Protected credential paths are omitted.",
     input_schema: { type: "object", properties: {}, additionalProperties: false }
   },
   {
     name: "read_file",
-    description: "Read one UTF-8 text file from the browser workspace.",
+    description: "Read one agent-accessible UTF-8 text file from the browser workspace.",
     input_schema: {
       type: "object",
       properties: { path: { type: "string" } },
@@ -61,7 +67,7 @@ const tools = [
   },
   {
     name: "propose_file",
-    description: "Stage a complete file replacement for explicit user review. This does not write the file.",
+    description: "Stage a complete non-protected file replacement for explicit user review. This does not write the file.",
     input_schema: {
       type: "object",
       properties: {
@@ -158,7 +164,7 @@ async function createMessage(
       model,
       max_tokens: 4096,
       system:
-        "You are WasmHatch, a careful coding agent inside a browser sandbox. Inspect files with tools, make the smallest coherent change, and use propose_file for every write. Never claim a file is changed until the user approves the staged proposal.",
+        "You are WasmHatch, a careful coding agent inside a browser sandbox. Inspect files with tools, make the smallest coherent change, and use propose_file for every write. Credential paths are intentionally unavailable. Never claim a file is changed until the user approves the staged proposal.",
       tools,
       messages
     })
@@ -183,6 +189,7 @@ export async function runAnthropicAgent(options: {
   workspace: WorkspaceStore;
   onStatus: (message: string) => void;
   onProposal: (proposal: FileProposal) => void;
+  onEgress?: (event: ModelEgressEvent) => void;
   signal?: AbortSignal;
 }) {
   const task = options.task.trim();
@@ -192,12 +199,19 @@ export async function runAnthropicAgent(options: {
   }
   const messages: ApiMessage[] = [{ role: "user", content: options.task }];
   let finalText = "";
+  const encoder = new TextEncoder();
+  let pendingEgress: ModelEgressEvent[] = [{
+    kind: "task",
+    bytes: encoder.encode(options.task).byteLength
+  }];
 
   for (let turn = 0; turn < MAX_AGENT_TURNS; turn += 1) {
     if (options.signal?.aborted) throw new Error("Agent run cancelled.");
     options.onStatus(turn === 0 ? "Reading the task" : "Inspecting the workspace");
     let response: MessageResponse;
     try {
+      for (const event of pendingEgress) options.onEgress?.(event);
+      pendingEgress = [];
       response = await createMessage(options.apiKey, options.model, messages, options.signal);
     } catch (error) {
       if (options.signal?.aborted || isAbortError(error)) throw new Error("Agent run cancelled.");
@@ -217,16 +231,26 @@ export async function runAnthropicAgent(options: {
     if (!toolUses.length) return finalText || "The agent completed without a text response.";
 
     const results: ToolResultBlock[] = [];
+    const resultEgress: ModelEgressEvent[] = [];
     const proposalCount = toolUses.filter((toolUse) => toolUse.name === "propose_file").length;
     let stagedProposal: FileProposal | undefined;
     for (const toolUse of toolUses) {
       if (options.signal?.aborted) throw new Error("Agent run cancelled.");
       try {
         if (toolUse.name === "list_files") {
+          const paths = await options.workspace.listFiles();
+          const visiblePaths = paths.filter((path) => !isProtectedAgentPath(path));
+          const content = JSON.stringify(visiblePaths);
           results.push({
             type: "tool_result",
             tool_use_id: toolUse.id,
-            content: JSON.stringify(await options.workspace.listFiles())
+            content
+          });
+          resultEgress.push({
+            kind: "file-list",
+            bytes: encoder.encode(content).byteLength,
+            paths: visiblePaths,
+            protectedPaths: paths.length - visiblePaths.length
           });
         } else if (toolUse.name === "read_file") {
           const path = normalizeWorkspacePath(readToolString(
@@ -234,11 +258,22 @@ export async function runAnthropicAgent(options: {
             "path",
             { maxLength: MAX_PATH_LENGTH }
           ));
+          if (isProtectedAgentPath(path)) {
+            throw new Error(`Protected file is unavailable to the agent: ${path}`);
+          }
           options.onStatus(`Reading ${path}`);
+          const content = await options.workspace.readFile(path);
+          const boundedContent = content.slice(0, 100_000);
           results.push({
             type: "tool_result",
             tool_use_id: toolUse.id,
-            content: (await options.workspace.readFile(path)).slice(0, 100_000)
+            content: boundedContent
+          });
+          resultEgress.push({
+            kind: "file-read",
+            bytes: encoder.encode(boundedContent).byteLength,
+            path,
+            truncated: content.length > boundedContent.length
           });
         } else if (toolUse.name === "propose_file") {
           if (proposalCount > 1) {
@@ -261,6 +296,9 @@ export async function runAnthropicAgent(options: {
               { maxLength: MAX_RATIONALE_LENGTH }
             )
           };
+          if (isProtectedAgentPath(proposal.path)) {
+            throw new Error(`Protected file cannot be proposed by the agent: ${proposal.path}`);
+          }
           stagedProposal = proposal;
           results.push({
             type: "tool_result",
@@ -284,6 +322,7 @@ export async function runAnthropicAgent(options: {
       return finalText || "A change is ready for review.";
     }
     messages.push({ role: "user", content: results });
+    pendingEgress = resultEgress;
   }
 
   throw new Error(`Agent stopped after reaching the ${MAX_AGENT_TURNS}-turn safety limit.`);

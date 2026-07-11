@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { runAnthropicAgent } from "./agent";
+import { runAnthropicAgent, type ModelEgressEvent } from "./agent";
 import type { WorkspaceStore } from "./workspace";
 
 function apiResponse(content: unknown[]) {
@@ -97,6 +97,120 @@ describe("runAnthropicAgent", () => {
       is_error: true,
       content: "File not found: missing.ts"
     }]);
+  });
+
+  it("hides protected paths from file listings", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(apiResponse([{ type: "tool_use", id: "list-1", name: "list_files", input: {} }]))
+      .mockResolvedValueOnce(apiResponse([{ type: "text", text: "Only source files are available." }]));
+    vi.stubGlobal("fetch", fetchMock);
+    const workspace = createWorkspace({
+      listFiles: vi.fn().mockResolvedValue(["src/a.ts", ".env", ".ssh/id_rsa"])
+    });
+
+    await runAnthropicAgent(agentOptions(workspace));
+
+    expect(lastRequestResults(fetchMock, 1)).toEqual([{
+      type: "tool_result",
+      tool_use_id: "list-1",
+      content: JSON.stringify(["src/a.ts"])
+    }]);
+  });
+
+  it("rejects protected file reads before accessing storage", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(apiResponse([{
+        type: "tool_use",
+        id: "read-secret",
+        name: "read_file",
+        input: { path: ".env.local" }
+      }]))
+      .mockResolvedValueOnce(apiResponse([{ type: "text", text: "The protected file is unavailable." }]));
+    vi.stubGlobal("fetch", fetchMock);
+    const workspace = createWorkspace();
+
+    await runAnthropicAgent(agentOptions(workspace));
+
+    expect(workspace.readFile).not.toHaveBeenCalled();
+    expect(lastRequestResults(fetchMock, 1)).toEqual([{
+      type: "tool_result",
+      tool_use_id: "read-secret",
+      is_error: true,
+      content: "Protected file is unavailable to the agent: .env.local"
+    }]);
+  });
+
+  it("rejects protected file proposals", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(apiResponse([{
+        type: "tool_use",
+        id: "propose-secret",
+        name: "propose_file",
+        input: { path: ".npmrc", content: "token=changed", rationale: "Update auth" }
+      }]))
+      .mockResolvedValueOnce(apiResponse([{ type: "text", text: "I cannot change that protected file." }]));
+    vi.stubGlobal("fetch", fetchMock);
+    const onProposal = vi.fn();
+
+    await runAnthropicAgent(agentOptions(createWorkspace(), onProposal));
+
+    expect(onProposal).not.toHaveBeenCalled();
+    expect(lastRequestResults(fetchMock, 1)).toEqual([
+      expect.objectContaining({
+        tool_use_id: "propose-secret",
+        is_error: true,
+        content: "Protected file cannot be proposed by the agent: .npmrc"
+      })
+    ]);
+  });
+
+  it("reports only user data attached to outgoing model requests", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(apiResponse([{ type: "tool_use", id: "list-1", name: "list_files", input: {} }]))
+      .mockResolvedValueOnce(apiResponse([{ type: "tool_use", id: "read-1", name: "read_file", input: { path: "src/a.ts" } }]))
+      .mockResolvedValueOnce(apiResponse([{ type: "text", text: "Done." }]));
+    vi.stubGlobal("fetch", fetchMock);
+    const events: ModelEgressEvent[] = [];
+    const workspace = createWorkspace({
+      listFiles: vi.fn().mockResolvedValue(["src/a.ts", ".env"])
+    });
+
+    await runAnthropicAgent({
+      ...agentOptions(workspace),
+      onEgress: (event) => events.push(event)
+    });
+
+    expect(events).toEqual([
+      { kind: "task", bytes: 5 },
+      { kind: "file-list", bytes: 12, paths: ["src/a.ts"], protectedPaths: 1 },
+      { kind: "file-read", bytes: 20, path: "src/a.ts", truncated: false }
+    ]);
+  });
+
+  it("does not report tool results that are never sent in a later request", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(apiResponse([
+      { type: "tool_use", id: "read-1", name: "read_file", input: { path: "src/a.ts" } },
+      {
+        type: "tool_use",
+        id: "proposal-1",
+        name: "propose_file",
+        input: { path: "src/a.ts", content: "changed", rationale: "A direct proposal" }
+      }
+    ]));
+    vi.stubGlobal("fetch", fetchMock);
+    const events: ModelEgressEvent[] = [];
+
+    await runAnthropicAgent({
+      ...agentOptions(createWorkspace()),
+      onEgress: (event) => events.push(event)
+    });
+
+    expect(events).toEqual([{ kind: "task", bytes: 5 }]);
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it("rejects a batch of proposals and stages only a later single proposal", async () => {

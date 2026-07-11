@@ -15,13 +15,14 @@ import {
   LoaderCircle,
   Play,
   Save,
+  ShieldCheck,
   Sparkles,
   Trash2,
   Upload,
   X
 } from "lucide-react";
 import { createZipArchive, fetchGitHubRepository, readZipArchive } from "../lib/archive";
-import { runAnthropicAgent, type FileProposal } from "../lib/agent";
+import { runAnthropicAgent, type FileProposal, type ModelEgressEvent } from "../lib/agent";
 import { createReadableDiff } from "../lib/diff";
 import { buildWorkspacePatch } from "../lib/patch";
 import { normalizeGitHubIssueUrl } from "../lib/share";
@@ -84,6 +85,7 @@ export function WorkspacePage() {
   const [storageOpen, setStorageOpen] = useState(false);
   const [storageBusy, setStorageBusy] = useState(false);
   const [storageUsage, setStorageUsage] = useState<WorkspaceUsage | null>(null);
+  const [modelEgress, setModelEgress] = useState<ModelEgressEvent[]>([]);
 
   const refreshFiles = async (preferredPath?: string) => {
     const nextFiles = await store.current.listFiles();
@@ -157,6 +159,7 @@ export function WorkspacePage() {
       setPatchExported(false);
       setDemoAvailable(false);
       setProposal(null);
+      setModelEgress([]);
       await refreshFiles(imported[0].path);
       setAnswer(`Imported ${imported.length} text files${repoRef.trim() ? ` at ${repoRef.trim()}` : ""}. Edit manually or connect Claude when you are ready.`);
       setNotice("Repository imported into browser storage.");
@@ -178,6 +181,7 @@ export function WorkspacePage() {
       setPatchExported(false);
       setDemoAvailable(false);
       setProposal(null);
+      setModelEgress([]);
       await refreshFiles(imported[0].path);
       setNotice(`Imported ${imported.length} text files from ${file.name}.`);
     } catch (error) {
@@ -238,6 +242,7 @@ export function WorkspacePage() {
       setProposalBefore("");
       setPatchExported(false);
       setDemoAvailable(false);
+      setModelEgress([]);
       setStorageUsage(null);
       setStorageOpen(false);
       setAnswer("Workspace cleared. Import a repository or zip archive to continue.");
@@ -300,6 +305,7 @@ export function WorkspacePage() {
     setBusy(true);
     setAgentRunning(true);
     setProposal(null);
+    setModelEgress([]);
     setAnswer("");
     const controller = new AbortController();
     agentAbort.current = controller;
@@ -315,6 +321,7 @@ export function WorkspacePage() {
           receivedProposal = true;
           void stageProposal(next);
         },
+        onEgress: (event) => setModelEgress((current) => [...current, event]),
         signal: controller.signal
       });
       setAnswer(response);
@@ -418,6 +425,34 @@ export function WorkspacePage() {
               </section>
             )}
             <div className="agent-intro"><Sparkles size={18} /><p>{answer}</p></div>
+
+            <section className="egress-ledger" aria-label="Model egress ledger">
+              <div className="egress-heading">
+                <span><ShieldCheck size={14} /> Model egress</span>
+                <small>{modelEgress.length ? `${modelEgress.length} record${modelEgress.length === 1 ? "" : "s"}` : "Nothing sent"}</small>
+              </div>
+              {modelEgress.length ? (
+                <ol>
+                  {modelEgress.map((event, index) => (
+                    <li key={`${event.kind}-${index}`}>
+                      <div>
+                        <strong>
+                          {event.kind === "task" ? "Task prompt" : event.kind === "file-list" ? "Workspace file list" : event.path}
+                        </strong>
+                        <span>{formatBytes(event.bytes)}</span>
+                      </div>
+                      {event.kind === "file-list" && (
+                        <p>{event.paths.length ? event.paths.join(", ") : "No accessible paths"}{event.protectedPaths ? ` · ${event.protectedPaths} protected hidden` : ""}</p>
+                      )}
+                      {event.kind === "file-read" && event.truncated && <p>Content truncated to the agent read limit.</p>}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p>Task text and tool-requested project data appear here when attached to a model request.</p>
+              )}
+              <footer>Common credential paths such as .env* and private keys stay local. Protection is path-based, so review every request.</footer>
+            </section>
 
             {proposal && (
               <section className="proposal" aria-label="Proposed change">

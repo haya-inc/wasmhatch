@@ -26,6 +26,7 @@ immediately.
 - Browser storage usage is visible and can be cleared with an export-first option.
 - Claude can list and read files through explicit tools.
 - Agent writes are staged until the user approves a visible diff.
+- Common credential paths are denied to the agent and model-bound reads are logged.
 - A no-key local demo exercises the complete review flow.
 
 ## Try it locally
@@ -118,6 +119,7 @@ expose file deletion.
 | Review-before-write agent proposals | Available |
 | Anthropic Messages API tool loop | Alpha, BYOK |
 | Validated, cancellable, single-proposal agent runs | Available |
+| Protected credential paths and visible model-egress ledger | Available |
 | Share URL and badge builder | Available |
 | Shareable `repo`, `ref`, `task`, and GitHub `issue` context | Available |
 | Revision-pinned real task examples | Available |
@@ -137,6 +139,12 @@ Local-first does not mean secret or offline.
   before removing the stored copies.
 - The model receives only tool-requested file content, but that content does
   leave the device and is governed by the selected provider's terms.
+- The agent omits common credential paths such as `.env*`, private keys, and
+  cloud credential directories from file lists and rejects reads or proposals
+  targeting them. This is a path-based heuristic, not secret-content scanning.
+- The workspace ledger shows task text, file lists, and file reads attached to
+  model requests, including their byte sizes. It does not include the static
+  system prompt or API key; the key is sent only as the provider authorization header.
 - The Anthropic key is not persisted. A browser application cannot turn an API
   key into a perfectly isolated secret, so use a dedicated key with a spending
   limit and revoke it after testing.
