@@ -84,7 +84,7 @@ export function createZipArchive(files: WorkspaceFile[]): Uint8Array {
 }
 
 export function parseGitHubRepository(input: string): { owner: string; repo: string } {
-  const trimmed = input.trim().replace(/\.git\/?$/, "");
+  const trimmed = input.trim().split(/[?#]/, 1)[0].replace(/\.git\/?$/, "");
   const match = trimmed.match(/^(?:https?:\/\/github\.com\/)?([^/\s]+)\/([^/\s]+)\/?$/i);
   if (!match) throw new Error("Use owner/repository or a GitHub repository URL.");
   return { owner: match[1], repo: match[2] };
