@@ -468,6 +468,7 @@ and the changed file survives reload.
 - Replace the completed task with revision-pinned `good first issue` #4 — complete
 - Publish five parallel, revision-pinned newcomer tasks and a claim board — complete
 - Publish an opt-in external-repository adoption registry without third-party telemetry — complete
+- Prepare a source-guided, anti-spam launch and response playbook — complete
 
 Exit condition: an external repository can link to a focused task and a new
 visitor can export a patch in under three minutes.
@@ -568,3 +569,4 @@ the core repository-to-patch flow.
 - [WebContainer API](https://webcontainers.io/api)
 - [WebContainer header configuration](https://webcontainers.io/guides/configuring-headers)
 - [WebContainer commercial usage](https://webcontainers.io/enterprise)
+- [OSS adoption playbook](launch-playbook.md)
