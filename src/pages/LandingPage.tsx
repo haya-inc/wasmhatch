@@ -15,6 +15,7 @@ import { contributionTasks } from "../data/contributions";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 const landscapeUrl = `${repositoryUrl}/blob/main/docs/landscape.md`;
+const adoptionRegistryUrl = `${repositoryUrl}/issues/9`;
 
 export function LandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
@@ -338,6 +339,13 @@ export function LandingPage() {
           <div className="badge-preview">
             <p>README badge preview</p>
             <img src={`${homeUrl}open-in-wasmhatch.svg`} alt="Open in WasmHatch" />
+          </div>
+          <div className="adoption-report">
+            <div>
+              <span>06 / Report</span>
+              <p>Published a task or tried the workflow? Share the public repository in the opt-in adoption registry.</p>
+            </div>
+            <a href={adoptionRegistryUrl}>Register adoption <ArrowRight size={15} /></a>
           </div>
         </div>
       </section>

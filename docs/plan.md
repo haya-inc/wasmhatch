@@ -467,6 +467,7 @@ and the changed file survives reload.
 - Land the first external contribution through issue #1 and PR #2 — complete
 - Replace the completed task with revision-pinned `good first issue` #4 — complete
 - Publish five parallel, revision-pinned newcomer tasks and a claim board — complete
+- Publish an opt-in external-repository adoption registry without third-party telemetry — complete
 
 Exit condition: an external repository can link to a focused task and a new
 visitor can export a patch in under three minutes.
@@ -535,7 +536,7 @@ the core repository-to-patch flow.
 - Median time from opening a task link to the first staged diff is under three
   minutes.
 - At least 20 external repositories trial the workflow and 10 publish a task
-  link or badge.
+  link or badge, tracked through adoption registry issue #9.
 - At least 30% of started sample sessions reach patch or zip export.
 - Five external contributors land a change before the first beta — progress: 1/5
   through PR #2.

@@ -86,6 +86,13 @@ with five independent, revision-pinned `good first issue` lanes. Read and claim
 an issue before editing, then open the task directly in WasmHatch. Current lanes
 cover parsing, security UX, editor UX, import provenance, and accessibility.
 
+## Share an adoption
+
+WasmHatch does not use third-party analytics. If you trial the workflow on an
+external public repository or publish a task link or badge, add it to the
+[opt-in adoption registry](https://github.com/haya-inc/wasmhatch/issues/9).
+Reports that expose friction or failed trials are as useful as successful ones.
+
 ## Where WasmHatch fits
 
 WasmHatch is the runtime-free path for a small public issue that can be reviewed
