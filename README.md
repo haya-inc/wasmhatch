@@ -28,6 +28,7 @@ immediately.
 - Claude can list and read files through explicit tools.
 - Agent writes are staged until the user approves a visible diff.
 - Common credential paths are denied to the agent and model-bound reads are logged.
+- Agent reads use bounded line ranges and every run has request and token budgets.
 - Storage deletion uses a keyboard-contained native dialog with safe initial focus.
 - A no-key local demo exercises the complete review flow.
 
@@ -123,6 +124,7 @@ expose file deletion.
 | Anthropic Messages API tool loop | Alpha, BYOK |
 | Validated, cancellable, single-proposal agent runs | Available |
 | Protected credential paths and visible model-egress ledger | Available |
+| 200-line/50 KB file ranges, conversation compaction, and run budgets | Available |
 | Strict production meta CSP and build-time policy verification | Available |
 | Pre-inflation zip limits and deterministic malformed-archive regression tests | Available |
 | Keyboard-contained storage dialog with Escape and focus restoration | Available |
@@ -151,6 +153,11 @@ Local-first does not mean secret or offline.
 - The workspace ledger shows task text, file lists, and file reads attached to
   model requests, including their byte sizes. It does not include the static
   system prompt or API key; the key is sent only as the provider authorization header.
+- Agent history keeps the initial task and two recent completed tool exchanges;
+  older exchanges become a content-free tool summary and can be re-read by range.
+- Each run stops at 8 requests, 500 KB of cumulative serialized request bodies,
+  120,000 provider-reported input tokens, or 8,000 output tokens. These are
+  safety limits rather than a currency estimate; provider pricing still varies.
 - The production meta CSP denies all sources by default and allowlists only this
   origin, GitHub API/raw content, and Anthropic API connections. GitHub Pages
   does not support project-defined response headers, so header-only controls

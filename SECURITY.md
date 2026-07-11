@@ -34,6 +34,8 @@ security fixes.
   and proposal tools. This path-based control can have false negatives and does
   not replace user review or content-level secret scanning.
 - The workspace displays a per-run ledger for user data attached to model requests.
+- File reads are limited to 200 lines and 50 KB per call. Runs are bounded by
+  request count, cumulative serialized payload, and provider-reported token usage.
 - The production HTML applies a default-deny meta CSP and restricts network
   connections to the GitHub and Anthropic endpoints used by the application.
 - GitHub Pages supplies HTTPS/HSTS but does not allow this project to configure

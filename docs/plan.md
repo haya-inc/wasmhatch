@@ -478,7 +478,7 @@ visitor can export a patch in under three minutes.
 - Add archive fuzzing, accessibility tests, and browser capability tests —
   archive fuzzing, capability tests, and modal keyboard checks complete;
   broader automated accessibility coverage remains in progress
-- Add conversation compaction, file-range reads, and cost limits
+- Add conversation compaction, file-range reads, and cost limits — complete
 - Add agent-run cancellation — complete
 - Add secret-file exclusions and a visible model-egress ledger — complete
 

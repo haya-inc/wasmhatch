@@ -22,7 +22,12 @@ import {
   X
 } from "lucide-react";
 import { createZipArchive, fetchGitHubRepository, readZipArchive } from "../lib/archive";
-import { runAnthropicAgent, type FileProposal, type ModelEgressEvent } from "../lib/agent";
+import {
+  runAnthropicAgent,
+  type AgentBudgetSnapshot,
+  type FileProposal,
+  type ModelEgressEvent
+} from "../lib/agent";
 import { createReadableDiff } from "../lib/diff";
 import { buildWorkspacePatch } from "../lib/patch";
 import { normalizeGitHubIssueUrl } from "../lib/share";
@@ -92,6 +97,7 @@ export function WorkspacePage() {
   const [storageBusy, setStorageBusy] = useState(false);
   const [storageUsage, setStorageUsage] = useState<WorkspaceUsage | null>(null);
   const [modelEgress, setModelEgress] = useState<ModelEgressEvent[]>([]);
+  const [agentBudget, setAgentBudget] = useState<AgentBudgetSnapshot | null>(null);
   const [browserStorage, setBrowserStorage] = useState<BrowserStorageStatus | null>(null);
   const storageBackend = store.current.backend;
 
@@ -185,6 +191,7 @@ export function WorkspacePage() {
       setDemoAvailable(false);
       setProposal(null);
       setModelEgress([]);
+      setAgentBudget(null);
       await refreshFiles(imported[0].path);
       setAnswer(`Imported ${imported.length} text files${repoRef.trim() ? ` at ${repoRef.trim()}` : ""}. Edit manually or connect Claude when you are ready.`);
       setNotice("Repository imported into browser storage.");
@@ -207,6 +214,7 @@ export function WorkspacePage() {
       setDemoAvailable(false);
       setProposal(null);
       setModelEgress([]);
+      setAgentBudget(null);
       await refreshFiles(imported[0].path);
       setNotice(`Imported ${imported.length} text files from ${file.name}.`);
     } catch (error) {
@@ -292,6 +300,7 @@ export function WorkspacePage() {
       setPatchExported(false);
       setDemoAvailable(false);
       setModelEgress([]);
+      setAgentBudget(null);
       setStorageUsage(null);
       setStorageOpen(false);
       setAnswer("Workspace cleared. Import a repository or zip archive to continue.");
@@ -355,6 +364,7 @@ export function WorkspacePage() {
     setAgentRunning(true);
     setProposal(null);
     setModelEgress([]);
+    setAgentBudget(null);
     setAnswer("");
     const controller = new AbortController();
     agentAbort.current = controller;
@@ -371,6 +381,7 @@ export function WorkspacePage() {
           void stageProposal(next);
         },
         onEgress: (event) => setModelEgress((current) => [...current, event]),
+        onBudget: setAgentBudget,
         signal: controller.signal
       });
       setAnswer(response);
@@ -490,21 +501,38 @@ export function WorkspacePage() {
                     <li key={`${event.kind}-${index}`}>
                       <div>
                         <strong>
-                          {event.kind === "task" ? "Task prompt" : event.kind === "file-list" ? "Workspace file list" : event.path}
+                          {event.kind === "task"
+                            ? "Task prompt"
+                            : event.kind === "file-list"
+                              ? "Workspace file list"
+                              : event.kind === "file-read"
+                                ? event.path
+                                : "Compacted context"}
                         </strong>
                         <span>{formatBytes(event.bytes)}</span>
                       </div>
                       {event.kind === "file-list" && (
                         <p>{event.paths.length ? event.paths.join(", ") : "No accessible paths"}{event.protectedPaths ? ` · ${event.protectedPaths} protected hidden` : ""}</p>
                       )}
-                      {event.kind === "file-read" && event.truncated && <p>Content truncated to the agent read limit.</p>}
+                      {event.kind === "file-read" && (
+                        <p>Lines {event.startLine}–{event.endLine} of {event.totalLines}{event.truncated ? " · more available" : ""}</p>
+                      )}
+                      {event.kind === "compaction" && <p>{event.toolCalls} completed tool call(s) summarized without file content.</p>}
                     </li>
                   ))}
                 </ol>
               ) : (
                 <p>Task text and tool-requested project data appear here when attached to a model request.</p>
               )}
-              <footer>Common credential paths such as .env* and private keys stay local. Protection is path-based, so review every request.</footer>
+              {agentBudget && (
+                <div className="agent-budget" aria-label="Agent request budget">
+                  <div><span>Requests</span><strong>{agentBudget.requests} / {agentBudget.requestLimit}</strong></div>
+                  <div><span>Payload</span><strong>{formatBytes(agentBudget.requestBytes)} / {formatBytes(agentBudget.requestByteLimit)}</strong></div>
+                  <div><span>Provider tokens</span><strong>{agentBudget.inputTokens.toLocaleString()} / {agentBudget.inputTokenLimit.toLocaleString()} in · {agentBudget.outputTokens.toLocaleString()} / {agentBudget.outputTokenLimit.toLocaleString()} out</strong></div>
+                  {agentBudget.compactedToolCalls > 0 && <p>{agentBudget.compactedToolCalls} earlier tool call(s) compacted.</p>}
+                </div>
+              )}
+              <footer>Common credential paths stay local. First attachments appear above; repeated history counts toward 500 KB. Runs stop at 8 requests, 120K input tokens, or 8K output tokens.</footer>
             </section>
 
             {proposal && (
