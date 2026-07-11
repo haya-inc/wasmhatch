@@ -63,6 +63,9 @@ export function WorkspacePage() {
   }> | null>(null);
   const archiveInput = useRef<HTMLInputElement>(null);
   const agentAbort = useRef<AbortController | null>(null);
+  const storageDialog = useRef<HTMLDialogElement>(null);
+  const storageTrigger = useRef<HTMLButtonElement>(null);
+  const storageCancel = useRef<HTMLButtonElement>(null);
   const [files, setFiles] = useState<string[]>([]);
   const [selectedPath, setSelectedPath] = useState("");
   const [editor, setEditor] = useState("");
@@ -150,6 +153,17 @@ export function WorkspacePage() {
       agentAbort.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (!storageOpen) return;
+    const dialog = storageDialog.current;
+    if (dialog && !dialog.open) dialog.showModal();
+    return () => storageTrigger.current?.focus();
+  }, [storageOpen]);
+
+  useEffect(() => {
+    if (storageOpen && !storageBusy) storageCancel.current?.focus();
+  }, [storageOpen, storageBusy]);
 
   const saveEditor = async () => {
     if (!selectedPath) return;
@@ -428,7 +442,7 @@ export function WorkspacePage() {
                 ? "Files persist in browser-managed storage. Export anything you cannot afford to lose."
                 : "OPFS is unavailable. Using the smaller localStorage fallback; export a copy early."}
             </p>
-            <button onClick={() => void openStorageManager()} disabled={busy} aria-label="Manage browser storage"><HardDrive size={14} /> Manage</button>
+            <button ref={storageTrigger} onClick={() => void openStorageManager()} disabled={busy} aria-label="Manage browser storage"><HardDrive size={14} /> Manage</button>
           </div>
         </aside>
 
@@ -533,13 +547,28 @@ export function WorkspacePage() {
       </div>
 
       {storageOpen && (
-        <div className="storage-dialog-backdrop">
-          <section className="storage-dialog" role="dialog" aria-modal="true" aria-labelledby="storage-dialog-title">
+        <dialog
+          ref={storageDialog}
+          className="storage-dialog"
+          aria-labelledby="storage-dialog-title"
+          aria-describedby="storage-dialog-copy storage-dialog-warning"
+          aria-busy={storageBusy}
+          onCancel={(event) => {
+            event.preventDefault();
+            if (!storageBusy) setStorageOpen(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !storageBusy) {
+              event.preventDefault();
+              setStorageOpen(false);
+            }
+          }}
+        >
             <div className="storage-dialog-heading">
               <div><HardDrive size={17} /><h2 id="storage-dialog-title">Browser storage</h2></div>
               <button onClick={() => setStorageOpen(false)} disabled={storageBusy} aria-label="Close storage manager"><X size={16} /></button>
             </div>
-            <p className="storage-dialog-copy">WasmHatch stores both your working files and an import baseline in this browser.</p>
+            <p id="storage-dialog-copy" className="storage-dialog-copy">WasmHatch stores both your working files and an import baseline in this browser.</p>
             <div className={`storage-capabilities${storageBackend === "local-storage" ? " fallback" : ""}`} role="status">
               <div><span>Backend</span><strong>{storageBackend === "opfs" ? "Origin private file system" : "localStorage fallback"}</strong></div>
               <div>
@@ -567,7 +596,7 @@ export function WorkspacePage() {
                 </div>
               )}
             </dl>
-            <div className="storage-warning">
+            <div id="storage-dialog-warning" className="storage-warning">
               <Trash2 size={16} />
               <p>Clearing removes both copies from this browser. This cannot be undone. The built-in sample may appear again on your next visit.</p>
             </div>
@@ -577,10 +606,9 @@ export function WorkspacePage() {
               )}
               <button className="export-clear" onClick={() => void clearWorkspace(true)} disabled={storageBusy || files.length === 0}><Download size={15} /> Export zip &amp; clear</button>
               <button className="clear-only" onClick={() => void clearWorkspace(false)} disabled={storageBusy || files.length === 0}><Trash2 size={15} /> Clear without export</button>
-              <button onClick={() => setStorageOpen(false)} disabled={storageBusy}>Cancel</button>
+              <button ref={storageCancel} onClick={() => setStorageOpen(false)} disabled={storageBusy}>Cancel</button>
             </div>
-          </section>
-        </div>
+        </dialog>
       )}
 
       {notice && <div className="toast" role="status"><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss"><X size={15} /></button></div>}

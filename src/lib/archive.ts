@@ -5,6 +5,7 @@ import { normalizeWorkspacePath } from "./workspace";
 const MAX_ARCHIVE_BYTES = 20 * 1024 * 1024;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 const MAX_FILES = 500;
+const MAX_PATH_BYTES = 1024;
 const BINARY_EXTENSIONS = new Set([
   "7z", "avi", "bmp", "class", "dll", "dmg", "doc", "docx", "eot", "exe", "gif",
   "gz", "ico", "jar", "jpeg", "jpg", "lockb", "mov", "mp3", "mp4", "ogg", "otf",
@@ -16,22 +17,64 @@ function isProbablyText(bytes: Uint8Array) {
   return !bytes.subarray(0, 8000).includes(0);
 }
 
+class ArchiveSafetyError extends Error {}
+
 export function readZipArchive(bytes: Uint8Array): WorkspaceFile[] {
   if (bytes.byteLength > MAX_ARCHIVE_BYTES) throw new Error("Archive exceeds the 20 MB limit.");
-  const entries = unzipSync(bytes);
-  const names = Object.keys(entries).filter((name) => !name.endsWith("/"));
-  if (names.length > MAX_FILES) throw new Error("Archive contains more than 500 files.");
+  const encoder = new TextEncoder();
+  let fileCount = 0;
+  let expandedBytes = 0;
+  const validatedPaths = new Set<string>();
 
-  const root = names.length ? names[0].split("/")[0] : "";
-  const hasSharedRoot = Boolean(root) && names.every((name) => name.startsWith(`${root}/`));
+  try {
+    const entries = unzipSync(bytes, {
+      filter: (file) => {
+        if (file.name.endsWith("/")) return false;
+        fileCount += 1;
+        if (fileCount > MAX_FILES) throw new ArchiveSafetyError("Archive contains more than 500 files.");
+        if (encoder.encode(file.name).byteLength > MAX_PATH_BYTES) {
+          throw new ArchiveSafetyError("Archive contains a path longer than 1,024 bytes.");
+        }
+        let normalizedPath: string;
+        try {
+          normalizedPath = normalizeWorkspacePath(file.name);
+        } catch {
+          throw new ArchiveSafetyError("Archive contains an unsafe path.");
+        }
+        if (validatedPaths.has(normalizedPath)) {
+          throw new ArchiveSafetyError(`Archive contains a duplicate path: ${normalizedPath}`);
+        }
+        validatedPaths.add(normalizedPath);
+        if (!Number.isSafeInteger(file.originalSize) || file.originalSize < 0) {
+          throw new ArchiveSafetyError("Archive contains an invalid file size.");
+        }
+        if (file.originalSize > MAX_FILE_BYTES || !isSupportedGitHubPath(file.name)) return false;
+        expandedBytes += file.originalSize;
+        if (expandedBytes > MAX_ARCHIVE_BYTES) {
+          throw new ArchiveSafetyError("Archive expands beyond the 20 MB limit.");
+        }
+        return true;
+      }
+    });
+    const names = Object.keys(entries);
+    const root = names.length ? names[0].split("/")[0] : "";
+    const hasSharedRoot = Boolean(root) && names.every((name) => name.startsWith(`${root}/`));
+    const seen = new Set<string>();
 
-  return names.flatMap((name) => {
-    const content = entries[name];
-    if (content.byteLength > MAX_FILE_BYTES || !isProbablyText(content)) return [];
-    const stripped = hasSharedRoot ? name.slice(root.length + 1) : name;
-    if (!stripped) return [];
-    return [{ path: normalizeWorkspacePath(stripped), content: strFromU8(content) }];
-  });
+    return names.flatMap((name) => {
+      const content = entries[name];
+      if (!isProbablyText(content)) return [];
+      const stripped = hasSharedRoot ? name.slice(root.length + 1) : name;
+      if (!stripped) return [];
+      const path = normalizeWorkspacePath(stripped);
+      if (seen.has(path)) throw new ArchiveSafetyError(`Archive contains a duplicate path: ${path}`);
+      seen.add(path);
+      return [{ path, content: strFromU8(content) }];
+    });
+  } catch (error) {
+    if (error instanceof ArchiveSafetyError) throw error;
+    throw new Error("Archive is not a valid ZIP file.");
+  }
 }
 
 export function createZipArchive(files: WorkspaceFile[]): Uint8Array {

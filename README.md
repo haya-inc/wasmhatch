@@ -28,6 +28,7 @@ immediately.
 - Claude can list and read files through explicit tools.
 - Agent writes are staged until the user approves a visible diff.
 - Common credential paths are denied to the agent and model-bound reads are logged.
+- Storage deletion uses a keyboard-contained native dialog with safe initial focus.
 - A no-key local demo exercises the complete review flow.
 
 ## Try it locally
@@ -123,6 +124,8 @@ expose file deletion.
 | Validated, cancellable, single-proposal agent runs | Available |
 | Protected credential paths and visible model-egress ledger | Available |
 | Strict production meta CSP and build-time policy verification | Available |
+| Pre-inflation zip limits and deterministic malformed-archive regression tests | Available |
+| Keyboard-contained storage dialog with Escape and focus restoration | Available |
 | Share URL and badge builder | Available |
 | Shareable `repo`, `ref`, `task`, and GitHub `issue` context | Available |
 | Revision-pinned real task examples | Available |
@@ -156,6 +159,8 @@ Local-first does not mean secret or offline.
   key into a perfectly isolated secret, so use a dedicated key with a spending
   limit and revoke it after testing.
 - Imported archives are limited to 20 MB, 500 text files, and 2 MB per file.
+- ZIP metadata is checked before inflation for unsafe paths, duplicate normalized
+  paths, excessive file counts, and more than 20 MB of accepted expanded content.
 - Paths are normalized and traversal outside the workspace is rejected.
 - Command execution is deliberately absent until runtime licensing, network
   egress, and secret-file handling are proven.

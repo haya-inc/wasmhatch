@@ -20,6 +20,7 @@ button, input, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
 button { color: inherit; }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, dialog:focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px; }
 ::selection { color: var(--ink); background: var(--accent); }
 
 .landing { overflow: clip; background: var(--ink); }
@@ -319,8 +320,8 @@ button { color: inherit; }
 .spin { animation: spin 800ms linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
 .toast { position: fixed; z-index: 20; left: 50%; bottom: 22px; transform: translateX(-50%); max-width: min(540px, calc(100vw - 30px)); min-height: 42px; padding: 0 8px 0 14px; display: flex; align-items: center; gap: 12px; border: 1px solid #40453e; background: #191c18; box-shadow: 0 16px 45px rgba(0,0,0,.35); color: #cbd0c8; font: 500 9px/1.4 var(--mono); }
 .toast button { border: 0; background: transparent; color: #777c74; cursor: pointer; }
-.storage-dialog-backdrop { position: fixed; z-index: 30; inset: 0; padding: 20px; display: grid; place-items: center; background: rgba(5,6,5,.78); backdrop-filter: blur(4px); }
-.storage-dialog { width: min(470px, 100%); border: 1px solid #3a3f38; background: #141713; box-shadow: 0 24px 80px rgba(0,0,0,.58); }
+.storage-dialog { width: min(470px, calc(100% - 40px)); max-height: calc(100vh - 40px); padding: 0; overflow: auto; border: 1px solid #3a3f38; background: #141713; box-shadow: 0 24px 80px rgba(0,0,0,.58); color: #d9ddd5; }
+.storage-dialog::backdrop { background: rgba(5,6,5,.78); backdrop-filter: blur(4px); }
 .storage-dialog-heading { height: 52px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #30342f; }
 .storage-dialog-heading > div { display: flex; align-items: center; gap: 9px; }.storage-dialog-heading svg { color: var(--accent); }
 .storage-dialog-heading h2 { margin: 0; color: #e0e4dc; font: 700 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; }

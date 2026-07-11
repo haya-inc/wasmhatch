@@ -41,4 +41,6 @@ security fixes.
   `frame-ancestors`; this remains a documented hosting limitation.
 - OPFS data can be deleted when users clear site data.
 - Imported text files are untrusted input.
+- ZIP central-directory metadata is validated before inflation; malformed,
+  traversing, duplicate-path, oversized, and excessive-file archives are rejected.
 - Browser command execution is not yet enabled.

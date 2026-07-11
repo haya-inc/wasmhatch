@@ -475,7 +475,9 @@ visitor can export a patch in under three minutes.
 - Add CSP and production hosting headers — strict meta CSP complete; custom
   response headers remain unavailable on GitHub Pages
 - Add workspace deletion, storage usage, and export-before-delete flows — complete
-- Add archive fuzzing, accessibility tests, and browser capability tests
+- Add archive fuzzing, accessibility tests, and browser capability tests —
+  archive fuzzing, capability tests, and modal keyboard checks complete;
+  broader automated accessibility coverage remains in progress
 - Add conversation compaction, file-range reads, and cost limits
 - Add agent-run cancellation — complete
 - Add secret-file exclusions and a visible model-egress ledger — complete
