@@ -18,10 +18,10 @@ const landscapeUrl = `${repositoryUrl}/blob/main/docs/landscape.md`;
 export function LandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const workspaceUrl = `${homeUrl}?view=workspace`;
-  const [shareRepo, setShareRepo] = useState("haya-inc/wasmhatch");
-  const [shareRef, setShareRef] = useState("main");
-  const [shareTask, setShareTask] = useState("Improve one focused part of the README");
-  const [shareIssue, setShareIssue] = useState("https://github.com/haya-inc/wasmhatch/issues/1");
+  const [shareRepo, setShareRepo] = useState(exampleTasks[0].repository);
+  const [shareRef, setShareRef] = useState(exampleTasks[0].ref);
+  const [shareTask, setShareTask] = useState(exampleTasks[0].task);
+  const [shareIssue, setShareIssue] = useState(exampleTasks[0].issueUrl || "");
   const [copied, setCopied] = useState<"url" | "badge" | "error" | null>(null);
   const absoluteHomeUrl = new URL(homeUrl, window.location.origin).toString();
   const shareUrl = useMemo(
