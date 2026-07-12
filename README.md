@@ -4,6 +4,8 @@
 
 [Open the business-operator foundation slice](https://haya-inc.github.io/wasmhatch/?view=operator)
 
+[Run the 60-second local demo](https://haya-inc.github.io/wasmhatch/?view=operator&demo=local) — no account, API key, OAuth, upload, or server required.
+
 WasmHatch is an open-source, browser-native AI operator for general business
 work. It gives an AI typed access to spreadsheets and future business APIs,
 runs generated data transformations inside a resource-limited Wasm sandbox,
@@ -80,6 +82,10 @@ and AI attachment contract](docs/operator-artifact-browser.md), [typed workspace
 artifact workflow contract](docs/workspace-artifact-workflows.md), [Google Sheets
 workspace snapshot contract](docs/google-sheets-workspace-snapshots.md), and [business-agent
 landscape](docs/landscape.md).
+
+New users should start with the [quickstart](docs/quickstart.md). It covers the
+key-free local review loop, local CSV/XLSX files, and the exact Google Sheets
+snapshot-to-artifact path.
 
 For pilots, use the [business pilot and OSS adoption
 playbook](docs/launch-playbook.md) and copy the [pilot evidence

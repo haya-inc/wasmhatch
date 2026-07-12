@@ -220,6 +220,10 @@ export function OperatorPage() {
   const [plannerApiKey, setPlannerApiKey] = useState("");
   const [plannerModel, setPlannerModel] = useState(DEFAULT_PLANNER_MODEL);
   const [planning, setPlanning] = useState(false);
+  const [showLocalDemoGuide, setShowLocalDemoGuide] = useState(() => (
+    new URLSearchParams(window.location.search).get("demo") === "local"
+  ));
+  const [localDemoCompleted, setLocalDemoCompleted] = useState(false);
   const [agentTrace, setAgentTrace] = useState<WorkspaceAgentTraceEvent[]>([]);
   const [agentBudget, setAgentBudget] = useState<WorkspaceAgentBudget | null>(null);
   const [committing, setCommitting] = useState(false);
@@ -951,6 +955,7 @@ export function OperatorPage() {
         setStatus(isGoogle
           ? `Updated ${outcome.receipt.providerResult.updatedCells} cells in ${outcome.receipt.providerResult.updatedRange}`
           : source === "artifact" ? "Approved changes applied to the imported working snapshot" : "Approved changes applied to the local demo");
+        if (source === "demo") setLocalDemoCompleted(true);
         record({
           title: isGoogle ? "Google Sheets effect committed" : "Local effect committed",
           detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}`,
@@ -1288,6 +1293,8 @@ export function OperatorPage() {
     setArtifactFile(null);
     setArtifactSheetChoice("");
     setSource("demo");
+    setShowLocalDemoGuide(true);
+    setLocalDemoCompleted(false);
     setLoadedGoogleTarget(null);
     setStatus("Ready");
     setError("");
@@ -1994,6 +2001,25 @@ export function OperatorPage() {
 
         <section className="operator-workbench">
           <div className="operator-panel-heading"><span>Working data</span><small>{rows.length} rows · {Math.max(0, ...rows.map((row) => row.length))} columns{rows.length > TABLE_PREVIEW_ROWS ? ` · previewing ${TABLE_PREVIEW_ROWS}` : ""}</small></div>
+          {showLocalDemoGuide && source === "demo" && (
+            <div className={localDemoCompleted ? "operator-demo-guide complete" : proposal ? "operator-demo-guide review" : "operator-demo-guide"} role="region" aria-label="60-second local demo" aria-live="polite">
+              <span className="operator-demo-step">{localDemoCompleted ? "03" : proposal ? "02" : "01"}</span>
+              <div>
+                <strong>{localDemoCompleted ? "Local loop complete" : proposal ? `${changes.length} typed changes staged` : "60-second local demo"}</strong>
+                <small>{localDemoCompleted
+                  ? "The approved values changed only in this tab. Import a CSV/XLSX when you are ready for your own data."
+                  : proposal
+                    ? "Review the exact before/after cells. Nothing has been written yet."
+                    : "No account or API key. Run the preset in QuickJS, inspect the cell diff, then choose whether to apply it."}</small>
+              </div>
+              <button className="operator-demo-action" onClick={() => {
+                if (localDemoCompleted) setShowLocalDemoGuide(false);
+                else if (proposal) document.querySelector<HTMLElement>(".operator-review")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                else void runScript();
+              }} disabled={committing || planning}>{localDemoCompleted ? "Done" : proposal ? "Review changes" : "Run bounded transform"}</button>
+              <button className="operator-demo-close" onClick={() => setShowLocalDemoGuide(false)} aria-label="Dismiss local demo guide"><X size={13} /></button>
+            </div>
+          )}
           <div className="operator-table-wrap">
             <table className="operator-table">
               <tbody>

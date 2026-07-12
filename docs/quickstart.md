@@ -1,0 +1,54 @@
+# WasmHatch quickstart
+
+The fastest way to understand WasmHatch is the key-free local loop. It runs in
+the browser, makes no network request, and stops before a durable change.
+
+## 60-second local demo
+
+Open the [guided local demo](https://haya-inc.github.io/wasmhatch/?view=operator&demo=local).
+
+1. Select **Run bounded transform**. The preset synchronous function executes in
+   the QuickJS Wasm Worker against the four copied demo rows.
+2. Inspect the 12 typed before/after cells. The working data is still unchanged.
+3. Select **Approve and apply locally**, or reject the proposal. Approval changes
+   only the in-tab demo state.
+
+No account, API key, OAuth client, upload, or server is involved. The guide is a
+product walkthrough, not an authorization shortcut: script execution and effect
+approval remain separate actions.
+
+## Try a local workbook
+
+1. Select **CSV / XLSX** and choose a bounded workbook.
+2. Review the detected sheet, dimensions, source hash, formula count, external
+   link count, and warnings.
+3. Edit or run the local transformation script.
+4. Review the typed cell proposal before applying it to the working snapshot.
+5. Export a safe CSV/value-only XLSX, or save a manifest-bound workspace output.
+
+The source workbook bytes are parsed in a Worker and are not retained in the
+Operator workspace. Macros are rejected, formulas do not execute, and generated
+scripts receive copied values rather than browser or connector capabilities.
+
+## Try the Google Sheets artifact loop
+
+This path requires a Google OAuth Web client ID configured for the deployment
+origin and a memory-only OpenAI API key.
+
+1. Connect Google Sheets and load one exact range.
+2. Confirm **AI read grant ready** for the displayed range.
+3. Choose **Artifact output**, enter the task, and start the AI plan.
+4. If requested, the host re-reads only that range and materializes a
+   credential-free content-addressed JSON input.
+5. Review the generated script and output identity, run it in QuickJS, inspect
+   the file diff, and approve or reject the exact output.
+
+The model never receives the OAuth token or provider spreadsheet ID. See the
+[Google Sheets workspace snapshot contract](google-sheets-workspace-snapshots.md)
+for the complete authority and stale-state rules.
+
+## Pilot evidence
+
+Export the run journal after a consented workflow and record the result with the
+[pilot evidence template](pilot-evidence-template.md). Public sanitized results
+can be added to [pilot registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12).

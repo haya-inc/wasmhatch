@@ -37,6 +37,7 @@ const workflows = [
 export function BusinessLandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const operatorUrl = `${homeUrl}?view=operator`;
+  const localDemoUrl = `${operatorUrl}&demo=local`;
 
   return (
     <main className="landing business-landing">
@@ -48,7 +49,7 @@ export function BusinessLandingPage() {
           <a href="#trust">Trust model</a>
           <a href={repositoryUrl}>GitHub</a>
         </nav>
-        <a className="header-cta" href={operatorUrl}>Open operator <ArrowRight size={16} /></a>
+        <a className="header-cta" href={localDemoUrl}>Try local demo <ArrowRight size={16} /></a>
       </header>
 
       <section className="hero" aria-labelledby="hero-title">
@@ -59,7 +60,7 @@ export function BusinessLandingPage() {
           <h1 id="hero-title" className="reveal reveal-two"><span>Wasm</span><span>Hatch.</span></h1>
           <p className="hero-promise reveal reveal-three">AI work, with<br />every action visible.</p>
           <div className="hero-actions reveal reveal-four">
-            <a className="button button-primary" href={operatorUrl}>Open the operator <ArrowRight size={18} /></a>
+            <a className="button button-primary" href={localDemoUrl}>Try in 60 seconds <ArrowRight size={18} /></a>
             <a className="button button-quiet" href={repositoryUrl}><GitFork size={17} /> View source</a>
           </div>
         </div>
@@ -152,7 +153,7 @@ export function BusinessLandingPage() {
           <p className="section-label">One task. Visible effects.</p>
           <h2>Let the agent reason. Bound what it can do.</h2>
           <p className="proof-copy">Business automation becomes trustworthy when credentials, computation, and external writes are separate capabilities.</p>
-          <a href={operatorUrl} className="text-link">Try the foundation slice <ArrowRight size={17} /></a>
+          <a href={localDemoUrl} className="text-link">Try without an account or key <ArrowRight size={17} /></a>
         </div>
         <div className="proof-log">
           <div><span>00:00</span><p>Imported <strong>pipeline.xlsx / Forecast</strong> in a codec Worker</p></div>
@@ -183,7 +184,7 @@ export function BusinessLandingPage() {
 
       <section className="final-cta">
         <div><p className="section-label">Foundation slice</p><h2>Operate visibly.</h2></div>
-        <div className="final-actions"><a className="button button-dark" href={operatorUrl}>Open WasmHatch <ArrowRight size={19} /></a><p>Open source.<br />No account required for the local demo.</p></div>
+        <div className="final-actions"><a className="button button-dark" href={localDemoUrl}>Run the local demo <ArrowRight size={19} /></a><p>Open source.<br />No account or API key required.</p></div>
       </section>
 
       <footer className="site-footer">

@@ -49,6 +49,37 @@ test("runs a spreadsheet transform in Wasm and requires write approval", async (
   await expect(page.getByText("Local effect committed")).toBeVisible();
 });
 
+test("completes the 60-second local demo without an account or API key", async ({ page }) => {
+  await page.goto("/?view=operator&demo=local");
+
+  const guide = page.getByRole("region", { name: "60-second local demo" });
+  await expect(guide).toContainText("No account or API key");
+  await guide.getByRole("button", { name: "Run bounded transform" }).click();
+
+  await expect(page.getByText("Explicit approval required")).toBeVisible();
+  await expect(guide).toContainText("12 typed changes staged");
+  await guide.getByRole("button", { name: "Review changes" }).click();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+
+  await expect(page.getByText("Local effect committed", { exact: true })).toBeVisible();
+  await expect(guide).toContainText("Local loop complete");
+  await guide.getByRole("button", { name: "Done" }).click();
+  await expect(guide).toBeHidden();
+  expect(await page.getByLabel("OpenAI session API key").inputValue()).toBe("");
+});
+
+test("keeps the guided local demo usable at 390 pixels", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?view=operator&demo=local");
+
+  const guide = page.getByRole("region", { name: "60-second local demo" });
+  await expect(guide).toBeVisible();
+  const action = guide.getByRole("button", { name: "Run bounded transform" });
+  await expect(action).toBeVisible();
+  expect((await action.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
 test("exports a credential-field-free structured run journal with pilot timing evidence", async ({ page }) => {
   await page.goto("/?view=operator");
   await page.getByLabel("OpenAI session API key").fill("sk-e2e-secret-never-record");
