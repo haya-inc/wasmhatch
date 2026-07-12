@@ -1,0 +1,814 @@
+<!doctype html>
+<!--
+  WasmHatch spike: Google Picker + drive.file folder-access verification harness.
+
+  PURPOSE
+    Verify, with a real Google account, what the non-sensitive OAuth scope
+    https://www.googleapis.com/auth/drive.file actually grants when the user
+    picks a FOLDER through the Google Picker:
+      (a) access to the folder resource itself (files.get on the folder id),
+      (b) access to EXISTING children (files.list with '<folderId>' in parents),
+      (c) access to children ADDED LATER (re-run the children listing after
+          adding a file through the Drive web UI).
+
+  STATUS
+    This page is a throwaway verification harness. It is NOT part of the
+    WasmHatch application build, it is never bundled by Vite (the app root
+    index.html does not reference it), and it MUST NEVER be deployed.
+    The application Content-Security-Policy does not apply here; this page is
+    standalone on purpose so it can load Google's Picker script (api.js),
+    which the app CSP would forbid.
+
+  CREDENTIALS
+    The OAuth Client ID, API key, and optional App ID are read from the form
+    fields into JavaScript memory only. Nothing is written to localStorage,
+    sessionStorage, IndexedDB, cookies, or the URL. Reloading the page
+    forgets everything. Never commit real values into the repository.
+
+  See README.md next to this file for setup, run procedure, result recording,
+  and interpretation guidance.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>WasmHatch spike: Picker + drive.file folder access</title>
+  <style>
+    :root {
+      --bg: #f6f7f5;
+      --card: #ffffff;
+      --ink: #1c211c;
+      --muted: #5b635b;
+      --line: #d7dcd5;
+      --pass: #1a7f37;
+      --fail: #b42318;
+      --warn: #9a6700;
+      --info: #3b5bdb;
+      --mono: ui-monospace, "Cascadia Code", Consolas, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px 16px 64px;
+      background: var(--bg); color: var(--ink);
+      font: 15px/1.5 system-ui, "Segoe UI", sans-serif;
+    }
+    main { max-width: 960px; margin: 0 auto; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 0 0 10px; }
+    .banner {
+      border: 2px solid var(--fail); background: #fdf0ef; color: #7a1c12;
+      border-radius: 8px; padding: 10px 14px; margin: 0 0 20px; font-size: 13.5px;
+    }
+    .banner strong { text-transform: uppercase; letter-spacing: 0.04em; }
+    section {
+      background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+      padding: 16px; margin: 0 0 16px;
+    }
+    label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 2px; }
+    input[type="text"] {
+      width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
+      font: 13px var(--mono); background: #fbfcfa; color: var(--ink);
+    }
+    .note { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    button {
+      padding: 8px 14px; border: 1px solid var(--line); border-radius: 6px;
+      background: #eef1ec; color: var(--ink); font: 600 13.5px system-ui, sans-serif;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: #e2e7de; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    #token-status, #picked-status { font: 12.5px var(--mono); color: var(--muted); margin-top: 10px; white-space: pre-wrap; }
+    ol#log-list {
+      list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto;
+      font: 12.5px/1.55 var(--mono); border: 1px solid var(--line); border-radius: 6px;
+      background: #fbfcfa;
+    }
+    ol#log-list li { padding: 6px 10px; border-bottom: 1px solid #eceee9; overflow-wrap: anywhere; }
+    ol#log-list li:last-child { border-bottom: none; }
+    .time { color: var(--muted); margin-right: 8px; }
+    .badge {
+      display: inline-block; min-width: 44px; text-align: center; margin-right: 8px;
+      padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 11px; color: #fff;
+    }
+    .badge.pass { background: var(--pass); }
+    .badge.fail { background: var(--fail); }
+    .badge.warn { background: var(--warn); }
+    .badge.info { background: var(--info); }
+    .check .name { font-weight: 700; margin-right: 8px; }
+    .check .status { color: var(--muted); margin-right: 8px; }
+    .check .detail { margin-top: 3px; }
+    .check .explanation { margin-top: 3px; color: #454d45; background: #f2f4f0; border-left: 3px solid var(--line); padding: 4px 8px; }
+    pre#summary-json {
+      margin: 10px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: 6px;
+      background: #fbfcfa; font: 12px/1.5 var(--mono);
+      max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+      user-select: all;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>WasmHatch spike: Google Picker + <code>drive.file</code> folder access</h1>
+  <p class="banner">
+    <strong>Spike only — never deploy.</strong> This standalone page verifies whether a
+    Picker folder pick grants real access under the <code>drive.file</code> scope.
+    Until the checks below PASS on record, WasmHatch must not advertise any
+    folder-based task; the boundary wording stays &ldquo;hand me files&rdquo;.
+    Credentials entered below stay in page memory only and are never persisted.
+  </p>
+
+  <section id="credentials">
+    <h2>Credentials (memory only)</h2>
+    <label for="client-id">OAuth 2.0 Web Client ID (required)</label>
+    <input type="text" id="client-id" autocomplete="off" spellcheck="false"
+           placeholder="1234567890-abc123.apps.googleusercontent.com" />
+    <label for="api-key">API key, restricted to the Google Picker API (required)</label>
+    <input type="text" id="api-key" autocomplete="off" spellcheck="false"
+           placeholder="AIza..." />
+    <label for="app-id">App ID = Cloud project number (optional, recommended)</label>
+    <input type="text" id="app-id" autocomplete="off" spellcheck="false"
+           placeholder="1234567890" />
+    <p class="note">
+      These values are read into JavaScript variables only. This page never writes them to
+      localStorage, sessionStorage, cookies, IndexedDB, or the URL; reloading forgets them.
+      The App ID (the numeric project number, not the project id string) lets the Picker
+      attribute the per-file grant to the same Cloud project as the OAuth client. Leaving it
+      empty is a known cause of false FAILs, so fill it in if results look inexplicably negative.
+    </p>
+  </section>
+
+  <section id="steps">
+    <h2>Steps</h2>
+    <div class="buttons">
+      <button id="btn-signin">1. Init + sign in (drive.file only)</button>
+      <button id="btn-picker" disabled>2. Open Picker</button>
+      <button id="btn-checks" disabled>3. Run checks on picked item</button>
+      <button id="btn-recheck" disabled>4. Re-check children (after adding a file in Drive UI)</button>
+    </div>
+    <div id="token-status">Token: none. Click "1. Init + sign in".</div>
+    <div id="picked-status">Picked item: none yet.</div>
+    <p class="note">
+      Step 4 answers question (c): add a NEW file to the picked folder using the Drive
+      web UI (not this page), then click it. Files created by this harness are marked in the
+      results, because <code>drive.file</code> always covers app-created files and they must
+      not be mistaken for evidence of folder read access.
+    </p>
+  </section>
+
+  <section>
+    <h2>Log</h2>
+    <ol id="log-list"></ol>
+  </section>
+
+  <section>
+    <h2>Result summary (copyable JSON)</h2>
+    <div class="buttons"><button id="btn-copy">Copy JSON</button></div>
+    <pre id="summary-json">No checks recorded yet.</pre>
+  </section>
+</main>
+
+<!-- Official Google libraries. GIS provides the OAuth token client; api.js provides the Picker. -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
+
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Constants and state
+// ---------------------------------------------------------------------------
+
+var DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+var FOLDER_MIME = 'application/vnd.google-apps.folder';
+
+// Export targets for Google-native types (files.get?alt=media does not work on them).
+var GOOGLE_EXPORT_MIME = {
+  'application/vnd.google-apps.document': 'text/plain',
+  'application/vnd.google-apps.spreadsheet': 'text/csv',
+  'application/vnd.google-apps.presentation': 'text/plain',
+  'application/vnd.google-apps.drawing': 'image/png'
+};
+
+// All mutable state lives here, in memory only. Nothing is ever persisted.
+var state = {
+  clientId: null,
+  apiKey: null,
+  appId: null,
+  tokenClient: null,
+  accessToken: null,
+  tokenExpiresAt: 0,        // epoch ms; GIS tokens last about 1 hour
+  pickerReady: false,
+  picked: null,             // last picked item: { id, name, mimeType, isFolder, pickedAt }
+  lastPickedFolder: null,   // last picked FOLDER, kept for the step-4 re-check
+  createdFileIds: [],       // ids of files this harness created via files.create
+  checks: []                // structured results, mirrored into the JSON summary
+};
+
+// ---------------------------------------------------------------------------
+// DOM helpers (textContent only; no innerHTML with dynamic data)
+// ---------------------------------------------------------------------------
+
+function $(id) { return document.getElementById(id); }
+
+function el(tag, className, text) {
+  var node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function nowIso() { return new Date().toISOString(); }
+
+// Plain log line: [time] BADGE message
+function logLine(kind, message) {
+  var li = el('li');
+  li.appendChild(el('span', 'time', nowIso()));
+  li.appendChild(el('span', 'badge ' + kind, kind.toUpperCase()));
+  li.appendChild(el('span', null, message));
+  $('log-list').appendChild(li);
+  li.scrollIntoView({ block: 'nearest' });
+}
+
+// Structured check result: recorded in state, rendered in the log, and mirrored
+// into the JSON summary. This is the primary output of the harness.
+function recordCheck(result) {
+  result.at = nowIso();
+  state.checks.push(result);
+
+  var li = el('li', 'check');
+  li.appendChild(el('span', 'time', result.at));
+  li.appendChild(el('span', 'badge ' + (result.pass ? 'pass' : 'fail'), result.pass ? 'PASS' : 'FAIL'));
+  li.appendChild(el('span', 'name', result.name));
+  li.appendChild(el('span', 'status', 'HTTP ' + (result.httpStatus || 'n/a')));
+  if (result.detail) li.appendChild(el('div', 'detail', result.detail));
+  if (result.explanation) li.appendChild(el('div', 'explanation', result.explanation));
+  $('log-list').appendChild(li);
+  li.scrollIntoView({ block: 'nearest' });
+
+  renderSummary();
+}
+
+function renderSummary() {
+  var summary = {
+    harness: 'wasmhatch-spike-picker-drive-file',
+    generatedAt: nowIso(),
+    page: location.origin + location.pathname,
+    scopeRequested: DRIVE_FILE_SCOPE,
+    appIdProvided: Boolean(state.appId),
+    pickedItem: state.picked,
+    harnessCreatedFileIds: state.createdFileIds,
+    checks: state.checks
+  };
+  $('summary-json').textContent = JSON.stringify(summary, null, 2);
+}
+
+function updateTokenStatus() {
+  var line;
+  if (!state.accessToken) {
+    line = 'Token: none. Click "1. Init + sign in".';
+  } else {
+    var msLeft = state.tokenExpiresAt - Date.now();
+    if (msLeft <= 0) {
+      line = 'Token: EXPIRED (GIS tokens last about 1 hour). Click "1. Init + sign in" again.';
+    } else {
+      line = 'Token: active, scope=' + DRIVE_FILE_SCOPE +
+             '\nExpires at ' + new Date(state.tokenExpiresAt).toLocaleTimeString() +
+             ' (~' + Math.round(msLeft / 60000) + ' min left). Sign in again after expiry.';
+    }
+  }
+  $('token-status').textContent = line;
+}
+
+function updatePickedStatus() {
+  if (!state.picked) {
+    $('picked-status').textContent = 'Picked item: none yet.';
+    return;
+  }
+  $('picked-status').textContent =
+    'Picked item: ' + (state.picked.isFolder ? 'FOLDER' : 'FILE') +
+    ' "' + state.picked.name + '"\nid=' + state.picked.id + ' mimeType=' + state.picked.mimeType;
+}
+
+// Surface unexpected script errors in the visible log so the operator sees them.
+window.addEventListener('error', function (e) {
+  logLine('fail', 'Uncaught error: ' + e.message);
+});
+window.addEventListener('unhandledrejection', function (e) {
+  logLine('fail', 'Unhandled rejection: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+});
+
+// ---------------------------------------------------------------------------
+// Drive REST helpers (plain fetch with a Bearer token; no gapi client)
+// ---------------------------------------------------------------------------
+
+function driveUrl(path, params) {
+  var url = new URL('https://www.googleapis.com/drive/v3/' + path);
+  Object.keys(params || {}).forEach(function (k) { url.searchParams.set(k, params[k]); });
+  return url.toString();
+}
+
+// Throws with a friendly message when there is no usable token. A 30-second
+// safety margin mirrors the app's treatment of near-expiry tokens.
+function ensureFreshToken() {
+  if (!state.accessToken) {
+    throw new Error('No access token. Run "1. Init + sign in" first.');
+  }
+  if (Date.now() > state.tokenExpiresAt - 30000) {
+    state.accessToken = null;
+    updateTokenStatus();
+    throw new Error('Access token expired (GIS tokens last about 1 hour). ' +
+      'Click "1. Init + sign in" to get a fresh token, then retry.');
+  }
+}
+
+function driveFetch(url, options) {
+  ensureFreshToken();
+  options = options || {};
+  var headers = Object.assign({ Authorization: 'Bearer ' + state.accessToken }, options.headers || {});
+  return fetch(url, Object.assign({}, options, { headers: headers }));
+}
+
+// Extract { message, reason } from a Drive API error body, tolerating non-JSON.
+async function parseErrorBody(res) {
+  try {
+    var body = await res.json();
+    var e = body && body.error ? body.error : {};
+    var reason = (e.errors && e.errors[0] && e.errors[0].reason) || e.status || '';
+    return { message: e.message || JSON.stringify(body), reason: reason };
+  } catch (_) {
+    return { message: '(no parseable error body)', reason: '' };
+  }
+}
+
+// Map an HTTP failure to the interpretation the operator must record.
+// The 403-vs-404 distinction is the core of this spike:
+//   403 = the token or grant is insufficient for an item Drive admits exists,
+//   404 = under drive.file, Drive hides ungranted items as if they do not exist.
+function explainFailure(status, reason, context) {
+  if (status === 0) {
+    return 'The request never reached Drive (network failure, offline, or the token check failed). Not evidence about the grant.';
+  }
+  if (status === 401) {
+    return 'HTTP 401: the access token is invalid, expired (about 1 hour lifetime), or revoked. Click "1. Init + sign in" again and retry; this says nothing about folder access.';
+  }
+  if (status === 403) {
+    if (reason === 'accessNotConfigured') {
+      return 'HTTP 403 accessNotConfigured: the Google Drive API is not enabled on this Cloud project. Enable it and retry; not evidence about the grant.';
+    }
+    if (reason === 'insufficientPermissions' || reason === 'insufficientFilePermissions' ||
+        reason === 'insufficientScopes' || reason === 'appNotAuthorizedToFile' ||
+        reason === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT' || reason === 'PERMISSION_DENIED') {
+      return 'HTTP 403 (' + reason + '): scope-level or per-file-grant denial. Drive can see the item exists for this user, but the drive.file token does not authorize this operation on it. Distinct from 404, where Drive pretends the item does not exist at all.';
+    }
+    return 'HTTP 403 (' + (reason || 'unspecified') + '): denied. Could be rate limiting or policy; check the message before treating it as a grant result.';
+  }
+  if (status === 404) {
+    if (context === 'children-list') {
+      return 'HTTP 404 on the children query: under drive.file, no access to the folder contents. Drive reports ungranted items as not-found, so 404 here means the folder pick did NOT extend to children. Consequence for WasmHatch: the "hand me files" wording stays; folder tasks must not be advertised.';
+    }
+    if (context === 'folder-get') {
+      return 'HTTP 404 on the folder itself: under drive.file, items without a per-item grant are reported as not-found even though they exist. The Picker folder pick did NOT grant access to the folder resource. Consequence for WasmHatch: folder selection is meaningless under this scope; keep the "hand me files" wording.';
+    }
+    if (context === 'create') {
+      return 'HTTP 404 creating inside the folder: Drive treats the parent as nonexistent for this app, i.e. no write grant on the picked folder.';
+    }
+    return 'HTTP 404: under drive.file this normally means "no per-file grant", not "the item does not exist". The pick did not grant access to this item for this app/project (check the App ID / project-number match).';
+  }
+  return 'HTTP ' + status + ': unexpected failure; read the error message and record it verbatim.';
+}
+
+// ---------------------------------------------------------------------------
+// Step 1: Init + sign in (GIS token client, drive.file ONLY)
+// ---------------------------------------------------------------------------
+
+function handleInitSignIn() {
+  state.clientId = $('client-id').value.trim();
+  state.apiKey = $('api-key').value.trim();
+  state.appId = $('app-id').value.trim() || null;
+
+  if (!state.clientId || !state.apiKey) {
+    logLine('fail', 'Both the OAuth Client ID and the API key are required.');
+    return;
+  }
+  if (state.clientId.indexOf('.apps.googleusercontent.com') === -1) {
+    logLine('warn', 'The Client ID does not end in .apps.googleusercontent.com — double-check it.');
+  }
+  if (location.protocol === 'file:') {
+    logLine('fail', 'This page is opened via file:// — Google Identity Services requires an http(s) origin. Serve it on http://localhost:5500 (see README.md).');
+    return;
+  }
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    logLine('fail', 'The Google Identity Services script (accounts.google.com/gsi/client) has not loaded yet. Check the network, wait a moment, and click again.');
+    return;
+  }
+
+  // Preload the Picker module so step 2 is ready. Non-fatal if api.js lags.
+  ensurePickerLoaded(null);
+
+  // Recreate the token client on every click so an edited Client ID takes
+  // effect, and so re-clicking after the ~1 hour expiry issues a new token.
+  state.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: state.clientId,
+    scope: DRIVE_FILE_SCOPE, // intentionally the ONLY scope requested
+    callback: onTokenResponse,
+    error_callback: onTokenError
+  });
+
+  logLine('info', 'Requesting an access token for scope ' + DRIVE_FILE_SCOPE + ' (Google consent popup opens; if nothing appears, your browser blocked the popup).');
+  state.tokenClient.requestAccessToken();
+}
+
+function onTokenResponse(resp) {
+  if (resp.error) {
+    logLine('fail', 'Token response error: ' + resp.error + (resp.error_description ? ' — ' + resp.error_description : ''));
+    return;
+  }
+  state.accessToken = resp.access_token;
+  state.tokenExpiresAt = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+
+  var grantedAll = true;
+  try {
+    grantedAll = google.accounts.oauth2.hasGrantedAllScopes(resp, DRIVE_FILE_SCOPE);
+  } catch (_) { /* older GIS builds: assume granted and rely on API errors */ }
+  if (!grantedAll) {
+    logLine('warn', 'Google reports drive.file was NOT granted (partial consent). Every check below will fail with 403; sign in again and grant the scope.');
+  }
+
+  logLine('pass', 'Signed in. Access token obtained for drive.file only. It expires in about ' + Math.round((Number(resp.expires_in) || 3600) / 60) + ' minutes; finish the whole run within that window or sign in again.');
+  updateTokenStatus();
+  $('btn-picker').disabled = false;
+}
+
+function onTokenError(err) {
+  var type = err && err.type ? err.type : 'unknown';
+  if (type === 'popup_failed_to_open') {
+    logLine('fail', 'Consent popup blocked by the browser. Allow popups for this origin (localhost:5500) and click "1. Init + sign in" again.');
+  } else if (type === 'popup_closed') {
+    logLine('warn', 'Consent popup was closed before completing. No token issued; click "1. Init + sign in" again.');
+  } else {
+    logLine('fail', 'Sign-in failed (' + type + '). If the popup showed "Error 400: invalid_request" or an origin mismatch, add http://localhost:5500 to the OAuth client\'s Authorized JavaScript origins.');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: Open the Picker (folder view + docs view)
+// ---------------------------------------------------------------------------
+
+function ensurePickerLoaded(andThen) {
+  if (state.pickerReady) { if (andThen) andThen(); return; }
+  if (!window.gapi || !gapi.load) {
+    logLine('warn', 'The Picker script (apis.google.com/js/api.js) has not loaded yet. Wait a moment and retry.');
+    return;
+  }
+  gapi.load('picker', {
+    callback: function () {
+      state.pickerReady = true;
+      logLine('info', 'Picker module loaded.');
+      if (andThen) andThen();
+    },
+    onerror: function () { logLine('fail', 'Failed to load the Picker module from api.js.'); },
+    timeout: 10000,
+    ontimeout: function () { logLine('fail', 'Timed out loading the Picker module. Check the network and retry.'); }
+  });
+}
+
+function handleOpenPicker() {
+  try { ensureFreshToken(); } catch (e) { logLine('fail', e.message); return; }
+  ensurePickerLoaded(openPickerNow);
+}
+
+function openPickerNow() {
+  // View 1: folder hierarchy with folder selection enabled — the subject of
+  // this spike. setSelectFolderEnabled(true) puts the Select button on folders.
+  var folderView = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+    .setIncludeFolders(true)
+    .setSelectFolderEnabled(true)
+    .setMimeTypes(FOLDER_MIME);
+
+  // View 2: ordinary docs view for picking a single file (control case).
+  var filesView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+    .setIncludeFolders(true); // allow navigating into folders while picking files
+
+  var builder = new google.picker.PickerBuilder()
+    .setOAuthToken(state.accessToken)
+    .setDeveloperKey(state.apiKey)
+    .addView(folderView)
+    .addView(filesView)
+    .setTitle('WasmHatch drive.file spike: pick a FOLDER (tab 1) or a file (tab 2)')
+    .setCallback(onPickerAction)
+    .enableFeature(google.picker.Feature.SUPPORT_DRIVES);
+
+  // Attribute the grant to the same Cloud project as the OAuth client.
+  // Recommended by Google for drive.file; a mismatch can cause false FAILs.
+  if (state.appId) builder.setAppId(state.appId);
+
+  builder.build().setVisible(true);
+  logLine('info', 'Picker opened. Pick the prepared test folder (or a file for the control run).');
+}
+
+function onPickerAction(data) {
+  if (data.action === google.picker.Action.CANCEL) {
+    logLine('warn', 'Picker cancelled; nothing picked.');
+    return;
+  }
+  if (data.action !== google.picker.Action.PICKED) return; // ignore "loaded" etc.
+
+  var doc = data.docs && data.docs[0];
+  if (!doc || !doc.id) {
+    logLine('fail', 'Picker returned no document data.');
+    return;
+  }
+
+  state.picked = {
+    id: doc.id,
+    name: doc.name || '(unnamed)',
+    mimeType: doc.mimeType || '(unknown)',
+    isFolder: doc.mimeType === FOLDER_MIME,
+    pickedAt: nowIso()
+  };
+  if (state.picked.isFolder) {
+    state.lastPickedFolder = state.picked;
+    $('btn-recheck').disabled = false;
+  }
+
+  logLine('pass', 'Picked ' + (state.picked.isFolder ? 'FOLDER' : 'FILE') + ' "' + state.picked.name + '" (id=' + state.picked.id + ', mimeType=' + state.picked.mimeType + '). Now click "3. Run checks".');
+  updatePickedStatus();
+  renderSummary();
+  $('btn-checks').disabled = false;
+}
+
+// ---------------------------------------------------------------------------
+// Step 3: Checks
+// ---------------------------------------------------------------------------
+
+async function handleRunChecks() {
+  if (!state.picked) { logLine('fail', 'Nothing picked yet.'); return; }
+  $('btn-checks').disabled = true;
+  try {
+    if (state.picked.isFolder) {
+      logLine('info', 'Running FOLDER checks on "' + state.picked.name + '"...');
+      await checkFolderGet(state.picked);
+      await checkChildrenList(state.picked, 'folder.childrenList', 'initial listing right after the pick');
+      await checkFilesCreate(state.picked);
+      logLine('info', 'Folder checks done. For question (c): add a NEW file to this folder in the Drive web UI, then click "4. Re-check children".');
+    } else {
+      logLine('info', 'Running FILE checks on "' + state.picked.name + '"...');
+      await checkFileGet(state.picked);
+      await checkFileContent(state.picked);
+      logLine('info', 'File checks done.');
+    }
+  } finally {
+    $('btn-checks').disabled = false;
+  }
+}
+
+// (a) Is the folder resource itself readable?
+async function checkFolderGet(folder) {
+  var name = 'folder.filesGet';
+  try {
+    var res = await driveFetch(driveUrl('files/' + encodeURIComponent(folder.id), {
+      fields: 'id,name,mimeType,capabilities',
+      supportsAllDrives: 'true'
+    }));
+    if (res.ok) {
+      var body = await res.json();
+      recordCheck({
+        name: name, target: folder.id, pass: true, httpStatus: res.status,
+        detail: 'name="' + body.name + '" mimeType=' + body.mimeType + ' capabilities=' + JSON.stringify(body.capabilities || {}),
+        explanation: 'Question (a): YES for this run — the app can read the picked folder\'s own metadata under drive.file. Check the capabilities flags (canListChildren, canAddChildren) against the outcomes of the next two checks.'
+      });
+    } else {
+      var err = await parseErrorBody(res);
+      recordCheck({
+        name: name, target: folder.id, pass: false, httpStatus: res.status,
+        detail: err.message,
+        explanation: explainFailure(res.status, err.reason, 'folder-get')
+      });
+    }
+  } catch (e) {
+    recordCheck({ name: name, target: folder.id, pass: false, httpStatus: 0, detail: String(e.message || e), explanation: explainFailure(0, '', 'folder-get') });
+  }
+}
+
+// (b) and (c): Are children visible via files.list?
+// PASS requires at least one visible child that this harness did NOT create,
+// because drive.file always covers app-created files (that would prove nothing).
+async function checkChildrenList(folder, checkName, label) {
+  try {
+    var res = await driveFetch(driveUrl('files', {
+      q: "'" + folder.id + "' in parents and trashed = false",
+      fields: 'files(id,name,mimeType),incompleteSearch',
+      pageSize: '100',
+      supportsAllDrives: 'true',
+      includeItemsFromAllDrives: 'true'
+    }));
+    if (res.ok) {
+      var body = await res.json();
+      var files = body.files || [];
+      var listing = files.map(function (f) {
+        var mine = state.createdFileIds.indexOf(f.id) !== -1;
+        return '"' + f.name + '" (' + f.mimeType + ')' + (mine ? ' [created by this harness]' : '');
+      }).join(', ');
+      var externalCount = files.filter(function (f) { return state.createdFileIds.indexOf(f.id) === -1; }).length;
+
+      var pass, explanation;
+      if (externalCount > 0) {
+        pass = true;
+        explanation = 'Children NOT created by this harness are visible (' + label + '). Under drive.file the folder pick extends to these children in this run. Record it; only recorded runs may back any folder-workflow documentation.';
+      } else if (files.length > 0) {
+        pass = false;
+        explanation = 'HTTP 200, but the ONLY visible children were created by this harness. drive.file always covers app-created files, so this does NOT demonstrate access to pre-existing or externally added children. Treat as no folder read-through.';
+      } else {
+        pass = false;
+        explanation = 'HTTP 200 with zero visible children — ambiguous. If the folder is known to contain files (the README requires preparing one before the run), drive.file is hiding them: no read access to children. If the folder is genuinely empty, redo the run with a folder that already contains at least one file.';
+      }
+      recordCheck({
+        name: checkName, target: folder.id, pass: pass, httpStatus: res.status,
+        detail: files.length + ' visible child(ren)' + (files.length ? ': ' + listing : '') + (body.incompleteSearch ? ' (incompleteSearch=true)' : ''),
+        explanation: explanation
+      });
+    } else {
+      var err = await parseErrorBody(res);
+      recordCheck({
+        name: checkName, target: folder.id, pass: false, httpStatus: res.status,
+        detail: err.message,
+        explanation: explainFailure(res.status, err.reason, 'children-list')
+      });
+    }
+  } catch (e) {
+    recordCheck({ name: checkName, target: folder.id, pass: false, httpStatus: 0, detail: String(e.message || e), explanation: explainFailure(0, '', 'children-list') });
+  }
+}
+
+// Can the app create a new file inside the picked folder?
+// NOTE: a PASS here does NOT imply general folder access — drive.file always
+// grants the app access to files it created itself.
+async function checkFilesCreate(folder) {
+  var name = 'folder.filesCreate';
+  var stamp = nowIso().replace(/[:.]/g, '-');
+  var fileName = 'wasmhatch-spike-' + stamp + '.txt';
+  var content = 'WasmHatch drive.file spike marker file.\n' +
+    'Created only to verify files.create with parents=[pickedFolderId] under the drive.file scope.\n' +
+    'Safe to delete.\n';
+
+  // Multipart upload: JSON metadata part + small text content part.
+  var boundary = 'wasmhatch_spike_' + Date.now();
+  var metadata = { name: fileName, parents: [folder.id], mimeType: 'text/plain' };
+  var multipartBody =
+    '--' + boundary + '\r\n' +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(metadata) + '\r\n' +
+    '--' + boundary + '\r\n' +
+    'Content-Type: text/plain\r\n\r\n' +
+    content + '\r\n' +
+    '--' + boundary + '--';
+
+  try {
+    ensureFreshToken();
+    var res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,parents', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + state.accessToken,
+        'Content-Type': 'multipart/related; boundary=' + boundary
+      },
+      body: multipartBody
+    });
+    if (res.ok) {
+      var body = await res.json();
+      if (body.id) state.createdFileIds.push(body.id);
+      recordCheck({
+        name: name, target: folder.id, pass: true, httpStatus: res.status,
+        detail: 'created "' + body.name + '" id=' + body.id + ' parents=' + JSON.stringify(body.parents || []),
+        explanation: 'The app can create new files inside the picked folder. CAVEAT: drive.file always covers files the app created itself, so this PASS alone is NOT evidence of read access to other children — it only supports a "save new outputs into a folder you picked" claim. Cleanup: delete ' + fileName + ' from Drive after the run.'
+      });
+    } else {
+      var err = await parseErrorBody(res);
+      recordCheck({
+        name: name, target: folder.id, pass: false, httpStatus: res.status,
+        detail: err.message,
+        explanation: explainFailure(res.status, err.reason, 'create')
+      });
+    }
+  } catch (e) {
+    recordCheck({ name: name, target: folder.id, pass: false, httpStatus: 0, detail: String(e.message || e), explanation: explainFailure(0, '', 'create') });
+  }
+}
+
+// Control case: metadata of a picked FILE.
+async function checkFileGet(file) {
+  var name = 'file.filesGet';
+  try {
+    var res = await driveFetch(driveUrl('files/' + encodeURIComponent(file.id), {
+      fields: 'id,name,mimeType,size,capabilities',
+      supportsAllDrives: 'true'
+    }));
+    if (res.ok) {
+      var body = await res.json();
+      recordCheck({
+        name: name, target: file.id, pass: true, httpStatus: res.status,
+        detail: 'name="' + body.name + '" mimeType=' + body.mimeType + (body.size ? ' size=' + body.size : '') + ' capabilities=' + JSON.stringify(body.capabilities || {}),
+        explanation: 'Baseline drive.file behavior: a picked FILE is readable. This is the access model behind the current "hand me files" wording.'
+      });
+    } else {
+      var err = await parseErrorBody(res);
+      recordCheck({
+        name: name, target: file.id, pass: false, httpStatus: res.status,
+        detail: err.message,
+        explanation: explainFailure(res.status, err.reason, 'file-get')
+      });
+    }
+  } catch (e) {
+    recordCheck({ name: name, target: file.id, pass: false, httpStatus: 0, detail: String(e.message || e), explanation: explainFailure(0, '', 'file-get') });
+  }
+}
+
+// Control case: content of a picked FILE (alt=media, or export for Google types).
+async function checkFileContent(file) {
+  var name = 'file.contentGet';
+  var isGoogleType = file.mimeType.indexOf('application/vnd.google-apps.') === 0;
+  var url, method;
+  if (isGoogleType) {
+    var exportMime = GOOGLE_EXPORT_MIME[file.mimeType] || 'application/pdf';
+    url = driveUrl('files/' + encodeURIComponent(file.id) + '/export', { mimeType: exportMime });
+    method = 'files.export as ' + exportMime;
+  } else {
+    url = driveUrl('files/' + encodeURIComponent(file.id), { alt: 'media', supportsAllDrives: 'true' });
+    method = 'files.get?alt=media';
+  }
+  try {
+    var res = await driveFetch(url);
+    if (res.ok) {
+      var contentType = res.headers.get('content-type') || '';
+      var detail;
+      if (contentType.indexOf('text/') === 0 || contentType.indexOf('json') !== -1 || contentType.indexOf('csv') !== -1) {
+        var text = await res.text();
+        detail = method + ' OK, ' + text.length + ' chars. Preview: ' + JSON.stringify(text.slice(0, 160));
+      } else {
+        var blob = await res.blob();
+        detail = method + ' OK, ' + blob.size + ' bytes of ' + (contentType || 'binary');
+      }
+      recordCheck({
+        name: name, target: file.id, pass: true, httpStatus: res.status,
+        detail: detail,
+        explanation: 'The picked file\'s content is downloadable/exportable under drive.file, as expected for a per-file pick.'
+      });
+    } else {
+      var err = await parseErrorBody(res);
+      recordCheck({
+        name: name, target: file.id, pass: false, httpStatus: res.status,
+        detail: method + ' failed: ' + err.message,
+        explanation: explainFailure(res.status, err.reason, 'file-content')
+      });
+    }
+  } catch (e) {
+    recordCheck({ name: name, target: file.id, pass: false, httpStatus: 0, detail: String(e.message || e), explanation: explainFailure(0, '', 'file-content') });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 4: Re-check children — question (c), later-added files
+// ---------------------------------------------------------------------------
+
+async function handleRecheckChildren() {
+  if (!state.lastPickedFolder) { logLine('fail', 'No folder was picked in this session.'); return; }
+  $('btn-recheck').disabled = true;
+  try {
+    logLine('info', 'Re-checking children of "' + state.lastPickedFolder.name + '". Only meaningful AFTER adding a new file via the Drive web UI (not via this harness). If the new file is missing, wait ~30 seconds and re-check once before concluding.');
+    await checkChildrenList(state.lastPickedFolder, 'folder.childrenRecheck', 'later-added-child re-check');
+  } finally {
+    $('btn-recheck').disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Copy JSON + wiring
+// ---------------------------------------------------------------------------
+
+async function handleCopy() {
+  var text = $('summary-json').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    logLine('pass', 'Summary JSON copied to the clipboard.');
+  } catch (_) {
+    logLine('warn', 'Clipboard access denied. Click into the JSON block (it selects itself) and copy manually.');
+  }
+}
+
+$('btn-signin').addEventListener('click', handleInitSignIn);
+$('btn-picker').addEventListener('click', handleOpenPicker);
+$('btn-checks').addEventListener('click', handleRunChecks);
+$('btn-recheck').addEventListener('click', handleRecheckChildren);
+$('btn-copy').addEventListener('click', handleCopy);
+
+setInterval(updateTokenStatus, 15000);
+updateTokenStatus();
+updatePickedStatus();
+logLine('info', 'Harness ready. Serve on http://localhost:5500, fill in credentials, then run steps 1-4. See README.md for the full procedure.');
+if (location.protocol === 'file:') {
+  logLine('fail', 'Opened via file:// — sign-in will not work. Serve the page: npx serve spikes/picker -l 5500');
+}
+</script>
+</body>
+</html>
