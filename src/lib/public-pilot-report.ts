@@ -1,4 +1,5 @@
 import type { RunJournal, RunJournalMetrics } from "./run-journal";
+import { guidedDemoDefinition, type GuidedDemoId } from "./guided-demo";
 
 export const PUBLIC_PILOT_REPORT_SCHEMA = "wasmhatch.public-pilot-report.v1" as const;
 
@@ -41,17 +42,18 @@ function validateMetrics(metrics: RunJournalMetrics) {
   };
 }
 
-export function createGuidedLocalDemoPilotReport(journal: RunJournal) {
+export function createGuidedLocalDemoPilotReport(journal: RunJournal, demoId: GuidedDemoId = "normalization") {
   if (!journal || typeof journal !== "object") throw new Error("Pilot run journal is required.");
+  const demo = guidedDemoDefinition(demoId);
   const metrics = validateMetrics(journal.metrics);
   if (journal.state !== "committed" || metrics.commits < 1 || metrics.approvals < 1 || metrics.proposalsPrepared < 1) {
     throw new Error("Complete an approved local demo effect before creating its public pilot report.");
   }
   const report = `<!-- ${PUBLIC_PILOT_REPORT_SCHEMA} — inspect before posting; do not add private data. -->
-## Guided local demo pilot
+## ${demo.label} pilot
 
-- Workflow: 60-second local QuickJS transform and typed cell review
-- Source: bundled synthetic demo rows
+- Workflow: ${demo.reportWorkflow}
+- Source: ${demo.sourceDescription}
 - Result: committed local effect
 - Script runs: ${metrics.scriptRuns}
 - Proposals prepared: ${metrics.proposalsPrepared}

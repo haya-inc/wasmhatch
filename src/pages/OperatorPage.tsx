@@ -101,6 +101,12 @@ import {
 } from "../lib/workspace-agent";
 import { createGuidedLocalDemoPilotReport } from "../lib/public-pilot-report";
 import {
+  guidedDemoDefinition,
+  resolveGuidedDemo,
+  type GuidedDemoDefinition,
+  type GuidedDemoId
+} from "../lib/guided-demo";
+import {
   appendRunJournalEvent,
   createPolicyDecisionEnvelope,
   createRunJournal,
@@ -113,26 +119,7 @@ import {
   type RunJournalOutcome
 } from "../lib/run-journal";
 
-const DEMO_ROWS: SpreadsheetRows = [
-  ["Owner", "Region", "Amount", "Stage"],
-  ["  aya tanaka", " west ", "12,400", "won"],
-  ["KEN ITO  ", "East", "8300", "OPEN"],
-  [" mei sato ", " north", "6,250", " Won "]
-];
-
 const PUBLIC_PILOT_REPORT_URL = "https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml";
-
-const DEFAULT_SCRIPT = `(rows) => rows.map((row, index) => {
-  if (index === 0) return row;
-  const titleCase = (value) => String(value).trim().toLowerCase()
-    .replace(/(^|\\s)\\S/g, (letter) => letter.toUpperCase());
-  return [
-    titleCase(row[0]),
-    String(row[1]).trim().toUpperCase(),
-    Number(String(row[2]).replace(/,/g, "")),
-    titleCase(row[3])
-  ];
-})`;
 
 const EXPLICIT_APPROVAL_POLICY = "foreground-explicit-approval-v1";
 const TABLE_PREVIEW_ROWS = 100;
@@ -175,13 +162,13 @@ function auditEntryFromJournalEvent(event: RunJournalEvent): AuditEntry {
   };
 }
 
-function initialOperatorJournal() {
+function initialOperatorJournal(demo: GuidedDemoDefinition = guidedDemoDefinition("normalization")) {
   return appendRunJournalEvent(createRunJournal(), {
     category: "source",
     outcome: "completed",
-    summary: "Local demo loaded",
-    detail: "4 rows · no external request",
-    evidence: { source_kind: "demo", rows: 4 }
+    summary: `${demo.label} loaded`,
+    detail: `${demo.rows.length} rows · no external request`,
+    evidence: { source_kind: "demo", demo_id: demo.id, rows: demo.rows.length }
   });
 }
 
@@ -248,20 +235,21 @@ function downloadPilotReport(value: string) {
 
 export function OperatorPage() {
   const homeUrl = import.meta.env.BASE_URL;
-  const [rows, setRows] = useState<SpreadsheetRows>(DEMO_ROWS);
+  const initialDemo = useRef(resolveGuidedDemo(window.location.search)).current;
+  const [demoId, setDemoId] = useState<GuidedDemoId>(initialDemo.id);
+  const demo = guidedDemoDefinition(demoId);
+  const [rows, setRows] = useState<SpreadsheetRows>(() => initialDemo.definition.rows.map((row) => [...row]));
   const [proposal, setProposal] = useState<SpreadsheetEffectProposal | null>(null);
   const [workspaceProposal, setWorkspaceProposal] = useState<WorkspaceFileEffectProposal | null>(null);
-  const [task, setTask] = useState("Normalize names and regions, convert amounts to numbers, and standardize stages.");
-  const [script, setScript] = useState(DEFAULT_SCRIPT);
+  const [task, setTask] = useState(initialDemo.definition.task);
+  const [script, setScript] = useState(initialDemo.definition.script);
   const [plan, setPlan] = useState<SpreadsheetPlan | null>(null);
   const [planMode, setPlanMode] = useState<"spreadsheet-transform" | "artifact-output">("spreadsheet-transform");
   const [artifactWorkflowDraft, setArtifactWorkflowDraft] = useState<WorkspaceArtifactWorkflowDraft | null>(null);
   const [plannerApiKey, setPlannerApiKey] = useState("");
   const [plannerModel, setPlannerModel] = useState(DEFAULT_PLANNER_MODEL);
   const [planning, setPlanning] = useState(false);
-  const [showLocalDemoGuide, setShowLocalDemoGuide] = useState(() => (
-    new URLSearchParams(window.location.search).get("demo") === "local"
-  ));
+  const [showLocalDemoGuide, setShowLocalDemoGuide] = useState(initialDemo.showGuide);
   const [localDemoCompleted, setLocalDemoCompleted] = useState(false);
   const [pilotReportDelivery, setPilotReportDelivery] = useState<"copied" | "downloaded" | null>(null);
   const [pilotReportDownload, setPilotReportDownload] = useState<string | null>(null);
@@ -308,7 +296,7 @@ export function OperatorPage() {
   const googleOAuth = useRef(new GoogleOAuthSession());
   const workspace = useRef(createOperatorWorkspaceStore());
   const runJournal = useRef<RunJournal | null>(null);
-  if (!runJournal.current) runJournal.current = initialOperatorJournal();
+  if (!runJournal.current) runJournal.current = initialOperatorJournal(initialDemo.definition);
   const artifactInput = useRef<HTMLInputElement>(null);
   const workspaceBundleInput = useRef<HTMLInputElement>(null);
   const authorityEpoch = useRef(0);
@@ -370,7 +358,7 @@ export function OperatorPage() {
 
   const record = (entry: Omit<AuditEntry, "time">) => {
     try {
-      const next = appendRunJournalEvent(runJournal.current ?? initialOperatorJournal(), {
+      const next = appendRunJournalEvent(runJournal.current ?? initialOperatorJournal(demo), {
         category: entry.category ?? "system",
         outcome: entry.outcome ?? "info",
         summary: entry.title,
@@ -389,7 +377,7 @@ export function OperatorPage() {
         detail,
         tone: "muted"
       }]);
-      return runJournal.current ?? initialOperatorJournal();
+      return runJournal.current ?? initialOperatorJournal(demo);
     }
   };
 
@@ -421,7 +409,7 @@ export function OperatorPage() {
     clearAiPlans();
     setAgentTrace([]);
     setAgentBudget(null);
-    setScript(nextMode === "spreadsheet-transform" ? DEFAULT_SCRIPT : "");
+    setScript(nextMode === "spreadsheet-transform" ? demo.script : "");
     setStatus(nextMode === "spreadsheet-transform" ? "Table transform mode" : "Artifact output mode");
     setError("");
   };
@@ -560,7 +548,7 @@ export function OperatorPage() {
         ? { ...loadedGoogleTarget!, inputMode: "RAW" as const }
         : source === "artifact" && artifact
           ? { spreadsheetId: `artifact:${artifact.sourceSha256}`, range: `${artifact.sheetName}!A1`, inputMode: "RAW" as const }
-          : { spreadsheetId: "local-demo", range: "Demo!A1", inputMode: "RAW" as const };
+          : { spreadsheetId: `local-demo:${demo.id}`, range: "Demo!A1", inputMode: "RAW" as const };
       record({
         title: "Sandbox script completed",
         detail: `${result.inputBytes} B snapshot input · ${result.outputBytes} B transient output · no network or live OPFS`,
@@ -875,12 +863,22 @@ export function OperatorPage() {
     invalidateProposal("Google access revoked");
     setLoadedGoogleTarget(null);
     clearAiPlans();
-    setRows(DEMO_ROWS);
+    const fallbackDemo = guidedDemoDefinition("normalization");
+    setDemoId(fallbackDemo.id);
+    setRows(fallbackDemo.rows.map((row) => [...row]));
+    taskRevision.current += 1;
+    setTask(fallbackDemo.task);
+    scriptRevision.current += 1;
+    setScript(fallbackDemo.script);
     setArtifact(null);
     setArtifactWorkspacePath(null);
     setArtifactFile(null);
     setArtifactSheetChoice("");
     setSource("demo");
+    setShowLocalDemoGuide(true);
+    setLocalDemoCompleted(false);
+    setPilotReportDelivery(null);
+    setPilotReportDownload(null);
     try {
       setGoogleAuthStatus(await googleOAuth.current.revoke());
       setStatus("Google access revoked; local demo restored");
@@ -1316,16 +1314,20 @@ export function OperatorPage() {
     }
   };
 
-  const resetDemo = () => {
+  const resetDemo = (nextDemoId: GuidedDemoId) => {
+    const nextDemo = guidedDemoDefinition(nextDemoId);
     planningAbort.current?.abort();
     authorityEpoch.current += 1;
-    setRows(DEMO_ROWS);
+    setDemoId(nextDemo.id);
+    setRows(nextDemo.rows.map((row) => [...row]));
     setProposal(null);
     setWorkspaceProposal(null);
     clearAiPlans();
     setPlanMode("spreadsheet-transform");
+    taskRevision.current += 1;
+    setTask(nextDemo.task);
     scriptRevision.current += 1;
-    setScript(DEFAULT_SCRIPT);
+    setScript(nextDemo.script);
     setAgentTrace([]);
     setAgentBudget(null);
     setWorkspaceAttachment(null);
@@ -1339,9 +1341,9 @@ export function OperatorPage() {
     setPilotReportDelivery(null);
     setPilotReportDownload(null);
     setLoadedGoogleTarget(null);
-    setStatus("Ready");
+    setStatus(`${nextDemo.label} ready`);
     setError("");
-    const nextJournal = initialOperatorJournal();
+    const nextJournal = initialOperatorJournal(nextDemo);
     runJournal.current = nextJournal;
     setAudit(nextJournal.events.map(auditEntryFromJournalEvent));
   };
@@ -1462,6 +1464,7 @@ export function OperatorPage() {
   };
 
   const adoptRestoredWorkspace = (bundle: OperatorWorkspaceBundle) => {
+    const fallbackDemo = guidedDemoDefinition("normalization");
     const activePath = bundle.manifest.activeArtifactPath;
     if (activePath) {
       const activeFile = bundle.files.find((file) => file.path === activePath);
@@ -1473,11 +1476,16 @@ export function OperatorPage() {
       setArtifactSheetChoice(snapshot.provenance.sheetName);
       setSource("artifact");
     } else {
-      setRows(DEMO_ROWS);
+      setDemoId(fallbackDemo.id);
+      setRows(fallbackDemo.rows.map((row) => [...row]));
       setArtifact(null);
       setArtifactWorkspacePath(null);
       setArtifactSheetChoice("");
       setSource("demo");
+      setShowLocalDemoGuide(true);
+      setLocalDemoCompleted(false);
+      setPilotReportDelivery(null);
+      setPilotReportDownload(null);
     }
     setArtifactFile(null);
     setLoadedGoogleTarget(null);
@@ -1489,8 +1497,10 @@ export function OperatorPage() {
     setWorkspaceArtifactPreview(null);
     refreshWorkspaceArtifacts();
     setPlanMode("spreadsheet-transform");
+    taskRevision.current += 1;
+    setTask(fallbackDemo.task);
     scriptRevision.current += 1;
-    setScript(DEFAULT_SCRIPT);
+    setScript(fallbackDemo.script);
   };
 
   const exportOperatorWorkspace = async () => {
@@ -1817,7 +1827,7 @@ export function OperatorPage() {
   const exportRunJournal = () => {
     setError("");
     try {
-      const currentJournal = runJournal.current ?? initialOperatorJournal();
+      const currentJournal = runJournal.current ?? initialOperatorJournal(demo);
       const ordinaryLimit = RUN_JOURNAL_LIMITS.maxEvents - RUN_JOURNAL_LIMITS.reservedTerminalEvents;
       const nextJournal = currentJournal.events.length < ordinaryLimit
         ? record({
@@ -1848,7 +1858,7 @@ export function OperatorPage() {
             : {
                 kind: "demo" as const,
                 connectorId: LOCAL_SPREADSHEET_MANIFEST.id,
-                resource: "local-demo:Demo!A1",
+                resource: `local-demo:${demo.id}:Demo!A1`,
                 sourceSha256: null
               }
       };
@@ -1871,7 +1881,7 @@ export function OperatorPage() {
 
   const copyGuidedDemoPilotReport = async () => {
     try {
-      const report = createGuidedLocalDemoPilotReport(runJournal.current ?? initialOperatorJournal());
+      const report = createGuidedLocalDemoPilotReport(runJournal.current ?? initialOperatorJournal(demo), demoId);
       let delivery: "copied" | "downloaded" = "copied";
       try {
         await copyTextToClipboard(report);
@@ -1934,8 +1944,11 @@ export function OperatorPage() {
       <div className="operator-layout">
         <aside className="operator-connectors" aria-label="Sources and connectors">
           <div className="operator-panel-heading"><span>Sources</span><small>bounded authority</small></div>
-          <button className={source === "demo" ? "connector-row active" : "connector-row"} onClick={resetDemo} disabled={committing}>
-            <Database size={16} /><span><strong>Local demo</strong><small>No network</small></span><Check size={14} />
+          <button className={source === "demo" && demoId === "normalization" ? "connector-row active" : "connector-row"} onClick={() => resetDemo("normalization")} disabled={committing}>
+            <Database size={16} /><span><strong>Local demo</strong><small>Normalize 4 synthetic rows · no network</small></span>{source === "demo" && demoId === "normalization" && <Check size={14} />}
+          </button>
+          <button className={source === "demo" && demoId === "reconciliation" ? "connector-row active" : "connector-row"} onClick={() => resetDemo("reconciliation")} disabled={committing}>
+            <Table2 size={16} /><span><strong>Reconciliation sample</strong><small>ERP vs payout · no network</small></span>{source === "demo" && demoId === "reconciliation" && <Check size={14} />}
           </button>
           <button className={source === "artifact" ? "connector-row active" : "connector-row"} onClick={() => artifactInput.current?.click()} disabled={committing || importingArtifact}>
             <UploadCloud size={16} /><span><strong>{importingArtifact ? "Validating file…" : artifact?.sourceName ?? "CSV / XLSX"}</strong><small>{artifact ? `${artifact.sheetName} · ${artifact.rows}×${artifact.columns}` : "Worker-isolated value import"}</small></span>{source === "artifact" && <Check size={14} />}
@@ -2095,10 +2108,10 @@ export function OperatorPage() {
         <section className="operator-workbench">
           <div className="operator-panel-heading"><span>Working data</span><small>{rows.length} rows · {Math.max(0, ...rows.map((row) => row.length))} columns{rows.length > TABLE_PREVIEW_ROWS ? ` · previewing ${TABLE_PREVIEW_ROWS}` : ""}</small></div>
           {showLocalDemoGuide && source === "demo" && (
-            <div className={localDemoCompleted ? "operator-demo-guide complete" : proposal ? "operator-demo-guide review" : "operator-demo-guide"} role="region" aria-label="60-second local demo" aria-live="polite">
+            <div className={localDemoCompleted ? "operator-demo-guide complete" : proposal ? "operator-demo-guide review" : "operator-demo-guide"} role="region" aria-label={demo.label} aria-live="polite">
               <span className="operator-demo-step">{localDemoCompleted ? "03" : proposal ? "02" : "01"}</span>
               <div>
-                <strong>{localDemoCompleted ? "Local loop complete" : proposal ? `${changes.length} typed changes staged` : "60-second local demo"}</strong>
+                <strong>{localDemoCompleted ? "Local loop complete" : proposal ? `${changes.length} typed changes staged` : demo.label}</strong>
                 <small>{localDemoCompleted
                   ? pilotReportDelivery
                     ? `Source-free Markdown ${pilotReportDelivery}. Inspect it, then add only feedback you choose to the public form.`
@@ -2107,7 +2120,7 @@ export function OperatorPage() {
                     : "Copy a source-free metrics summary, inspect it, then add only feedback you choose to the public pilot form."
                   : proposal
                     ? "Review the exact before/after cells. Nothing has been written yet."
-                    : "No account or API key. Run the preset in QuickJS, inspect the cell diff, then choose whether to apply it."}</small>
+                    : demo.guideDescription}</small>
               </div>
               {localDemoCompleted && pilotReportDelivery
                 ? <a className="operator-demo-action" href={PUBLIC_PILOT_REPORT_URL} target="_blank" rel="noreferrer">Open pilot form</a>

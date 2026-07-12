@@ -86,6 +86,43 @@ test("completes the 60-second local demo without an account or API key", async (
   expect(await page.getByLabel("OpenAI session API key").inputValue()).toBe("");
 });
 
+test("reconciles synthetic invoice exports and reports only source-free metrics", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport = value;
+        }
+      }
+    });
+  });
+  await page.goto("/?view=operator&demo=reconciliation");
+
+  const guide = page.getByRole("region", { name: "Invoice reconciliation sample" });
+  await expect(guide).toContainText("synthetic ERP and payout values");
+  await expect(page.getByRole("cell", { name: "INV-102" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "INV-104" })).toBeVisible();
+  await guide.getByRole("button", { name: "Run bounded transform" }).click();
+
+  await expect(page.getByText("Explicit approval required")).toBeVisible();
+  await expect(guide).toContainText("7 typed changes staged");
+  await expect(page.getByText("-50", { exact: true })).toBeVisible();
+  await expect(page.getByText("REVIEW", { exact: true })).toBeVisible();
+  await expect(page.getByText("MISSING", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+
+  await expect(page.getByRole("cell", { name: "REVIEW" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "MISSING" })).toBeVisible();
+  await guide.getByRole("button", { name: "Copy pilot report" }).click();
+  const copied = await page.evaluate(() => (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport ?? "");
+  expect(copied).toContain("Invoice reconciliation sample pilot");
+  expect(copied).toContain("bundled synthetic ERP and payout values");
+  expect(copied).not.toContain("INV-102");
+  expect(copied).not.toContain("980");
+  expect(copied).not.toContain("run_journal_");
+});
+
 test("keeps the guided local demo usable at 390 pixels", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?view=operator&demo=local");

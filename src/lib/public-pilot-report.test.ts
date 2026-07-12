@@ -52,4 +52,11 @@ describe("public pilot reports", () => {
     });
     expect(() => createGuidedLocalDemoPilotReport(journal)).toThrow("Complete an approved local demo effect");
   });
+
+  it("uses only host-defined reconciliation metadata for the second sample", () => {
+    const report = createGuidedLocalDemoPilotReport(committedJournal(), "reconciliation");
+    expect(report).toContain("Invoice reconciliation sample pilot");
+    expect(report).toContain("local invoice reconciliation with variance and exception review");
+    expect(report).toContain("bundled synthetic ERP and payout values");
+  });
 });

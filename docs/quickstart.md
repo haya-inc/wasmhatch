@@ -17,6 +17,21 @@ No account, API key, OAuth client, upload, or server is involved. The guide is a
 product walkthrough, not an authorization shortcut: script execution and effect
 approval remain separate actions.
 
+## Invoice reconciliation sample
+
+Open the [guided reconciliation sample](https://haya-inc.github.io/wasmhatch/?view=operator&demo=reconciliation).
+
+1. Review the bundled synthetic ERP and payout values. One invoice differs and
+   one payout is missing.
+2. Select **Run bounded transform**. QuickJS derives only the variance and status
+   fields; source identifiers and amounts remain unchanged.
+3. Inspect the seven typed changes, including `REVIEW` and `MISSING`, then approve
+   or reject the local effect.
+
+This path exercises the same snapshot, sandbox, immutable proposal, approval,
+and source-free pilot-report boundaries as the normalization demo. It makes no
+network request and contains no real invoice or customer data.
+
 ## Try a local workbook
 
 1. Select **CSV / XLSX** and choose a bounded workbook.

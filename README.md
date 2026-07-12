@@ -6,6 +6,8 @@
 
 [Run the 60-second local demo](https://haya-inc.github.io/wasmhatch/?view=operator&demo=local) — no account, API key, OAuth, upload, or server required.
 
+[Try invoice reconciliation](https://haya-inc.github.io/wasmhatch/?view=operator&demo=reconciliation) — compare synthetic ERP and payout values, then review seven derived cells.
+
 WasmHatch is an open-source, browser-native AI operator for general business
 work. It gives an AI typed access to spreadsheets and future business APIs,
 runs generated data transformations inside a resource-limited Wasm sandbox,
@@ -59,6 +61,8 @@ The foundation slice now ships:
 - a public pilot-report action for the guided demo that copies aggregate counts
   and timings while excluding source contents, task text, resource identities,
   and run ID;
+- two deterministic, key-free pilot paths for pipeline normalization and invoice
+  reconciliation, both using the production sandbox and effect-review protocol;
 - typed cell-mutation bundles that generate preview, summary, commit payload,
   and inverse receipt metadata from one immutable source;
 - explicit rejection of structural changes and ungranted formula writes;

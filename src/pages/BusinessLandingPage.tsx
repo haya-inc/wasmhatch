@@ -16,21 +16,24 @@ const workflows = [
     source: "Google Sheets",
     scope: "Sales operations",
     title: "Normalize a weekly pipeline",
-    description: "Grant one exact range, materialize a credential-free snapshot, then sandbox and review the resulting cells or report."
+    description: "Grant one exact range, materialize a credential-free snapshot, then sandbox and review the resulting cells or report.",
+    demo: "local"
   },
   {
     number: "02",
-    source: "Spreadsheet + API",
+    source: "Two exports",
     scope: "Back-office reconciliation",
-    title: "Match records across systems",
-    description: "Let the agent choose connector reads, calculate exceptions locally, and stage only the required updates."
+    title: "Review reconciliation exceptions",
+    description: "Compare synthetic ERP and payout values locally, derive only variance and status, then approve the seven exact output cells.",
+    demo: "reconciliation"
   },
   {
     number: "03",
     source: "CSV / XLSX",
     scope: "Ad-hoc analysis",
     title: "Turn raw exports into a report",
-    description: "Save the generated script and manifest, run against an exact snapshot, then approve the output file diff."
+    description: "Save the generated script and manifest, run against an exact snapshot, then approve the output file diff.",
+    demo: null
   }
 ];
 
@@ -142,7 +145,7 @@ export function BusinessLandingPage() {
               <span className="example-number">{workflow.number}</span>
               <div className="example-repo"><code>{workflow.source}</code><small>{workflow.scope}</small></div>
               <div className="example-copy"><h3>{workflow.title}</h3><p>{workflow.description}</p></div>
-              <div className="example-actions"><a href={operatorUrl}>Open demo <ArrowRight size={17} /></a></div>
+              <div className="example-actions"><a href={workflow.demo ? `${operatorUrl}&demo=${workflow.demo}` : operatorUrl}>Open demo <ArrowRight size={17} /></a></div>
             </article>
           ))}
         </div>

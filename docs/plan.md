@@ -43,6 +43,9 @@ require a separately deployed server adapter.
 - A deep-linked 60-second local demo that requires no account or key and guides
   the user through separate QuickJS execution, exact cell review, and local
   approval without weakening any checkpoint. See [Quickstart](quickstart.md).
+- A second deterministic invoice-reconciliation sample that derives seven
+  variance/status cells from synthetic ERP and payout values, then uses the same
+  sandbox, immutable proposal, approval, and source-free pilot-report path.
 - A local spreadsheet demo with editable tabular data.
 - A Worker-isolated CSV/XLSX artifact adapter with pre-inflation ZIP bounds,
   strict UTF-8/XML parsing, visible-sheet selection, formula/macro/external-link
