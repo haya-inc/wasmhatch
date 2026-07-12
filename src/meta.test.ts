@@ -41,6 +41,7 @@ describe("public sharing metadata", () => {
   it("keeps public runtime claims aligned with the shipped architecture", () => {
     const readme = readFileSync("README.md", "utf8");
     const plan = readFileSync("docs/plan.md", "utf8");
+    const launchPlaybook = readFileSync("docs/launch-playbook.md", "utf8");
     const viteConfig = readFileSync("vite.config.ts", "utf8");
 
     expect(readme).toContain("QuickJS compiled to Wasm and executed in a Web Worker");
@@ -53,6 +54,10 @@ describe("public sharing metadata", () => {
     expect(readFileSync("docs/workspace-scripts.md", "utf8")).toContain("each output is reviewed and committed as its own proposal");
     expect(plan).toContain("checkpointed OpenAI Responses tool loop");
     expect(readFileSync("docs/workspace-agent-loop.md", "utf8")).toContain("Provider usage is required in every response");
+    expect(readFileSync("docs/run-journal.md", "utf8")).toContain("The decision ID is bound into the effect proposal");
+    expect(readme).toContain("a shared run journal and policy-decision envelope");
+    expect(launchPlaybook).toContain("five real business workflows have been attempted");
+    expect(launchPlaybook).toContain("not count as evidence that the business operator succeeds");
     expect(viteConfig).toContain('"worker-src \'self\'"');
     expect(viteConfig).toContain("'wasm-unsafe-eval'");
     expect(viteConfig).toContain("https://sheets.googleapis.com");

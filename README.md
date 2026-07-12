@@ -41,15 +41,19 @@ The foundation slice now ships:
 - a checkpointed OpenAI workspace loop that lists, searches, and reads only an
   exact artifact grant, records model egress, enforces request/token/tool budgets,
   and stops at a reviewable script proposal;
+- a shared run journal and policy-decision envelope that joins model/tool events,
+  scripts, proposals, reviews, conflicts, receipts, and pilot timing metrics in
+  an explicit credential-field-free, defensively redacted JSON export;
 - typed cell-mutation bundles that generate preview, summary, commit payload,
   and inverse receipt metadata from one immutable source;
 - explicit rejection of structural changes and ungranted formula writes;
 - cell-level write previews with explicit approve/reject controls; and
-- a per-tab audit trail for reads, scripts, and writes.
+- a per-tab structured audit trail for reads, scripts, and writes.
 
 The current operator accepts local CSV/XLSX files, a Google OAuth Web client ID
 as public session configuration, and an optional memory-only OpenAI API key.
-The checkpointed multi-step business tool loop is the next foundation milestone.
+The next foundation work brings granted connector reads and sandbox execution
+into the same checkpointed loop without letting model output authorize effects.
 
 See the current [product plan](docs/plan.md), [connector authoring
 guide](docs/connector-authoring.md), [tabular mutation
@@ -57,8 +61,15 @@ contract](docs/tabular-mutations.md), [Google OAuth deployment
 guide](docs/google-oauth.md), [CSV/XLSX artifact
 boundary](docs/tabular-artifacts.md), [workspace script and file-effect
 contract](docs/workspace-scripts.md), [checkpointed workspace agent
-loop](docs/workspace-agent-loop.md), and [business-agent
+loop](docs/workspace-agent-loop.md), [run journal and policy decision
+contract](docs/run-journal.md), and [business-agent
 landscape](docs/landscape.md).
+
+For pilots, use the [business pilot and OSS adoption
+playbook](docs/launch-playbook.md) and copy the [pilot evidence
+template](docs/pilot-evidence-template.md) into the approved internal system.
+Public, sanitized workflow reports can be shared in [business operator pilot
+registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12).
 
 ## Legacy coding workspace
 
@@ -172,6 +183,7 @@ expose file deletion.
 | Workspace file-diff approval | Available; manifest/source/input/base recheck before write |
 | Checkpointed workspace AI tools | Available for one exact imported artifact grant |
 | Model-egress and agent budgets | Available for list/read/search/tabular planning loop |
+| Structured run journal | Available as an explicit credential-field-free, defensively redacted JSON export with derived pilot metrics |
 | OPFS workspace with localStorage fallback | Available |
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |

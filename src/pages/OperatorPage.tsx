@@ -67,6 +67,18 @@ import {
   type WorkspaceAgentBudget,
   type WorkspaceAgentTraceEvent
 } from "../lib/workspace-agent";
+import {
+  appendRunJournalEvent,
+  createPolicyDecisionEnvelope,
+  createRunJournal,
+  RUN_JOURNAL_LIMITS,
+  serializeRunJournal,
+  type RunJournal,
+  type RunJournalCategory,
+  type RunJournalEvidenceValue,
+  type RunJournalEvent,
+  type RunJournalOutcome
+} from "../lib/run-journal";
 
 const DEMO_ROWS: SpreadsheetRows = [
   ["Owner", "Region", "Amount", "Stage"],
@@ -108,6 +120,34 @@ interface AuditEntry {
   title: string;
   detail: string;
   tone?: "accent" | "muted";
+  category?: RunJournalCategory;
+  outcome?: RunJournalOutcome;
+  evidence?: Record<string, RunJournalEvidenceValue>;
+}
+
+function auditEntryFromJournalEvent(event: RunJournalEvent): AuditEntry {
+  const totalSeconds = Math.floor(event.elapsedMs / 1_000);
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return {
+    time: `${minutes}:${seconds}`,
+    title: event.summary,
+    detail: event.detail,
+    tone: ["allowed", "completed", "prepared", "approved", "committed"].includes(event.outcome) ? "accent" : "muted",
+    category: event.category,
+    outcome: event.outcome,
+    evidence: { ...event.evidence }
+  };
+}
+
+function initialOperatorJournal() {
+  return appendRunJournalEvent(createRunJournal(), {
+    category: "source",
+    outcome: "completed",
+    summary: "Local demo loaded",
+    detail: "4 rows · no external request",
+    evidence: { source_kind: "demo", rows: 4 }
+  });
 }
 
 function cellLabel(row: number, column: number) {
@@ -169,15 +209,17 @@ export function OperatorPage() {
   const credentialBroker = useRef(new CredentialBroker());
   const googleOAuth = useRef(new GoogleOAuthSession());
   const workspace = useRef(createWorkspaceStore());
+  const runJournal = useRef<RunJournal | null>(null);
+  if (!runJournal.current) runJournal.current = initialOperatorJournal();
   const artifactInput = useRef<HTMLInputElement>(null);
   const authorityEpoch = useRef(0);
   const scriptRevision = useRef(0);
   const taskRevision = useRef(0);
   const planningAbort = useRef<AbortController | null>(null);
   const [googleAuthStatus, setGoogleAuthStatus] = useState(() => googleOAuth.current.status());
-  const [audit, setAudit] = useState<AuditEntry[]>([
-    { time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }
-  ]);
+  const [audit, setAudit] = useState<AuditEntry[]>(() =>
+    runJournal.current ? runJournal.current.events.map(auditEntryFromJournalEvent) : []
+  );
 
   const changes = useMemo(
     () => proposal ? proposal.mutations.mutations : [],
@@ -196,8 +238,40 @@ export function OperatorPage() {
   }, [googleAuthStatus.expiresAt]);
 
   const record = (entry: Omit<AuditEntry, "time">) => {
-    const elapsed = audit.length.toString().padStart(2, "0");
-    setAudit((current) => [...current, { ...entry, time: `00:${elapsed}` }]);
+    try {
+      const next = appendRunJournalEvent(runJournal.current ?? initialOperatorJournal(), {
+        category: entry.category ?? "system",
+        outcome: entry.outcome ?? "info",
+        summary: entry.title,
+        detail: entry.detail,
+        evidence: entry.evidence
+      });
+      runJournal.current = next;
+      const event = next.events.at(-1)!;
+      setAudit((current) => [...current, auditEntryFromJournalEvent(event)]);
+      return next;
+    } catch (caught) {
+      const detail = caught instanceof Error ? caught.message : "The structured run journal could not record this event.";
+      setAudit((current) => [...current, {
+        time: current.at(-1)?.time ?? "00:00",
+        title: "Run journal recording blocked",
+        detail,
+        tone: "muted"
+      }]);
+      return runJournal.current ?? initialOperatorJournal();
+    }
+  };
+
+  const ensureJournalCapacity = (requiredEvents: number, terminal = false) => {
+    const used = runJournal.current?.events.length ?? 0;
+    const limit = RUN_JOURNAL_LIMITS.maxEvents - (terminal ? 0 : RUN_JOURNAL_LIMITS.reservedTerminalEvents);
+    if (used + requiredEvents <= limit) return true;
+    const message = terminal
+      ? "This run journal has no room for the review and its terminal result. Start a fresh local run before approving."
+      : "This run journal is full. Export it, then choose Local demo to start a fresh run before continuing.";
+    setError(message);
+    setStatus("Run journal capacity reached");
+    return false;
   };
 
   const invalidateProposal = (reason: string) => {
@@ -205,7 +279,10 @@ export function OperatorPage() {
       record({
         title: "Write proposal invalidated",
         detail: `${proposal.proposalId.slice(-12)} · ${reason}`,
-        tone: "muted"
+        tone: "muted",
+        category: "proposal",
+        outcome: "cancelled",
+        evidence: { proposal_id: proposal.proposalId, reason }
       });
       setProposal(null);
     }
@@ -213,13 +290,17 @@ export function OperatorPage() {
       record({
         title: "Workspace proposal invalidated",
         detail: `${workspaceProposal.proposalId.slice(-12)} · ${reason}`,
-        tone: "muted"
+        tone: "muted",
+        category: "proposal",
+        outcome: "cancelled",
+        evidence: { proposal_id: workspaceProposal.proposalId, reason }
       });
       setWorkspaceProposal(null);
     }
   };
 
   const runScript = async () => {
+    if (!ensureJournalCapacity(5)) return;
     invalidateProposal("sandbox transform requested again");
     setStatus("Running in Wasm worker…");
     setError("");
@@ -237,34 +318,75 @@ export function OperatorPage() {
         throw new Error("The sandbox script changed during execution. Run the current source again.");
       }
       const nextRows = spreadsheetRowsFromBusinessValue(result.output);
+      const connectorManifest = source === "google" ? GOOGLE_SHEETS_MANIFEST : LOCAL_SPREADSHEET_MANIFEST;
+      const effectTarget = source === "google"
+        ? { ...loadedGoogleTarget!, inputMode: "RAW" as const }
+        : source === "artifact" && artifact
+          ? { spreadsheetId: `artifact:${artifact.sourceSha256}`, range: `${artifact.sheetName}!A1`, inputMode: "RAW" as const }
+          : { spreadsheetId: "local-demo", range: "Demo!A1", inputMode: "RAW" as const };
+      record({
+        title: "Sandbox script completed",
+        detail: `${result.inputBytes} B snapshot input · ${result.outputBytes} B transient output · no network or live OPFS`,
+        tone: "accent",
+        category: "script",
+        outcome: "completed",
+        evidence: { runtime: "quickjs-wasm-worker", input_bytes: result.inputBytes, output_bytes: result.outputBytes }
+      });
+      const policyDecision = createPolicyDecisionEnvelope({
+        policyId: EXPLICIT_APPROVAL_POLICY,
+        capability: "spreadsheet.cells.update",
+        resource: `${connectorManifest.id}:${effectTarget.spreadsheetId}:${effectTarget.range}`,
+        decision: "stage",
+        actor: "host-policy",
+        reason: "Allow an immutable proposal only; foreground approval and a current-source check remain required."
+      });
+      record({
+        title: "Policy allowed proposal staging",
+        detail: `${policyDecision.capability} · ${policyDecision.decisionId.slice(-12)} · commit authority not granted`,
+        tone: "accent",
+        category: "policy",
+        outcome: "allowed",
+        evidence: {
+          decision_id: policyDecision.decisionId,
+          policy_id: policyDecision.policyId,
+          capability: policyDecision.capability,
+          decision: policyDecision.decision
+        }
+      });
       const nextProposal = await prepareSpreadsheetEffect({
-        connector: source === "google" ? GOOGLE_SHEETS_MANIFEST : LOCAL_SPREADSHEET_MANIFEST,
-        target: source === "google"
-          ? { ...loadedGoogleTarget!, inputMode: "RAW" }
-          : source === "artifact" && artifact
-            ? { spreadsheetId: `artifact:${artifact.sourceSha256}`, range: `${artifact.sheetName}!A1`, inputMode: "RAW" }
-            : { spreadsheetId: "local-demo", range: "Demo!A1", inputMode: "RAW" },
+        connector: connectorManifest,
+        target: effectTarget,
         baseValues: rows,
         values: nextRows,
         preconditionStrength: "recheck",
-        policyDecisionId: EXPLICIT_APPROVAL_POLICY
+        policyDecisionId: policyDecision.decisionId
       });
       setProposal(nextProposal);
       setStatus(`${nextProposal.summary.changedCells} cell changes ready for review`);
       record({
         title: "Typed mutation proposal prepared",
         detail: `${nextProposal.proposalId.slice(-12)} · ${nextProposal.mutations.mutations.length} bound mutations · ${result.inputBytes} B in · ${result.outputBytes} B out · recheck required`,
-        tone: "accent"
+        tone: "accent",
+        category: "proposal",
+        outcome: "prepared",
+        evidence: {
+          proposal_id: nextProposal.proposalId,
+          policy_decision_id: policyDecision.decisionId,
+          operation: nextProposal.operation,
+          changed_cells: nextProposal.summary.changedCells,
+          precondition_strength: nextProposal.baseVersion.strength
+        }
       });
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Sandbox transform failed.";
       setError(message);
       setStatus("Transform failed");
-      record({ title: "Sandbox transform blocked", detail: message, tone: "muted" });
+      record({ title: "Sandbox transform blocked", detail: message, tone: "muted", category: "script", outcome: "failed" });
     }
   };
 
   const draftWithAI = async () => {
+    if (!ensureJournalCapacity(10)) return;
     const startingAuthorityEpoch = authorityEpoch.current;
     const startingTaskRevision = taskRevision.current;
     const controller = new AbortController();
@@ -299,7 +421,19 @@ export function OperatorPage() {
             record({
               title: event.status === "denied" ? `AI tool denied: ${event.tool}` : `AI tool: ${event.tool}`,
               detail: `${event.summary}${event.path ? ` · ${event.path}` : ""}${event.sourceSha256 ? ` · ${event.sourceSha256.slice(-12)}` : ""} · ${event.bytesToModel} B to model`,
-              tone: event.status === "denied" ? "muted" : "accent"
+              tone: event.status === "denied" ? "muted" : "accent",
+              category: "tool",
+              outcome: event.status === "denied" ? "denied" : "completed",
+              evidence: {
+                tool: event.tool,
+                call_id: event.callId,
+                path: event.path ?? null,
+                source_sha256: event.sourceSha256 ?? null,
+                bytes_to_model: event.bytesToModel,
+                model_requests: budget.modelRequests,
+                tool_calls: budget.toolCalls,
+                cumulative_egress_bytes: budget.egressBytes
+              }
             });
           }
         });
@@ -309,7 +443,14 @@ export function OperatorPage() {
         record({
           title: "Checkpointed workspace plan staged",
           detail: `${result.budget.modelRequests} model requests · ${result.budget.toolCalls} tool calls · ${result.budget.egressBytes} B tool egress · no script execution or write`,
-          tone: "accent"
+          tone: "accent",
+          category: "model",
+          outcome: "prepared",
+          evidence: {
+            model_requests: result.budget.modelRequests,
+            tool_calls: result.budget.toolCalls,
+            egress_bytes: result.budget.egressBytes
+          }
         });
       } else {
         const planner = new OpenAIPlanner(plannerApiKey);
@@ -330,19 +471,27 @@ export function OperatorPage() {
         detail: usedWorkspaceTools
           ? `${nextPlan.model} · checkpointed workspace egress recorded above · no credential, execution, or write`
           : `${nextPlan.model} · ${nextPlan.inputRows} rows / ${nextPlan.inputCells} cells sent · no credential or write`,
-        tone: "accent"
+        tone: "accent",
+        category: "model",
+        outcome: "prepared",
+        evidence: {
+          model: nextPlan.model,
+          checkpointed_tools: usedWorkspaceTools,
+          input_rows: nextPlan.inputRows,
+          input_cells: nextPlan.inputCells
+        }
       });
     } catch (caught) {
       const aborted = caught instanceof Error && caught.name === "AbortError";
       const message = aborted ? "AI planning was cancelled before a proposal was staged." : caught instanceof Error ? caught.message : "AI planning failed.";
       setPlan(null);
       if (aborted && startingAuthorityEpoch !== authorityEpoch.current) {
-        record({ title: "AI planning cancelled", detail: "A newer source replaced the granted planning context.", tone: "muted" });
+        record({ title: "AI planning cancelled", detail: "A newer source replaced the granted planning context.", tone: "muted", category: "model", outcome: "cancelled" });
         return;
       }
       setError(aborted ? "" : message);
       setStatus(aborted ? "AI planning cancelled" : "AI plan blocked");
-      record({ title: aborted ? "AI planning cancelled" : "AI plan blocked", detail: message, tone: "muted" });
+      record({ title: aborted ? "AI planning cancelled" : "AI plan blocked", detail: message, tone: "muted", category: "model", outcome: aborted ? "cancelled" : "failed" });
     } finally {
       if (planningAbort.current === controller) planningAbort.current = null;
       setPlanning(false);
@@ -356,6 +505,7 @@ export function OperatorPage() {
 
   const connectGoogle = async () => {
     if (connectingGoogle || revokingGoogle) return;
+    if (!ensureJournalCapacity(3)) return;
     setConnectingGoogle(true);
     setError("");
     setStatus("Opening Google authorization…");
@@ -369,14 +519,17 @@ export function OperatorPage() {
       record({
         title: "Google Sheets authorized",
         detail: `Foreground token · Sheets read/write scope · expires ${new Date(nextStatus.expiresAt!).toLocaleTimeString()} · credential not logged`,
-        tone: "accent"
+        tone: "accent",
+        category: "policy",
+        outcome: "allowed",
+        evidence: { connector_id: GOOGLE_SHEETS_MANIFEST.id, auth_mode: "foreground-oauth", persisted: false }
       });
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Google authorization failed.";
       setGoogleAuthStatus(googleOAuth.current.status());
       setError(message);
       setStatus("Google authorization not completed");
-      record({ title: "Google authorization blocked", detail: message, tone: "muted" });
+      record({ title: "Google authorization blocked", detail: message, tone: "muted", category: "policy", outcome: "denied" });
     } finally {
       setConnectingGoogle(false);
     }
@@ -384,6 +537,7 @@ export function OperatorPage() {
 
   const revokeGoogle = async () => {
     if (connectingGoogle || revokingGoogle) return;
+    if (!ensureJournalCapacity(3)) return;
     planningAbort.current?.abort();
     setRevokingGoogle(true);
     setError("");
@@ -401,13 +555,13 @@ export function OperatorPage() {
     try {
       setGoogleAuthStatus(await googleOAuth.current.revoke());
       setStatus("Google access revoked; local demo restored");
-      record({ title: "Google access revoked", detail: "Session token cleared before revocation · local demo restored", tone: "muted" });
+      record({ title: "Google access revoked", detail: "Session token cleared before revocation · local demo restored", tone: "muted", category: "policy", outcome: "completed", evidence: { connector_id: GOOGLE_SHEETS_MANIFEST.id } });
     } catch (caught) {
       setGoogleAuthStatus(googleOAuth.current.status());
       const message = caught instanceof Error ? caught.message : "Google access revocation failed.";
       setError(message);
       setStatus("Local credential cleared; verify Google Account permissions");
-      record({ title: "Google revocation unconfirmed", detail: message, tone: "muted" });
+      record({ title: "Google revocation unconfirmed", detail: message, tone: "muted", category: "policy", outcome: "uncertain", evidence: { connector_id: GOOGLE_SHEETS_MANIFEST.id } });
     } finally {
       setRevokingGoogle(false);
     }
@@ -415,6 +569,7 @@ export function OperatorPage() {
 
   const loadGoogleSheet = async () => {
     if (connectingGoogle || revokingGoogle) return;
+    if (!ensureJournalCapacity(3)) return;
     planningAbort.current?.abort();
     const startingAuthorityEpoch = authorityEpoch.current;
     setStatus("Reading Google Sheets…");
@@ -444,7 +599,16 @@ export function OperatorPage() {
       record({
         title: "Google Sheets range read",
         detail: `${snapshot.range} · ${snapshot.values.length} rows · broker attached credential after manifest validation`,
-        tone: "accent"
+        tone: "accent",
+        category: "source",
+        outcome: "completed",
+        evidence: {
+          connector_id: GOOGLE_SHEETS_MANIFEST.id,
+          spreadsheet_id: snapshot.spreadsheetId,
+          range: snapshot.range,
+          rows: snapshot.values.length,
+          columns: snapshot.values.reduce((maximum, row) => Math.max(maximum, row.length), 0)
+        }
       });
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Google Sheets read failed.";
@@ -454,12 +618,13 @@ export function OperatorPage() {
       }
       setError(message);
       setStatus("Connector read failed");
-      record({ title: "Connector read blocked", detail: message, tone: "muted" });
+      record({ title: "Connector read blocked", detail: message, tone: "muted", category: "source", outcome: "failed", evidence: { connector_id: GOOGLE_SHEETS_MANIFEST.id } });
     }
   };
 
   const approveWrite = async () => {
     if (!proposal || committing || connectingGoogle || revokingGoogle) return;
+    if (!ensureJournalCapacity(2, true)) return;
     setCommitting(true);
     setError("");
     try {
@@ -477,6 +642,14 @@ export function OperatorPage() {
             writeValues: (values) => setRows(values.map((row) => [...row]))
           });
       const approval = decideSpreadsheetEffect(proposal, "approve", "foreground-user");
+      record({
+        title: "Spreadsheet proposal approved",
+        detail: `${proposal.proposalId.slice(-12)} · exact proposal only · source recheck still required`,
+        tone: "accent",
+        category: "approval",
+        outcome: "approved",
+        evidence: { proposal_id: proposal.proposalId, actor: approval.actor, decision: approval.decision }
+      });
       const outcome = await effectExecutor.current.execute(proposal, approval, connector);
 
       if (outcome.status === "committed") {
@@ -493,7 +666,16 @@ export function OperatorPage() {
         record({
           title: isGoogle ? "Google Sheets effect committed" : "Local effect committed",
           detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}`,
-          tone: "accent"
+          tone: "accent",
+          category: "effect",
+          outcome: "committed",
+          evidence: {
+            proposal_id: proposal.proposalId,
+            receipt_id: outcome.receipt.receiptId,
+            connector_id: outcome.receipt.connector.id,
+            changed_cells: proposal.summary.changedCells,
+            precondition_strength: outcome.receipt.preconditionStrength
+          }
         });
       } else if (outcome.status === "conflict") {
         if (outcome.observedValues) setRows(outcome.observedValues);
@@ -505,14 +687,17 @@ export function OperatorPage() {
         record({
           title: "Write blocked: source conflict",
           detail: `${outcome.preconditionStrength} · expected ${outcome.expectedBaseVersion.value.slice(-10)} · observed ${outcome.observedBaseVersion?.value.slice(-10) ?? "provider conflict"}`,
-          tone: "muted"
+          tone: "muted",
+          category: "effect",
+          outcome: "conflict",
+          evidence: { proposal_id: proposal.proposalId, precondition_strength: outcome.preconditionStrength }
         });
       } else if (outcome.status === "uncertain") {
         setProposal(null);
         setLoadedGoogleTarget(null);
         setStatus("Write outcome uncertain — reconciliation required");
         setError(outcome.reason);
-        record({ title: "Write outcome uncertain", detail: "No automatic retry · read the target before another proposal", tone: "muted" });
+        record({ title: "Write outcome uncertain", detail: "No automatic retry · read the target before another proposal", tone: "muted", category: "effect", outcome: "uncertain", evidence: { proposal_id: proposal.proposalId, reconciliation_required: true } });
       } else if (outcome.status === "failed") {
         if (outcome.code === "source_recheck_failed" && /authorization|reconnect/i.test(outcome.reason)) {
           googleOAuth.current.clear();
@@ -521,13 +706,13 @@ export function OperatorPage() {
         if (!outcome.retryable) setProposal(null);
         setStatus(outcome.retryable ? "Source recheck failed — safe to retry" : "Approved write blocked");
         setError(outcome.reason);
-        record({ title: "Approved effect blocked", detail: `${outcome.code} · ${outcome.reason}`, tone: "muted" });
+        record({ title: "Approved effect blocked", detail: `${outcome.code} · ${outcome.reason}`, tone: "muted", category: "effect", outcome: "failed", evidence: { proposal_id: proposal.proposalId, code: outcome.code, retryable: outcome.retryable } });
       }
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Google Sheets write failed.";
       setError(message);
       setStatus("Approved effect blocked");
-      record({ title: "Approved effect blocked", detail: message, tone: "muted" });
+      record({ title: "Approved effect blocked", detail: message, tone: "muted", category: "effect", outcome: "failed", evidence: { proposal_id: proposal.proposalId } });
     } finally {
       setCommitting(false);
     }
@@ -535,12 +720,18 @@ export function OperatorPage() {
 
   const rejectWrite = async () => {
     if (!proposal || committing) return;
-    const outcome = await effectExecutor.current.reject(
-      proposal,
-      decideSpreadsheetEffect(proposal, "reject", "foreground-user")
-    );
+    if (!ensureJournalCapacity(1, true)) return;
+    const rejection = decideSpreadsheetEffect(proposal, "reject", "foreground-user");
+    const outcome = await effectExecutor.current.reject(proposal, rejection);
     if (outcome.status === "rejected") {
-      record({ title: "Write proposal rejected", detail: proposal.proposalId.slice(-12), tone: "muted" });
+      record({
+        title: "Write proposal rejected",
+        detail: `${proposal.proposalId.slice(-12)} · no mutation occurred`,
+        tone: "muted",
+        category: "approval",
+        outcome: "rejected",
+        evidence: { proposal_id: proposal.proposalId, actor: rejection.actor, decision: rejection.decision }
+      });
       setProposal(null);
       setStatus("Write proposal rejected; no mutation occurred");
     } else if (outcome.status === "failed") {
@@ -551,6 +742,7 @@ export function OperatorPage() {
 
   const runWorkspaceOutput = async () => {
     if (!artifact || !artifactWorkspacePath || runningWorkspaceScript || committing) return;
+    if (!ensureJournalCapacity(6)) return;
     invalidateProposal("workspace script requested");
     setRunningWorkspaceScript(true);
     setError("");
@@ -577,7 +769,17 @@ export function OperatorPage() {
       record({
         title: "Workspace script definition saved",
         detail: `${definition.manifest.sourcePath} · ${definition.manifestPath} · 1 exact input grant · 1 exact output grant`,
-        tone: "accent"
+        tone: "accent",
+        category: "script",
+        outcome: "prepared",
+        evidence: {
+          script_id: definition.manifest.id,
+          script_version: definition.manifest.version,
+          source_path: definition.manifest.sourcePath,
+          manifest_path: definition.manifestPath,
+          input_grants: definition.manifest.inputs.length,
+          output_grants: definition.manifest.outputs.length
+        }
       });
       setStatus("Running against the granted input snapshot…");
       const snapshot = await prepareWorkspaceScriptRun(workspace.current, definition.manifest);
@@ -588,17 +790,54 @@ export function OperatorPage() {
       ) {
         throw new Error("The source artifact or script changed during workspace execution.");
       }
+      record({
+        title: "Workspace script completed",
+        detail: `${snapshot.runId.slice(-12)} · ${execution.inputBytes} B snapshot input · ${execution.outputBytes} B transient output · no live OPFS mount`,
+        tone: "accent",
+        category: "script",
+        outcome: "completed",
+        evidence: {
+          script_run_id: snapshot.runId,
+          script_id: snapshot.manifest.id,
+          input_bytes: execution.inputBytes,
+          output_bytes: execution.outputBytes
+        }
+      });
+      const policyDecision = createPolicyDecisionEnvelope({
+        policyId: EXPLICIT_APPROVAL_POLICY,
+        capability: "workspace.file.write",
+        resource: snapshot.outputBases.map((base) => base.workspacePath).join(","),
+        decision: "stage",
+        actor: "host-policy",
+        reason: "Allow file-diff proposals only; live workspace writes require a separate foreground approval and dependency recheck."
+      });
+      record({
+        title: "Policy allowed file proposal staging",
+        detail: `${policyDecision.decisionId.slice(-12)} · ${snapshot.outputBases.length} exact output grant · commit authority not granted`,
+        tone: "accent",
+        category: "policy",
+        outcome: "allowed",
+        evidence: {
+          decision_id: policyDecision.decisionId,
+          policy_id: policyDecision.policyId,
+          capability: policyDecision.capability,
+          output_grants: snapshot.outputBases.length
+        }
+      });
       const proposals = await prepareWorkspaceFileEffects(
         snapshot,
         execution,
-        EXPLICIT_APPROVAL_POLICY
+        policyDecision.decisionId
       );
       if (!proposals.length) {
         setStatus("Workspace script completed with no file changes");
         record({
           title: "Workspace run produced no file effect",
           detail: `${snapshot.runId.slice(-12)} · ${execution.inputBytes} B in · ${execution.outputBytes} B transient output`,
-          tone: "muted"
+          tone: "muted",
+          category: "effect",
+          outcome: "completed",
+          evidence: { script_run_id: snapshot.runId, changed_files: 0 }
         });
         return;
       }
@@ -607,13 +846,23 @@ export function OperatorPage() {
       record({
         title: "Workspace file proposal prepared",
         detail: `${snapshot.runId.slice(-12)} · ${proposals[0].proposalId.slice(-12)} · ${execution.inputBytes} B in · ${execution.outputBytes} B out · live OPFS was not mounted`,
-        tone: "accent"
+        tone: "accent",
+        category: "proposal",
+        outcome: "prepared",
+        evidence: {
+          proposal_id: proposals[0].proposalId,
+          policy_decision_id: policyDecision.decisionId,
+          script_run_id: snapshot.runId,
+          workspace_path: proposals[0].target.workspacePath,
+          output_bytes: proposals[0].output.bytes,
+          precondition_strength: "recheck"
+        }
       });
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Workspace script failed.";
       setError(message);
       setStatus("Workspace script blocked");
-      record({ title: "Workspace script blocked", detail: message, tone: "muted" });
+      record({ title: "Workspace script blocked", detail: message, tone: "muted", category: "script", outcome: "failed" });
     } finally {
       setRunningWorkspaceScript(false);
     }
@@ -621,13 +870,23 @@ export function OperatorPage() {
 
   const approveWorkspaceFile = async () => {
     if (!workspaceProposal || committing) return;
+    if (!ensureJournalCapacity(2, true)) return;
     setCommitting(true);
     setError("");
     setStatus("Rechecking the workspace script dependencies and output base…");
     try {
+      const approval = decideWorkspaceFileEffect(workspaceProposal, "approve", "foreground-user");
+      record({
+        title: "Workspace file proposal approved",
+        detail: `${workspaceProposal.proposalId.slice(-12)} · exact proposal only · dependency and output-base recheck still required`,
+        tone: "accent",
+        category: "approval",
+        outcome: "approved",
+        evidence: { proposal_id: workspaceProposal.proposalId, actor: approval.reviewerId, decision: approval.decision }
+      });
       const outcome = await executeWorkspaceFileEffect(
         workspaceProposal,
-        decideWorkspaceFileEffect(workspaceProposal, "approve", "foreground-user"),
+        approval,
         workspace.current
       );
       if (outcome.status === "committed") {
@@ -636,7 +895,16 @@ export function OperatorPage() {
         record({
           title: "Workspace file effect committed",
           detail: `${outcome.receipt.receiptId.slice(-12)} · ${outcome.receipt.workspacePath} · ${outcome.receipt.bytes} B · recheck`,
-          tone: "accent"
+          tone: "accent",
+          category: "effect",
+          outcome: "committed",
+          evidence: {
+            proposal_id: workspaceProposal.proposalId,
+            receipt_id: outcome.receipt.receiptId,
+            workspace_path: outcome.receipt.workspacePath,
+            bytes: outcome.receipt.bytes,
+            precondition_strength: outcome.receipt.preconditionStrength
+          }
         });
       } else if (outcome.status === "conflict") {
         setWorkspaceProposal(null);
@@ -645,25 +913,28 @@ export function OperatorPage() {
         record({
           title: "Workspace write blocked: conflict",
           detail: `${outcome.resourcePath} · expected ${outcome.expectedSha256.slice(-12)} · observed ${outcome.observedSha256.slice(-12)}`,
-          tone: "muted"
+          tone: "muted",
+          category: "effect",
+          outcome: "conflict",
+          evidence: { proposal_id: workspaceProposal.proposalId, resource_path: outcome.resourcePath }
         });
       } else if (outcome.status === "uncertain") {
         setWorkspaceProposal(null);
         setStatus("Workspace write outcome uncertain — reconciliation required");
         setError(outcome.reason);
-        record({ title: "Workspace write outcome uncertain", detail: outcome.reason, tone: "muted" });
+        record({ title: "Workspace write outcome uncertain", detail: outcome.reason, tone: "muted", category: "effect", outcome: "uncertain", evidence: { proposal_id: workspaceProposal.proposalId, reconciliation_required: true } });
       } else if (outcome.status === "failed") {
         if (!outcome.retryable) setWorkspaceProposal(null);
         setStatus(outcome.retryable ? "Workspace validation failed — safe to retry" : "Workspace effect blocked");
         setError(outcome.reason);
-        record({ title: "Workspace effect blocked", detail: outcome.reason, tone: "muted" });
+        record({ title: "Workspace effect blocked", detail: outcome.reason, tone: "muted", category: "effect", outcome: "failed", evidence: { proposal_id: workspaceProposal.proposalId, retryable: outcome.retryable } });
       }
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Workspace effect execution failed.";
       setWorkspaceProposal(null);
       setStatus("Workspace effect outcome requires reconciliation");
       setError(message);
-      record({ title: "Workspace effect execution failed", detail: message, tone: "muted" });
+      record({ title: "Workspace effect execution failed", detail: message, tone: "muted", category: "effect", outcome: "uncertain", evidence: { proposal_id: workspaceProposal.proposalId, reconciliation_required: true } });
     } finally {
       setCommitting(false);
     }
@@ -671,13 +942,22 @@ export function OperatorPage() {
 
   const rejectWorkspaceFile = async () => {
     if (!workspaceProposal || committing) return;
+    if (!ensureJournalCapacity(1, true)) return;
+    const rejection = decideWorkspaceFileEffect(workspaceProposal, "reject", "foreground-user");
     const outcome = await executeWorkspaceFileEffect(
       workspaceProposal,
-      decideWorkspaceFileEffect(workspaceProposal, "reject", "foreground-user"),
+      rejection,
       workspace.current
     );
     if (outcome.status === "rejected") {
-      record({ title: "Workspace file proposal rejected", detail: workspaceProposal.proposalId.slice(-12), tone: "muted" });
+      record({
+        title: "Workspace file proposal rejected",
+        detail: `${workspaceProposal.proposalId.slice(-12)} · no output was written`,
+        tone: "muted",
+        category: "approval",
+        outcome: "rejected",
+        evidence: { proposal_id: workspaceProposal.proposalId, actor: rejection.reviewerId, decision: rejection.decision }
+      });
       setWorkspaceProposal(null);
       setStatus("Workspace file proposal rejected; no output was written");
     } else if (outcome.status === "failed") {
@@ -703,10 +983,16 @@ export function OperatorPage() {
     setLoadedGoogleTarget(null);
     setStatus("Ready");
     setError("");
-    setAudit([{ time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }]);
+    const nextJournal = initialOperatorJournal();
+    runJournal.current = nextJournal;
+    setAudit(nextJournal.events.map(auditEntryFromJournalEvent));
   };
 
   const importLocalArtifact = async (file: File, sheetName?: string) => {
+    if (!ensureJournalCapacity(4)) {
+      if (artifactInput.current) artifactInput.current.value = "";
+      return;
+    }
     planningAbort.current?.abort();
     const importEpoch = authorityEpoch.current + 1;
     authorityEpoch.current = importEpoch;
@@ -740,20 +1026,35 @@ export function OperatorPage() {
       record({
         title: "Local tabular artifact imported",
         detail: `${snapshot.provenance.sourceName} · ${snapshot.provenance.format.toUpperCase()} · ${snapshot.provenance.rows}×${snapshot.provenance.columns} · sha256 ${snapshot.provenance.sourceSha256.slice(0, 12)} · ${persistedPath ?? "memory only"}${persistenceWarning}`,
-        tone: "accent"
+        tone: "accent",
+        category: "source",
+        outcome: "completed",
+        evidence: {
+          source_kind: "artifact",
+          format: snapshot.provenance.format,
+          source_name: snapshot.provenance.sourceName,
+          source_sha256: snapshot.provenance.sourceSha256,
+          source_bytes: snapshot.provenance.sourceBytes,
+          rows: snapshot.provenance.rows,
+          columns: snapshot.provenance.columns,
+          workspace_path: persistedPath
+        }
       });
       if (snapshot.provenance.warnings.length) {
         record({
           title: "Value-only import boundary",
           detail: snapshot.provenance.warnings.join(" "),
-          tone: "muted"
+          tone: "muted",
+          category: "source",
+          outcome: "info",
+          evidence: { warning_count: snapshot.provenance.warnings.length }
         });
       }
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Local tabular artifact import failed.";
       setError(message);
       setStatus("Local artifact import blocked");
-      record({ title: "Local artifact import blocked", detail: message, tone: "muted" });
+      record({ title: "Local artifact import blocked", detail: message, tone: "muted", category: "source", outcome: "failed", evidence: { source_name: file.name } });
     } finally {
       setImportingArtifact(false);
       if (artifactInput.current) artifactInput.current.value = "";
@@ -762,6 +1063,7 @@ export function OperatorPage() {
 
   const exportWorkingData = async (format: TabularArtifactFormat) => {
     if (exportingArtifact) return;
+    if (!ensureJournalCapacity(1)) return;
     setExportingArtifact(true);
     setError("");
     try {
@@ -779,15 +1081,77 @@ export function OperatorPage() {
       record({
         title: "Value-only artifact exported",
         detail: `${exported.fileName} · ${rows.length} rows · ${exported.bytes.byteLength} B${exported.neutralizedFormulaCells ? ` · ${exported.neutralizedFormulaCells} CSV formula prefixes neutralized` : ""}`,
-        tone: "accent"
+        tone: "accent",
+        category: "export",
+        outcome: "completed",
+        evidence: {
+          format,
+          file_name: exported.fileName,
+          rows: rows.length,
+          bytes: exported.bytes.byteLength,
+          neutralized_formula_cells: exported.neutralizedFormulaCells
+        }
       });
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Artifact export failed.";
       setError(message);
       setStatus("Artifact export blocked");
-      record({ title: "Artifact export blocked", detail: message, tone: "muted" });
+      record({ title: "Artifact export blocked", detail: message, tone: "muted", category: "export", outcome: "failed", evidence: { format } });
     } finally {
       setExportingArtifact(false);
+    }
+  };
+
+  const exportRunJournal = () => {
+    setError("");
+    try {
+      const currentJournal = runJournal.current ?? initialOperatorJournal();
+      const ordinaryLimit = RUN_JOURNAL_LIMITS.maxEvents - RUN_JOURNAL_LIMITS.reservedTerminalEvents;
+      const nextJournal = currentJournal.events.length < ordinaryLimit
+        ? record({
+            title: "Run journal exported",
+            detail: "Structured events and pilot timing metrics · credential fields and source contents excluded · task/resource text defensively redacted",
+            tone: "accent",
+            category: "export",
+            outcome: "completed",
+            evidence: { format: "wasmhatch.run-journal.v1", event_count: currentJournal.events.length + 1 }
+          })
+        : currentJournal;
+      const context = {
+        task,
+        source: source === "artifact"
+          ? {
+              kind: "artifact" as const,
+              connectorId: null,
+              resource: artifactWorkspacePath ?? artifact?.sourceName ?? "memory-only artifact",
+              sourceSha256: artifact?.sourceSha256 ?? null
+            }
+          : source === "google"
+            ? {
+                kind: "google" as const,
+                connectorId: GOOGLE_SHEETS_MANIFEST.id,
+                resource: loadedGoogleTarget ? `${loadedGoogleTarget.spreadsheetId}:${loadedGoogleTarget.range}` : "unloaded Google Sheets target",
+                sourceSha256: null
+              }
+            : {
+                kind: "demo" as const,
+                connectorId: LOCAL_SPREADSHEET_MANIFEST.id,
+                resource: "local-demo:Demo!A1",
+                sourceSha256: null
+              }
+      };
+      const serialized = serializeRunJournal(nextJournal, context);
+      const url = URL.createObjectURL(new Blob([serialized], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `wasmhatch-run-${nextJournal.runId.slice(-8)}.json`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      setStatus(`Exported run journal ${nextJournal.runId.slice(-8)}`);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Run journal export failed.";
+      setError(message);
+      setStatus("Run journal export blocked");
     }
   };
 
@@ -977,7 +1341,7 @@ export function OperatorPage() {
             <div className="empty-review"><ShieldCheck size={22} /><strong>No pending write</strong><p>Run a transform for a cell preview, or stage a workspace output for a file diff. Nothing writes automatically.</p></div>
           )}
 
-          <div className="operator-panel-heading audit-heading"><span>Audit trail</span><small>this tab</small></div>
+          <div className="operator-panel-heading audit-heading"><span>Run journal</span><button className="journal-export" onClick={exportRunJournal} disabled={committing}><Download size={11} /> Export JSON</button></div>
           <div className="operator-audit">
             {audit.map((entry, index) => (
               <div key={`${entry.time}-${index}`} className={entry.tone === "accent" ? "accent" : ""}>

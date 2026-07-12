@@ -80,4 +80,12 @@ security fixes.
 - Workspace data remains untrusted when returned as a tool result. It cannot
   expand host policy, run the proposed script, or authorize its output. Planning,
   sandbox execution, and durable effect approval are separate checkpoints.
+- The Operator run journal stores bounded structured metadata, not source rows,
+  file contents, generated script source, model messages, or provider bodies.
+  Credential-named evidence keys are rejected and common key/token shapes are
+  redacted before an explicit JSON export. This is defense in depth and does not
+  replace preventing credentials from entering task text or errors.
+- Run journal exports are neither signed nor tamper-evident. They link policy,
+  proposal, source, run, and receipt identities for inspection but do not grant
+  authority, prove business correctness, or replace provider-native audit logs.
 - Browser command execution is not yet enabled.

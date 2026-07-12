@@ -125,7 +125,7 @@ export function BusinessLandingPage() {
           <article><span>03</span><h3>Agent checkpoints</h3><p>Lists, searches, and reads only exact workspace grants before staging a plan</p><small>Visible egress · hard budgets</small></article>
           <article><span>04</span><h3>Snapshot VFS</h3><p>Mounts exact copied inputs and transient declared outputs inside QuickJS</p><small>No live OPFS or network</small></article>
           <article><span>05</span><h3>Effect review</h3><p>Cell mutations or file diffs bind the reviewed base and payload</p><small>Exact approval</small></article>
-          <article><span>06</span><h3>Recheck + receipt</h3><p>Revalidates every dependency before commit and records the result</p><small>Conflict-aware</small></article>
+          <article><span>06</span><h3>Run journal</h3><p>Joins policy, tools, approvals, conflicts, receipts, and pilot timing</p><small>Credential fields excluded</small></article>
         </div>
       </section>
 
@@ -133,7 +133,7 @@ export function BusinessLandingPage() {
         <div className="section-label">Pilot workflows</div>
         <div className="examples-heading">
           <h2 id="workflows-title">Start with<br />real operations.</h2>
-          <p>The first pilots should validate business outcomes, approval clarity, and time saved—not coding contribution metrics.</p>
+          <div><p>The first pilots should validate business outcomes, approval clarity, and time saved—not coding contribution metrics.</p><a className="example-report-link" href={`${repositoryUrl}/issues/12`}>Share a sanitized pilot report <ArrowRight size={16} /></a></div>
         </div>
         <div className="example-list">
           {workflows.map((workflow) => (
@@ -162,6 +162,7 @@ export function BusinessLandingPage() {
           <div><span>00:05</span><p>Ran <strong>QuickJS Wasm</strong> against an ephemeral snapshot VFS</p></div>
           <div className="log-accent"><span>00:06</span><p>Staged an exact file diff; OPFS output still unchanged</p></div>
           <div><span>00:08</span><p>Rechecked manifest, source, input, and base after approval</p></div>
+          <div><span>00:09</span><p>Exported a structured run journal with proposal and commit timing</p></div>
         </div>
       </section>
 

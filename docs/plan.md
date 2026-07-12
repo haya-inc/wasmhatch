@@ -92,8 +92,10 @@ require a separately deployed server adapter.
   updates do not claim this guarantee.
 - Terminal `uncertain` handling for transport, unreadable success, timeout, and
   server failures after a write may have been sent; no automatic retry.
-- A per-tab audit trail for reads, proposal preparation, conflicts, uncertain
-  outcomes, rejections, and committed receipts.
+- A bounded per-tab run journal with a shared policy-decision envelope,
+  structured reads/model/tools/scripts/proposals/approvals/effects, derived pilot
+  timing metrics, credential-shaped text redaction, and explicit JSON export.
+  See [Run Journal](run-journal.md).
 
 ### 2.2 Not implemented yet
 
@@ -252,7 +254,7 @@ flowchart TD
     WORKER["Web Worker"]
     QJS["QuickJS Wasm: bounded files and JSON"]
     REVIEW["Typed effect review"]
-    AUDIT["Inspectable audit trail"]
+    AUDIT["Inspectable, exportable run journal"]
 
     UI --> AG
     AG --> POL
@@ -710,8 +712,8 @@ entering model or script input.
   workspace list/read/search/tabular-plan slice complete; connector reads,
   script execution, and effect preparation remain separate tools to integrate.
 - Display model egress, script source, tool calls, policy decisions, approvals,
-  conflicts, and receipts together — per-tab workspace planning trace complete;
-  unified cross-connector run journal remains.
+  conflicts, and receipts together — shared foreground run journal and explicit
+  JSON export complete for the Operator; durable cross-session storage remains.
 - Add cancellation, request budgets, explicit retry classes, and `uncertain`
   outcomes to the new loop — workspace planning cancellation and budgets plus
   terminal spreadsheet/file `uncertain` outcomes complete; unified connector
@@ -754,6 +756,9 @@ with Milestones 2 and 3. It must not wait for a database or broad connector set.
   appropriate.
 - Measure time-to-reviewed-result, corrections, rejected proposals, stale
   conflicts, approval confidence, and repeated use.
+- Export the structured run journal for each consented session so proposal and
+  commit timing, rejected reviews, conflicts, and uncertain outcomes come from
+  recorded events rather than retrospective estimates.
 - Include at least one local file workflow and one Google Sheets workflow.
 - Record missing capabilities without immediately converting each request into
   a roadmap commitment.
@@ -871,5 +876,6 @@ The coding-contributor metric is retired. Product evidence is:
 1. Continue the five pilot workflows and record evidence for architecture gates.
 2. Add granted connector reads and sandbox execution to the checkpointed planner
    loop without letting model output authorize an effect.
-3. Implement the shared policy decision envelope and run journal.
-4. Add workspace export, restore, and recovery tests to the operator slice.
+3. Add workspace export, restore, and recovery tests to the operator slice.
+4. Use exported run journals and pilot observations to choose the first
+   post-P0 adapter spike.

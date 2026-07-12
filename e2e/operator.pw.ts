@@ -49,6 +49,47 @@ test("runs a spreadsheet transform in Wasm and requires write approval", async (
   await expect(page.getByText("Local effect committed")).toBeVisible();
 });
 
+test("exports a credential-field-free structured run journal with pilot timing evidence", async ({ page }) => {
+  await page.goto("/?view=operator");
+  await page.getByLabel("OpenAI session API key").fill("sk-e2e-secret-never-record");
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+  await expect(page.getByText("Explicit approval required")).toBeVisible();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+  await expect(page.getByText("Local effect committed")).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export JSON" }).click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  const serialized = Buffer.concat(chunks).toString("utf8");
+  const journal = JSON.parse(serialized) as {
+    schemaVersion: number;
+    state: string;
+    metrics: Record<string, number | null>;
+    privacy: Record<string, boolean | string>;
+    events: Array<{ category: string; outcome: string; evidence: Record<string, unknown> }>;
+  };
+
+  expect(download.suggestedFilename()).toMatch(/^wasmhatch-run-[a-f0-9]{8}\.json$/);
+  expect(journal.schemaVersion).toBe(1);
+  expect(journal.state).toBe("committed");
+  expect(journal.metrics.scriptRuns).toBe(1);
+  expect(journal.metrics.proposalsPrepared).toBe(1);
+  expect(journal.metrics.approvals).toBe(1);
+  expect(journal.metrics.commits).toBe(1);
+  expect(journal.metrics.timeToFirstProposalMs).not.toBeNull();
+  expect(journal.metrics.timeToFirstCommitMs).not.toBeNull();
+  expect(journal.privacy.credentialFieldsIncluded).toBe(false);
+  expect(journal.privacy.sourceContentsIncluded).toBe(false);
+  expect(journal.privacy.defensiveRedactionApplied).toBe(true);
+  expect(journal.events.some((event) => event.category === "policy" && event.outcome === "allowed")).toBe(true);
+  expect(journal.events.some((event) => event.category === "effect" && event.outcome === "committed")).toBe(true);
+  expect(serialized).not.toContain("sk-e2e-secret-never-record");
+  expect(serialized).not.toContain("aya tanaka");
+});
+
 test("rejects structural script output before creating a write proposal", async ({ page }) => {
   await page.goto("/?view=operator");
   await page.getByRole("textbox", { name: "Sandbox transformation script" }).fill("(rows) => rows.slice(0, 1)");
