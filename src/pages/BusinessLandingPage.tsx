@@ -1,8 +1,9 @@
 import {
   ArrowRight,
   Check,
-  Database,
-  Play,
+  FileText,
+  MessageCircle,
+  Paperclip,
   ShieldCheck,
   Sparkles
 } from "lucide-react";
@@ -12,248 +13,141 @@ const contributorUrl = `${repositoryUrl}/issues?q=is%3Aissue+is%3Aopen+label%3A%
 const contributorGuideUrl = `${repositoryUrl}/blob/main/CONTRIBUTING.md`;
 const codespacesUrl = "https://codespaces.new/haya-inc/wasmhatch?quickstart=1";
 
-const workflows = [
+const workExamples = [
   {
-    number: "01",
-    source: "CSV / XLSX",
-    scope: "Your foreground file",
-    title: "Try one repetitive spreadsheet",
-    description: "Choose an anonymized export—or load the bundled sample through the real CSV Worker—then approve or reject the exact cells without uploading the source.",
-    entry: "start=upload",
-    action: "Use file or sample"
+    title: "Clean up an export",
+    prompt: "Standardize the names and regions, and make the amounts usable.",
+    detail: "CSV and XLSX stay in the browser while WasmHatch prepares exact cell changes."
   },
   {
-    number: "02",
-    source: "Two exports",
-    scope: "Back-office reconciliation",
-    title: "Review reconciliation exceptions",
-    description: "Compare synthetic ERP and payout values locally, derive only variance and status, then approve the seven exact output cells.",
-    entry: "demo=reconciliation",
-    action: "Open demo"
+    title: "Compare records",
+    prompt: "Find the mismatches between the ERP export and the payout records.",
+    detail: "Turn repetitive reconciliation into a short exception list you can review."
   },
   {
-    number: "03",
-    source: "Local sample",
-    scope: "60 seconds · no key",
-    title: "See the approval boundary",
-    description: "Normalize four bundled rows in the production sandbox, inspect twelve typed changes, then choose approve or reject.",
-    entry: "demo=local",
-    action: "Run the demo"
-  }
-];
-
-const starterIssues = [
-  {
-    number: 13,
-    scope: "Accessibility · UI + Playwright",
-    title: "Focus the exact write review",
-    description: "Move focus only after the user selects Review changes, without changing proposal or approval behavior."
+    title: "Create a useful report",
+    prompt: "Summarize the important findings as a concise Markdown report.",
+    detail: "Create a reviewed file from bounded snapshots without giving scripts live access."
   },
   {
-    number: 14,
-    scope: "Safety invariant · unit + browser",
-    title: "Fail closed on guided count drift",
-    description: "Validate bundled sample mutation counts before review while leaving real CSV/XLSX and Google workflows unchanged."
-  },
-  {
-    number: 15,
-    scope: "Accessibility · source state",
-    title: "Expose the selected Operator source",
-    description: "Keep assistive-technology state aligned with the visible demo, local file, and Google Sheets source selection."
+    title: "Prepare a Sheets update",
+    prompt: "Review this range and prepare only the changes that need my attention.",
+    detail: "Connect Google Sheets for the current session and approve before any write."
   }
 ] as const;
 
-function PilotWorkflowsSection({ operatorUrl }: { operatorUrl: string }) {
-  return (
-    <section className="examples-section" id="workflows" aria-labelledby="workflows-title">
-      <div className="section-label">Five pilot workflows wanted</div>
-      <div className="examples-heading">
-        <h2 id="workflows-title">Bring one repetitive spreadsheet.</h2>
-        <div>
-          <p>Use sample or anonymized data. Complete one approve-or-reject loop, then share a source-free report with only the feedback you choose.</p>
-          <a className="example-report-link" href={`${repositoryUrl}/blob/main/docs/quickstart.md#pilot-evidence`}>See the pilot evidence boundary <ArrowRight size={16} /></a>
-        </div>
-      </div>
-      <div className="example-list">
-        {workflows.map((workflow) => (
-          <article key={workflow.number}>
-            <span className="example-number">{workflow.number}</span>
-            <div className="example-repo"><code>{workflow.source}</code><small>{workflow.scope}</small></div>
-            <div className="example-copy"><h3>{workflow.title}</h3><p>{workflow.description}</p></div>
-            <div className="example-actions"><a href={`${operatorUrl}&${workflow.entry}`}>{workflow.action} <ArrowRight size={17} /></a></div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
+const starterIssues = [
+  { number: 13, title: "Make write review easier to focus", scope: "Accessibility" },
+  { number: 14, title: "Fail closed when guided counts drift", scope: "Safety invariant" },
+  { number: 15, title: "Expose the selected source clearly", scope: "Accessibility" }
+] as const;
 
 export function BusinessLandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
-  const operatorUrl = `${homeUrl}?view=operator`;
-  const localDemoUrl = `${operatorUrl}&demo=local`;
+  const workUrl = `${homeUrl}?view=work`;
+  const sampleUrl = `${workUrl}&demo=local`;
 
   return (
-    <main className="landing business-landing">
-      <header className="site-header">
+    <main className="landing work-landing">
+      <header className="site-header work-site-header">
         <a className="wordmark" href={homeUrl} aria-label="WasmHatch home">WH<span>／02</span></a>
         <nav aria-label="Primary navigation">
+          <a href="#possibilities">What it can do</a>
           <a href="#how">How it works</a>
-          <a href="#workflows">Workflows</a>
-          <a href="#trust">Trust model</a>
-          <a href="#contribute">Contribute</a>
+          <a href="#trust">Trust</a>
           <a href={repositoryUrl}>GitHub</a>
         </nav>
-        <a className="header-cta" href={`${operatorUrl}&start=upload`}>Use your CSV <ArrowRight size={16} /></a>
+        <a className="header-cta" href={workUrl}>Start a task <ArrowRight size={16} /></a>
       </header>
 
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-grid" aria-hidden="true" />
-        <div className="hero-glow" aria-hidden="true" />
-        <div className="hero-copy">
-          <p className="kicker reveal reveal-one"><span /> Open-source · browser-native</p>
-          <h1 id="hero-title" className="reveal reveal-two"><span>Wasm</span><span>Hatch.</span></h1>
-          <p className="hero-promise reveal reveal-three">AI work, with<br />every action visible.</p>
-          <div className="hero-actions reveal reveal-four">
-            <a className="button button-primary" href={`${operatorUrl}&start=upload`}>Use your CSV / XLSX <ArrowRight size={18} /></a>
-            <a className="button button-quiet" href={localDemoUrl}><Play size={17} /> 60-second demo</a>
+      <section className="work-hero" aria-labelledby="hero-title">
+        <div className="work-hero-copy">
+          <p className="kicker"><span /> Open-source · browser-native</p>
+          <h1 id="hero-title">Describe the work.<br /><em>Review the result.</em></h1>
+          <p className="work-hero-lede">WasmHatch is an AI workspace for everyday work. Add the context you choose, explain the outcome in natural language, and stay in control of every change.</p>
+          <div className="hero-actions">
+            <a className="button button-primary" href={workUrl}>Start a task <ArrowRight size={18} /></a>
+            <a className="button button-quiet" href={sampleUrl}>Try a safe sample</a>
           </div>
-          <p className="hero-assurance reveal reveal-five"><ShieldCheck size={14} /> Local files stay in this tab. No account or server upload.</p>
+          <p className="hero-assurance"><ShieldCheck size={14} /> No account needed for local files. Nothing writes without approval.</p>
         </div>
 
-        <div className="hero-product reveal reveal-five business-product" aria-label="WasmHatch business operator preview">
-          <div className="product-bar">
-            <span className="product-mark">WH</span>
-            <span>pipeline.xlsx / Forecast</span>
-            <span className="local-state"><i /> foreground session</span>
+        <div className="conversation-preview" aria-label="Conversation-first work preview">
+          <header><span className="product-mark">WH</span><strong>New task</strong><small><i /> Ready</small></header>
+          <div className="preview-thread">
+            <div className="preview-welcome">
+              <Sparkles size={18} />
+              <p><strong>What do you want to get done?</strong><span>I can work with files and connected sheets, compare records, and create reviewed outputs.</span></p>
+            </div>
+            <div className="preview-prompt"><Paperclip size={15} /><span>pipeline.csv</span><p>Find inconsistent owner names and prepare a clean version.</p></div>
+            <div className="preview-answer"><span><Check size={14} /></span><p><strong>I found 3 names to standardize.</strong><small>I prepared the exact before-and-after values. Nothing has changed yet.</small><button>Review 3 changes <ArrowRight size={13} /></button></p></div>
           </div>
-          <div className="product-body">
-            <div className="product-files">
-              <small>SOURCES</small>
-              <span className="active">CSV / XLSX</span>
-              <span>Google Sheets</span>
-              <span>OPFS snapshots</span>
-              <span className="connector-note">Local bytes become bounded values + provenance</span>
-            </div>
-            <div className="business-sheet" aria-label="Example spreadsheet changes">
-              <div className="sheet-head"><span>OWNER</span><span>REGION</span><span>AMOUNT</span></div>
-              <div><span><del> aya tanaka </del><ins>Aya Tanaka</ins></span><span><del> west </del><ins>WEST</ins></span><span><del>12,400</del><ins>12400</ins></span></div>
-              <div><span><del>KEN ITO</del><ins>Ken Ito</ins></span><span>EAST</span><span><del>8300</del><ins>8300</ins></span></div>
-              <div><span><del> mei sato </del><ins>Mei Sato</ins></span><span><del> north</del><ins>NORTH</ins></span><span><del>6,250</del><ins>6250</ins></span></div>
-            </div>
-            <div className="product-agent">
-              <small>AGENT ACTIVITY</small>
-              <p><Check size={14} /> Read 4 rows</p>
-              <p><Check size={14} /> Ran local script</p>
-              <p className="agent-current"><Sparkles size={14} /> 12 cells ready</p>
-              <button>Review write <ArrowRight size={14} /></button>
-            </div>
-          </div>
-        </div>
-
-        <div className="hero-foot">
-          <span>01 / READ</span><span>02 / DECIDE</span><span>03 / TRANSFORM</span><span>04 / APPROVE</span>
-          <span>Credentials never enter generated scripts.</span>
+          <footer><MessageCircle size={15} /><span>Ask a follow-up or describe the next step…</span></footer>
         </div>
       </section>
 
-      <PilotWorkflowsSection operatorUrl={operatorUrl} />
-
-      <section className="workflow" id="how" aria-labelledby="workflow-title">
-        <div className="section-label">The operating loop</div>
-        <div className="workflow-heading">
-          <h2 id="workflow-title">Give AI tools.<br />Keep control.</h2>
-          <p>WasmHatch lets the model plan with typed business connectors, while scripts receive data—not credentials—and writes stop for review.</p>
+      <section className="work-possibilities" id="possibilities" aria-labelledby="possibilities-title">
+        <div className="section-label">Start with the outcome</div>
+        <div className="work-section-heading">
+          <h2 id="possibilities-title">Work that starts with a request,<br />not a tool.</h2>
+          <p>A spreadsheet is one kind of context—not the product. The same conversation can move from understanding information to transforming it and producing a useful result.</p>
         </div>
-        <div className="workflow-sequence">
-          <article><span className="step-number">01</span><Database aria-hidden="true" /><h3>Connect the data</h3><p>Authorize a short-lived Google session or grant a local workbook for the foreground task.</p></article>
-          <article><span className="step-number">02</span><Play aria-hidden="true" /><h3>Run isolated logic</h3><p>A saved script reads only its declared snapshots and writes only to ephemeral outputs in a resource-limited Wasm Worker.</p></article>
-          <article><span className="step-number">03</span><Check aria-hidden="true" /><h3>Approve the effect</h3><p>Review a cell or file diff before anything durable is written. Changed dependencies invalidate the proposal.</p></article>
-        </div>
-      </section>
-
-      <section className="fit-section" id="capabilities" aria-labelledby="capabilities-title">
-        <div className="section-label">Architecture, not magic</div>
-        <div className="fit-heading">
-          <h2 id="capabilities-title">Browser first.<br />Capability bound.</h2>
-          <div><p>The operator imports local workbooks without a server and uses short-lived Google authorization only when requested. File codecs and credentialed connectors remain separate capabilities.</p><a href={`${repositoryUrl}/blob/main/docs/tabular-artifacts.md`}>Read the artifact boundary <ArrowRight size={16} /></a></div>
-        </div>
-        <div className="fit-list" aria-label="WasmHatch architecture layers">
-          <article className="fit-primary"><span>01</span><h3>Artifact worker</h3><p>Turns untrusted CSV/XLSX bytes into bounded values and provenance</p><small>Value-only · no network</small></article>
-          <article><span>02</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
-          <article><span>03</span><h3>Planner boundary</h3><p>Uses Chrome built-in AI when available, or identity-bound OpenAI tools for broader plans</p><small>No credential in model input</small></article>
-          <article><span>04</span><h3>Artifact workflow</h3><p>Derives one typed output manifest on the host and mounts only copied inputs inside QuickJS</p><small>Markdown · CSV · JSON · text</small></article>
-          <article><span>05</span><h3>Effect review</h3><p>Cell mutations, file diffs, and local undo bind the reviewed base and payload</p><small>Exact approval · receipt-bound undo</small></article>
-          <article><span>06</span><h3>Run journal</h3><p>Joins policy, tools, approvals, conflicts, receipts, and pilot timing</p><small>Credential fields excluded</small></article>
-        </div>
-      </section>
-
-      <section className="contribute-section" id="contribute" aria-labelledby="contribute-title">
-        <div className="section-label">Three scoped starter issues</div>
-        <div className="contribute-heading">
-          <h2 id="contribute-title">Improve one visible boundary.</h2>
-          <div>
-            <p>All three tasks use bundled synthetic data and have explicit acceptance criteria. Read the issue, check current comments, then claim it before editing.</p>
-            <div className="contribute-entry-actions">
-              <a href={contributorGuideUrl}>Read the contributor guide <ArrowRight size={16} /></a>
-              <a href={codespacesUrl}>Open a Codespace <ArrowRight size={16} /></a>
-            </div>
-          </div>
-        </div>
-        <div className="contribution-list">
-          {starterIssues.map((issue) => (
-            <article key={issue.number}>
-              <span className="contribution-issue">#{issue.number}</span>
-              <div><small>{issue.scope}</small><h3>{issue.title}</h3></div>
-              <p>{issue.description}</p>
-              <div className="contribution-actions"><a className="contribution-open" href={`${repositoryUrl}/issues/${issue.number}`}>Read issue #{issue.number} <ArrowRight size={15} /></a></div>
-            </article>
+        <div className="work-example-grid">
+          {workExamples.map((example, index) => (
+            <a key={example.title} href={`${workUrl}${index === 1 ? "&demo=reconciliation" : index === 0 ? "&demo=local" : index === 2 ? "&example=report" : "&example=sheets"}`}>
+              <span>0{index + 1}</span>
+              <h3>{example.title}</h3>
+              <blockquote>“{example.prompt}”</blockquote>
+              <p>{example.detail}</p>
+              <em>Try this request <ArrowRight size={14} /></em>
+            </a>
           ))}
         </div>
       </section>
 
-      <section className="proof" aria-label="Example operation log">
-        <div className="proof-sticky">
-          <p className="section-label">One task. Visible effects.</p>
-          <h2>Let the agent reason. Bound what it can do.</h2>
-          <p className="proof-copy">Business automation becomes trustworthy when credentials, computation, and external writes are separate capabilities.</p>
-          <a href={localDemoUrl} className="text-link">Try without an account or key <ArrowRight size={17} /></a>
-        </div>
-        <div className="proof-log">
-          <div><span>00:00</span><p>Imported <strong>pipeline.xlsx / Forecast</strong> in a codec Worker</p></div>
-          <div><span>00:02</span><p>Stored a SHA-256-bound normalized snapshot in OPFS</p></div>
-          <div><span>00:03</span><p>Previewed locally, attached one exact hash, then returned a bounded row window</p></div>
-          <div><span>00:04</span><p>Staged one typed output path and inspectable script; nothing executed</p></div>
-          <div><span>00:05</span><p>Ran <strong>QuickJS Wasm</strong> against exact input snapshots and one ephemeral output</p></div>
-          <div className="log-accent"><span>00:06</span><p>Staged an exact file diff; OPFS output still unchanged</p></div>
-          <div><span>00:08</span><p>Rechecked manifest, source, input, and base after approval</p></div>
-          <div><span>00:09</span><p>Exported a structured run journal with proposal and commit timing</p></div>
-          <div><span>00:10</span><p>Verified a portable workspace ZIP; restore still requires exact review</p></div>
+      <section className="work-how" id="how" aria-labelledby="how-title">
+        <div className="section-label">One understandable loop</div>
+        <h2 id="how-title">Talk naturally.<br />See what happens.</h2>
+        <div className="work-steps">
+          <article><span>01</span><Paperclip /><div><h3>Add context when it helps</h3><p>Choose a local file, a workspace artifact, or a Google Sheets range. WasmHatch shows what is in scope.</p></div></article>
+          <article><span>02</span><MessageCircle /><div><h3>Describe the outcome</h3><p>Ask in plain language and continue the conversation. Execution details stay available without taking over the screen.</p></div></article>
+          <article><span>03</span><Check /><div><h3>Review the real effect</h3><p>Inspect exact cell or file changes before saving. If the source changes, the old proposal becomes invalid.</p></div></article>
         </div>
       </section>
 
-      <section className="trust" id="trust" aria-labelledby="trust-title">
-        <div className="section-label">Trust is the operating system</div>
-        <h2 id="trust-title">Local-first.<br />Effect-aware.</h2>
-        <div className="trust-lines">
-          <div><span>Local files</span><strong>Isolated OPFS → verified portable ZIP</strong><em>01</em></div>
-          <div><span>Credentials</span><strong>Short-lived GIS → host broker</strong><em>02</em></div>
-          <div><span>Model access</span><strong>On-device table or reviewed hashes · visible network egress</strong><em>03</em></div>
-          <div><span>Scripts</span><strong>Snapshot VFS · no live host access</strong><em>04</em></div>
-          <div><span>Writes</span><strong>Cell or file diff approval first</strong><em>05</em></div>
-          <div><span>Autonomy</span><strong>Foreground session in alpha</strong><em>06</em></div>
+      <section className="work-trust" id="trust" aria-labelledby="trust-title">
+        <div>
+          <p className="section-label">Control without the complexity</p>
+          <h2 id="trust-title">The technical boundary stays underneath the conversation.</h2>
         </div>
-        <p className="trust-note"><ShieldCheck size={20} /> The alpha deliberately excludes background execution and persisted OAuth tokens. Those require a separate server trust model.</p>
+        <div className="work-trust-points">
+          <p><ShieldCheck size={18} /><span><strong>Local by default</strong>Files are parsed in a Worker and are not uploaded to a WasmHatch server.</span></p>
+          <p><FileText size={18} /><span><strong>Bounded execution</strong>Scripts receive copied snapshots—not credentials, the DOM, live storage, or unrestricted network access.</span></p>
+          <p><Check size={18} /><span><strong>Approval before effects</strong>Durable changes wait for an exact diff review, with the decision recorded in the run journal.</span></p>
+          <a href={`${repositoryUrl}/blob/main/docs/conversation-first-ux.md`}>Read the product and UX direction <ArrowRight size={15} /></a>
+        </div>
       </section>
 
-      <section className="final-cta">
-        <div><p className="section-label">Five pilot workflows wanted</p><h2>Bring one workflow.</h2></div>
-        <div className="final-actions"><a className="button button-dark" href={`${operatorUrl}&start=upload`}>Use your CSV / XLSX <ArrowRight size={19} /></a><a className="final-secondary" href={localDemoUrl}>Or run the 60-second demo <ArrowRight size={15} /></a><p>Open source.<br />No account or server upload.</p></div>
+      <section className="work-contribute" id="contribute" aria-labelledby="contribute-title">
+        <div className="work-section-heading">
+          <div><p className="section-label">Open source</p><h2 id="contribute-title">Help make AI work understandable.</h2></div>
+          <div><p>Small, scoped issues use synthetic data and explicit acceptance criteria.</p><a href={contributorGuideUrl}>Contributor guide <ArrowRight size={15} /></a><a href={codespacesUrl}>Open a Codespace <ArrowRight size={15} /></a></div>
+        </div>
+        <div className="work-issue-list">
+          {starterIssues.map((issue) => <a key={issue.number} href={`${repositoryUrl}/issues/${issue.number}`}><span>#{issue.number}</span><small>{issue.scope}</small><strong>{issue.title}</strong><ArrowRight size={15} /></a>)}
+        </div>
       </section>
 
-      <footer className="site-footer">
+      <section className="work-final-cta">
+        <Sparkles size={24} />
+        <h2>What do you want to get done?</h2>
+        <p>Start with a sample, a file, or simply a request.</p>
+        <a className="button button-primary" href={workUrl}>Open WasmHatch <ArrowRight size={18} /></a>
+      </section>
+
+      <footer className="site-footer work-footer">
         <a className="wordmark wordmark-dark" href={homeUrl}>WH<span>／02</span></a>
-        <p>Browser-native AI operations with explicit effects.</p>
+        <p>Open-source AI work with visible, permissioned effects.</p>
         <div><a href={repositoryUrl}>GitHub</a><a href={contributorUrl}>Contribute</a><a href={`${repositoryUrl}/blob/main/docs/plan.md`}>Plan</a><span>Apache-2.0</span></div>
       </footer>
     </main>

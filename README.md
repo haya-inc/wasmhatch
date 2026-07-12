@@ -4,7 +4,10 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/haya-inc/wasmhatch?quickstart=1)
 
-[Open the business-operator foundation slice](https://haya-inc.github.io/wasmhatch/?view=operator)
+[Start a general work task](https://haya-inc.github.io/wasmhatch/?view=work) —
+describe the outcome first; add context and technical detail only when needed.
+
+[Open the advanced business operator](https://haya-inc.github.io/wasmhatch/?view=operator)
 
 [Run the 60-second local demo](https://haya-inc.github.io/wasmhatch/?view=operator&demo=local) — no account, API key, OAuth, upload, or server required.
 

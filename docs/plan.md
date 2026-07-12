@@ -40,6 +40,11 @@ require a separately deployed server adapter.
 ### 2.1 Shipped foundation slice
 
 - A new business-operator landing page and `/operator` application route.
+- A conversation-first `?view=work` route that starts with a natural-language
+  outcome, keeps context and activity panels optional, collapses execution
+  details, and reveals the real review surface when an effect is staged. The
+  advanced `/operator` surface uses the same runtime and remains available for
+  development and audit work. See [Conversation-first UX](conversation-first-ux.md).
 - A deep-linked 60-second local demo that requires no account or key and guides
   the user through separate QuickJS execution, exact cell review, and local
   approval without weakening any checkpoint. See [Quickstart](quickstart.md).

@@ -14,6 +14,13 @@ export function App() {
     ? window.location.pathname.slice(basePath.length)
     : window.location.pathname.slice(1);
   const requestedView = new URLSearchParams(window.location.search).get("view");
+  if (route.startsWith("work") || requestedView === "work") {
+    return (
+      <Suspense fallback={<div className="route-loading">Opening your workspace…</div>}>
+        <OperatorPage simple />
+      </Suspense>
+    );
+  }
   if (route.startsWith("operator") || requestedView === "operator") {
     return (
       <Suspense fallback={<div className="route-loading">Opening operator…</div>}>

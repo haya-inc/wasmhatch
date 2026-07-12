@@ -259,9 +259,10 @@ function downloadPilotReport(value: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export function OperatorPage() {
+export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
   const homeUrl = import.meta.env.BASE_URL;
   const initialDemo = useRef(resolveGuidedDemo(window.location.search)).current;
+  const initialWorkExample = simple ? new URLSearchParams(window.location.search).get("example") : null;
   const [demoId, setDemoId] = useState<GuidedDemoId>(initialDemo.id);
   const demo = guidedDemoDefinition(demoId);
   const [rows, setRows] = useState<SpreadsheetRows>(() => initialDemo.definition.rows.map((row) => [...row]));
@@ -270,10 +271,14 @@ export function OperatorPage() {
   const [lastLocalEffect, setLastLocalEffect] = useState<ReversibleLocalSpreadsheetEffect | null>(null);
   const [localReversalBusy, setLocalReversalBusy] = useState(false);
   const [workspaceProposal, setWorkspaceProposal] = useState<WorkspaceFileEffectProposal | null>(null);
-  const [task, setTask] = useState(initialDemo.definition.task);
-  const [script, setScript] = useState(initialDemo.definition.script);
+  const [task, setTask] = useState(() => {
+    if (initialWorkExample === "report") return "Create a concise Markdown report that summarizes the important findings and exceptions.";
+    if (initialWorkExample === "sheets") return "Review this Google Sheets range, explain what stands out, and prepare only the updates I approve.";
+    return simple && !initialDemo.showGuide && !initialDemo.startUpload ? "" : initialDemo.definition.task;
+  });
+  const [script, setScript] = useState(initialWorkExample === "report" ? "" : initialDemo.definition.script);
   const [plan, setPlan] = useState<SpreadsheetPlan | null>(null);
-  const [planMode, setPlanMode] = useState<"spreadsheet-transform" | "artifact-output">("spreadsheet-transform");
+  const [planMode, setPlanMode] = useState<"spreadsheet-transform" | "artifact-output">(initialWorkExample === "report" ? "artifact-output" : "spreadsheet-transform");
   const [artifactWorkflowDraft, setArtifactWorkflowDraft] = useState<WorkspaceArtifactWorkflowDraft | null>(null);
   const [plannerProvider, setPlannerProvider] = useState<PlannerProvider>("openai");
   const [chromePlannerStatus, setChromePlannerStatus] = useState<ChromeBuiltInPlannerAvailability | "checking">("checking");
@@ -286,12 +291,19 @@ export function OperatorPage() {
   const [pilotReportDelivery, setPilotReportDelivery] = useState<"copied" | "downloaded" | null>(null);
   const [pilotReportDownload, setPilotReportDownload] = useState<string | null>(null);
   const [pilotReportWorkflow, setPilotReportWorkflow] = useState<PublicPilotWorkflowId | null>(null);
-  const [mobileSourcesOpen, setMobileSourcesOpen] = useState(initialDemo.startUpload);
+  const [mobileSourcesOpen, setMobileSourcesOpen] = useState(initialDemo.startUpload || initialWorkExample === "report" || initialWorkExample === "sheets");
+  const [activityOpen, setActivityOpen] = useState(false);
   const [uploadPromptVisible, setUploadPromptVisible] = useState(initialDemo.startUpload);
   const [agentTrace, setAgentTrace] = useState<WorkspaceAgentTraceEvent[]>([]);
   const [agentBudget, setAgentBudget] = useState<WorkspaceAgentBudget | null>(null);
   const [committing, setCommitting] = useState(false);
-  const [status, setStatus] = useState(initialDemo.startUpload ? "Choose a CSV or XLSX file" : "Ready");
+  const [status, setStatus] = useState(initialDemo.startUpload
+    ? "Choose a CSV or XLSX file"
+    : initialWorkExample === "report"
+      ? "Add a file to create a report"
+      : initialWorkExample === "sheets"
+        ? "Connect a Google Sheet when you are ready"
+        : "Ready");
   const [error, setError] = useState("");
   const [source, setSource] = useState<"demo" | "artifact" | "google">("demo");
   const [artifact, setArtifact] = useState<TabularArtifactProvenance | null>(null);
@@ -2191,6 +2203,32 @@ export function OperatorPage() {
         : loadedGoogleTarget
           ? `Google Sheets · ${loadedGoogleTarget.range}`
           : "Google Sheets";
+  const reviewNeedsAttention = Boolean(
+    proposal || workspaceProposal || reversalProposalKind || pendingWorkspaceRestore || pendingWorkspaceClear
+  );
+
+  const startWorkExample = (example: "clean" | "compare" | "report" | "sheets") => {
+    if (example === "clean") {
+      resetDemo("normalization");
+      return;
+    }
+    if (example === "compare") {
+      resetDemo("reconciliation");
+      return;
+    }
+
+    planningAbort.current?.abort();
+    taskRevision.current += 1;
+    clearAiPlans();
+    invalidateProposal("work example changed");
+    setTask(example === "report"
+      ? "Create a concise Markdown report that summarizes the important findings and exceptions."
+      : "Review this Google Sheets range, explain what stands out, and prepare only the updates I approve.");
+    if (example === "report" && planMode !== "artifact-output") changePlanMode("artifact-output");
+    if (example === "sheets" && planMode !== "spreadsheet-transform") changePlanMode("spreadsheet-transform");
+    setMobileSourcesOpen(true);
+    setStatus(example === "report" ? "Add a file to create a report" : "Connect a Google Sheet when you are ready");
+  };
 
   const copyPilotReport = async () => {
     try {
@@ -2244,18 +2282,24 @@ export function OperatorPage() {
   };
 
   return (
-    <main className="operator-app">
+    <main className={simple ? "operator-app simple-work-app" : "operator-app"}>
       <header className="operator-header">
         <a href={homeUrl} className="operator-brand"><span>WH</span><strong>WasmHatch</strong></a>
         <div className="operator-title">
-          <small>Business operator / foundation slice</small>
-          <strong>Business artifact operation</strong>
+          <small>{simple ? "Your work, in one conversation" : "Business operator / foundation slice"}</small>
+          <strong>{simple ? "What do you want to get done?" : "Business artifact operation"}</strong>
         </div>
         <div className="operator-status"><i /> {status}</div>
-        <a href={`${homeUrl}?view=workspace`} className="operator-legacy"><ArrowLeft size={14} /> Legacy coding workspace</a>
+        {simple ? (
+          <div className="simple-work-tools">
+            <button type="button" aria-expanded={mobileSourcesOpen} onClick={() => setMobileSourcesOpen((open) => !open)}><Paperclip size={14} /> Context</button>
+            <button type="button" aria-expanded={activityOpen || reviewNeedsAttention} onClick={() => setActivityOpen((open) => !open)}><ShieldCheck size={14} /> Activity{reviewNeedsAttention && <i />}</button>
+            <a href={`${homeUrl}?view=operator`}>Advanced</a>
+          </div>
+        ) : <a href={`${homeUrl}?view=workspace`} className="operator-legacy"><ArrowLeft size={14} /> Legacy coding workspace</a>}
       </header>
 
-      <div className="operator-layout">
+      <div className={`operator-layout${simple ? ` simple-work-layout${mobileSourcesOpen ? " sources-visible" : ""}${activityOpen || reviewNeedsAttention ? " activity-visible" : ""}` : ""}`}>
         <aside className={mobileSourcesOpen ? "operator-connectors mobile-open" : "operator-connectors"} aria-label="Sources and connectors">
           <button
             className="operator-mobile-source-toggle"
@@ -2449,7 +2493,22 @@ export function OperatorPage() {
         </aside>
 
         <section className="operator-workbench">
-          <div className="operator-panel-heading"><span>Working data</span><small>{rows.length} rows · {Math.max(0, ...rows.map((row) => row.length))} columns{rows.length > TABLE_PREVIEW_ROWS ? ` · previewing ${TABLE_PREVIEW_ROWS}` : ""}</small></div>
+          <div className="operator-panel-heading workbench-heading"><span>{simple ? "Conversation" : "Working data"}</span><small>{simple ? source === "demo" && !showLocalDemoGuide && !mobileSourcesOpen ? "No context added" : currentSourceLabel : `${rows.length} rows · ${Math.max(0, ...rows.map((row) => row.length))} columns${rows.length > TABLE_PREVIEW_ROWS ? ` · previewing ${TABLE_PREVIEW_ROWS}` : ""}`}</small></div>
+          {simple && (
+            <div className="simple-work-intro">
+              <span className="simple-assistant-mark"><Sparkles size={18} /></span>
+              <div>
+                <h1>Tell me the outcome you need.</h1>
+                <p>I can work with files and connected sheets, compare records, clean data, and create reviewed outputs. Start in your own words or choose an example.</p>
+                <div className="simple-work-examples" aria-label="Example work requests">
+                  <button type="button" onClick={() => startWorkExample("clean")}>Clean up an export</button>
+                  <button type="button" onClick={() => startWorkExample("compare")}>Compare two records</button>
+                  <button type="button" onClick={() => startWorkExample("report")}>Create a report</button>
+                  <button type="button" onClick={() => startWorkExample("sheets")}>Update a Google Sheet</button>
+                </div>
+              </div>
+            </div>
+          )}
           {showLocalDemoGuide && source === "demo" && (
             <div className={localDemoFinished ? "operator-demo-guide complete" : proposal ? "operator-demo-guide review" : "operator-demo-guide"} role="region" aria-label={demo.label} aria-live="polite">
               <span className="operator-demo-step">{localDemoFinished ? "03" : proposal ? "02" : "01"}</span>
@@ -2478,7 +2537,7 @@ export function OperatorPage() {
               <button className="operator-demo-close" onClick={() => setShowLocalDemoGuide(false)} aria-label="Dismiss local demo guide"><X size={13} /></button>
             </div>
           )}
-          <div className="operator-table-wrap">
+          <div className={`operator-table-wrap simple-work-context-preview${simple && source === "demo" && !showLocalDemoGuide && !mobileSourcesOpen ? " is-waiting" : ""}`}>
             <table className="operator-table">
               <tbody>
                 {rows.slice(0, TABLE_PREVIEW_ROWS).map((row, rowIndex) => (
@@ -2493,17 +2552,23 @@ export function OperatorPage() {
           </div>
 
           <div className="operator-task">
-            <div className="operator-task-label"><Sparkles size={14} /><span>Task intent</span><small>AI may propose; only you can run and write</small></div>
-            <textarea value={task} onChange={(event) => { planningAbort.current?.abort(); taskRevision.current += 1; setTask(event.target.value); clearAiPlans(); invalidateProposal("task intent edited"); }} aria-label="Business task" disabled={committing} />
+            <div className="operator-task-label"><Sparkles size={14} /><span>{simple ? "Your request" : "Task intent"}</span><small>{simple ? "Nothing changes without your review" : "AI may propose; only you can run and write"}</small></div>
+            <textarea value={task} onChange={(event) => { planningAbort.current?.abort(); taskRevision.current += 1; setTask(event.target.value); clearAiPlans(); invalidateProposal("task intent edited"); }} aria-label="Business task" placeholder={simple ? "Describe what you want to accomplish…" : undefined} disabled={committing} />
             <div className="operator-plan-mode" role="group" aria-label="AI plan output mode">
-              <button className={planMode === "spreadsheet-transform" ? "active" : ""} aria-pressed={planMode === "spreadsheet-transform"} onClick={() => changePlanMode("spreadsheet-transform")} disabled={planning || committing}><span>Table transform</span><small>typed cells</small></button>
-              <button className={planMode === "artifact-output" ? "active" : ""} aria-pressed={planMode === "artifact-output"} onClick={() => changePlanMode("artifact-output")} disabled={planning || committing}><span>Artifact output</span><small>one reviewed file</small></button>
+              <button className={planMode === "spreadsheet-transform" ? "active" : ""} aria-pressed={planMode === "spreadsheet-transform"} onClick={() => changePlanMode("spreadsheet-transform")} disabled={planning || committing}><span>{simple ? "Update data" : "Table transform"}</span><small>{simple ? "review each change" : "typed cells"}</small></button>
+              <button className={planMode === "artifact-output" ? "active" : ""} aria-pressed={planMode === "artifact-output"} onClick={() => changePlanMode("artifact-output")} disabled={planning || committing}><span>{simple ? "Create a file" : "Artifact output"}</span><small>{simple ? "review before saving" : "one reviewed file"}</small></button>
             </div>
             <div className="operator-planner-actions">
               <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerRequestReady || !task.trim() || planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath) && !googleArtifactReadReady))}>
-                {planning ? <Square size={12} /> : plannerProvider === "chrome-built-in" ? <Bot size={14} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : plannerProvider === "chrome-built-in" ? "Draft with local AI" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
+                {planning ? <Square size={12} /> : plannerProvider === "chrome-built-in" ? <Bot size={14} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : simple ? "Ask WasmHatch" : plannerProvider === "chrome-built-in" ? "Draft with local AI" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
               </button>
-              <span>{plannerProvider === "chrome-built-in" && !chromePlannerRequestSupported
+              <span>{simple
+                ? !task.trim()
+                  ? "Describe the outcome first. Add a file or connected sheet only when the request needs context."
+                  : !plannerRequestReady
+                    ? "Add context or choose an available AI provider under Context. You can inspect the boundary before anything is sent."
+                    : "WasmHatch will prepare a reviewable plan. It will not run or write automatically."
+                : plannerProvider === "chrome-built-in" && !chromePlannerRequestSupported
                 ? "Chrome built-in AI currently plans the active table only. Choose Table transform without an extra attachment, or switch to OpenAI for bounded workspace tools and artifact output."
                 : plannerProvider === "chrome-built-in"
                   ? `Processes this task and ${rows.length} visible rows with Chrome's on-device model. Model files may download first; business rows, credentials, execution, and writes stay outside the network request.`
@@ -2545,11 +2610,19 @@ export function OperatorPage() {
           )}
 
           <div className="operator-script">
-            <div className="operator-task-label"><span>{planMode === "artifact-output" ? "Artifact workflow script" : "Sandbox script"}</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
-            <textarea value={script} onChange={(event) => { scriptRevision.current += 1; setScript(event.target.value); if (planMode === "spreadsheet-transform") setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" placeholder={planMode === "artifact-output" ? "Draft an identity-bound artifact workflow with AI." : undefined} disabled={committing} />
+            {simple ? (
+              <details className="operator-technical-details">
+                <summary>View execution details</summary>
+                <div className="operator-task-label"><span>{planMode === "artifact-output" ? "Artifact workflow script" : "Sandbox script"}</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
+                <textarea value={script} onChange={(event) => { scriptRevision.current += 1; setScript(event.target.value); if (planMode === "spreadsheet-transform") setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" placeholder={planMode === "artifact-output" ? "Draft an identity-bound artifact workflow with AI." : undefined} disabled={committing} />
+              </details>
+            ) : (
+              <><div className="operator-task-label"><span>{planMode === "artifact-output" ? "Artifact workflow script" : "Sandbox script"}</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
+              <textarea value={script} onChange={(event) => { scriptRevision.current += 1; setScript(event.target.value); if (planMode === "spreadsheet-transform") setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" placeholder={planMode === "artifact-output" ? "Draft an identity-bound artifact workflow with AI." : undefined} disabled={committing} /></>
+            )}
             <div className="operator-script-actions">
-              {planMode === "spreadsheet-transform" && <button onClick={() => void runScript()} disabled={committing || connectingGoogle || revokingGoogle || (source === "google" && !loadedGoogleTarget)}><Play size={14} /> Run in Wasm sandbox</button>}
-              {(artifactWorkflowDraft || artifact && artifactWorkspacePath) && <button className="workspace-output" onClick={() => void runWorkspaceOutput()} disabled={committing || runningWorkspaceScript || !script.trim()}><UploadCloud size={14} /> {runningWorkspaceScript ? "Running snapshot…" : artifactWorkflowDraft ? "Run & stage artifact diff" : "Save & stage workspace output"}</button>}
+              {planMode === "spreadsheet-transform" && <button onClick={() => void runScript()} disabled={committing || connectingGoogle || revokingGoogle || (source === "google" && !loadedGoogleTarget) || simple && !task.trim()}><Play size={14} /> {simple ? "Prepare changes" : "Run in Wasm sandbox"}</button>}
+              {(artifactWorkflowDraft || artifact && artifactWorkspacePath) && <button className="workspace-output" onClick={() => void runWorkspaceOutput()} disabled={committing || runningWorkspaceScript || !script.trim()}><UploadCloud size={14} /> {runningWorkspaceScript ? "Running snapshot…" : simple ? "Prepare file" : artifactWorkflowDraft ? "Run & stage artifact diff" : "Save & stage workspace output"}</button>}
               <span>{artifactWorkflowDraft ? `${artifactWorkflowDraft.inputs.length} exact inputs · 1 transient output · 750 ms · 32 MB` : "JSON transform or manifest-bound snapshot VFS · 750 ms · 32 MB"}</span>
             </div>
           </div>

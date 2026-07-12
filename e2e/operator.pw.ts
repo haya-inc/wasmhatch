@@ -2,32 +2,47 @@ import { expect, test, type Page } from "@playwright/test";
 
 const GOOGLE_CLIENT_ID = "1234567890-wasmhatch.apps.googleusercontent.com";
 
-test("links the public project page to current newcomer work", async ({ page }) => {
+test("presents general work before technical architecture", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
-  const contribute = page.getByRole("link", { name: "Contribute" });
-  await contribute.scrollIntoViewIfNeeded();
-  await expect(contribute).toBeVisible();
-  await expect(contribute).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22");
-  await expect(page.getByRole("link", { name: "Use your CSV / XLSX" }).first()).toHaveAttribute("href", "/?view=operator&start=upload");
-  await expect(page.getByRole("link", { name: "60-second demo" }).first()).toHaveAttribute("href", "/?view=operator&demo=local");
-  await expect(page.getByRole("heading", { name: "Bring one repetitive spreadsheet." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Use file or sample" })).toHaveAttribute("href", "/?view=operator&start=upload");
-  await expect(page.getByText("Local files stay in this tab. No account or server upload.")).toBeVisible();
-  await expect(page.getByText("No credential in model input", { exact: true })).toBeVisible();
-  await expect(page.getByText("Exact approval · receipt-bound undo", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Read issue #13" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/13");
-  await expect(page.getByRole("link", { name: "Read issue #14" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/14");
-  await expect(page.getByRole("link", { name: "Read issue #15" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/15");
-  await expect(page.getByRole("link", { name: "Read the contributor guide" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/blob/main/CONTRIBUTING.md");
-  await expect(page.getByRole("link", { name: "Open a Codespace" })).toHaveAttribute("href", "https://codespaces.new/haya-inc/wasmhatch?quickstart=1");
-  const pilotBeforeArchitecture = await page.evaluate(() => {
-    const pilot = document.querySelector("#workflows");
-    const architecture = document.querySelector("#capabilities");
-    return Boolean(pilot && architecture && (pilot.compareDocumentPosition(architecture) & Node.DOCUMENT_POSITION_FOLLOWING));
-  });
-  expect(pilotBeforeArchitecture).toBe(true);
+  await expect(page.getByRole("heading", { name: /Describe the work/ })).toBeVisible();
+  await expect(page.getByText("WasmHatch is an AI workspace for everyday work.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start a task" }).first()).toHaveAttribute("href", "/?view=work");
+  await expect(page.getByRole("heading", { name: "Work that starts with a request, not a tool." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Clean up an export" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Compare records" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Create a useful report" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Prepare a Sheets update" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Create a useful report/ })).toHaveAttribute("href", "/?view=work&example=report");
+  await expect(page.getByRole("link", { name: /Prepare a Sheets update/ })).toHaveAttribute("href", "/?view=work&example=sheets");
+  await expect(page.getByRole("link", { name: /Contributor guide/ })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/blob/main/CONTRIBUTING.md");
+  await expect(page.getByRole("link", { name: /Open a Codespace/ })).toHaveAttribute("href", "https://codespaces.new/haya-inc/wasmhatch?quickstart=1");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test("keeps the general work surface calm until context or review is needed", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?view=work");
+
+  await expect(page.getByRole("heading", { name: "Tell me the outcome you need." })).toBeVisible();
+  await expect(page.getByLabel("Business task")).toHaveValue("");
+  await expect(page.getByText("No context added", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Sources and connectors")).toBeHidden();
+  await expect(page.getByLabel("Review and audit")).toBeHidden();
+  await expect(page.getByText("View execution details")).toBeVisible();
+  await expect(page.getByLabel("Sandbox transformation script")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Prepare changes" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "Compare two records" }).click();
+  await expect(page.getByLabel("Business task")).toHaveValue(/Calculate each payout variance/);
+  await expect(page.getByRole("cell", { name: "INV-101" })).toBeVisible();
+  await page.getByRole("button", { name: "Prepare changes" }).click();
+
+  await expect(page.getByLabel("Review and audit")).toBeVisible();
+  await expect(page.getByText("Explicit approval required", { exact: true })).toBeVisible();
+  await expect(page.getByText("7 cell changes will be written to the local demo.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Activity" })).toHaveAttribute("aria-expanded", "true");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
