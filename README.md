@@ -53,6 +53,9 @@ npm run dev
 Requirements: Node.js 20+. `npm test` runs the unit suite, `npm run build`
 produces the deployable `dist/`.
 
+Want your own hosted copy — fork, enable Pages, done? See the
+[fork guide](docs/fork-guide.md), including bring-your-own Google client ID.
+
 ## How it's built
 
 For the technically curious — this is where WasmHatch is unusual:

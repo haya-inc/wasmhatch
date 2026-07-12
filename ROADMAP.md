@@ -85,8 +85,11 @@ Exit — the five launch conditions, one uncut take, or no launch date:
       "browser-reachable MCP servers" list, MCP-by-URL client with CORS
       diagnostics, Calendar (post-verification), search APIs (user-key
       Tavily/Brave), Ollama localhost CSP exception, Pyodide heavy sandbox.
-- [ ] Fork guide: bring-your-own Google client ID (rclone pattern); two
-      documented enterprise escape hatches (admin allowlist / internal fork).
+- [x] Fork guide (`docs/fork-guide.md`): fork → enable Pages → done,
+      bring-your-own Google client ID (rclone pattern), and two documented
+      enterprise escape hatches (admin allowlist / internal fork); the Pages
+      workflow feeds a fork's `VITE_GOOGLE_CLIENT_ID` repository variable
+      into the build.
 
 Exit: 8/8 weekly artifacts; first stranger-authored issue or PR; Sensitive
 verification cleared.
