@@ -1,183 +1,77 @@
-# Business pilot and OSS adoption playbook
+# Launch playbook
 
-This playbook turns WasmHatch from a working foundation into evidence-backed
-open-source adoption. It avoids hidden analytics, fabricated usage, mass
-outreach, and connector-count vanity metrics.
+Updated 2026-07-12 for the general browser-agent direction. The rules this
+playbook keeps from its predecessor: no hidden analytics, no fabricated
+usage, no mass outreach, and no launching before the evidence gate passes.
+What changed: distribution now concentrates into a 48-hour window (GitHub
+trending is a velocity game), and validation happens with outside users
+instead of internal pilots.
 
-The legacy repository-to-patch registry in GitHub issue #9 is archived. Its
-history remains useful for the retained surface, but it no longer accepts or
-counts adoption evidence. Current public evidence belongs in business pilot
-registry issue #12.
+## Gate: the five launch conditions
 
-## Stage A: five Haya business pilots
+The launch date is not set until all five pass in **one uncut screen
+recording**:
 
-The first gate is complete when:
+1. The key-free path (Chrome built-in AI) shows first streamed tokens
+   within 60 seconds of a cold page load.
+2. Google connects in 3 clicks with no unverified-app warning screen
+   (launch scopes are Non-sensitive `drive.file` only).
+3. A real write to a real Google Sheet lands behind an exact-diff
+   permission prompt.
+4. An HTML artifact renders in-tab and downloads as one self-contained
+   file.
+5. Every error message shown along the way explains itself without
+   internal vocabulary.
 
-- five real business workflows have been attempted;
-- three reach an approved durable local or external effect;
-- two are repeated by a pilot user in a later session;
-- median task-to-reviewed-proposal time is under five minutes;
-- at least one rejected proposal, stale conflict, or uncertain outcome is
-  captured rather than silently retried;
-- no credential appears in model messages, script input, storage, logs, or an
-  exported run journal; and
-- at least one post-P0 architecture candidate is promoted or rejected with a
-  written alternative.
+That recording, trimmed to 30–40 seconds, is the README hero GIF and the
+launch-post demo. If it needs cuts or captions to be comprehensible, the
+product is not ready.
 
-### Pilot selection
+## Pre-launch (starts now, runs in parallel)
 
-Choose five workflows, not five people clicking the same demo. Include at least
-one local CSV/XLSX flow and one Google Sheets flow. Prefer bounded recurring
-work where the result is easy for the domain owner to verify:
+- Participate genuinely in r/selfhosted and r/LocalLLaMA (9:1 rule,
+  ~15 minutes daily) so launch posts survive moderation.
+- Submit Google Sensitive-scope verification early; its 2–6 week lead time
+  must not sit on the critical path.
+- Seed readiness: line up the personal network for ~100–200 stars inside
+  the first 24 hours (trending threshold for TypeScript is roughly
+  100–300 stars/day).
+- Keep weekly named releases with human-readable notes from now on; a
+  silent version-bump stream reads as a ghost ship.
 
-1. Normalize a weekly pipeline or operational tracker.
-2. Turn a selected export into a reviewed Markdown or CSV report.
-3. Reconcile two extracts and publish only the exceptions or approved updates.
-4. Convert source data into a schedule proposal without creating calendar
-   events yet.
-5. Produce a repeatable weekly summary with its script and output artifact.
+## Launch: one 48-hour window
 
-Use sampled, anonymized, or synthetic data when the real data is not appropriate
-for a browser BYOK alpha. Do not paste customer data, credentials, private file
-links, or exported journals into Slack.
+- Show HN, Tuesday–Thursday 9am–12pm ET. Title names the thing plainly
+  ("Show HN: a general AI agent that runs entirely in your browser tab —
+  no server, no signup"). First comment: the honest pivot story, the
+  architecture in three sentences, one stated limitation, and the key-free
+  demo link. Reply to every comment in the first hours.
+- Same window: one transparent self-post in r/selfhosted ("self-hosting
+  with zero maintenance surface: fork → enable Pages → done") and a dev.to
+  #showdev post. r/LocalLLaMA waits for the local-model release
+  (Ollama/base-URL support) so that post has its own genuine hook.
+- Product Hunt is skipped or treated as a day-two checkbox.
+- Launch-day scope set is frozen to Non-sensitive; the 100-user cap must
+  be unhittable during the spike.
 
-### Session protocol
+## Post-launch: eight weeks of visible artifacts
 
-1. The pilot owner states the desired business outcome and how they currently
-   verify it.
-2. The facilitator records the start time and source kind, then lets the owner
-   operate the product whenever possible.
-3. The owner inspects any local workspace preview and explicit AI attachment,
-   chooses table-transform or artifact-output mode, then inspects the AI plan,
-   generated script, output path/type, and exact effect preview.
-4. The owner approves or rejects based on business correctness—not because the
-   facilitator expects a successful demo.
-5. The owner explicitly exports the run journal if they consent to sharing its
-   metadata with the project team.
-6. Record corrections, first blocker, trust concerns, and whether the output was
-   useful. The journal supplies event timing; human observations remain separate.
-7. Ask for a repeat only after the first workflow is useful. A second session is
-   evidence of repeatability, not a scripted acceptance test.
+One per week, each a release or a post someone can use: Slack full flow,
+the curated browser-reachable MCP list, MCP-by-URL with CORS diagnostics,
+Calendar unlock (post-verification), user-key search APIs, Ollama support,
+Pyodide heavy sandbox, plus rough unedited 2-minute screen recordings.
+Submit to awesome-lists and OSS newsletters in week 2, after the README
+has survived first contact.
 
-Use [the pilot evidence template](pilot-evidence-template.md). Store completed
-internal records in the approved Haya system, not in this public repository.
+## Evidence, not vanity
 
-### Architecture gate
-
-After each session, classify missing capability without immediately committing
-to a connector:
-
-- workspace/recovery;
-- tabular operation;
-- document access;
-- calendar proposal;
-- task-system proposal;
-- local SQL/large-data analysis;
-- background/server requirement;
-- review or conflict semantics; or
-- model/tool quality.
-
-Promote a candidate only when repeated workflow evidence names the same missing
-boundary. The decision record must include demand, requested scopes,
-browser/server feasibility, review design, conflict model, bundle/runtime cost,
-rejected alternative, and an exit condition.
-
-## Stage B: public operator pilots
-
-Begin public recruitment only after the local demo, CSV/XLSX import/export,
-bounded workspace preview/attachment, reviewed workspace export/restore, and
-run-journal export are working on the public project page. Recruit individual
-operators or maintainers who already handle a suitable bounded workflow; do not
-send bulk messages.
-
-Use this message as a starting point and personalize it:
-
-> I’m testing WasmHatch, an Apache-2.0 browser-native AI operator for bounded
-> spreadsheet work. It can import CSV/XLSX without an account, run generated
-> JavaScript in a QuickJS Wasm Worker, and stop at an exact cell or file diff.
-> Would you try one real 10-minute workflow and tell me where the data boundary,
-> review, or handoff fails? Successful and rejected runs are equally useful.
->
-> Project: https://haya-inc.github.io/wasmhatch/
-> Source: https://github.com/haya-inc/wasmhatch
-
-Ask permission before publishing a workflow summary. Never upload a pilot's
-source artifact or run journal. A public report should contain only the workflow
-shape, source kind, result, timing totals, first blocker, and links the reporter
-already chose to make public.
-
-Opt-in sanitized reports use the
-[public pilot report form](https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml).
-The guided demo can copy a source-free aggregate summary for that form. The
-[business operator pilot registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12)
-indexes notable reports and architecture decisions.
-
-The upload-first screen also offers a bundled synthetic CSV. It is useful for
-checking the production import Worker, QuickJS, review, and export path before a
-participant selects data, but it does not count as one of the five real
-workflows or three public non-demo pilots.
-
-## Stage C: OSS contribution loop
-
-The contribution surface should follow the product architecture. Prefer focused
-issues for:
-
-- connector manifests, fixtures, and typed effect schemas;
-- sandbox conformance and adversarial boundary tests;
-- artifact codecs and safe export formats;
-- recovery, export, and restore fixtures;
-- redaction and model-egress tests;
-- example workflow manifests with deterministic sample data; and
-- accessibility and internationalization of approval surfaces.
-
-Keep at least three unclaimed tasks with independent acceptance criteria. Do not
-publish issues that require private credentials, undocumented Haya context, or
-access to a hosted service. A new contributor must be able to validate a change
-locally with `npm test`, `npm run build`, and the relevant E2E test.
-
-The optional repository dev container provides the same Node major and
-Playwright Chromium setup through GitHub Codespaces or another dev-container
-client. It lowers setup cost but does not replace focused acceptance criteria or
-the contributor's responsibility to inspect changes before opening a PR.
-
-## Public launch gate
-
-A broad launch is warranted only when:
-
-- Stage A has passed;
-- at least three public operators have tried a real non-demo workflow;
-- the project can show one rejection or conflict as a safety success;
-- a fresh browser can complete the local-file path without an account or key;
-- the maintainer can respond to security and data-loss reports; and
-- the project page accurately distinguishes shipped, pilot-gated, and research
-  capabilities.
-
-Use one community where the maintainer already participates. Post once, answer
-questions directly, and do not coordinate votes or duplicate comments. The
-launch message should state the hard boundary: WasmHatch is foreground-only,
-does not persist OAuth tokens, does not run a host shell, and does not perform
-unreviewed writes.
-
-## Response loop
-
-For seven days after each public post:
-
-1. Acknowledge reproducible security, data-loss, and incorrect-effect reports
-   within one working day.
-2. Turn confirmed defects into focused issues without copying private business
-   data.
-3. Prioritize any blocker seen twice, and any credential exposure, silent data
-   loss, or wrong-target write seen once.
-4. Publish a minimal sanitized reproduction and regression test when fixed.
-5. Keep roadmap promotions tied to repeated workflows rather than request count.
-
-## Stop conditions
-
-Pause pilot distribution immediately for confirmed credential persistence or
-egress, silent workspace loss, incorrect proposal identity, wrong-target write,
-sandbox escape, or an import-validation bypass. Document the mitigation and add
-a regression test before resuming.
-
-Do not broaden the product into a general automation server, cloud IDE, or
-connector marketplace to make a launch look larger. The differentiator is a
-small, inspectable foreground runtime with explicit effects.
+- Success signals, in order: first stranger-authored issue; first external
+  PR; strangers completing the Google-connect funnel without help;
+  side-by-side eval runs inside the parity boundary not losing to
+  ChatGPT/Claude on the same tasks.
+- Failure signals acted on, not explained away: launch conditions needing
+  retakes, all issues still self-authored after Phase 2, or weekly cadence
+  breaking four weeks straight — see the kill conditions in
+  [plan.md](plan.md).
+- Measurement stays analytics-free: GitHub Insights, issue/PR provenance,
+  and user-shared reports only.

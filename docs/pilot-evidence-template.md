@@ -1,5 +1,11 @@
 # Business pilot evidence template
 
+> **Superseded (2026-07-12).** The internal-pilot program this template
+> served ended with the pivot to the general browser-agent direction; see
+> [ROADMAP.md](../ROADMAP.md) and [launch-playbook.md](launch-playbook.md)
+> for how validation happens now (outside users, launch conditions, eval
+> runs). The template remains for historical reference.
+
 Copy this template into the approved internal system for each pilot session. Do
 not commit completed records, private source identities, credentials, customer
 data, or exported run journals to this public repository.
