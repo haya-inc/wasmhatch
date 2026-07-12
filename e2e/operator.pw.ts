@@ -21,6 +21,7 @@ test("links the public project page to current newcomer work", async ({ page }) 
   await expect(page.getByRole("link", { name: "Read issue #14" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/14");
   await expect(page.getByRole("link", { name: "Read issue #15" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/15");
   await expect(page.getByRole("link", { name: "Read the contributor guide" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/blob/main/CONTRIBUTING.md");
+  await expect(page.getByRole("link", { name: "Open a Codespace" })).toHaveAttribute("href", "https://codespaces.new/haya-inc/wasmhatch?quickstart=1");
   const pilotBeforeArchitecture = await page.evaluate(() => {
     const pilot = document.querySelector("#workflows");
     const architecture = document.querySelector("#capabilities");

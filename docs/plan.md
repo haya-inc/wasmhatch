@@ -143,6 +143,9 @@ require a separately deployed server adapter.
   privacy-confirming GitHub Issue Form. It excludes source rows, file names,
   sheet targets, task text, resource identities, and run ID, and expires when
   new work invalidates its terminal context.
+- A non-privileged Node 22/Debian 12 dev container and one-click Codespaces link
+  that install lockfile dependencies and the Chromium E2E environment without
+  changing the browser-only product runtime.
 
 ### 2.2 Not implemented yet
 
@@ -161,6 +164,9 @@ require a separately deployed server adapter.
 - Refresh tokens, service accounts, team credential vaults, or organization
   administration.
 - Excel/Microsoft Graph and non-spreadsheet connectors.
+- An npm package. The repository root is a private static application without a
+  supported import surface; any future connector SDK or protocol package must
+  pass the separate [distribution gate](distribution.md).
 
 ### 2.3 Legacy surface
 

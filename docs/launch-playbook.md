@@ -135,6 +135,11 @@ publish issues that require private credentials, undocumented Haya context, or
 access to a hosted service. A new contributor must be able to validate a change
 locally with `npm test`, `npm run build`, and the relevant E2E test.
 
+The optional repository dev container provides the same Node major and
+Playwright Chromium setup through GitHub Codespaces or another dev-container
+client. It lowers setup cost but does not replace focused acceptance criteria or
+the contributor's responsibility to inspect changes before opening a PR.
+
 ## Public launch gate
 
 A broad launch is warranted only when:

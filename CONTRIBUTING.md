@@ -23,6 +23,18 @@ requests. Good first issues must be reproducible with bundled synthetic data and
 must preserve the same sandbox and review-before-write boundaries used in the
 public demos.
 
+## One-click development environment
+
+Open or resume a browser-based environment with
+[GitHub Codespaces](https://codespaces.new/haya-inc/wasmhatch?quickstart=1).
+The repository pins Node 22 on Debian 12, installs the exact lockfile, and
+installs Chromium plus its Linux dependencies for the Playwright suite. Start
+the app with `npm run dev`; port 5173 opens in the forwarded preview.
+
+Codespaces requires a GitHub account and consumes the contributor's own
+Codespaces quota. It is an optional development environment, not a WasmHatch
+runtime service. Local development remains fully supported.
+
 ## Before opening a pull request
 
 1. Open or find an issue for non-trivial changes.
@@ -42,6 +54,16 @@ npx playwright install chromium
 npm run test:e2e
 npm audit --audit-level=moderate
 ```
+
+Application TypeScript uses `verbatimModuleSyntax`; import types with
+`import type` so runtime module edges stay explicit. Vitest runs only
+`src/**/*.test.{ts,tsx}` in the Node environment from `vitest.config.ts`.
+Component tests that need a DOM must opt into an appropriate environment rather
+than changing the global default.
+
+React Compiler is intentionally not enabled. Add it only after profiling shows
+a meaningful render bottleneck and the compiler change has focused browser
+coverage; component size alone is not evidence of a runtime performance issue.
 
 The Playwright browser install is required once per development machine. The
 end-to-end suite builds the production app and verifies local demo, CSV/XLSX,

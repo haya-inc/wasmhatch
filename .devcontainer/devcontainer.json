@@ -1,0 +1,19 @@
+{
+  "name": "WasmHatch contributor",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:4-22-bookworm",
+  "init": true,
+  "remoteUser": "node",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "WasmHatch development server",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postCreateCommand": "npm ci && npx playwright install --with-deps chromium",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-playwright.playwright"]
+    }
+  }
+}

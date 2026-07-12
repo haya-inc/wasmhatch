@@ -10,6 +10,7 @@ import {
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 const contributorUrl = `${repositoryUrl}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`;
 const contributorGuideUrl = `${repositoryUrl}/blob/main/CONTRIBUTING.md`;
+const codespacesUrl = "https://codespaces.new/haya-inc/wasmhatch?quickstart=1";
 
 const workflows = [
   {
@@ -193,7 +194,10 @@ export function BusinessLandingPage() {
           <h2 id="contribute-title">Improve one visible boundary.</h2>
           <div>
             <p>All three tasks use bundled synthetic data and have explicit acceptance criteria. Read the issue, check current comments, then claim it before editing.</p>
-            <a href={contributorGuideUrl}>Read the contributor guide <ArrowRight size={16} /></a>
+            <div className="contribute-entry-actions">
+              <a href={contributorGuideUrl}>Read the contributor guide <ArrowRight size={16} /></a>
+              <a href={codespacesUrl}>Open a Codespace <ArrowRight size={16} /></a>
+            </div>
           </div>
         </div>
         <div className="contribution-list">

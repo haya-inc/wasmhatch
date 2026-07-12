@@ -172,6 +172,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .contribute-heading h2 { margin: 0; font-size: clamp(58px, 7.8vw, 122px); line-height: .86; letter-spacing: -.075em; }
 .contribute-heading p { max-width: 520px; margin: 0 0 25px; color: #62685f; font-size: 17px; line-height: 1.6; }.contribute-heading p strong { color: var(--ink); }
 .contribute-heading a { display: inline-flex; align-items: center; gap: 9px; color: #637500; font: 700 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.contribute-entry-actions { display: flex; flex-wrap: wrap; gap: 18px 24px; }
 .contribution-list { border-top: 1px solid rgba(10,11,10,.25); }
 .contribution-list article { min-height: 112px; display: grid; grid-template-columns: 62px .9fr 1.1fr auto; gap: 22px; align-items: center; border-bottom: 1px solid rgba(10,11,10,.25); }
 .contribution-issue { color: #738500; font: 800 12px/1 var(--mono); }

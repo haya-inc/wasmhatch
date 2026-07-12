@@ -2,6 +2,8 @@
 
 > Browser-native AI operations with explicit effects.
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/haya-inc/wasmhatch?quickstart=1)
+
 [Open the business-operator foundation slice](https://haya-inc.github.io/wasmhatch/?view=operator)
 
 [Run the 60-second local demo](https://haya-inc.github.io/wasmhatch/?view=operator&demo=local) — no account, API key, OAuth, upload, or server required.
@@ -92,7 +94,8 @@ content-addressed workspace snapshot without letting model output select a
 provider resource or authorize an effect.
 
 See the current [product plan](docs/plan.md), [connector authoring
-guide](docs/connector-authoring.md), [tabular mutation
+guide](docs/connector-authoring.md), [distribution
+policy](docs/distribution.md), [tabular mutation
 contract](docs/tabular-mutations.md), [Google OAuth deployment
 guide](docs/google-oauth.md), [CSV/XLSX artifact
 boundary](docs/tabular-artifacts.md), [Chrome built-in AI planner
