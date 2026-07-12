@@ -2,7 +2,6 @@ import {
   ArrowRight,
   Check,
   Database,
-  GitFork,
   Play,
   ShieldCheck,
   Sparkles
@@ -14,12 +13,12 @@ const contributorUrl = `${repositoryUrl}/issues?q=is%3Aissue+is%3Aopen+label%3A%
 const workflows = [
   {
     number: "01",
-    source: "Google Sheets",
-    scope: "Sales operations",
-    title: "Normalize a weekly pipeline",
-    description: "Grant one exact range, materialize a credential-free snapshot, then sandbox and review the resulting cells or report.",
-    entry: "demo=local",
-    action: "Open demo"
+    source: "CSV / XLSX",
+    scope: "Your foreground file",
+    title: "Try one repetitive spreadsheet",
+    description: "Choose an anonymized export, run a bounded transform, then approve or reject the exact cells without uploading the source.",
+    entry: "start=upload",
+    action: "Use your file"
   },
   {
     number: "02",
@@ -32,14 +31,39 @@ const workflows = [
   },
   {
     number: "03",
-    source: "CSV / XLSX",
-    scope: "Ad-hoc analysis",
-    title: "Turn raw exports into a report",
-    description: "Save the generated script and manifest, run against an exact snapshot, then approve the output file diff.",
-    entry: "start=upload",
-    action: "Choose file"
+    source: "Local sample",
+    scope: "60 seconds · no key",
+    title: "See the approval boundary",
+    description: "Normalize four bundled rows in the production sandbox, inspect twelve typed changes, then choose approve or reject.",
+    entry: "demo=local",
+    action: "Run the demo"
   }
 ];
+
+function PilotWorkflowsSection({ operatorUrl }: { operatorUrl: string }) {
+  return (
+    <section className="examples-section" id="workflows" aria-labelledby="workflows-title">
+      <div className="section-label">Five pilot workflows wanted</div>
+      <div className="examples-heading">
+        <h2 id="workflows-title">Bring one repetitive spreadsheet.</h2>
+        <div>
+          <p>Use sample or anonymized data. Complete one approve-or-reject loop, then share a source-free report with only the feedback you choose.</p>
+          <a className="example-report-link" href={`${repositoryUrl}/blob/main/docs/quickstart.md#pilot-evidence`}>See the pilot evidence boundary <ArrowRight size={16} /></a>
+        </div>
+      </div>
+      <div className="example-list">
+        {workflows.map((workflow) => (
+          <article key={workflow.number}>
+            <span className="example-number">{workflow.number}</span>
+            <div className="example-repo"><code>{workflow.source}</code><small>{workflow.scope}</small></div>
+            <div className="example-copy"><h3>{workflow.title}</h3><p>{workflow.description}</p></div>
+            <div className="example-actions"><a href={`${operatorUrl}&${workflow.entry}`}>{workflow.action} <ArrowRight size={17} /></a></div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export function BusinessLandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
@@ -56,7 +80,7 @@ export function BusinessLandingPage() {
           <a href="#trust">Trust model</a>
           <a href={repositoryUrl}>GitHub</a>
         </nav>
-        <a className="header-cta" href={localDemoUrl}>Try local demo <ArrowRight size={16} /></a>
+        <a className="header-cta" href={`${operatorUrl}&start=upload`}>Use your CSV <ArrowRight size={16} /></a>
       </header>
 
       <section className="hero" aria-labelledby="hero-title">
@@ -67,9 +91,10 @@ export function BusinessLandingPage() {
           <h1 id="hero-title" className="reveal reveal-two"><span>Wasm</span><span>Hatch.</span></h1>
           <p className="hero-promise reveal reveal-three">AI work, with<br />every action visible.</p>
           <div className="hero-actions reveal reveal-four">
-            <a className="button button-primary" href={localDemoUrl}>Try in 60 seconds <ArrowRight size={18} /></a>
-            <a className="button button-quiet" href={repositoryUrl}><GitFork size={17} /> View source</a>
+            <a className="button button-primary" href={`${operatorUrl}&start=upload`}>Use your CSV / XLSX <ArrowRight size={18} /></a>
+            <a className="button button-quiet" href={localDemoUrl}><Play size={17} /> 60-second demo</a>
           </div>
+          <p className="hero-assurance reveal reveal-five"><ShieldCheck size={14} /> Local files stay in this tab. No account or server upload.</p>
         </div>
 
         <div className="hero-product reveal reveal-five business-product" aria-label="WasmHatch business operator preview">
@@ -108,6 +133,8 @@ export function BusinessLandingPage() {
         </div>
       </section>
 
+      <PilotWorkflowsSection operatorUrl={operatorUrl} />
+
       <section className="workflow" id="how" aria-labelledby="workflow-title">
         <div className="section-label">The operating loop</div>
         <div className="workflow-heading">
@@ -134,24 +161,6 @@ export function BusinessLandingPage() {
           <article><span>04</span><h3>Artifact workflow</h3><p>Derives one typed output manifest on the host and mounts only copied inputs inside QuickJS</p><small>Markdown · CSV · JSON · text</small></article>
           <article><span>05</span><h3>Effect review</h3><p>Cell mutations or file diffs bind the reviewed base and payload</p><small>Exact approval</small></article>
           <article><span>06</span><h3>Run journal</h3><p>Joins policy, tools, approvals, conflicts, receipts, and pilot timing</p><small>Credential fields excluded</small></article>
-        </div>
-      </section>
-
-      <section className="examples-section" id="workflows" aria-labelledby="workflows-title">
-        <div className="section-label">Pilot workflows</div>
-        <div className="examples-heading">
-          <h2 id="workflows-title">Start with<br />real operations.</h2>
-          <div><p>The first pilots should validate business outcomes, approval clarity, and time saved—not coding contribution metrics.</p><a className="example-report-link" href={`${repositoryUrl}/issues/new?template=pilot_report.yml`}>Share a sanitized pilot report <ArrowRight size={16} /></a></div>
-        </div>
-        <div className="example-list">
-          {workflows.map((workflow) => (
-            <article key={workflow.number}>
-              <span className="example-number">{workflow.number}</span>
-              <div className="example-repo"><code>{workflow.source}</code><small>{workflow.scope}</small></div>
-              <div className="example-copy"><h3>{workflow.title}</h3><p>{workflow.description}</p></div>
-              <div className="example-actions"><a href={`${operatorUrl}&${workflow.entry}`}>{workflow.action} <ArrowRight size={17} /></a></div>
-            </article>
-          ))}
         </div>
       </section>
 
@@ -190,8 +199,8 @@ export function BusinessLandingPage() {
       </section>
 
       <section className="final-cta">
-        <div><p className="section-label">Foundation slice</p><h2>Operate visibly.</h2></div>
-        <div className="final-actions"><a className="button button-dark" href={localDemoUrl}>Run the local demo <ArrowRight size={19} /></a><p>Open source.<br />No account or API key required.</p></div>
+        <div><p className="section-label">Five pilot workflows wanted</p><h2>Bring one workflow.</h2></div>
+        <div className="final-actions"><a className="button button-dark" href={`${operatorUrl}&start=upload`}>Use your CSV / XLSX <ArrowRight size={19} /></a><a className="final-secondary" href={localDemoUrl}>Or run the 60-second demo <ArrowRight size={15} /></a><p>Open source.<br />No account or server upload.</p></div>
       </section>
 
       <footer className="site-footer">

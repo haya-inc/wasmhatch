@@ -10,7 +10,16 @@ test("links the public project page to current newcomer work", async ({ page }) 
   await contribute.scrollIntoViewIfNeeded();
   await expect(contribute).toBeVisible();
   await expect(contribute).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22");
-  await expect(page.getByRole("link", { name: "Choose file" })).toHaveAttribute("href", "/?view=operator&start=upload");
+  await expect(page.getByRole("link", { name: "Use your CSV / XLSX" }).first()).toHaveAttribute("href", "/?view=operator&start=upload");
+  await expect(page.getByRole("link", { name: "60-second demo" }).first()).toHaveAttribute("href", "/?view=operator&demo=local");
+  await expect(page.getByRole("heading", { name: "Bring one repetitive spreadsheet." })).toBeVisible();
+  await expect(page.getByText("Local files stay in this tab. No account or server upload.")).toBeVisible();
+  const pilotBeforeArchitecture = await page.evaluate(() => {
+    const pilot = document.querySelector("#workflows");
+    const architecture = document.querySelector("#capabilities");
+    return Boolean(pilot && architecture && (pilot.compareDocumentPosition(architecture) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  expect(pilotBeforeArchitecture).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 

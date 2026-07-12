@@ -93,9 +93,10 @@ artifact workflow contract](docs/workspace-artifact-workflows.md), [Google Sheet
 workspace snapshot contract](docs/google-sheets-workspace-snapshots.md), and [business-agent
 landscape](docs/landscape.md).
 
-New users should start with the [quickstart](docs/quickstart.md). It covers the
-key-free local review loop, local CSV/XLSX files, and the exact Google Sheets
-snapshot-to-artifact path.
+New users can start with a [real local CSV/XLSX
+workflow](https://haya-inc.github.io/wasmhatch/?view=operator&start=upload) or
+the [quickstart](docs/quickstart.md). It covers the key-free local review loop,
+local CSV/XLSX files, and the exact Google Sheets snapshot-to-artifact path.
 
 For pilots, use the [business pilot and OSS adoption
 playbook](docs/launch-playbook.md) and copy the [pilot evidence
