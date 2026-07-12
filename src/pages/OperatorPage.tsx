@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Bot,
@@ -19,11 +19,19 @@ import {
   type SpreadsheetPlan
 } from "../lib/business-planner";
 import {
+  GOOGLE_SHEETS_CONNECTOR_VERSION,
   diffSpreadsheetRows,
   GoogleSheetsConnector,
   spreadsheetRowsFromBusinessValue,
+  type SpreadsheetConnector,
   type SpreadsheetRows
 } from "../lib/spreadsheet";
+import {
+  SpreadsheetEffectExecutor,
+  decideSpreadsheetEffect,
+  prepareSpreadsheetEffect,
+  type SpreadsheetEffectProposal
+} from "../lib/spreadsheet-effect";
 
 const DEMO_ROWS: SpreadsheetRows = [
   ["Owner", "Region", "Amount", "Stage"],
@@ -43,6 +51,10 @@ const DEFAULT_SCRIPT = `(rows) => rows.map((row, index) => {
     titleCase(row[3])
   ];
 })`;
+
+const LOCAL_CONNECTOR = { id: "local-demo", version: "1.0.0" } as const;
+const GOOGLE_CONNECTOR = { id: "google-sheets", version: GOOGLE_SHEETS_CONNECTOR_VERSION } as const;
+const EXPLICIT_APPROVAL_POLICY = "foreground-explicit-approval-v1";
 
 interface AuditEntry {
   time: string;
@@ -67,26 +79,29 @@ function displayCell(value: unknown) {
 export function OperatorPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const [rows, setRows] = useState<SpreadsheetRows>(DEMO_ROWS);
-  const [previewRows, setPreviewRows] = useState<SpreadsheetRows | null>(null);
+  const [proposal, setProposal] = useState<SpreadsheetEffectProposal | null>(null);
   const [task, setTask] = useState("Normalize names and regions, convert amounts to numbers, and standardize stages.");
   const [script, setScript] = useState(DEFAULT_SCRIPT);
   const [plan, setPlan] = useState<SpreadsheetPlan | null>(null);
   const [plannerApiKey, setPlannerApiKey] = useState("");
   const [plannerModel, setPlannerModel] = useState(DEFAULT_PLANNER_MODEL);
   const [planning, setPlanning] = useState(false);
+  const [committing, setCommitting] = useState(false);
   const [status, setStatus] = useState("Ready");
   const [error, setError] = useState("");
   const [source, setSource] = useState<"demo" | "google">("demo");
   const [accessToken, setAccessToken] = useState("");
   const [spreadsheetId, setSpreadsheetId] = useState("");
   const [range, setRange] = useState("Sheet1!A1:D20");
+  const [loadedGoogleTarget, setLoadedGoogleTarget] = useState<{ spreadsheetId: string; range: string } | null>(null);
+  const effectExecutor = useRef(new SpreadsheetEffectExecutor());
   const [audit, setAudit] = useState<AuditEntry[]>([
     { time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }
   ]);
 
   const changes = useMemo(
-    () => previewRows ? diffSpreadsheetRows(rows, previewRows) : [],
-    [previewRows, rows]
+    () => proposal ? diffSpreadsheetRows(proposal.baseValues, proposal.values) : [],
+    [proposal]
   );
 
   const record = (entry: Omit<AuditEntry, "time">) => {
@@ -94,17 +109,40 @@ export function OperatorPage() {
     setAudit((current) => [...current, { ...entry, time: `00:${elapsed}` }]);
   };
 
+  const invalidateProposal = (reason: string) => {
+    if (!proposal) return;
+    record({
+      title: "Write proposal invalidated",
+      detail: `${proposal.proposalId.slice(-12)} · ${reason}`,
+      tone: "muted"
+    });
+    setProposal(null);
+  };
+
   const runScript = async () => {
     setStatus("Running in Wasm worker…");
     setError("");
     try {
+      if (source === "google" && !loadedGoogleTarget) {
+        throw new Error("Read the selected Google Sheets range again before preparing a write.");
+      }
       const result = await runBusinessScriptInWorker(script, rows);
       const nextRows = spreadsheetRowsFromBusinessValue(result.output);
-      setPreviewRows(nextRows);
-      setStatus(`${diffSpreadsheetRows(rows, nextRows).length} cell changes ready for review`);
+      const nextProposal = await prepareSpreadsheetEffect({
+        connector: source === "google" ? GOOGLE_CONNECTOR : LOCAL_CONNECTOR,
+        target: source === "google"
+          ? { ...loadedGoogleTarget!, inputMode: "USER_ENTERED" }
+          : { spreadsheetId: "local-demo", range: "Demo!A1", inputMode: "RAW" },
+        baseValues: rows,
+        values: nextRows,
+        preconditionStrength: "recheck",
+        policyDecisionId: EXPLICIT_APPROVAL_POLICY
+      });
+      setProposal(nextProposal);
+      setStatus(`${nextProposal.summary.changedCells} cell changes ready for review`);
       record({
-        title: "Sandbox transform completed",
-        detail: `${result.inputBytes} B in · ${result.outputBytes} B out · ${Math.round(result.durationMs)} ms`,
+        title: "Immutable write proposal prepared",
+        detail: `${nextProposal.proposalId.slice(-12)} · ${result.inputBytes} B in · ${result.outputBytes} B out · recheck required`,
         tone: "accent"
       });
     } catch (caught) {
@@ -119,7 +157,7 @@ export function OperatorPage() {
     setPlanning(true);
     setStatus("Drafting a bounded AI plan…");
     setError("");
-    setPreviewRows(null);
+    invalidateProposal("AI plan requested");
     try {
       const planner = new OpenAIPlanner(plannerApiKey);
       const nextPlan = await planner.planSpreadsheetTransform({ task, rows, model: plannerModel });
@@ -148,10 +186,13 @@ export function OperatorPage() {
     try {
       const connector = new GoogleSheetsConnector(accessToken);
       const snapshot = await connector.read({ spreadsheetId, range });
+      invalidateProposal("source range replaced by a fresh read");
       setRows(snapshot.values);
-      setPreviewRows(null);
       setPlan(null);
       setSource("google");
+      setLoadedGoogleTarget({ spreadsheetId: snapshot.spreadsheetId, range: snapshot.range });
+      setSpreadsheetId(snapshot.spreadsheetId);
+      setRange(snapshot.range);
       setStatus(`Loaded ${snapshot.values.length} rows from ${snapshot.range}`);
       record({
         title: "Google Sheets range read",
@@ -167,43 +208,99 @@ export function OperatorPage() {
   };
 
   const approveWrite = async () => {
-    if (!previewRows) return;
+    if (!proposal || committing) return;
+    setCommitting(true);
     setError("");
-    if (source === "demo") {
-      setRows(previewRows);
-      setPreviewRows(null);
-      setPlan(null);
-      setStatus("Approved changes applied to the local demo");
-      record({ title: "Local write approved", detail: `${changes.length} cells applied`, tone: "accent" });
-      return;
-    }
-
-    setStatus("Writing approved cells to Google Sheets…");
     try {
-      const connector = new GoogleSheetsConnector(accessToken);
-      const result = await connector.write({ spreadsheetId, range, values: previewRows });
-      setRows(previewRows);
-      setPreviewRows(null);
-      setPlan(null);
-      setStatus(`Updated ${result.updatedCells} cells in ${result.updatedRange}`);
-      record({
-        title: "Google Sheets write approved",
-        detail: `${result.updatedRange} · ${result.updatedCells} cells`,
-        tone: "accent"
-      });
+      const isGoogle = proposal.connector.id === GOOGLE_CONNECTOR.id;
+      setStatus(isGoogle ? "Rechecking source before the approved write…" : "Validating the approved local effect…");
+      const connector: SpreadsheetConnector = isGoogle
+        ? new GoogleSheetsConnector(accessToken)
+        : {
+            ...LOCAL_CONNECTOR,
+            label: "Local demo",
+            read: async (request) => ({ ...request, values: rows.map((row) => [...row]) }),
+            write: async (request) => {
+              setRows(request.values.map((row) => [...row]));
+              return {
+                updatedRange: request.range,
+                updatedRows: request.values.length,
+                updatedColumns: request.values.reduce((maximum, row) => Math.max(maximum, row.length), 0),
+                updatedCells: proposal.summary.changedCells
+              };
+            }
+          };
+      const approval = decideSpreadsheetEffect(proposal, "approve", "foreground-user");
+      const outcome = await effectExecutor.current.execute(proposal, approval, connector);
+
+      if (outcome.status === "committed") {
+        setRows(proposal.values.map((row) => [...row]));
+        setProposal(null);
+        setPlan(null);
+        setStatus(isGoogle
+          ? `Updated ${outcome.receipt.providerResult.updatedCells} cells in ${outcome.receipt.providerResult.updatedRange}`
+          : "Approved changes applied to the local demo");
+        record({
+          title: isGoogle ? "Google Sheets effect committed" : "Local effect committed",
+          detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}`,
+          tone: "accent"
+        });
+      } else if (outcome.status === "conflict") {
+        if (outcome.observedValues) setRows(outcome.observedValues);
+        else setLoadedGoogleTarget(null);
+        setProposal(null);
+        setPlan(null);
+        setStatus("Write blocked by source conflict");
+        setError("The source changed after this proposal was prepared. Review the latest values and prepare a new proposal.");
+        record({
+          title: "Write blocked: source conflict",
+          detail: `${outcome.preconditionStrength} · expected ${outcome.expectedBaseVersion.value.slice(-10)} · observed ${outcome.observedBaseVersion?.value.slice(-10) ?? "provider conflict"}`,
+          tone: "muted"
+        });
+      } else if (outcome.status === "uncertain") {
+        setProposal(null);
+        setLoadedGoogleTarget(null);
+        setStatus("Write outcome uncertain — reconciliation required");
+        setError(outcome.reason);
+        record({ title: "Write outcome uncertain", detail: "No automatic retry · read the target before another proposal", tone: "muted" });
+      } else if (outcome.status === "failed") {
+        if (!outcome.retryable) setProposal(null);
+        setStatus(outcome.retryable ? "Source recheck failed — safe to retry" : "Approved write blocked");
+        setError(outcome.reason);
+        record({ title: "Approved effect blocked", detail: `${outcome.code} · ${outcome.reason}`, tone: "muted" });
+      }
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Google Sheets write failed.";
       setError(message);
-      setStatus("Connector write failed");
-      record({ title: "Connector write failed", detail: message, tone: "muted" });
+      setStatus("Approved effect blocked");
+      record({ title: "Approved effect blocked", detail: message, tone: "muted" });
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  const rejectWrite = async () => {
+    if (!proposal || committing) return;
+    const outcome = await effectExecutor.current.reject(
+      proposal,
+      decideSpreadsheetEffect(proposal, "reject", "foreground-user")
+    );
+    if (outcome.status === "rejected") {
+      record({ title: "Write proposal rejected", detail: proposal.proposalId.slice(-12), tone: "muted" });
+      setProposal(null);
+      setStatus("Write proposal rejected; no mutation occurred");
+    } else if (outcome.status === "failed") {
+      setError(outcome.reason);
+      setStatus("Proposal rejection could not be recorded");
     }
   };
 
   const resetDemo = () => {
     setRows(DEMO_ROWS);
-    setPreviewRows(null);
+    setProposal(null);
     setPlan(null);
     setSource("demo");
+    setLoadedGoogleTarget(null);
     setStatus("Ready");
     setError("");
     setAudit([{ time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }]);
@@ -224,7 +321,7 @@ export function OperatorPage() {
       <div className="operator-layout">
         <aside className="operator-connectors" aria-label="Connectors">
           <div className="operator-panel-heading"><span>Connectors</span><small>credentials stay here</small></div>
-          <button className={source === "demo" ? "connector-row active" : "connector-row"} onClick={resetDemo}>
+          <button className={source === "demo" ? "connector-row active" : "connector-row"} onClick={resetDemo} disabled={committing}>
             <Database size={16} /><span><strong>Local demo</strong><small>No network</small></span><Check size={14} />
           </button>
           <div className={source === "google" ? "connector-row active static" : "connector-row static"}>
@@ -234,9 +331,9 @@ export function OperatorPage() {
             <Bot size={16} /><span><strong>OpenAI planner</strong><small>Responses API · optional</small></span>
           </div>
           <div className="connector-form planner-credentials">
-            <label>Session API key<input type="password" value={plannerApiKey} onChange={(event) => setPlannerApiKey(event.target.value)} autoComplete="off" placeholder="Memory only" aria-label="OpenAI session API key" /></label>
+            <label>Session API key<input type="password" value={plannerApiKey} onChange={(event) => setPlannerApiKey(event.target.value)} autoComplete="off" placeholder="Memory only" aria-label="OpenAI session API key" disabled={committing} /></label>
             <label>Planning model
-              <select value={plannerModel} onChange={(event) => setPlannerModel(event.target.value)} aria-label="Planning model">
+              <select value={plannerModel} onChange={(event) => setPlannerModel(event.target.value)} aria-label="Planning model" disabled={committing}>
                 <option value="gpt-5.6-luna">GPT-5.6 Luna · efficient</option>
                 <option value="gpt-5.6-terra">GPT-5.6 Terra · balanced</option>
                 <option value="gpt-5.6-sol">GPT-5.6 Sol · highest capability</option>
@@ -245,10 +342,24 @@ export function OperatorPage() {
             <p>The key stays in this tab and is used only in the Authorization header. It never enters spreadsheet data, the model prompt, or the Wasm worker.</p>
           </div>
           <div className="connector-form">
-            <label>Development access token<input type="password" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} autoComplete="off" placeholder="Memory only" /></label>
-            <label>Spreadsheet ID<input value={spreadsheetId} onChange={(event) => setSpreadsheetId(event.target.value)} placeholder="1abc…" /></label>
-            <label>Range<input value={range} onChange={(event) => setRange(event.target.value)} placeholder="Sheet1!A1:D20" /></label>
-            <button onClick={() => void loadGoogleSheet()} disabled={!accessToken.trim() || !spreadsheetId.trim() || !range.trim()}>
+            <label>Development access token<input type="password" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} autoComplete="off" placeholder="Memory only" disabled={committing} /></label>
+            <label>Spreadsheet ID<input value={spreadsheetId} onChange={(event) => {
+              setSpreadsheetId(event.target.value);
+              if (source === "google") {
+                invalidateProposal("Google spreadsheet target edited");
+                setLoadedGoogleTarget(null);
+                setStatus("Target changed — read the range again");
+              }
+            }} placeholder="1abc…" disabled={committing} /></label>
+            <label>Range<input value={range} onChange={(event) => {
+              setRange(event.target.value);
+              if (source === "google") {
+                invalidateProposal("Google range target edited");
+                setLoadedGoogleTarget(null);
+                setStatus("Target changed — read the range again");
+              }
+            }} placeholder="Sheet1!A1:D20" disabled={committing} /></label>
+            <button onClick={() => void loadGoogleSheet()} disabled={committing || !accessToken.trim() || !spreadsheetId.trim() || !range.trim()}>
               <RefreshCw size={13} /> Read range
             </button>
             <p>The token is held by the connector in this tab. It is never sent to the model or sandbox script.</p>
@@ -276,9 +387,9 @@ export function OperatorPage() {
 
           <div className="operator-task">
             <div className="operator-task-label"><Sparkles size={14} /><span>Task intent</span><small>AI may propose; only you can run and write</small></div>
-            <textarea value={task} onChange={(event) => { setTask(event.target.value); setPlan(null); setPreviewRows(null); }} aria-label="Business task" />
+            <textarea value={task} onChange={(event) => { setTask(event.target.value); setPlan(null); invalidateProposal("task intent edited"); }} aria-label="Business task" disabled={committing} />
             <div className="operator-planner-actions">
-              <button onClick={() => void draftWithAI()} disabled={!plannerApiKey.trim() || !task.trim() || planning}>
+              <button onClick={() => void draftWithAI()} disabled={committing || !plannerApiKey.trim() || !task.trim() || planning}>
                 {planning ? <RefreshCw size={14} /> : <KeyRound size={14} />}{planning ? "Drafting…" : "Draft with AI"}
               </button>
               <span>Explicitly sends this task and {rows.length} visible rows to OpenAI. Sheets and API credentials are excluded.</span>
@@ -298,9 +409,9 @@ export function OperatorPage() {
 
           <div className="operator-script">
             <div className="operator-task-label"><span>Sandbox script</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
-            <textarea value={script} onChange={(event) => { setScript(event.target.value); setPlan(null); setPreviewRows(null); }} spellCheck={false} aria-label="Sandbox transformation script" />
+            <textarea value={script} onChange={(event) => { setScript(event.target.value); setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" disabled={committing} />
             <div className="operator-script-actions">
-              <button onClick={() => void runScript()}><Play size={14} /> Run in Wasm sandbox</button>
+              <button onClick={() => void runScript()} disabled={committing || (source === "google" && !loadedGoogleTarget)}><Play size={14} /> Run in Wasm sandbox</button>
               <span>Input and output are JSON-only · 750 ms CPU limit · 32 MB memory limit</span>
             </div>
           </div>
@@ -309,9 +420,14 @@ export function OperatorPage() {
 
         <aside className="operator-review" aria-label="Review and audit">
           <div className="operator-panel-heading"><span>Write review</span><small>{changes.length} changes</small></div>
-          {previewRows ? (
+          {proposal ? (
             <div className="change-review">
-              <div className="change-summary"><UploadCloud size={18} /><div><strong>Explicit approval required</strong><p>{changes.length} cell changes will be written to {source === "google" ? range : "the local demo"}.</p></div></div>
+              <div className="change-summary"><UploadCloud size={18} /><div><strong>Explicit approval required</strong><p>{changes.length} cell changes will be written to {proposal.connector.id === GOOGLE_CONNECTOR.id ? proposal.target.range : "the local demo"}.</p></div></div>
+              <div className="proposal-identity" role="group" aria-label="Immutable proposal identity">
+                <span><b>Proposal</b><code>{proposal.proposalId.slice(-12)}</code></span>
+                <span><b>Source check</b><code>{proposal.baseVersion.strength}</code></span>
+                <span><b>Snapshot</b><code>{proposal.baseVersion.value.slice(-12)}</code></span>
+              </div>
               <div className="change-list">
                 {changes.slice(0, 24).map((change) => (
                   <div key={`${change.row}-${change.column}`}>
@@ -323,10 +439,10 @@ export function OperatorPage() {
                 ))}
                 {changes.length > 24 && <p>+ {changes.length - 24} more changes</p>}
               </div>
-              <button className="approve-write" onClick={() => void approveWrite()} disabled={!changes.length}>
-                <Check size={15} /> Approve and {source === "google" ? "write range" : "apply locally"}
+              <button className="approve-write" onClick={() => void approveWrite()} disabled={committing || !changes.length}>
+                <Check size={15} /> {committing ? "Validating source…" : `Approve and ${proposal.connector.id === GOOGLE_CONNECTOR.id ? "write range" : "apply locally"}`}
               </button>
-              <button className="reject-write" onClick={() => setPreviewRows(null)}>Reject preview</button>
+              <button className="reject-write" onClick={() => void rejectWrite()} disabled={committing}>Reject proposal</button>
             </div>
           ) : (
             <div className="empty-review"><ShieldCheck size={22} /><strong>No pending write</strong><p>Run the sandbox script to create a cell-level preview. Nothing writes automatically.</p></div>

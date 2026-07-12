@@ -8,8 +8,14 @@ export interface SpreadsheetRange {
   range: string;
 }
 
+export interface SpreadsheetVersion {
+  kind: "etag" | "revision" | "sequence" | "snapshot-hash";
+  value: string;
+}
+
 export interface SpreadsheetSnapshot extends SpreadsheetRange {
   values: SpreadsheetRows;
+  version?: SpreadsheetVersion;
 }
 
 export interface SpreadsheetWrite extends SpreadsheetSnapshot {
@@ -26,14 +32,46 @@ export interface SpreadsheetWriteResult {
 export interface SpreadsheetConnector {
   readonly id: string;
   readonly label: string;
+  readonly version: string;
   read(request: SpreadsheetRange, signal?: AbortSignal): Promise<SpreadsheetSnapshot>;
   write(request: SpreadsheetWrite, signal?: AbortSignal): Promise<SpreadsheetWriteResult>;
+  writeConditional?(
+    request: SpreadsheetWrite,
+    version: SpreadsheetVersion,
+    signal?: AbortSignal
+  ): Promise<SpreadsheetWriteResult>;
+}
+
+export class SpreadsheetWriteRejectedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SpreadsheetWriteRejectedError";
+  }
+}
+
+export class SpreadsheetConflictError extends Error {
+  constructor(
+    message = "The spreadsheet changed after this proposal was prepared.",
+    readonly observedVersion?: SpreadsheetVersion,
+    readonly observedValues?: SpreadsheetRows
+  ) {
+    super(message);
+    this.name = "SpreadsheetConflictError";
+  }
+}
+
+export class SpreadsheetWriteUncertainError extends Error {
+  constructor() {
+    super("The spreadsheet write may have reached the provider, but no confirmation was received. Reconcile the target before preparing another write.");
+    this.name = "SpreadsheetWriteUncertainError";
+  }
 }
 
 const MAX_SPREADSHEET_ID_LENGTH = 256;
 const MAX_RANGE_LENGTH = 256;
 const MAX_ROWS = 5_000;
 const MAX_COLUMNS = 200;
+export const GOOGLE_SHEETS_CONNECTOR_VERSION = "1.0.0";
 
 function requireText(value: string, label: string, maxLength: number) {
   const normalized = value.trim();
@@ -73,9 +111,14 @@ function apiError(status: number) {
   return new Error(`Google Sheets request failed (${status}).`);
 }
 
+function isKnownRejectedWriteStatus(status: number) {
+  return [400, 401, 403, 404, 409, 412, 422, 429].includes(status);
+}
+
 export class GoogleSheetsConnector implements SpreadsheetConnector {
   readonly id = "google-sheets";
   readonly label = "Google Sheets";
+  readonly version = GOOGLE_SHEETS_CONNECTOR_VERSION;
 
   constructor(
     private readonly accessToken: string,
@@ -116,17 +159,30 @@ export class GoogleSheetsConnector implements SpreadsheetConnector {
     const values = validateSpreadsheetRows(request.values);
     const endpoint = new URL(this.endpoint(request));
     endpoint.searchParams.set("valueInputOption", request.inputMode ?? "USER_ENTERED");
-    const response = await this.fetcher(endpoint, {
-      method: "PUT",
-      headers: {
-        authorization: `Bearer ${this.accessToken}`,
-        "content-type": "application/json"
-      },
-      signal,
-      body: JSON.stringify({ range: request.range.trim(), majorDimension: "ROWS", values })
-    });
-    if (!response.ok) throw apiError(response.status);
-    const body = await parseJson(response);
+    let response: Response;
+    try {
+      response = await this.fetcher(endpoint, {
+        method: "PUT",
+        headers: {
+          authorization: `Bearer ${this.accessToken}`,
+          "content-type": "application/json"
+        },
+        signal,
+        body: JSON.stringify({ range: request.range.trim(), majorDimension: "ROWS", values })
+      });
+    } catch {
+      throw new SpreadsheetWriteUncertainError();
+    }
+    if (!response.ok) {
+      if (!isKnownRejectedWriteStatus(response.status)) throw new SpreadsheetWriteUncertainError();
+      throw new SpreadsheetWriteRejectedError(apiError(response.status).message);
+    }
+    let body: unknown;
+    try {
+      body = await parseJson(response);
+    } catch {
+      throw new SpreadsheetWriteUncertainError();
+    }
     const result = body && typeof body === "object" ? body as Record<string, unknown> : {};
     return {
       updatedRange: typeof result.updatedRange === "string" ? result.updatedRange : request.range.trim(),

@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { diffSpreadsheetRows, GoogleSheetsConnector, validateSpreadsheetRows } from "./spreadsheet";
+import {
+  diffSpreadsheetRows,
+  GoogleSheetsConnector,
+  SpreadsheetWriteUncertainError,
+  validateSpreadsheetRows
+} from "./spreadsheet";
 
 describe("GoogleSheetsConnector", () => {
   it("reads a bounded range without exposing the token in the URL", async () => {
@@ -51,6 +56,29 @@ describe("GoogleSheetsConnector", () => {
 
     await expect(connector.read({ spreadsheetId: "sheet-id", range: "A1:B2" }))
       .rejects.toThrow("denied this operation");
+  });
+
+  it("marks a transport failure during a write as an uncertain outcome", async () => {
+    const connector = new GoogleSheetsConnector("token", vi.fn().mockRejectedValue(new TypeError("network detail")));
+
+    await expect(connector.write({ spreadsheetId: "sheet-id", range: "A1:B2", values: [["A", "B"]] }))
+      .rejects.toBeInstanceOf(SpreadsheetWriteUncertainError);
+  });
+
+  it("marks an unreadable success response as uncertain because the write may have committed", async () => {
+    const connector = new GoogleSheetsConnector("token", vi.fn().mockResolvedValue(new Response("not json", { status: 200 })));
+
+    await expect(connector.write({ spreadsheetId: "sheet-id", range: "A1:B2", values: [["A", "B"]] }))
+      .rejects.toThrow("may have reached the provider");
+  });
+
+  it("treats a server-side write failure as uncertain but a policy rejection as failed", async () => {
+    const uncertain = new GoogleSheetsConnector("token", vi.fn().mockResolvedValue(new Response("", { status: 503 })));
+    const rejected = new GoogleSheetsConnector("token", vi.fn().mockResolvedValue(new Response("", { status: 403 })));
+    const request = { spreadsheetId: "sheet-id", range: "A1:B2", values: [["A", "B"]] };
+
+    await expect(uncertain.write(request)).rejects.toBeInstanceOf(SpreadsheetWriteUncertainError);
+    await expect(rejected.write(request)).rejects.toThrow("denied this operation");
   });
 });
 

@@ -655,6 +655,23 @@ general authenticated `fetch` capability.
 Use an in-memory connector that supports true atomic revisions and a Google
 Sheets adapter labeled `recheck`.
 
+Status on 2026-07-12: the `atomic`, `recheck`, and `none` branches are
+implemented in
+[`spreadsheet-effect.ts`](../src/lib/spreadsheet-effect.ts), with unit and browser
+tests covering immutable content identity, exact approval binding, unsupported
+fields, conflict, duplicate execution, rejection, and `uncertain` outcomes.
+Google Sheets re-reads the approved range before PUT. A changed snapshot consumes
+the proposal as a conflict; a transport failure, unreadable success response,
+HTTP timeout, or 5xx consumes it as `uncertain` and requires reconciliation.
+
+The atomic branch is not simulated through a hash. It requires an ETag, revision,
+or sequence plus a connector `writeConditional` implementation, passes that
+opaque version into the same write, and maps `SpreadsheetConflictError` to a
+terminal typed conflict. An in-memory connector proves both atomic success and a
+stale-revision conflict without a preceding recheck read. No current production
+connector advertises atomic support; Google Sheets continues to disclose
+`recheck` and its remaining race.
+
 Prove:
 
 - a proposal is content-addressed and deeply immutable;

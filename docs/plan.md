@@ -52,8 +52,18 @@ require a separately deployed server adapter.
 - A QuickJS runtime compiled to Wasm and loaded inside a Web Worker.
 - Synchronous JSON-to-JSON transformation scripts with CPU, memory, source,
   input, and output limits.
-- A cell-level write preview with explicit apply/reject controls.
-- A per-tab audit trail for reads, script execution, and approved writes.
+- Content-addressed, deeply frozen spreadsheet proposals that bind connector
+  version, target, base snapshot, resulting values, summary, and policy decision.
+- A cell-level write preview with exact proposal approval/rejection controls.
+- A source-range `recheck` immediately before local or Google Sheets commit;
+  stale proposals become visible conflicts and never write.
+- A provider-native conditional-write contract for `atomic` ETag, revision, or
+  sequence checks, validated with an in-memory connector; Google Sheets values
+  updates do not claim this guarantee.
+- Terminal `uncertain` handling for transport, unreadable success, timeout, and
+  server failures after a write may have been sent; no automatic retry.
+- A per-tab audit trail for reads, proposal preparation, conflicts, uncertain
+  outcomes, rejections, and committed receipts.
 
 ### 2.2 Not implemented yet
 
@@ -525,7 +535,8 @@ Its initial wedge is:
 - Add foundation operator UI and local demo — complete.
 - Add Google Identity Services OAuth flow.
 - Add local CSV/XLSX import and export.
-- Add stale-source precondition before an approved write.
+- Add stale-source precondition before an approved write — complete for
+  snapshot `recheck`; provider-native atomic conditions remain connector-gated.
 
 Exit condition: a user signs in, reads a bounded range, runs a local transform,
 reviews exact cell changes, and writes the approved values without a credential
@@ -539,18 +550,23 @@ entering model or script input.
 - Let the model generate a bounded transform function for separate review and
   execution — complete.
 - Implement `prepare -> policy -> approval -> validate -> commit -> receipt` as
-  the shared effect protocol.
-- Stage model-proposed writes behind immutable proposal IDs that bind target,
-  mutations, base version, connector version, and policy decision.
+  the shared effect protocol — spreadsheet effect slice complete; generalization
+  to files and future connectors remains.
+- Stage transformed spreadsheet writes behind immutable proposal IDs that bind
+  target, values, base version, connector version, and policy decision —
+  complete.
 - Represent spreadsheet changes as typed mutations from which preview and commit
   payload are both generated.
 - Report precondition strength as `atomic`, `recheck`, or `none`; conflicts
-  always create a new proposal and approval.
+  always create a new proposal and approval — complete at the effect protocol
+  layer. `atomic` requires a connector's provider-native conditional write,
+  Google Sheets uses `recheck`, and `none` is blocked by default.
 - Implement the bounded multi-step business tool registry and checkpointed loop.
 - Display model egress, script source, tool calls, policy decisions, approvals,
   conflicts, and receipts together.
 - Add cancellation, request budgets, explicit retry classes, and `uncertain`
-  outcomes to the new loop.
+  outcomes to the new loop — terminal spreadsheet `uncertain` outcome complete;
+  loop-wide budgets and cancellation remain.
 
 Exit condition: the agent completes the spreadsheet workflow from a natural
 language task while every capability remains independently enforceable, stale
@@ -694,16 +710,14 @@ The coding-contributor metric is retired. Product evidence is:
 
 ## 11. Immediate next issues
 
-1. Spike immutable spreadsheet proposals and `atomic` / `recheck` / `none`
-   conflict behavior, including an `uncertain` network outcome.
-2. Spike the connector manifest and credential broker without exposing raw
+1. Spike the connector manifest and credential broker without exposing raw
    credentials or unrestricted authenticated HTTP.
-3. Define typed tabular mutations so preview and commit use one source.
-4. Add Google Identity Services OAuth with narrow Sheets scopes after the
+2. Define typed tabular mutations so preview and commit use one source.
+3. Add Google Identity Services OAuth with narrow Sheets scopes after the
    credential-broker contract is stable.
-5. Add CSV/XLSX import and export through workspace artifacts.
-6. Continue the five pilot workflows and record evidence for architecture gates.
-7. Define the script input/output manifest and ephemeral virtual mount contract.
-8. Implement the checkpointed approval loop and policy decision envelope.
-9. Move the smallest OPFS workspace slice into the operator with export and
+4. Add CSV/XLSX import and export through workspace artifacts.
+5. Continue the five pilot workflows and record evidence for architecture gates.
+6. Define the script input/output manifest and ephemeral virtual mount contract.
+7. Implement the checkpointed approval loop and policy decision envelope.
+8. Move the smallest OPFS workspace slice into the operator with export and
     recovery tests.
