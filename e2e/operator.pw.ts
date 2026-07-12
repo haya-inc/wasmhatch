@@ -13,6 +13,7 @@ test("links the public project page to current newcomer work", async ({ page }) 
   await expect(page.getByRole("link", { name: "Use your CSV / XLSX" }).first()).toHaveAttribute("href", "/?view=operator&start=upload");
   await expect(page.getByRole("link", { name: "60-second demo" }).first()).toHaveAttribute("href", "/?view=operator&demo=local");
   await expect(page.getByRole("heading", { name: "Bring one repetitive spreadsheet." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Use file or sample" })).toHaveAttribute("href", "/?view=operator&start=upload");
   await expect(page.getByText("Local files stay in this tab. No account or server upload.")).toBeVisible();
   await expect(page.getByText("No credential in model input", { exact: true })).toBeVisible();
   await expect(page.getByText("Exact approval · receipt-bound undo", { exact: true })).toBeVisible();
@@ -48,6 +49,29 @@ test("opens a real-file entry state and returns to work after local import", asy
   await expect(page.getByRole("cell", { name: "Widget" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Current source: pilot.csv/ })).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByText("Choose your local table")).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test("runs the first-run sample through the real CSV worker and reviewed local effect", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?view=operator&start=upload");
+
+  await expect(page.getByRole("button", { name: /Load sample CSV/ })).toBeVisible();
+  await page.getByRole("button", { name: /Load sample CSV/ }).click();
+
+  await expect(page.getByRole("button", { name: /Current source: wasmhatch-pipeline-sample\.csv/ })).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("cell", { name: "aya tanaka" })).toBeVisible();
+  await expect(page.getByLabel("Business task")).toHaveValue("Normalize names and regions, convert amounts to numbers, and standardize stages.");
+  await expect(page.getByText("Choose your local table")).toBeHidden();
+
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+  await expect(page.getByLabel("Immutable proposal identity")).toContainText("12 typed cells");
+  await expect(page.getByText("Explicit approval required", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+
+  await expect(page.getByRole("cell", { name: "Aya Tanaka" })).toBeVisible();
+  await expect(page.getByText("Local effect committed", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Review and audit").getByRole("button", { name: "Copy report" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 

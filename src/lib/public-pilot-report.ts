@@ -3,7 +3,7 @@ import { guidedDemoDefinition, type GuidedDemoId } from "./guided-demo";
 
 export const PUBLIC_PILOT_REPORT_SCHEMA = "wasmhatch.public-pilot-report.v1" as const;
 
-export type PublicPilotWorkflowId = GuidedDemoId | "local-csv" | "local-xlsx" | "google-sheets";
+export type PublicPilotWorkflowId = GuidedDemoId | "first-run-csv" | "local-csv" | "local-xlsx" | "google-sheets";
 
 interface PublicPilotWorkflowMetadata {
   readonly label: string;
@@ -25,6 +25,13 @@ const PUBLIC_WORKFLOWS: Readonly<Record<PublicPilotWorkflowId, PublicPilotWorkfl
     label: guidedDemoDefinition("reconciliation").label,
     workflow: guidedDemoDefinition("reconciliation").reportWorkflow,
     source: guidedDemoDefinition("reconciliation").sourceDescription,
+    externalAuthority: "no",
+    nextQuestion: "What real CSV/XLSX or Google Sheets workflow would you try next?"
+  }),
+  "first-run-csv": Object.freeze({
+    label: "First-run CSV sample",
+    workflow: "bundled CSV import Worker, local QuickJS transform, and typed cell review",
+    source: "bundled synthetic CSV parsed in a browser Worker",
     externalAuthority: "no",
     nextQuestion: "What real CSV/XLSX or Google Sheets workflow would you try next?"
   }),

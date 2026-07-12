@@ -112,6 +112,11 @@ The guided demo can copy a source-free aggregate summary for that form. The
 [business operator pilot registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12)
 indexes notable reports and architecture decisions.
 
+The upload-first screen also offers a bundled synthetic CSV. It is useful for
+checking the production import Worker, QuickJS, review, and export path before a
+participant selects data, but it does not count as one of the five real
+workflows or three public non-demo pilots.
+
 ## Stage C: OSS contribution loop
 
 The contribution surface should follow the product architecture. Prefer focused

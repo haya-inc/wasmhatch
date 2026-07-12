@@ -56,6 +56,7 @@ import {
   type GoogleOAuthStatus
 } from "../lib/google-oauth";
 import { exportTabularArtifactInWorker, importTabularArtifactInWorker } from "../lib/browser-tabular-artifact";
+import { FIRST_RUN_CSV_SAMPLE } from "../lib/first-run-csv-sample";
 import { runWorkspaceScriptInWorker } from "../lib/browser-workspace-script";
 import {
   type TabularArtifactFormat,
@@ -296,6 +297,7 @@ export function OperatorPage() {
   const [artifact, setArtifact] = useState<TabularArtifactProvenance | null>(null);
   const [artifactWorkspacePath, setArtifactWorkspacePath] = useState<string | null>(null);
   const [artifactFile, setArtifactFile] = useState<File | null>(null);
+  const [firstRunSampleActive, setFirstRunSampleActive] = useState(false);
   const [artifactSheetChoice, setArtifactSheetChoice] = useState("");
   const [importingArtifact, setImportingArtifact] = useState(false);
   const [exportingArtifact, setExportingArtifact] = useState(false);
@@ -450,6 +452,7 @@ export function OperatorPage() {
 
   const currentPublicPilotWorkflow = (): PublicPilotWorkflowId => {
     if (source === "demo") return demoId;
+    if (source === "artifact" && firstRunSampleActive) return "first-run-csv";
     if (source === "artifact") return artifact?.format === "xlsx" ? "local-xlsx" : "local-csv";
     return "google-sheets";
   };
@@ -1083,6 +1086,7 @@ export function OperatorPage() {
     setArtifact(null);
     setArtifactWorkspacePath(null);
     setArtifactFile(null);
+    setFirstRunSampleActive(false);
     setArtifactSheetChoice("");
     setSource("demo");
     setUploadPromptVisible(false);
@@ -1594,6 +1598,7 @@ export function OperatorPage() {
     setArtifact(null);
     setArtifactWorkspacePath(null);
     setArtifactFile(null);
+    setFirstRunSampleActive(false);
     setArtifactSheetChoice("");
     setSource("demo");
     setShowLocalDemoGuide(true);
@@ -1609,7 +1614,7 @@ export function OperatorPage() {
     setAudit(nextJournal.events.map(auditEntryFromJournalEvent));
   };
 
-  const importLocalArtifact = async (file: File, sheetName?: string) => {
+  const importLocalArtifact = async (file: File, sheetName?: string, preset?: { task: string; script: string; firstRunSample?: boolean }) => {
     if (!ensureJournalCapacity(4)) {
       if (artifactInput.current) artifactInput.current.value = "";
       return;
@@ -1640,7 +1645,14 @@ export function OperatorPage() {
       setArtifact(snapshot.provenance);
       setArtifactWorkspacePath(persistedPath);
       setArtifactFile(file);
+      setFirstRunSampleActive(Boolean(preset?.firstRunSample));
       setArtifactSheetChoice(snapshot.provenance.sheetName);
+      if (preset) {
+        taskRevision.current += 1;
+        setTask(preset.task);
+        scriptRevision.current += 1;
+        setScript(preset.script);
+      }
       clearAiPlans();
       setAgentTrace([]);
       setAgentBudget(null);
@@ -1684,6 +1696,14 @@ export function OperatorPage() {
       setImportingArtifact(false);
       if (artifactInput.current) artifactInput.current.value = "";
     }
+  };
+
+  const loadFirstRunCsvSample = () => {
+    const preset = guidedDemoDefinition("normalization");
+    const file = new File([FIRST_RUN_CSV_SAMPLE.content], FIRST_RUN_CSV_SAMPLE.fileName, {
+      type: FIRST_RUN_CSV_SAMPLE.mediaType
+    });
+    void importLocalArtifact(file, undefined, { task: FIRST_RUN_CSV_SAMPLE.task, script: preset.script, firstRunSample: true });
   };
 
   const exportWorkingData = async (format: TabularArtifactFormat) => {
@@ -1753,6 +1773,7 @@ export function OperatorPage() {
       setLocalDemoOutcome(null);
     }
     setArtifactFile(null);
+    setFirstRunSampleActive(false);
     setLoadedGoogleTarget(null);
     clearAiPlans();
     setAgentTrace([]);
@@ -2149,7 +2170,8 @@ export function OperatorPage() {
     ? chromePlannerRequestSupported
     : Boolean(plannerApiKey.trim());
   const localDemoFinished = localDemoOutcome !== null;
-  const realWorkflowPilotReady = pilotReportWorkflow === "local-csv"
+  const journalPilotReportReady = pilotReportWorkflow === "first-run-csv"
+    || pilotReportWorkflow === "local-csv"
     || pilotReportWorkflow === "local-xlsx"
     || pilotReportWorkflow === "google-sheets";
   const localReversalAvailable = Boolean(
@@ -2259,6 +2281,9 @@ export function OperatorPage() {
           <button className={source === "artifact" ? "connector-row active" : uploadPromptVisible ? "connector-row suggested" : "connector-row"} onClick={() => artifactInput.current?.click()} disabled={committing || importingArtifact}>
             <UploadCloud size={16} /><span><strong>{importingArtifact ? "Validating file…" : artifact?.sourceName ?? "CSV / XLSX"}</strong><small>{artifact ? `${artifact.sheetName} · ${artifact.rows}×${artifact.columns}` : "Worker-isolated value import"}</small></span>{source === "artifact" ? <Check size={14} /> : uploadPromptVisible ? <em>Start here</em> : null}
           </button>
+          {uploadPromptVisible && <button className="operator-sample-import" onClick={loadFirstRunCsvSample} disabled={committing || importingArtifact}>
+            <FileText size={14} /><span><strong>Load sample CSV</strong><small>Exercise the real import Worker · 4 rows · no key</small></span><em>Try path</em>
+          </button>}
           <input ref={artifactInput} className="operator-file-input" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Import CSV or XLSX" onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) void importLocalArtifact(file);
@@ -2587,7 +2612,7 @@ export function OperatorPage() {
           <div className="operator-panel-heading audit-heading">
             <span>Run journal</span>
             <div className="journal-actions">
-              {realWorkflowPilotReady && (pilotReportDelivery
+              {journalPilotReportReady && (pilotReportDelivery
                 ? <a className="journal-pilot-action" href={PUBLIC_PILOT_REPORT_URL} target="_blank" rel="noreferrer"><FileText size={11} /> Pilot form</a>
                 : <button className="journal-pilot-action" onClick={() => {
                     if (pilotReportDownload) downloadPilotReportCopy();

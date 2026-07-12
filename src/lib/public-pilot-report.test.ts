@@ -106,6 +106,14 @@ describe("public pilot reports", () => {
     expect(report).toContain("bundled synthetic ERP and payout values");
   });
 
+  it("labels the first-run CSV as synthetic rather than user-selected pilot data", () => {
+    const report = createPublicPilotReport(committedJournal(), "first-run-csv");
+    expect(report).toContain("First-run CSV sample pilot");
+    expect(report).toContain("bundled CSV import Worker, local QuickJS transform, and typed cell review");
+    expect(report).toContain("bundled synthetic CSV parsed in a browser Worker");
+    expect(report).not.toContain("user-selected CSV");
+  });
+
   it("uses generic host metadata for real local files without leaking identities", () => {
     const csv = createPublicPilotReport(committedJournal(), "local-csv");
     const xlsx = createPublicPilotReport(rejectedJournal(), "local-xlsx");

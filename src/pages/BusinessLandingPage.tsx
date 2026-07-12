@@ -17,9 +17,9 @@ const workflows = [
     source: "CSV / XLSX",
     scope: "Your foreground file",
     title: "Try one repetitive spreadsheet",
-    description: "Choose an anonymized export, optionally draft on-device with compatible Chrome, then approve or reject the exact cells without uploading the source.",
+    description: "Choose an anonymized export—or load the bundled sample through the real CSV Worker—then approve or reject the exact cells without uploading the source.",
     entry: "start=upload",
-    action: "Use your file"
+    action: "Use file or sample"
   },
   {
     number: "02",

@@ -52,6 +52,10 @@ require a separately deployed server adapter.
 - A `start=upload` public entry that expands the local source boundary, marks
   CSV/XLSX as the next action, and returns to the working surface after a
   successful Worker-isolated import without triggering a file chooser on load.
+- A bundled, formula-free CSV first-run sample that is parsed by the production
+  import Worker and then uses the normal workspace snapshot, QuickJS, typed
+  effect review, safe export, and source-free synthetic report boundaries. It
+  lowers onboarding friction but does not count as a real business pilot.
 - A local spreadsheet demo with editable tabular data.
 - A Worker-isolated CSV/XLSX artifact adapter with pre-inflation ZIP bounds,
   strict UTF-8/XML parsing, visible-sheet selection, formula/macro/external-link
@@ -727,6 +731,8 @@ Its initial wedge is:
   foreground token model; production client verification remains deployment work.
 - Add local CSV/XLSX artifact import and value-only export, including bounds,
   provenance, and formula/macro/external-link handling — complete.
+- Add a key-free first-run sample through the production CSV import path —
+  complete; synthetic runs do not count toward the five-workflow pilot gate.
 - Add stale-source precondition before an approved write — complete for
   snapshot `recheck`; provider-native atomic conditions remain connector-gated.
 

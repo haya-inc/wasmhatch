@@ -31,6 +31,9 @@ The foundation slice now ships:
   Sheets credentials, explicit reauthorization, and grant revocation;
 - Worker-isolated CSV/XLSX import with ZIP/XML/shape limits, SHA-256 provenance,
   visible-sheet selection, macro rejection, and normalized JSON persistence;
+- a key-free bundled CSV that exercises the production import Worker, workspace
+  snapshot, QuickJS transform, typed review, and safe export path before users
+  bring an authorized file;
 - safe CSV and value-only XLSX export that never emits source formulas, macros,
   external links, or hidden workbook payloads;
 - an optional OpenAI Responses API planner that turns a business instruction

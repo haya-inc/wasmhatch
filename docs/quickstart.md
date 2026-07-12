@@ -39,7 +39,10 @@ network request and contains no real invoice or customer data.
 Open the [real-file entry](https://haya-inc.github.io/wasmhatch/?view=operator&start=upload)
 to start with the local source picker instead of a synthetic demo.
 
-1. Select **CSV / XLSX** and choose a bounded workbook.
+1. Select **CSV / XLSX** and choose a bounded workbook. If you do not have a
+   suitable file ready, select **Load sample CSV** first. The bundled four-row
+   file goes through the same CSV import Worker, normalized workspace snapshot,
+   QuickJS sandbox, typed review, and safe export path as a user-selected CSV.
 2. Review the detected sheet, dimensions, source hash, formula count, external
    link count, and warnings.
 3. On a compatible Chrome desktop, keep **Chrome built-in AI** selected, enter
@@ -53,6 +56,9 @@ to start with the local source picker instead of a synthetic demo.
 The source workbook bytes are parsed in a Worker and are not retained in the
 Operator workspace. Macros are rejected, formulas do not execute, and generated
 scripts receive copied values rather than browser or connector capabilities.
+The bundled CSV is synthetic onboarding evidence, not a real business pilot;
+replace it with an authorized sample or anonymized export before recording a
+workflow toward the five-pilot gate.
 The built-in planner currently handles only the active table; workspace
 attachments and artifact-output planning still require the OpenAI bounded tool
 loop. See [Chrome built-in AI planner](chrome-built-in-ai.md).
