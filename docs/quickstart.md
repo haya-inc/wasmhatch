@@ -66,9 +66,11 @@ for the complete authority and stale-state rules.
 
 ## Pilot evidence
 
-After the guided demo commits, select **Copy pilot report**. WasmHatch derives a
-Markdown summary from aggregate run metrics only; it excludes source rows, task
-text, resource identifiers, and the run ID. Inspect the copied text, add only
+After the guided demo commits or you reject its proposal, select **Copy pilot
+report**. WasmHatch derives a Markdown summary from aggregate run metrics only;
+it excludes source rows, task text, resource identifiers, and the run ID. A
+rejected report states that no effect occurred from that proposal and preserves
+the rejection as useful safety evidence. Inspect the copied text, add only
 feedback you choose, then open the
 [sanitized pilot report form](https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml).
 

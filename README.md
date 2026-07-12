@@ -58,9 +58,9 @@ The foundation slice now ships:
 - a shared run journal and policy-decision envelope that joins model/tool events,
   scripts, proposals, reviews, conflicts, receipts, and pilot timing metrics in
   an explicit credential-field-free, defensively redacted JSON export;
-- a public pilot-report action for the guided demo that copies aggregate counts
-  and timings while excluding source contents, task text, resource identities,
-  and run ID;
+- a public pilot-report action for committed or safely rejected guided proposals
+  that copies aggregate counts and timings while excluding source contents, task
+  text, resource identities, and run ID;
 - two deterministic, key-free pilot paths for pipeline normalization and invoice
   reconciliation, both using the production sandbox and effect-review protocol;
 - typed cell-mutation bundles that generate preview, summary, commit payload,
@@ -141,51 +141,23 @@ kept visible through patch export so contributors can return to the acceptance
 criteria and submission thread. Automatic repository fetching is intentionally
 not triggered by merely opening a link.
 
-## Try a real task
+## Current contributor lanes
 
-The [Examples section](https://haya-inc.github.io/wasmhatch/#examples) contains
-three small tasks against exact public commits:
+New contributions should improve the Business Operator and its bounded
+source-to-review loop. Current newcomer-sized tasks are:
 
-- make [patch and zip filenames repository-aware](https://github.com/haya-inc/wasmhatch/issues/11), published as a `good first issue`;
-- add network-free CLI smoke tests to `create-knowledge-kit`;
-- establish the first test baseline for `create-wiki-kit`.
+- [focus the exact effect review from the guided flow](https://github.com/haya-inc/wasmhatch/issues/13);
+- [fail closed when a guided sample's mutation count drifts](https://github.com/haya-inc/wasmhatch/issues/14).
 
-Each task is sized for one reviewable patch and opens with the repository,
-revision, and task already filled in. These are real repositories rather than
-tutorial fixtures.
-
-## Pick a contribution
-
-The project page has a [contributor opportunity board](https://haya-inc.github.io/wasmhatch/#contribute)
-with five independent, revision-pinned `good first issue` lanes. Read and claim
-an issue before editing, then open the task directly in WasmHatch. Current lanes
-cover parsing, security UX, editor UX, import provenance, and accessibility.
-
-## Share an adoption
-
-WasmHatch does not use third-party analytics. If you trial the workflow on an
-external public repository or publish a task link or badge, add it to the
-[opt-in adoption registry](https://github.com/haya-inc/wasmhatch/issues/9).
-Include time-to-first-diff and whether export was reached when possible. Reports
-that expose friction or failed trials are as useful as successful ones.
-
-## Where WasmHatch fits
-
-WasmHatch starts with a runtime-free path for a small public issue that can be
-reviewed as a text patch. That focused workflow is the adoption wedge, not the
-limit of the architecture. The longer-term goal is a permissioned browser coding
-agent that can inspect files, run project commands and tests, observe output,
-and iterate without hiding writes from the user.
-
-- Use WasmHatch for a revision-pinned issue, explicit write review, and patch handoff.
-- Use github.dev when a signed-in contributor wants to edit and commit directly.
-- Use Codespaces or another cloud environment when the change must build or run.
-- Use WebContainers when a web product needs an in-browser Node.js runtime.
-- Use a sandboxed coding agent when autonomous command execution is the main job.
+Read and claim an issue before editing. Public product evidence belongs in the
+[Business Operator pilot registry](https://github.com/haya-inc/wasmhatch/issues/12),
+including safely rejected or blocked workflows. The former coding-workspace
+adoption registry and its unclaimed good-first issues are archived; their history
+remains available, but they are not the current roadmap.
 
 See the source-backed [product landscape and decision guide](docs/landscape.md).
 
-## Export a patch
+## Legacy patch export
 
 WasmHatch records a separate baseline whenever a sample, GitHub repository, or
 zip archive is imported. Manual and agent-approved edits change only the working
@@ -202,6 +174,9 @@ represent modified, added, and removed text files; the current UI does not yet
 expose file deletion.
 
 ## Current capability matrix
+
+Rows about repository import, patch handoff, and the Anthropic agent describe the
+retained legacy route. The Business Operator rows are the canonical product.
 
 | Capability | Status |
 | --- | --- |

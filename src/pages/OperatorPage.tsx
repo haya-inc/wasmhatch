@@ -250,7 +250,7 @@ export function OperatorPage() {
   const [plannerModel, setPlannerModel] = useState(DEFAULT_PLANNER_MODEL);
   const [planning, setPlanning] = useState(false);
   const [showLocalDemoGuide, setShowLocalDemoGuide] = useState(initialDemo.showGuide);
-  const [localDemoCompleted, setLocalDemoCompleted] = useState(false);
+  const [localDemoOutcome, setLocalDemoOutcome] = useState<"committed" | "rejected" | null>(null);
   const [pilotReportDelivery, setPilotReportDelivery] = useState<"copied" | "downloaded" | null>(null);
   const [pilotReportDownload, setPilotReportDownload] = useState<string | null>(null);
   const [mobileSourcesOpen, setMobileSourcesOpen] = useState(false);
@@ -877,7 +877,7 @@ export function OperatorPage() {
     setArtifactSheetChoice("");
     setSource("demo");
     setShowLocalDemoGuide(true);
-    setLocalDemoCompleted(false);
+    setLocalDemoOutcome(null);
     setPilotReportDelivery(null);
     setPilotReportDownload(null);
     try {
@@ -996,7 +996,7 @@ export function OperatorPage() {
         setStatus(isGoogle
           ? `Updated ${outcome.receipt.providerResult.updatedCells} cells in ${outcome.receipt.providerResult.updatedRange}`
           : source === "artifact" ? "Approved changes applied to the imported working snapshot" : "Approved changes applied to the local demo");
-        if (source === "demo") setLocalDemoCompleted(true);
+        if (source === "demo") setLocalDemoOutcome("committed");
         record({
           title: isGoogle ? "Google Sheets effect committed" : "Local effect committed",
           detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}`,
@@ -1068,6 +1068,7 @@ export function OperatorPage() {
       });
       setProposal(null);
       setStatus("Write proposal rejected; no mutation occurred");
+      if (source === "demo") setLocalDemoOutcome("rejected");
     } else if (outcome.status === "failed") {
       setError(outcome.reason);
       setStatus("Proposal rejection could not be recorded");
@@ -1339,7 +1340,7 @@ export function OperatorPage() {
     setArtifactSheetChoice("");
     setSource("demo");
     setShowLocalDemoGuide(true);
-    setLocalDemoCompleted(false);
+    setLocalDemoOutcome(null);
     setPilotReportDelivery(null);
     setPilotReportDownload(null);
     setMobileSourcesOpen(false);
@@ -1487,7 +1488,7 @@ export function OperatorPage() {
       setArtifactSheetChoice("");
       setSource("demo");
       setShowLocalDemoGuide(true);
-      setLocalDemoCompleted(false);
+      setLocalDemoOutcome(null);
       setPilotReportDelivery(null);
       setPilotReportDownload(null);
     }
@@ -1882,6 +1883,7 @@ export function OperatorPage() {
   };
 
   const googleArtifactReadReady = source === "google" && Boolean(loadedGoogleTarget) && googleAuthStatus.connected;
+  const localDemoFinished = localDemoOutcome !== null;
 
   const copyGuidedDemoPilotReport = async () => {
     try {
@@ -2126,28 +2128,30 @@ export function OperatorPage() {
         <section className="operator-workbench">
           <div className="operator-panel-heading"><span>Working data</span><small>{rows.length} rows · {Math.max(0, ...rows.map((row) => row.length))} columns{rows.length > TABLE_PREVIEW_ROWS ? ` · previewing ${TABLE_PREVIEW_ROWS}` : ""}</small></div>
           {showLocalDemoGuide && source === "demo" && (
-            <div className={localDemoCompleted ? "operator-demo-guide complete" : proposal ? "operator-demo-guide review" : "operator-demo-guide"} role="region" aria-label={demo.label} aria-live="polite">
-              <span className="operator-demo-step">{localDemoCompleted ? "03" : proposal ? "02" : "01"}</span>
+            <div className={localDemoFinished ? "operator-demo-guide complete" : proposal ? "operator-demo-guide review" : "operator-demo-guide"} role="region" aria-label={demo.label} aria-live="polite">
+              <span className="operator-demo-step">{localDemoFinished ? "03" : proposal ? "02" : "01"}</span>
               <div>
-                <strong>{localDemoCompleted ? "Local loop complete" : proposal ? `${changes.length} typed changes staged` : demo.label}</strong>
-                <small>{localDemoCompleted
+                <strong>{localDemoOutcome === "committed" ? "Local loop complete" : localDemoOutcome === "rejected" ? "Proposal rejected safely" : proposal ? `${changes.length} typed changes staged` : demo.label}</strong>
+                <small>{localDemoFinished
                   ? pilotReportDelivery
                     ? `Source-free Markdown ${pilotReportDelivery}. Inspect it, then add only feedback you choose to the public form.`
                     : pilotReportDownload
                       ? "Clipboard unavailable. Download the same source-free Markdown, inspect it, then open the public form."
-                    : "Copy a source-free metrics summary, inspect it, then add only feedback you choose to the public pilot form."
+                    : localDemoOutcome === "rejected"
+                      ? "No mutation occurred. Copy a source-free rejection summary, inspect it, then share what made approval unsafe."
+                      : "Copy a source-free metrics summary, inspect it, then add only feedback you choose to the public pilot form."
                   : proposal
                     ? "Review the exact before/after cells. Nothing has been written yet."
                     : demo.guideDescription}</small>
               </div>
-              {localDemoCompleted && pilotReportDelivery
+              {localDemoFinished && pilotReportDelivery
                 ? <a className="operator-demo-action" href={PUBLIC_PILOT_REPORT_URL} target="_blank" rel="noreferrer">Open pilot form</a>
                 : <button className="operator-demo-action" onClick={() => {
-                    if (localDemoCompleted && pilotReportDownload) downloadGuidedDemoPilotReport();
-                    else if (localDemoCompleted) void copyGuidedDemoPilotReport();
+                    if (localDemoFinished && pilotReportDownload) downloadGuidedDemoPilotReport();
+                    else if (localDemoFinished) void copyGuidedDemoPilotReport();
                     else if (proposal) document.querySelector<HTMLElement>(".operator-review")?.scrollIntoView({ behavior: "smooth", block: "start" });
                     else void runScript();
-                  }} disabled={committing || planning}>{localDemoCompleted ? pilotReportDownload ? "Download pilot report" : "Copy pilot report" : proposal ? "Review changes" : "Run bounded transform"}</button>}
+                  }} disabled={committing || planning}>{localDemoFinished ? pilotReportDownload ? "Download pilot report" : "Copy pilot report" : proposal ? "Review changes" : "Run bounded transform"}</button>}
               <button className="operator-demo-close" onClick={() => setShowLocalDemoGuide(false)} aria-label="Dismiss local demo guide"><X size={13} /></button>
             </div>
           )}

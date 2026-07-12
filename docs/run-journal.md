@@ -78,6 +78,13 @@ proposal was rejected, what required manual correction, and whether the same
 workflow was repeated. A journal proves what the product recorded; it does not
 prove business correctness or user confidence by itself.
 
+The guided synthetic workflows also expose a smaller public Markdown report.
+It accepts either the latest committed effect or the latest explicit rejection,
+so declining an unsafe or incorrect proposal remains first-class pilot evidence.
+That report contains only workflow metadata defined by the host and aggregate
+metrics; it excludes task text, source contents, resource identifiers, and run
+ID. It does not replace the private journal for an authorized internal pilot.
+
 ## Privacy and limits
 
 - Export is an explicit user action and produces a local JSON download.

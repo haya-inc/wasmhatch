@@ -124,9 +124,10 @@ require a separately deployed server adapter.
   structured reads/model/tools/scripts/proposals/approvals/effects, derived pilot
   timing metrics, credential-shaped text redaction, and explicit JSON export.
   See [Run Journal](run-journal.md).
-- A guided-demo public pilot report derived only from aggregate run metrics,
-  copied for user inspection before a privacy-confirming GitHub Issue Form. It
-  excludes source rows, task text, resource identities, and run ID.
+- A guided-demo public pilot report for either a committed effect or a safely
+  rejected proposal, derived only from aggregate run metrics and copied for user
+  inspection before a privacy-confirming GitHub Issue Form. It excludes source
+  rows, task text, resource identities, and run ID.
 
 ### 2.2 Not implemented yet
 

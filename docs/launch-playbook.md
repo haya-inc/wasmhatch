@@ -4,9 +4,10 @@ This playbook turns WasmHatch from a working foundation into evidence-backed
 open-source adoption. It avoids hidden analytics, fabricated usage, mass
 outreach, and connector-count vanity metrics.
 
-The legacy repository-to-patch workflow has its own public adoption registry in
-GitHub issue #9. Those reports remain useful for that retained surface but do
-not count as evidence that the business operator succeeds.
+The legacy repository-to-patch registry in GitHub issue #9 is archived. Its
+history remains useful for the retained surface, but it no longer accepts or
+counts adoption evidence. Current public evidence belongs in business pilot
+registry issue #12.
 
 ## Stage A: five Haya business pilots
 

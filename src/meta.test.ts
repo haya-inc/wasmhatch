@@ -63,7 +63,8 @@ describe("public sharing metadata", () => {
     expect(readme).toContain("identity-bound AI attachment before any checkpointed model read");
     expect(readme).toContain("a typed artifact workflow mode");
     expect(launchPlaybook).toContain("five real business workflows have been attempted");
-    expect(launchPlaybook).toContain("not count as evidence that the business operator succeeds");
+    expect(launchPlaybook).toContain("repository-to-patch registry in GitHub issue #9 is archived");
+    expect(launchPlaybook).toContain("Current public evidence belongs in business pilot");
     expect(viteConfig).toContain('"worker-src \'self\'"');
     expect(viteConfig).toContain("'wasm-unsafe-eval'");
     expect(viteConfig).toContain("https://sheets.googleapis.com");

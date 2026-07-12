@@ -46,15 +46,20 @@ export function createGuidedLocalDemoPilotReport(journal: RunJournal, demoId: Gu
   if (!journal || typeof journal !== "object") throw new Error("Pilot run journal is required.");
   const demo = guidedDemoDefinition(demoId);
   const metrics = validateMetrics(journal.metrics);
-  if (journal.state !== "committed" || metrics.commits < 1 || metrics.approvals < 1 || metrics.proposalsPrepared < 1) {
-    throw new Error("Complete an approved local demo effect before creating its public pilot report.");
+  const terminal = [...journal.events].reverse().find((event) =>
+    ["committed", "rejected", "conflict", "uncertain", "failed", "denied"].includes(event.outcome)
+  );
+  const committed = terminal?.outcome === "committed" && metrics.commits >= 1 && metrics.approvals >= 1;
+  const rejected = terminal?.outcome === "rejected" && metrics.rejections >= 1;
+  if (metrics.proposalsPrepared < 1 || (!committed && !rejected)) {
+    throw new Error("Complete an approved or rejected local demo proposal before creating its public pilot report.");
   }
   const report = `<!-- ${PUBLIC_PILOT_REPORT_SCHEMA} — inspect before posting; do not add private data. -->
 ## ${demo.label} pilot
 
 - Workflow: ${demo.reportWorkflow}
 - Source: ${demo.sourceDescription}
-- Result: committed local effect
+- Result: ${committed ? "committed local effect" : "rejected proposal; no effect from that proposal"}
 - Script runs: ${metrics.scriptRuns}
 - Proposals prepared: ${metrics.proposalsPrepared}
 - Approvals: ${metrics.approvals}

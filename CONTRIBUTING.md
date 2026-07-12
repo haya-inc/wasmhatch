@@ -17,6 +17,12 @@ editing:
 
 Claims with no update for seven days may be released so another contributor can continue.
 
+Current labeled newcomer lanes target the Business Operator. Closed issues for
+the retained coding workspace are historical context, not active contribution
+requests. Good first issues must be reproducible with bundled synthetic data and
+must preserve the same sandbox and review-before-write boundaries used in the
+public demos.
+
 ## Before opening a pull request
 
 1. Open or find an issue for non-trivial changes.

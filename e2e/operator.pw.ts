@@ -2,6 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 
 const GOOGLE_CLIENT_ID = "1234567890-wasmhatch.apps.googleusercontent.com";
 
+test("links the public project page to current newcomer work", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  const contribute = page.getByRole("link", { name: "Contribute" });
+  await contribute.scrollIntoViewIfNeeded();
+  await expect(contribute).toBeVisible();
+  await expect(contribute).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
 async function authorizeGoogleSheets(page: Page) {
   await page.route("https://accounts.google.com/gsi/client", async (route) => {
     await route.fulfill({
@@ -120,6 +131,36 @@ test("reconciles synthetic invoice exports and reports only source-free metrics"
   expect(copied).toContain("bundled synthetic ERP and payout values");
   expect(copied).not.toContain("INV-102");
   expect(copied).not.toContain("980");
+  expect(copied).not.toContain("run_journal_");
+});
+
+test("exports a source-free pilot report after the user safely rejects a proposal", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport = value;
+        }
+      }
+    });
+  });
+  await page.goto("/?view=operator&demo=reconciliation");
+
+  const guide = page.getByRole("region", { name: "Invoice reconciliation sample" });
+  await guide.getByRole("button", { name: "Run bounded transform" }).click();
+  await expect(page.getByText("Explicit approval required")).toBeVisible();
+  await page.getByRole("button", { name: "Reject proposal" }).click();
+
+  await expect(guide).toContainText("Proposal rejected safely");
+  await expect(guide).toContainText("No mutation occurred");
+  await expect(page.getByRole("cell", { name: "REVIEW" })).toHaveCount(0);
+  await guide.getByRole("button", { name: "Copy pilot report" }).click();
+  const copied = await page.evaluate(() => (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport ?? "");
+  expect(copied).toContain("Result: rejected proposal; no effect from that proposal");
+  expect(copied).toContain("Rejections: 1");
+  expect(copied).toContain("Time to first commit: not recorded");
+  expect(copied).not.toContain("INV-102");
   expect(copied).not.toContain("run_journal_");
 });
 

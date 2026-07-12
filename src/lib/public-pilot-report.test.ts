@@ -33,6 +33,31 @@ function committedJournal() {
   });
 }
 
+function rejectedJournal() {
+  let journal = createRunJournal({
+    runId: `run_journal_${"c".repeat(32)}`,
+    startedAt: "2026-07-12T00:00:00.000Z"
+  });
+  journal = appendRunJournalEvent(journal, {
+    category: "script",
+    outcome: "completed",
+    summary: "Sandbox script completed",
+    occurredAt: "2026-07-12T00:00:01.000Z"
+  });
+  journal = appendRunJournalEvent(journal, {
+    category: "proposal",
+    outcome: "prepared",
+    summary: "Typed mutation proposal prepared",
+    occurredAt: "2026-07-12T00:00:02.000Z"
+  });
+  return appendRunJournalEvent(journal, {
+    category: "approval",
+    outcome: "rejected",
+    summary: "Write proposal rejected",
+    occurredAt: "2026-07-12T00:00:03.000Z"
+  });
+}
+
 describe("public pilot reports", () => {
   it("creates a bounded source-free Markdown summary from aggregate metrics", () => {
     const report = createGuidedLocalDemoPilotReport(committedJournal());
@@ -50,7 +75,26 @@ describe("public pilot reports", () => {
       runId: `run_journal_${"b".repeat(32)}`,
       startedAt: "2026-07-12T00:00:00.000Z"
     });
-    expect(() => createGuidedLocalDemoPilotReport(journal)).toThrow("Complete an approved local demo effect");
+    expect(() => createGuidedLocalDemoPilotReport(journal)).toThrow("Complete an approved or rejected local demo proposal");
+  });
+
+  it("reports a safe rejection as useful negative pilot evidence", () => {
+    const report = createGuidedLocalDemoPilotReport(rejectedJournal(), "reconciliation");
+    expect(report).toContain("Result: rejected proposal; no effect from that proposal");
+    expect(report).toContain("Rejections: 1");
+    expect(report).toContain("Time to first commit: not recorded");
+    expect(report).not.toContain("run_journal_");
+    expect(report).not.toContain("INV-");
+  });
+
+  it("does not hide a later terminal problem behind an earlier commit", () => {
+    const journal = appendRunJournalEvent(committedJournal(), {
+      category: "effect",
+      outcome: "uncertain",
+      summary: "Later effect outcome uncertain",
+      occurredAt: "2026-07-12T00:00:06.000Z"
+    });
+    expect(() => createGuidedLocalDemoPilotReport(journal)).toThrow("Complete an approved or rejected local demo proposal");
   });
 
   it("uses only host-defined reconciliation metadata for the second sample", () => {

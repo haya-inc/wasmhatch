@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
+const contributorUrl = `${repositoryUrl}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`;
 
 const workflows = [
   {
@@ -193,7 +194,7 @@ export function BusinessLandingPage() {
       <footer className="site-footer">
         <a className="wordmark wordmark-dark" href={homeUrl}>WH<span>／02</span></a>
         <p>Browser-native AI operations with explicit effects.</p>
-        <div><a href={repositoryUrl}>GitHub</a><a href={`${repositoryUrl}/blob/main/docs/plan.md`}>Plan</a><span>Apache-2.0</span></div>
+        <div><a href={repositoryUrl}>GitHub</a><a href={contributorUrl}>Contribute</a><a href={`${repositoryUrl}/blob/main/docs/plan.md`}>Plan</a><span>Apache-2.0</span></div>
       </footer>
     </main>
   );
