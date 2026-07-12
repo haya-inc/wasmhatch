@@ -1,7 +1,8 @@
 # Contributing to WasmHatch
 
-Thanks for helping make browser-native business automation inspectable,
-permissioned, and useful in real workflows.
+Thanks for helping build a general AI assistant that runs entirely in a
+browser tab — no server, no install, no signup. The form factor is the
+product: keep setup at zero and keep every effect visible.
 
 ## Pick and claim a task
 
@@ -17,11 +18,13 @@ editing:
 
 Claims with no update for seven days may be released so another contributor can continue.
 
-Current labeled newcomer lanes target the Business Operator. Closed issues for
-the retained coding workspace are historical context, not active contribution
-requests. Good first issues must be reproducible with bundled synthetic data and
-must preserve the same sandbox and review-before-write boundaries used in the
-public demos.
+Newcomer lanes target the chat surface (`src/pages/ChatPage.tsx`), the
+provider-abstracted agent loop (`src/lib/agent-core/`), and the workspace
+libraries under `src/lib/`. The Business Operator page is legacy — a parts
+donor scheduled to retire — so changes land there only when they unblock the
+chat surface. Good first issues must be reproducible with bundled synthetic
+data, keep every write visible and revertible, and keep the opt-in Careful
+mode working for people who prefer approvals.
 
 ## One-click development environment
 
@@ -41,7 +44,11 @@ runtime service. Local development remains fully supported.
 2. Keep the change focused on one observable outcome.
 3. Avoid adding a runtime dependency without documenting its license, network
    behavior, browser support, bundle cost, and self-hosting implications.
-4. Do not weaken review-before-write behavior or persist provider credentials.
+4. Keep every write visible with its exact diff and revertible in one click,
+   and keep the opt-in Careful mode gating writes for users who choose it.
+5. Never store credentials beyond what the user explicitly opted into
+   ("Remember on this device"); keys are sent only to the provider the user
+   chose, never logged, and never shipped to any WasmHatch-operated service.
 
 ## Development
 
@@ -85,10 +92,15 @@ available there.
 
 ## Scope and design
 
-WasmHatch favors a small, visible business workflow over connector count or
-general automation-server parity. Prefer improvements that shorten the path from
-a bounded source to a reviewable local or external effect. New connectors,
-databases, background execution, and broad abstractions require pilot evidence,
-a credential boundary, conflict semantics, and a domain-specific review design.
+WasmHatch competes on form factor: a general AI agent in a browser tab with
+genuinely easy setup. Features follow the incumbent agents (chat, connectors,
+artifacts) as closely as the platform allows; the commitment is not losing
+inside an advertised boundary, so documented limits beat surprise gaps
+(see [ROADMAP.md](ROADMAP.md)). Prefer improvements that keep setup at zero
+(no server, no account), make connectivity genuinely easier (Google
+Workspace, Slack), or make in-tab artifacts better. New connectors and broad
+abstractions still need a credential boundary, conflict semantics, and a
+visible failure story — and connector origins stay a build-time audited
+allowlist, never a blanket relaxation.
 
 Be respectful and follow the [Code of Conduct](CODE_OF_CONDUCT.md).

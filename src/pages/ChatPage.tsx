@@ -14,12 +14,22 @@ import { ARTIFACT_TOOL, createArtifactExecutor, type HtmlArtifact } from "../lib
 import { SessionPermissionStore, type PermissionDecision, type WritePermissionRequest } from "../lib/chat-permissions";
 import { CHAT_TOOLS, createChatToolExecutor, type AppliedWrite, type WritePolicy } from "../lib/chat-tools";
 import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "../lib/google-connectors";
+import { parseMarkdown, type MarkdownInline } from "../lib/markdown";
 import { GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
+import { createZipArchive } from "../lib/archive";
+import { loadChatSettings, saveChatSettings, type ChatProviderKind } from "../lib/chat-settings";
 import { isProtectedAgentPath } from "../lib/secrets";
-import { createWorkspaceStore, sampleWorkspace } from "../lib/workspace";
+import {
+  createWorkspaceStore,
+  formatBytes,
+  inspectBrowserStorage,
+  requestPersistentStorage,
+  sampleWorkspace,
+  type BrowserStorageStatus
+} from "../lib/workspace";
 import { ArtifactPanel } from "./ArtifactPanel";
 
-type ProviderKind = "builtin" | "anthropic" | "openai";
+type ProviderKind = ChatProviderKind;
 
 interface ChatItem {
   id: number;
@@ -80,6 +90,55 @@ interface ChromeLanguageModelApi {
   }>;
 }
 
+function InlineNodes({ nodes }: { nodes: MarkdownInline[] }) {
+  return (
+    <>
+      {nodes.map((node, index) => {
+        if (node.kind === "code") return <code key={index}>{node.text}</code>;
+        if (node.kind === "strong") return <strong key={index}><InlineNodes nodes={node.inline} /></strong>;
+        if (node.kind === "em") return <em key={index}><InlineNodes nodes={node.inline} /></em>;
+        if (node.kind === "link") {
+          return <a key={index} href={node.href} target="_blank" rel="noreferrer noopener">{node.text}</a>;
+        }
+        return <span key={index}>{node.text}</span>;
+      })}
+    </>
+  );
+}
+
+function AssistantMarkdown({ text }: { text: string }) {
+  return (
+    <>
+      {parseMarkdown(text).map((block, index) => {
+        if (block.kind === "code") {
+          return <pre key={index} className="chat-md-code"><code>{block.text}</code></pre>;
+        }
+        if (block.kind === "heading") {
+          // Demoted inside a bubble: the page owns h1/h2, a message never does.
+          const Tag = (["h3", "h4", "h5"] as const)[block.level - 1];
+          return <Tag key={index}><InlineNodes nodes={block.inline} /></Tag>;
+        }
+        if (block.kind === "list") {
+          const items = block.items.map((item, itemIndex) => (
+            <li key={itemIndex}><InlineNodes nodes={item} /></li>
+          ));
+          return block.ordered ? <ol key={index}>{items}</ol> : <ul key={index}>{items}</ul>;
+        }
+        return <p key={index}><InlineNodes nodes={block.inline} /></p>;
+      })}
+    </>
+  );
+}
+
+function storageSummary(status: BrowserStorageStatus): string {
+  const state = status.persistence === "persistent"
+    ? "Your data is pinned — this browser won't clear it on its own."
+    : status.persistence === "best-effort"
+      ? "Not pinned yet — the browser could clear saved work if this device runs low on space."
+      : "This browser can't promise to keep data around, so a backup is the safest bet.";
+  return status.originUsageBytes === null ? state : `${state} ${formatBytes(status.originUsageBytes)} used.`;
+}
+
 function summarizeToolCall(name: string, args: Record<string, unknown>): string {
   const path = typeof args.path === "string" ? args.path : "";
   if (name === "read_file" && path) return `Reading ${path}`;
@@ -99,9 +158,14 @@ export function ChatPage() {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
-  const [provider, setProvider] = useState<ProviderKind>("builtin");
-  const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("");
+  const [initialSettings] = useState(() => loadChatSettings());
+  const restoredCloud = initialSettings.provider === "builtin" ? null : initialSettings.provider;
+  const [provider, setProvider] = useState<ProviderKind>(initialSettings.provider);
+  const [apiKey, setApiKey] = useState(restoredCloud ? initialSettings.keys[restoredCloud] ?? "" : "");
+  const [model, setModel] = useState(restoredCloud ? initialSettings.models[restoredCloud] ?? DEFAULT_MODELS[restoredCloud] : "");
+  const [rememberKey, setRememberKey] = useState(initialSettings.rememberKey);
+  const keysRef = useRef(initialSettings.keys);
+  const modelsRef = useRef(initialSettings.models);
   const [builtinAvailability, setBuiltinAvailability] = useState<string>("checking");
   const [permissionQueue, setPermissionQueue] = useState<PendingPermission[]>([]);
   const [files, setFiles] = useState<string[]>([]);
@@ -114,6 +178,10 @@ export function ChatPage() {
   const [writeMode, setWriteMode] = useState<WritePolicy>("autonomous");
   const writeModeRef = useRef<WritePolicy>("autonomous");
   writeModeRef.current = writeMode;
+  const [storageStatus, setStorageStatus] = useState<BrowserStorageStatus | null>(null);
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinNote, setPinNote] = useState("");
+  const [backupBusy, setBackupBusy] = useState(false);
 
   const pushItem = useCallback((item: Omit<ChatItem, "id">) => {
     const id = nextId.current;
@@ -139,6 +207,26 @@ export function ChatPage() {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [items, permissionQueue]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void inspectBrowserStorage().then((status) => {
+      if (!cancelled) setStorageStatus(status);
+    });
+    return () => { cancelled = true; };
+  }, [files]);
+
+  useEffect(() => {
+    if (provider !== "builtin") {
+      const key = apiKey.trim();
+      if (key) keysRef.current[provider] = key;
+      else delete keysRef.current[provider];
+      const chosenModel = model.trim();
+      if (chosenModel) modelsRef.current[provider] = chosenModel;
+      else delete modelsRef.current[provider];
+    }
+    saveChatSettings({ provider, models: modelsRef.current, keys: keysRef.current, rememberKey });
+  }, [provider, apiKey, model, rememberKey]);
 
   const gate = useCallback((request: WritePermissionRequest) => {
     return new Promise<PermissionDecision>((resolve) => {
@@ -391,6 +479,51 @@ export function ChatPage() {
     setViewer({ path, content });
   }, []);
 
+  const pinStorage = useCallback(async () => {
+    if (pinBusy) return;
+    setPinBusy(true);
+    try {
+      const granted = await requestPersistentStorage();
+      setStorageStatus(await inspectBrowserStorage());
+      setPinNote(granted
+        ? "Done — this browser will keep your data safe."
+        : "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety.");
+    } finally {
+      setPinBusy(false);
+    }
+  }, [pinBusy]);
+
+  const backupWorkspace = useCallback(async () => {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    try {
+      const paths = (await workspace.current.listFiles()).filter((path) => !isProtectedAgentPath(path));
+      const entries = await Promise.all(paths.map(async (path) => ({
+        path,
+        content: await workspace.current.readFile(path)
+      })));
+      const bytes = createZipArchive(entries);
+      const copy = new Uint8Array(bytes.byteLength);
+      copy.set(bytes);
+      const url = URL.createObjectURL(new Blob([copy.buffer], { type: "application/zip" }));
+      const link = document.createElement("a");
+      link.href = url;
+      const now = new Date();
+      const stamp = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0")
+      ].join("-");
+      link.download = `wasmhatch-backup-${stamp}.zip`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (error) {
+      notice(error instanceof Error ? error.message : "The backup could not be created.", "error");
+    } finally {
+      setBackupBusy(false);
+    }
+  }, [backupBusy, notice]);
+
   const activePermission = permissionQueue[0];
 
   return (
@@ -421,7 +554,7 @@ export function ChatPage() {
               if (item.kind === "assistant") {
                 return (
                   <div key={item.id} className={item.streaming ? "chat-bubble chat-assistant chat-streaming" : "chat-bubble chat-assistant"}>
-                    {item.text}
+                    <AssistantMarkdown text={item.text} />
                   </div>
                 );
               }
@@ -547,7 +680,13 @@ export function ChatPage() {
                 onChange={(event) => {
                   const next = event.target.value as ProviderKind;
                   setProvider(next);
-                  setModel(next === "builtin" ? "" : DEFAULT_MODELS[next]);
+                  if (next === "builtin") {
+                    setApiKey("");
+                    setModel("");
+                  } else {
+                    setApiKey(keysRef.current[next] ?? "");
+                    setModel(modelsRef.current[next] ?? DEFAULT_MODELS[next]);
+                  }
                   transcriptMessages.current = [];
                 }}
               >
@@ -570,6 +709,14 @@ export function ChatPage() {
                     onChange={(event) => setApiKey(event.target.value)}
                   />
                 </label>
+                <label className="chat-remember">
+                  <input
+                    type="checkbox"
+                    checked={rememberKey}
+                    onChange={(event) => setRememberKey(event.target.checked)}
+                  />
+                  <span>Remember on this device</span>
+                </label>
                 <label className="chat-field">
                   <span>Model</span>
                   <input
@@ -580,7 +727,10 @@ export function ChatPage() {
                   />
                 </label>
                 <p className="chat-hint">
-                  The key lives in this tab's memory only and is sent solely to {provider === "anthropic" ? "api.anthropic.com" : "api.openai.com"}.
+                  Your key goes only to {provider === "anthropic" ? "api.anthropic.com" : "api.openai.com"} — nowhere else.
+                  {rememberKey
+                    ? " It's saved in this browser until you untick the box."
+                    : " Right now it's kept just for this tab and gone when the tab closes."}
                 </p>
               </>
             )}
@@ -639,6 +789,28 @@ export function ChatPage() {
             {permissions.current.grantedPaths().length > 0 && (
               <p className="chat-hint">Always-allowed this session: {permissions.current.grantedPaths().join(", ")}</p>
             )}
+          </section>
+
+          <section className="chat-panel">
+            <h2>Storage</h2>
+            {storageStatus && <p className="chat-hint">{storageSummary(storageStatus)}</p>}
+            {storageStatus?.persistence === "best-effort" && storageStatus.persistenceRequestAvailable && (
+              <button className="button" type="button" disabled={pinBusy} onClick={() => { void pinStorage(); }}>
+                {pinBusy ? "Pinning…" : "Keep my data safe"}
+              </button>
+            )}
+            {pinNote && <p className="chat-hint">{pinNote}</p>}
+            <button
+              className="button"
+              type="button"
+              disabled={backupBusy || files.length === 0}
+              onClick={() => { void backupWorkspace(); }}
+            >
+              {backupBusy ? "Preparing…" : "Back up everything"}
+            </button>
+            <p className="chat-hint">
+              Downloads all your files as one ZIP you can keep anywhere{files.length === 0 ? " — add a file first" : ""}.
+            </p>
           </section>
 
           {viewer && (

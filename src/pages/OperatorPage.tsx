@@ -400,7 +400,18 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
     let current = true;
     setWorkspaceArtifactBusy(true);
     setWorkspaceArtifactError("");
-    void listOperatorArtifacts(workspace.current).then((index) => {
+    const indexArtifacts = async () => {
+      try {
+        return await listOperatorArtifacts(workspace.current);
+      } catch (firstError) {
+        // A write landing mid-index (another tab, or a commit racing the walk) can
+        // fail a single read transiently; one retry separates that from real corruption.
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+        if (!current) throw firstError;
+        return listOperatorArtifacts(workspace.current);
+      }
+    };
+    void indexArtifacts().then((index) => {
       if (!current) return;
       setWorkspaceArtifacts(index.files);
       setWorkspaceArtifactTotalBytes(index.totalBytes);

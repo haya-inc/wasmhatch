@@ -9,11 +9,15 @@ test("presents a friendly consumer landing without technical jargon", async ({ p
   await expect(page.getByRole("heading", { name: /actually does the work/ })).toBeVisible();
   await expect(page.getByText("No install, no account")).toBeVisible();
   await expect(page.getByRole("link", { name: /Try it now/ })).toHaveAttribute("href", "/?view=chat");
+  await expect(page.getByRole("heading", { name: "There is no setup." })).toBeVisible();
+  await expect(page.getByText("Open the link.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/because no server registers you/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "One assistant for the busywork." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Fix messy spreadsheets" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Draft docs and decks" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Keep it or undo it" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Private by design" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Yours to keep" })).toBeVisible();
 
   // The first screen a stranger sees must stay free of internal jargon.
   // The brand name itself contains "wasm", so it is excluded first.

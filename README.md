@@ -2,6 +2,8 @@
 
 > The AI assistant that actually does the work — right in your browser.
 
+[![CI](https://github.com/haya-inc/wasmhatch/actions/workflows/ci.yml/badge.svg)](https://github.com/haya-inc/wasmhatch/actions/workflows/ci.yml)
+
 ![WasmHatch — the AI assistant that actually does the work](https://wasmhatch.com/social-preview.png?v=0.44.0)
 
 **[Open WasmHatch](https://wasmhatch.com/?view=chat)** — free, no install, no account.
@@ -22,6 +24,8 @@ approve things first? Switch on Careful mode.
   download instantly.
 - Run with your own AI key (Claude or OpenAI), or with Chrome's built-in
   on-device model — free, no key at all.
+- Keep your work safe without an account: pin browser storage so it isn't
+  cleared, and download everything as a ZIP backup in one click.
 
 ## What it can't do yet
 
@@ -49,6 +53,9 @@ npm run dev
 Requirements: Node.js 20+. `npm test` runs the unit suite, `npm run build`
 produces the deployable `dist/`.
 
+Want your own hosted copy — fork, enable Pages, done? See the
+[fork guide](docs/fork-guide.md), including bring-your-own Google client ID.
+
 ## How it's built
 
 For the technically curious — this is where WasmHatch is unusual:
@@ -56,8 +63,10 @@ For the technically curious — this is where WasmHatch is unusual:
 - **No server.** The entire product is a static page. Your files live in
   browser storage on your device; nothing is uploaded to us, because there is
   no "us" to upload to.
-- **Your keys stay yours.** API keys and Google tokens are held in the memory
-  of the open tab, sent only to the provider you chose, and never stored.
+- **Your keys stay yours.** Your API key is sent only to the provider you
+  chose. By default it lives just for the open tab, and ticking
+  "Remember on this device" saves it in your browser — and nowhere else.
+  Google tokens are held in the memory of the open tab and never stored.
 - **Sandboxed execution.** Generated data-transform code runs in QuickJS
   compiled to Wasm inside a Web Worker, with no network, DOM, or credential
   access.
