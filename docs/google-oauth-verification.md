@@ -3,15 +3,35 @@
 > Draft submission package for Google's sensitive-scope verification of the
 > WasmHatch OAuth client at https://wasmhatch.com.
 
-- Status: draft, not yet submitted
-- Canonical app URL: https://wasmhatch.com (Vercel migration in progress; the
-  GitHub Pages origin remains reachable during the transition, but every URL
-  submitted for verification must be on wasmhatch.com)
+- Status: infrastructure provisioned; sensitive-scope verification not yet
+  submitted
+- Canonical app URL: https://wasmhatch.com (live on Vercel with header CSP)
 - Privacy policy: https://wasmhatch.com/privacy.html (source:
-  [`public/privacy.html`](../public/privacy.html))
+  [`public/privacy.html`](../public/privacy.html)) — live
 - Runtime and deployment contract: [`docs/google-oauth.md`](google-oauth.md)
 - Scope classifications last verified against Google's documentation:
   2026-07-12
+
+### Provisioned infrastructure (2026-07-13)
+
+- Google Cloud project: `wasmhatch`
+- OAuth client: "WasmHatch Web" (Web application), authorized JavaScript
+  origin `https://wasmhatch.com`. Client ID
+  `479452292764-reiggaur6qtqiucbg9r46bni3t42edpe.apps.googleusercontent.com`
+  (a public configuration value, not a secret). Stored as the Vercel
+  production env var `VITE_GOOGLE_CLIENT_ID`; `OperatorPage`/the chat surface
+  read it via `import.meta.env.VITE_GOOGLE_CLIENT_ID`.
+- OAuth consent screen: External, app name "WasmHatch", support and developer
+  contact `yusuke8h@gmail.com`. Publishing status is **Testing** — move to
+  In production only after the launch surface is ready, and keep launch-day
+  scopes to the non-sensitive `drive.file` only (100-user cap risk while
+  unverified).
+- Enabled APIs: Drive, Sheets, Docs, Slides, Calendar, Picker.
+- Domain ownership: `wasmhatch.com` verified in Search Console via a Vercel
+  DNS TXT record (kept in place so verification persists).
+
+Remaining before submission: add the app logo on the consent screen, then
+submit the sensitive scopes for verification with the demo video below.
 
 ## 1. Requested scopes
 
