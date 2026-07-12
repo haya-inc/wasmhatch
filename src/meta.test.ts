@@ -72,6 +72,7 @@ describe("public sharing metadata", () => {
     expect(readFileSync("docs/workspace-artifact-workflows.md", "utf8")).toContain("the host derives all filesystem authority");
     expect(readme).toContain("**No server.**");
     expect(readme).toContain("held in the memory");
+    expect(readme).toContain("Remember on this device");
     expect(launchPlaybook).toContain("## Gate: the five launch conditions");
     expect(launchPlaybook).toContain("Non-sensitive `drive.file` only");
     expect(launchPlaybook).toContain("Measurement stays analytics-free");

@@ -16,6 +16,7 @@ import { CHAT_TOOLS, createChatToolExecutor, type AppliedWrite, type WritePolicy
 import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "../lib/google-connectors";
 import { GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
 import { createZipArchive } from "../lib/archive";
+import { loadChatSettings, saveChatSettings, type ChatProviderKind } from "../lib/chat-settings";
 import { isProtectedAgentPath } from "../lib/secrets";
 import {
   createWorkspaceStore,
@@ -27,7 +28,7 @@ import {
 } from "../lib/workspace";
 import { ArtifactPanel } from "./ArtifactPanel";
 
-type ProviderKind = "builtin" | "anthropic" | "openai";
+type ProviderKind = ChatProviderKind;
 
 interface ChatItem {
   id: number;
@@ -116,9 +117,14 @@ export function ChatPage() {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
-  const [provider, setProvider] = useState<ProviderKind>("builtin");
-  const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("");
+  const [initialSettings] = useState(() => loadChatSettings());
+  const restoredCloud = initialSettings.provider === "builtin" ? null : initialSettings.provider;
+  const [provider, setProvider] = useState<ProviderKind>(initialSettings.provider);
+  const [apiKey, setApiKey] = useState(restoredCloud ? initialSettings.keys[restoredCloud] ?? "" : "");
+  const [model, setModel] = useState(restoredCloud ? initialSettings.models[restoredCloud] ?? DEFAULT_MODELS[restoredCloud] : "");
+  const [rememberKey, setRememberKey] = useState(initialSettings.rememberKey);
+  const keysRef = useRef(initialSettings.keys);
+  const modelsRef = useRef(initialSettings.models);
   const [builtinAvailability, setBuiltinAvailability] = useState<string>("checking");
   const [permissionQueue, setPermissionQueue] = useState<PendingPermission[]>([]);
   const [files, setFiles] = useState<string[]>([]);
@@ -168,6 +174,18 @@ export function ChatPage() {
     });
     return () => { cancelled = true; };
   }, [files]);
+
+  useEffect(() => {
+    if (provider !== "builtin") {
+      const key = apiKey.trim();
+      if (key) keysRef.current[provider] = key;
+      else delete keysRef.current[provider];
+      const chosenModel = model.trim();
+      if (chosenModel) modelsRef.current[provider] = chosenModel;
+      else delete modelsRef.current[provider];
+    }
+    saveChatSettings({ provider, models: modelsRef.current, keys: keysRef.current, rememberKey });
+  }, [provider, apiKey, model, rememberKey]);
 
   const gate = useCallback((request: WritePermissionRequest) => {
     return new Promise<PermissionDecision>((resolve) => {
@@ -615,7 +633,13 @@ export function ChatPage() {
                 onChange={(event) => {
                   const next = event.target.value as ProviderKind;
                   setProvider(next);
-                  setModel(next === "builtin" ? "" : DEFAULT_MODELS[next]);
+                  if (next === "builtin") {
+                    setApiKey("");
+                    setModel("");
+                  } else {
+                    setApiKey(keysRef.current[next] ?? "");
+                    setModel(modelsRef.current[next] ?? DEFAULT_MODELS[next]);
+                  }
                   transcriptMessages.current = [];
                 }}
               >
@@ -638,6 +662,14 @@ export function ChatPage() {
                     onChange={(event) => setApiKey(event.target.value)}
                   />
                 </label>
+                <label className="chat-remember">
+                  <input
+                    type="checkbox"
+                    checked={rememberKey}
+                    onChange={(event) => setRememberKey(event.target.checked)}
+                  />
+                  <span>Remember on this device</span>
+                </label>
                 <label className="chat-field">
                   <span>Model</span>
                   <input
@@ -648,7 +680,10 @@ export function ChatPage() {
                   />
                 </label>
                 <p className="chat-hint">
-                  The key lives in this tab's memory only and is sent solely to {provider === "anthropic" ? "api.anthropic.com" : "api.openai.com"}.
+                  Your key goes only to {provider === "anthropic" ? "api.anthropic.com" : "api.openai.com"} — nowhere else.
+                  {rememberKey
+                    ? " It's saved in this browser until you untick the box."
+                    : " Right now it's kept just for this tab and gone when the tab closes."}
                 </p>
               </>
             )}

@@ -95,6 +95,11 @@ verification cleared.
 - WebMCP consumer experiment when Chrome ships native support — the
   standards track where an in-tab agent is structurally the right consumer.
 - Browser MCP client layer published as a standalone OSS library.
+- Passkey-protected key storage (WebAuthn PRF): the remembered API key is
+  encrypted at rest and unlocked with a fingerprint — still no server.
+- Local-first optional sync: an encrypted settings-and-connections blob in
+  the user's own Google Drive appDataFolder gives cross-device continuity
+  without a first-party server or token vault.
 
 ## Standing rules
 

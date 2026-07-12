@@ -56,8 +56,10 @@ For the technically curious — this is where WasmHatch is unusual:
 - **No server.** The entire product is a static page. Your files live in
   browser storage on your device; nothing is uploaded to us, because there is
   no "us" to upload to.
-- **Your keys stay yours.** API keys and Google tokens are held in the memory
-  of the open tab, sent only to the provider you chose, and never stored.
+- **Your keys stay yours.** Your API key is sent only to the provider you
+  chose. By default it lives just for the open tab, and ticking
+  "Remember on this device" saves it in your browser — and nowhere else.
+  Google tokens are held in the memory of the open tab and never stored.
 - **Sandboxed execution.** Generated data-transform code runs in QuickJS
   compiled to Wasm inside a Web Worker, with no network, DOM, or credential
   access.
