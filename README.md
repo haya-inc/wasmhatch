@@ -10,13 +10,17 @@ runs generated data transformations inside a resource-limited Wasm sandbox,
 and stops external writes for an explicit effect review.
 
 The initial product is foreground-only: the user keeps the tab open, credentials
-remain in connector memory, and every write requires approval. Background
+remain in a host broker outside connector, model, and script code, and every
+write requires approval. Background
 schedules, refresh-token storage, webhooks, and non-CORS APIs belong to an
 optional future server adapter rather than the static application.
 
 The foundation slice now ships:
 
-- a Google Sheets value-range connector with credentials isolated from scripts;
+- versioned local and Google Sheets connector manifests with strict core
+  compatibility, operation, origin, resource, media-type, and size boundaries;
+- a credential broker that validates unsigned connector requests before adding
+  authorization, without exposing token text to connector code;
 - an optional OpenAI Responses API planner that turns a business instruction
   and visible rows into a strict, reviewable transformation proposal;
 - QuickJS compiled to Wasm and executed in a Web Worker;
@@ -26,10 +30,12 @@ The foundation slice now ships:
 - a per-tab audit trail for reads, scripts, and writes.
 
 The current operator uses memory-only development credentials for Google Sheets
-and optional AI planning. Google OAuth, immutable write proposals, and the
-multi-step business tool loop are the next milestones.
+and optional AI planning. Google OAuth, typed tabular mutations, CSV/XLSX, and
+the multi-step business tool loop are the next milestones.
 
-See the current [product plan](docs/plan.md) and [business-agent landscape](docs/landscape.md).
+See the current [product plan](docs/plan.md), [connector authoring
+guide](docs/connector-authoring.md), and [business-agent
+landscape](docs/landscape.md).
 
 ## Legacy coding workspace
 

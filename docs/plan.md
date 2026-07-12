@@ -41,14 +41,19 @@ require a separately deployed server adapter.
 
 - A new business-operator landing page and `/operator` application route.
 - A local spreadsheet demo with editable tabular data.
-- A `GoogleSheetsConnector` that reads and writes Sheets API value ranges.
-- Access tokens held in connector memory and excluded from script input.
+- Versioned manifests for the local spreadsheet and Google Sheets connectors,
+  with strict schema and core-compatibility validation.
+- A credential broker that keeps access tokens outside connector code and adds
+  authorization only after validating operation, origin, method, path, query,
+  headers, and byte limits.
+- A `GoogleSheetsConnector` that reads and writes through the broker-bound
+  transport rather than receiving a raw token or authenticated `fetch`.
 - A provider-neutral `BusinessPlanner` boundary and OpenAI Responses API
   adapter for natural-language spreadsheet transformation plans.
 - Strict function-call output that stages a summary, expected effect,
   assumptions, warnings, and synchronous script without executing it.
 - Explicit model egress: the planning action sends only the visible task and a
-  bounded range; model and connector credentials stay in session memory.
+  bounded range; model and broker credentials stay in session memory.
 - A QuickJS runtime compiled to Wasm and loaded inside a Web Worker.
 - Synchronous JSON-to-JSON transformation scripts with CPU, memory, source,
   input, and output limits.
@@ -123,7 +128,8 @@ evidence, not a template; see [OSS Design Study](oss-design-study.md).
 | P0 CSV/XLSX and Google Sheets | **Committed** | First useful local/external data loop |
 | Browser workspace artifact model | **Committed, thin slice first** | OPFS-backed Markdown/CSV/JSON/JavaScript, manifests, proposals, and export; UI breadth follows evidence |
 | Google Drive/Docs and Calendar | **Pilot-gated candidate** | Implement the first connector with repeated demand; do not promise both in advance |
-| Linear first, Jira second | **Pilot- and feasibility-gated candidate** | Promote only after a browser auth/CORS spike and real workflow demand |
+| Linear task-system connector | **Pilot-gated browser candidate** | PKCE and browser CORS are feasible; promote only after repeated workflow demand |
+| Jira task-system connector | **Pilot-gated server candidate** | API CORS exists, but current 3LO token exchange requires a client secret; do not place it on the foreground-browser path |
 | Microsoft Graph and Gmail/Outlook mail | **Research candidate** | High auth, tenant, restricted-scope, and outbound-effect cost; no P2 delivery promise yet |
 | SQLite-Wasm | **First database spike, not yet a dependency** | Adopt only if it beats a smaller OPFS event/artifact store on recovery and transaction needs |
 | DuckDB-Wasm | **Workload-gated analytical adapter** | Add only after representative benchmarks show value |
@@ -168,6 +174,7 @@ flowchart TD
     AG["AI planner and bounded tool loop"]
     POL["Capability policy and approval"]
     CONN["Connector host"]
+    BROKER["Credential broker"]
     APIS["Business APIs"]
     VFS["Browser workspace / OPFS"]
     DB["Optional local data adapter"]
@@ -180,7 +187,8 @@ flowchart TD
     UI --> AG
     AG --> POL
     POL --> CONN
-    CONN --> APIS
+    CONN --> BROKER
+    BROKER --> APIS
     POL --> VFS
     POL --> DB
     POL --> SCRIPT
@@ -192,6 +200,7 @@ flowchart TD
     VFS --> REVIEW
     REVIEW --> POL
     CONN --> AUDIT
+    BROKER --> AUDIT
     VFS --> AUDIT
     DB --> AUDIT
     SCRIPT --> AUDIT
@@ -201,13 +210,26 @@ flowchart TD
 
 ### 5.1 Connector host
 
-Connectors own authorization state and translate typed operations to external
-APIs. A connector is not exposed as an unrestricted HTTP client.
+The host credential broker owns authorization state. Connectors translate typed
+operations into unsigned, manifest-named requests and receive only a frozen
+transport with connector ID, connector version, and `request`. Each binding also
+names the allowed operations and exact path-placeholder resources. They never
+receive token text or an unrestricted authenticated HTTP client.
+
+Each versioned manifest declares core compatibility, auth kind, allowed origins,
+operations, effect class, retry class, precondition strength, method, path
+template, query/header allowlists, body mode, media types, and request/response
+byte limits. The broker
+validates the manifest again when binding, validates every request, resolves the
+host credential provider, attaches authorization, forbids redirects, and sends
+the bounded response. See [Connector Authoring](connector-authoring.md).
 
 ```ts
 interface SpreadsheetConnector {
   readonly id: string;
   readonly label: string;
+  readonly version: string;
+  readonly manifest?: ConnectorManifest;
   read(request: SpreadsheetRange, signal?: AbortSignal): Promise<SpreadsheetSnapshot>;
   write(request: SpreadsheetWrite, signal?: AbortSignal): Promise<SpreadsheetWriteResult>;
 }
@@ -219,9 +241,10 @@ Initial Google Sheets operations:
 - `propose_write_range(spreadsheetId, range, values, inputMode)`
 - `execute_approved_write(proposalId)`
 
-The planner-facing tool must stage a proposal rather than calling `write`
-directly. The current foundation UI invokes the connector after a local review;
-the proposal-ID boundary is the next implementation step.
+The planner-facing tool stages a content-addressed proposal rather than calling
+`write` directly. After exact approval, the effect executor validates the source
+and invokes the manifest-bound connector. Local and fixture connectors use the
+same versioned contribution contract without requiring application UI.
 
 Only P0 connector delivery is committed. Later rows are ranked hypotheses that
 must pass the milestone decision gates:
@@ -231,7 +254,8 @@ must pass the milestone decision gates:
 | P0 | CSV/XLSX and Google Sheets | import, export, read range, propose range write | Foreground browser |
 | P1 candidate | Google Drive / Docs | pick a file, read/export selected content, propose document creation or update | Foreground browser with per-file `drive.file` access; repeated pilot demand required |
 | P1 candidate | Google Calendar | list bounded events, free/busy, propose event create or update | Foreground browser; attendee notifications require explicit review; repeated pilot demand required |
-| P1-P2 candidate | Linear / Jira | read issues, propose issue creation, field update, or comment | Promote Linear only after PKCE/CORS spike; Jira may require the server adapter |
+| P1 candidate | Linear | read issues, propose issue creation, field update, or comment | Browser PKCE and CORS feasibility confirmed; repeated pilot demand still required |
+| Server candidate | Jira | read issues, propose issue creation, field update, or comment | Current 3LO token exchange requires a client secret; promote only with the optional server adapter |
 | Research | Microsoft Graph | Outlook, Calendar, OneDrive, and SharePoint reads and typed proposals | Foreground SPA with PKCE where tenant policy permits; no delivery commitment |
 | Research | Gmail / Outlook Mail | bounded search/read, classify, draft reply, explicit send | Draft-first; restricted scopes, verification, and send risk require a separate gate |
 
@@ -451,7 +475,10 @@ offering.
 
 ### 7.2 Required controls
 
-- Keep credentials in connector memory and redact authorization headers.
+- Keep credentials in host broker providers; connector code, model input,
+  scripts, logs, and persisted state never receive credential text.
+- Reject undeclared connector operations, origins, paths, query parameters,
+  request headers, bodies, redirects, and oversized responses before parsing.
 - Use narrow OAuth scopes and display the active identity and account.
 - Validate range, cell type, row count, column count, and payload size.
 - Keep model egress separate from connector egress in the audit trail.
@@ -659,8 +686,13 @@ approval boundaries.
 - A candidate needs repeated demand, an acceptable license/API policy, a working
   browser auth/CORS spike or explicit server requirement, typed conflict
   semantics, and a domain-specific review design.
-- Prefer Linear before Jira when task-system demand is equal because the browser
-  feasibility can be tested independently.
+- Prefer Linear before Jira when task-system demand is equal. Linear supports
+  [PKCE](https://linear.app/developers/oauth-2-0-authentication) and its OAuth
+  token and GraphQL endpoints accepted the production origin in a browser CORS
+  preflight on 2026-07-12. Jira's
+  [API gateway supports CORS](https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#is-cors-whitelisting-supported-),
+  but its current 3LO token exchange requires a client secret and therefore
+  belongs behind the optional server adapter.
 - Mail remains draft-first. Draft approval never authorizes send; sender,
   recipients, CC/BCC, subject, body, attachments, thread, and reply/forward
   semantics require a separate send proposal.
@@ -710,14 +742,12 @@ The coding-contributor metric is retired. Product evidence is:
 
 ## 11. Immediate next issues
 
-1. Spike the connector manifest and credential broker without exposing raw
-   credentials or unrestricted authenticated HTTP.
-2. Define typed tabular mutations so preview and commit use one source.
-3. Add Google Identity Services OAuth with narrow Sheets scopes after the
-   credential-broker contract is stable.
-4. Add CSV/XLSX import and export through workspace artifacts.
-5. Continue the five pilot workflows and record evidence for architecture gates.
-6. Define the script input/output manifest and ephemeral virtual mount contract.
-7. Implement the checkpointed approval loop and policy decision envelope.
-8. Move the smallest OPFS workspace slice into the operator with export and
+1. Define typed tabular mutations so preview and commit use one source.
+2. Add Google Identity Services OAuth with narrow Sheets scopes through the
+   now-stable credential-broker contract.
+3. Add CSV/XLSX import and export through workspace artifacts.
+4. Continue the five pilot workflows and record evidence for architecture gates.
+5. Define the script input/output manifest and ephemeral virtual mount contract.
+6. Implement the checkpointed approval loop and policy decision envelope.
+7. Move the smallest OPFS workspace slice into the operator with export and
     recovery tests.

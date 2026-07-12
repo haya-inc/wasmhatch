@@ -19,13 +19,19 @@ import {
   type SpreadsheetPlan
 } from "../lib/business-planner";
 import {
-  GOOGLE_SHEETS_CONNECTOR_VERSION,
   diffSpreadsheetRows,
   GoogleSheetsConnector,
+  LocalSpreadsheetConnector,
   spreadsheetRowsFromBusinessValue,
   type SpreadsheetConnector,
   type SpreadsheetRows
 } from "../lib/spreadsheet";
+import {
+  CredentialBroker,
+  GOOGLE_SHEETS_MANIFEST,
+  LOCAL_SPREADSHEET_MANIFEST,
+  createMemoryBearerCredential
+} from "../lib/connector";
 import {
   SpreadsheetEffectExecutor,
   decideSpreadsheetEffect,
@@ -52,9 +58,20 @@ const DEFAULT_SCRIPT = `(rows) => rows.map((row, index) => {
   ];
 })`;
 
-const LOCAL_CONNECTOR = { id: "local-demo", version: "1.0.0" } as const;
-const GOOGLE_CONNECTOR = { id: "google-sheets", version: GOOGLE_SHEETS_CONNECTOR_VERSION } as const;
 const EXPLICIT_APPROVAL_POLICY = "foreground-explicit-approval-v1";
+
+function googleSheetsGrant(
+  target: { spreadsheetId: string; range: string },
+  operations: readonly ("read-range" | "write-range")[]
+) {
+  return {
+    operations,
+    pathParameters: {
+      spreadsheetId: [target.spreadsheetId.trim()],
+      range: [target.range.trim()]
+    }
+  };
+}
 
 interface AuditEntry {
   time: string;
@@ -95,6 +112,7 @@ export function OperatorPage() {
   const [range, setRange] = useState("Sheet1!A1:D20");
   const [loadedGoogleTarget, setLoadedGoogleTarget] = useState<{ spreadsheetId: string; range: string } | null>(null);
   const effectExecutor = useRef(new SpreadsheetEffectExecutor());
+  const credentialBroker = useRef(new CredentialBroker());
   const [audit, setAudit] = useState<AuditEntry[]>([
     { time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }
   ]);
@@ -129,7 +147,7 @@ export function OperatorPage() {
       const result = await runBusinessScriptInWorker(script, rows);
       const nextRows = spreadsheetRowsFromBusinessValue(result.output);
       const nextProposal = await prepareSpreadsheetEffect({
-        connector: source === "google" ? GOOGLE_CONNECTOR : LOCAL_CONNECTOR,
+        connector: source === "google" ? GOOGLE_SHEETS_MANIFEST : LOCAL_SPREADSHEET_MANIFEST,
         target: source === "google"
           ? { ...loadedGoogleTarget!, inputMode: "USER_ENTERED" }
           : { spreadsheetId: "local-demo", range: "Demo!A1", inputMode: "RAW" },
@@ -184,7 +202,11 @@ export function OperatorPage() {
     setStatus("Reading Google Sheets…");
     setError("");
     try {
-      const connector = new GoogleSheetsConnector(accessToken);
+      const connector = new GoogleSheetsConnector(credentialBroker.current.bind(
+        GOOGLE_SHEETS_MANIFEST,
+        createMemoryBearerCredential(accessToken),
+        googleSheetsGrant({ spreadsheetId, range }, ["read-range"])
+      ));
       const snapshot = await connector.read({ spreadsheetId, range });
       invalidateProposal("source range replaced by a fresh read");
       setRows(snapshot.values);
@@ -196,7 +218,7 @@ export function OperatorPage() {
       setStatus(`Loaded ${snapshot.values.length} rows from ${snapshot.range}`);
       record({
         title: "Google Sheets range read",
-        detail: `${snapshot.range} · ${snapshot.values.length} rows · token stayed in connector memory`,
+        detail: `${snapshot.range} · ${snapshot.values.length} rows · broker attached credential after manifest validation`,
         tone: "accent"
       });
     } catch (caught) {
@@ -212,24 +234,19 @@ export function OperatorPage() {
     setCommitting(true);
     setError("");
     try {
-      const isGoogle = proposal.connector.id === GOOGLE_CONNECTOR.id;
+      const isGoogle = proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id;
       setStatus(isGoogle ? "Rechecking source before the approved write…" : "Validating the approved local effect…");
       const connector: SpreadsheetConnector = isGoogle
-        ? new GoogleSheetsConnector(accessToken)
-        : {
-            ...LOCAL_CONNECTOR,
-            label: "Local demo",
-            read: async (request) => ({ ...request, values: rows.map((row) => [...row]) }),
-            write: async (request) => {
-              setRows(request.values.map((row) => [...row]));
-              return {
-                updatedRange: request.range,
-                updatedRows: request.values.length,
-                updatedColumns: request.values.reduce((maximum, row) => Math.max(maximum, row.length), 0),
-                updatedCells: proposal.summary.changedCells
-              };
-            }
-          };
+        ? new GoogleSheetsConnector(credentialBroker.current.bind(
+            GOOGLE_SHEETS_MANIFEST,
+            createMemoryBearerCredential(accessToken),
+            googleSheetsGrant(proposal.target, ["read-range", "write-range"])
+          ))
+        : new LocalSpreadsheetConnector({
+            target: proposal.target,
+            readValues: () => rows.map((row) => [...row]),
+            writeValues: (values) => setRows(values.map((row) => [...row]))
+          });
       const approval = decideSpreadsheetEffect(proposal, "approve", "foreground-user");
       const outcome = await effectExecutor.current.execute(proposal, approval, connector);
 
@@ -320,7 +337,7 @@ export function OperatorPage() {
 
       <div className="operator-layout">
         <aside className="operator-connectors" aria-label="Connectors">
-          <div className="operator-panel-heading"><span>Connectors</span><small>credentials stay here</small></div>
+          <div className="operator-panel-heading"><span>Connectors</span><small>manifest-bound broker</small></div>
           <button className={source === "demo" ? "connector-row active" : "connector-row"} onClick={resetDemo} disabled={committing}>
             <Database size={16} /><span><strong>Local demo</strong><small>No network</small></span><Check size={14} />
           </button>
@@ -362,11 +379,11 @@ export function OperatorPage() {
             <button onClick={() => void loadGoogleSheet()} disabled={committing || !accessToken.trim() || !spreadsheetId.trim() || !range.trim()}>
               <RefreshCw size={13} /> Read range
             </button>
-            <p>The token is held by the connector in this tab. It is never sent to the model or sandbox script.</p>
+            <p>The host broker holds this token and attaches it only after connector origin, operation, method, path, query, headers, and size limits pass. Connector code, the model, and sandbox scripts never receive it.</p>
           </div>
           <div className="operator-scope">
             <ShieldCheck size={16} />
-            <div><strong>Current boundary</strong><p>Foreground session only. No scheduling, refresh-token storage, or unattended writes.</p></div>
+            <div><strong>Current boundary</strong><p>Foreground session only. Manifest-bound transport, no raw connector credential, scheduling, refresh-token storage, or unattended writes.</p></div>
           </div>
         </aside>
 
@@ -422,7 +439,7 @@ export function OperatorPage() {
           <div className="operator-panel-heading"><span>Write review</span><small>{changes.length} changes</small></div>
           {proposal ? (
             <div className="change-review">
-              <div className="change-summary"><UploadCloud size={18} /><div><strong>Explicit approval required</strong><p>{changes.length} cell changes will be written to {proposal.connector.id === GOOGLE_CONNECTOR.id ? proposal.target.range : "the local demo"}.</p></div></div>
+              <div className="change-summary"><UploadCloud size={18} /><div><strong>Explicit approval required</strong><p>{changes.length} cell changes will be written to {proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? proposal.target.range : "the local demo"}.</p></div></div>
               <div className="proposal-identity" role="group" aria-label="Immutable proposal identity">
                 <span><b>Proposal</b><code>{proposal.proposalId.slice(-12)}</code></span>
                 <span><b>Source check</b><code>{proposal.baseVersion.strength}</code></span>
@@ -440,7 +457,7 @@ export function OperatorPage() {
                 {changes.length > 24 && <p>+ {changes.length - 24} more changes</p>}
               </div>
               <button className="approve-write" onClick={() => void approveWrite()} disabled={committing || !changes.length}>
-                <Check size={15} /> {committing ? "Validating source…" : `Approve and ${proposal.connector.id === GOOGLE_CONNECTOR.id ? "write range" : "apply locally"}`}
+                <Check size={15} /> {committing ? "Validating source…" : `Approve and ${proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? "write range" : "apply locally"}`}
               </button>
               <button className="reject-write" onClick={() => void rejectWrite()} disabled={committing}>Reject proposal</button>
             </div>

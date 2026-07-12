@@ -76,7 +76,7 @@ export function BusinessLandingPage() {
               <span className="active">Google Sheets</span>
               <span>Local workbook</span>
               <span>HTTP API</span>
-              <span className="connector-note">Tokens stay here</span>
+              <span className="connector-note">Broker attaches tokens after validation</span>
             </div>
             <div className="business-sheet" aria-label="Example spreadsheet changes">
               <div className="sheet-head"><span>OWNER</span><span>REGION</span><span>AMOUNT</span></div>
@@ -117,10 +117,10 @@ export function BusinessLandingPage() {
         <div className="section-label">Architecture, not magic</div>
         <div className="fit-heading">
           <h2 id="capabilities-title">Browser first.<br />Capability bound.</h2>
-          <div><p>The first release works while the user is present. Background schedules, refresh-token storage, and non-CORS APIs remain explicit future server adapters.</p><a href={`${repositoryUrl}/blob/main/docs/plan.md`}>Read the product plan <ArrowRight size={16} /></a></div>
+          <div><p>The first release works while the user is present. Versioned connector manifests bind operations and resources; the host broker keeps raw credentials out of connector code.</p><a href={`${repositoryUrl}/blob/main/docs/connector-authoring.md`}>Build a connector <ArrowRight size={16} /></a></div>
         </div>
         <div className="fit-list" aria-label="WasmHatch architecture layers">
-          <article className="fit-primary"><span>01</span><h3>Connector host</h3><p>Typed reads and writes for Sheets and business APIs</p><small>Owns credentials</small></article>
+          <article className="fit-primary"><span>01</span><h3>Connector broker</h3><p>Manifest-bound operations, resources, origins, and response limits</p><small>No raw credential in connector code</small></article>
           <article><span>02</span><h3>Agent planner</h3><p>Selects tools and prepares bounded operations</p><small>No raw tokens</small></article>
           <article><span>03</span><h3>Wasm script worker</h3><p>Transforms JSON and tabular data under CPU and memory limits</p><small>No fetch or DOM</small></article>
           <article><span>04</span><h3>Write review</h3><p>Shows exact cells and destinations before mutation</p><small>Human in loop</small></article>
@@ -167,7 +167,7 @@ export function BusinessLandingPage() {
         <div className="section-label">Trust is the operating system</div>
         <h2 id="trust-title">Local-first.<br />Effect-aware.</h2>
         <div className="trust-lines">
-          <div><span>Credentials</span><strong>Connector memory only</strong><em>01</em></div>
+          <div><span>Credentials</span><strong>Host broker only</strong><em>01</em></div>
           <div><span>Model access</span><strong>Typed, bounded tool results</strong><em>02</em></div>
           <div><span>Scripts</span><strong>Wasm Worker · no host access</strong><em>03</em></div>
           <div><span>Writes</span><strong>Cell-level approval first</strong><em>04</em></div>

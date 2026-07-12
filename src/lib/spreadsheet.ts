@@ -1,4 +1,10 @@
 import type { BusinessValue } from "./business-script";
+import {
+  GOOGLE_SHEETS_MANIFEST,
+  LOCAL_SPREADSHEET_MANIFEST,
+  type ConnectorManifest,
+  type ConnectorTransport
+} from "./connector";
 
 export type SpreadsheetCell = null | boolean | number | string;
 export type SpreadsheetRows = SpreadsheetCell[][];
@@ -33,6 +39,7 @@ export interface SpreadsheetConnector {
   readonly id: string;
   readonly label: string;
   readonly version: string;
+  readonly manifest?: ConnectorManifest;
   read(request: SpreadsheetRange, signal?: AbortSignal): Promise<SpreadsheetSnapshot>;
   write(request: SpreadsheetWrite, signal?: AbortSignal): Promise<SpreadsheetWriteResult>;
   writeConditional?(
@@ -71,7 +78,7 @@ const MAX_SPREADSHEET_ID_LENGTH = 256;
 const MAX_RANGE_LENGTH = 256;
 const MAX_ROWS = 5_000;
 const MAX_COLUMNS = 200;
-export const GOOGLE_SHEETS_CONNECTOR_VERSION = "1.0.0";
+export const GOOGLE_SHEETS_CONNECTOR_VERSION = GOOGLE_SHEETS_MANIFEST.version;
 
 function requireText(value: string, label: string, maxLength: number) {
   const normalized = value.trim();
@@ -115,16 +122,63 @@ function isKnownRejectedWriteStatus(status: number) {
   return [400, 401, 403, 404, 409, 412, 422, 429].includes(status);
 }
 
-export class GoogleSheetsConnector implements SpreadsheetConnector {
-  readonly id = "google-sheets";
-  readonly label = "Google Sheets";
-  readonly version = GOOGLE_SHEETS_CONNECTOR_VERSION;
+export interface LocalSpreadsheetConnectorOptions {
+  target: SpreadsheetRange;
+  readValues(): SpreadsheetRows;
+  writeValues(values: SpreadsheetRows): void | Promise<void>;
+}
 
-  constructor(
-    private readonly accessToken: string,
-    private readonly fetcher: typeof fetch = (input, init) => globalThis.fetch(input, init)
-  ) {
-    if (!accessToken.trim()) throw new Error("Google Sheets access token is required.");
+export class LocalSpreadsheetConnector implements SpreadsheetConnector {
+  readonly manifest = LOCAL_SPREADSHEET_MANIFEST;
+  readonly id = this.manifest.id;
+  readonly label = this.manifest.label;
+  readonly version = this.manifest.version;
+  private readonly target: SpreadsheetRange;
+
+  constructor(private readonly options: LocalSpreadsheetConnectorOptions) {
+    this.target = {
+      spreadsheetId: requireText(options.target.spreadsheetId, "Spreadsheet ID", MAX_SPREADSHEET_ID_LENGTH),
+      range: requireText(options.target.range, "Spreadsheet range", MAX_RANGE_LENGTH)
+    };
+  }
+
+  private assertTarget(request: SpreadsheetRange) {
+    const spreadsheetId = requireText(request.spreadsheetId, "Spreadsheet ID", MAX_SPREADSHEET_ID_LENGTH);
+    const range = requireText(request.range, "Spreadsheet range", MAX_RANGE_LENGTH);
+    if (spreadsheetId !== this.target.spreadsheetId || range !== this.target.range) {
+      throw new Error("Local spreadsheet connector request is outside its bound target.");
+    }
+  }
+
+  async read(request: SpreadsheetRange): Promise<SpreadsheetSnapshot> {
+    this.assertTarget(request);
+    return { ...this.target, values: validateSpreadsheetRows(this.options.readValues()) };
+  }
+
+  async write(request: SpreadsheetWrite): Promise<SpreadsheetWriteResult> {
+    this.assertTarget(request);
+    const before = validateSpreadsheetRows(this.options.readValues());
+    const values = validateSpreadsheetRows(request.values);
+    await this.options.writeValues(values.map((row) => [...row]));
+    return {
+      updatedRange: this.target.range,
+      updatedRows: values.length,
+      updatedColumns: values.reduce((maximum, row) => Math.max(maximum, row.length), 0),
+      updatedCells: diffSpreadsheetRows(before, values).length
+    };
+  }
+}
+
+export class GoogleSheetsConnector implements SpreadsheetConnector {
+  readonly manifest = GOOGLE_SHEETS_MANIFEST;
+  readonly id = this.manifest.id;
+  readonly label = this.manifest.label;
+  readonly version = this.manifest.version;
+
+  constructor(private readonly transport: ConnectorTransport) {
+    if (transport.connectorId !== this.id || transport.connectorVersion !== this.version) {
+      throw new Error("Google Sheets connector transport does not match its manifest.");
+    }
   }
 
   private endpoint(request: SpreadsheetRange) {
@@ -137,8 +191,10 @@ export class GoogleSheetsConnector implements SpreadsheetConnector {
     const endpoint = new URL(this.endpoint(request));
     endpoint.searchParams.set("majorDimension", "ROWS");
     endpoint.searchParams.set("valueRenderOption", "UNFORMATTED_VALUE");
-    const response = await this.fetcher(endpoint, {
-      headers: { authorization: `Bearer ${this.accessToken}` },
+    const response = await this.transport.request({
+      operationId: "read-range",
+      url: endpoint.toString(),
+      method: "GET",
       signal
     });
     if (!response.ok) throw apiError(response.status);
@@ -161,12 +217,11 @@ export class GoogleSheetsConnector implements SpreadsheetConnector {
     endpoint.searchParams.set("valueInputOption", request.inputMode ?? "USER_ENTERED");
     let response: Response;
     try {
-      response = await this.fetcher(endpoint, {
+      response = await this.transport.request({
+        operationId: "write-range",
+        url: endpoint.toString(),
         method: "PUT",
-        headers: {
-          authorization: `Bearer ${this.accessToken}`,
-          "content-type": "application/json"
-        },
+        headers: { "content-type": "application/json" },
         signal,
         body: JSON.stringify({ range: request.range.trim(), majorDimension: "ROWS", values })
       });

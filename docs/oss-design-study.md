@@ -639,6 +639,28 @@ discard.
 Build one local connector and one Google Sheets connector against the proposed
 manifest.
 
+Status on 2026-07-12: implemented in
+[`connector.ts`](../src/lib/connector.ts) and integrated into
+[`spreadsheet.ts`](../src/lib/spreadsheet.ts). Both local and Google Sheets
+publish strict, deeply frozen manifests. Google Sheets now receives only a
+manifest-bound transport; the host broker resolves bearer credentials after
+validating the operation, origin, method, path, query, headers, body size, and
+response size. Each transport is additionally bound to explicit operations and
+path resources, so a selected spreadsheet or range cannot be replaced by
+connector code. Redirects and connector-supplied authorization headers are blocked.
+
+The provider callback is evaluated for every request, so a future OAuth host can
+refresh credentials without returning token text to connector code. A public
+fixture transport runs the same request validation without credentials, network,
+or application UI. Tests prove unknown-field rejection, incompatible-core
+rejection, undeclared-origin rejection, secret absence from connector-visible
+objects, refresh-provider behavior, and bounded fixtures.
+
+This is a capability boundary for reviewed, bundled connector code, not a
+sandbox for arbitrary third-party JavaScript. Loading untrusted connector
+packages dynamically remains out of scope until their code executes in an
+isolated realm with the same broker protocol.
+
 Prove:
 
 - schema validation rejects unknown fields;
@@ -647,8 +669,8 @@ Prove:
 - mocked operation fixtures run without the application UI;
 - manifest compatibility checks reject unsupported core versions.
 
-Kill or redesign if the broker cannot support OAuth refresh without exposing a
-general authenticated `fetch` capability.
+Result: the broker supports refresh through a host-only token callback without
+exposing a general authenticated `fetch`; the kill condition did not trigger.
 
 ### Spike B: prepare / approve / commit with conflicts
 

@@ -68,6 +68,7 @@ test("stages an AI plan before the Wasm transform and write review", async ({ pa
 test("rechecks Google Sheets and blocks a stale approved proposal before PUT", async ({ page }) => {
   let reads = 0;
   let writes = 0;
+  const authorizationHeaders: string[] = [];
   const originalRows = [
     ["Owner", "Region", "Amount", "Stage"],
     ["  aya tanaka", " west ", "12,400", "won"],
@@ -75,6 +76,7 @@ test("rechecks Google Sheets and blocks a stale approved proposal before PUT", a
     [" mei sato ", " north", "6,250", " Won "]
   ];
   await page.route("https://sheets.googleapis.com/v4/spreadsheets/**", async (route) => {
+    authorizationHeaders.push(route.request().headers().authorization ?? "");
     if (route.request().method() === "GET") {
       reads += 1;
       const values = reads === 1
@@ -107,6 +109,7 @@ test("rechecks Google Sheets and blocks a stale approved proposal before PUT", a
   await expect(page.getByRole("cell", { name: "External edit" })).toBeVisible();
   expect(reads).toBe(2);
   expect(writes).toBe(0);
+  expect(authorizationHeaders).toEqual(["Bearer test-token", "Bearer test-token"]);
 });
 
 test("does not retry when a Google Sheets write outcome is uncertain", async ({ page }) => {
