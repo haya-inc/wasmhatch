@@ -37,6 +37,12 @@ test("keeps the general work surface calm until context or review is needed", as
   await page.getByRole("button", { name: "Compare two records" }).click();
   await expect(page.getByLabel("Business task")).toHaveValue(/Calculate each payout variance/);
   await expect(page.getByRole("cell", { name: "INV-101" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Set up AI" })).toBeEnabled();
+  await page.getByRole("button", { name: "Set up AI" }).click();
+  await expect(page.getByLabel("Sources and connectors")).toBeVisible();
+  await expect(page.getByLabel("Planner provider")).toBeVisible();
+  await expect(page.getByLabel("Planner provider")).toBeFocused();
+  await page.getByRole("button", { name: "Context" }).click();
   await page.getByRole("button", { name: "Prepare changes" }).click();
 
   await expect(page.getByLabel("Review and audit")).toBeVisible();

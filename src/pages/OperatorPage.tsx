@@ -2182,6 +2182,9 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
   const plannerRequestReady = plannerProvider === "chrome-built-in"
     ? chromePlannerRequestSupported
     : Boolean(plannerApiKey.trim());
+  const artifactPlanContextReady = Boolean(
+    workspaceAttachment || source === "artifact" && artifactWorkspacePath || googleArtifactReadReady
+  );
   const localDemoFinished = localDemoOutcome !== null;
   const journalPilotReportReady = pilotReportWorkflow === "first-run-csv"
     || pilotReportWorkflow === "local-csv"
@@ -2230,6 +2233,16 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
     if (example === "sheets" && planMode !== "spreadsheet-transform") changePlanMode("spreadsheet-transform");
     setMobileSourcesOpen(true);
     setStatus(example === "report" ? "Add a file to create a report" : "Connect a Google Sheet when you are ready");
+  };
+
+  const openPlannerSetup = () => {
+    setMobileSourcesOpen(true);
+    setStatus("Choose on-device AI or add a session-only provider key");
+    window.requestAnimationFrame(() => {
+      const settings = document.getElementById("operator-planner-settings");
+      settings?.scrollIntoView({ behavior: "smooth", block: "center" });
+      settings?.querySelector("select")?.focus({ preventScroll: true });
+    });
   };
 
   const copyPilotReport = async () => {
@@ -2423,7 +2436,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
           <div className="connector-row static planner-connector">
             <Bot size={16} /><span><strong>AI planner</strong><small>{plannerProvider === "chrome-built-in" ? "Chrome built-in · local table" : "OpenAI Responses · bounded tools"}</small></span>
           </div>
-          <div className="connector-form planner-credentials">
+          <div id="operator-planner-settings" className="connector-form planner-credentials">
             <label>Planner provider
               <select value={plannerProvider} onChange={(event) => changePlannerProvider(event.target.value as PlannerProvider)} aria-label="Planner provider" disabled={committing || planning}>
                 <option value="chrome-built-in" disabled={!chromePlannerReady}>Chrome built-in AI · {chromePlannerStatus === "checking" ? "checking" : chromePlannerStatus === "unavailable" ? "not available" : chromePlannerStatus}</option>
@@ -2576,14 +2589,20 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
               <button className={planMode === "artifact-output" ? "active" : ""} aria-pressed={planMode === "artifact-output"} onClick={() => changePlanMode("artifact-output")} disabled={planning || committing}><span>{simple ? "Create a file" : "Artifact output"}</span><small>{simple ? "review before saving" : "one reviewed file"}</small></button>
             </div>
             <div className="operator-planner-actions">
-              <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerRequestReady || !task.trim() || planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath) && !googleArtifactReadReady))}>
-                {planning ? <Square size={12} /> : plannerProvider === "chrome-built-in" ? <Bot size={14} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : simple ? "Ask WasmHatch" : plannerProvider === "chrome-built-in" ? "Draft with local AI" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
+              <button onClick={() => {
+                if (planning) cancelPlanning();
+                else if (simple && !plannerRequestReady) openPlannerSetup();
+                else void draftWithAI();
+              }} disabled={committing || (!planning && (!task.trim() || !simple && !plannerRequestReady || plannerRequestReady && planMode === "artifact-output" && !artifactPlanContextReady))}>
+                {planning ? <Square size={12} /> : plannerProvider === "chrome-built-in" ? <Bot size={14} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : simple && !plannerRequestReady ? "Set up AI" : simple ? "Ask WasmHatch" : plannerProvider === "chrome-built-in" ? "Draft with local AI" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
               </button>
               <span>{simple
                 ? !task.trim()
                   ? "Describe the outcome first. Add a file or connected sheet only when the request needs context."
                   : !plannerRequestReady
-                    ? "Add context or choose an available AI provider under Context. You can inspect the boundary before anything is sent."
+                    ? "Choose an available on-device model or add a session-only provider key. You can inspect the boundary before anything is sent."
+                    : planMode === "artifact-output" && !artifactPlanContextReady
+                      ? "Add a local file, workspace artifact, or connected Sheets range before asking WasmHatch to create a file."
                     : "WasmHatch will prepare a reviewable plan. It will not run or write automatically."
                 : plannerProvider === "chrome-built-in" && !chromePlannerRequestSupported
                 ? "Chrome built-in AI currently plans the active table only. Choose Table transform without an extra attachment, or switch to OpenAI for bounded workspace tools and artifact output."

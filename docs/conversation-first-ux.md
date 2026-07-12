@@ -48,6 +48,8 @@ they are not the default information hierarchy.
   Sheets updates;
 - optional Context and Activity panels;
 - plain-language output choices: **Update data** and **Create a file**;
+- a **Set up AI** action that reveals and focuses the provider boundary when no
+  on-device model or session provider is ready;
 - execution details collapsed by default; and
 - automatic review visibility when a real cell or file proposal is staged.
 
