@@ -50,8 +50,20 @@ import {
   type TabularArtifactFormat,
   type TabularArtifactProvenance
 } from "../lib/tabular-artifact-contract";
-import { normalizedArtifactJson, normalizedArtifactPath } from "../lib/tabular-artifact-persistence";
-import { createWorkspaceStore } from "../lib/workspace";
+import { normalizedArtifactJson, normalizedArtifactPath, parseNormalizedArtifactJson } from "../lib/tabular-artifact-persistence";
+import { createOperatorWorkspaceStore, OPERATOR_WORKSPACE_ROOT } from "../lib/operator-workspace-store";
+import {
+  createOperatorWorkspaceBundle,
+  executeOperatorWorkspaceClear,
+  executeOperatorWorkspaceRestore,
+  OPERATOR_WORKSPACE_BUNDLE_LIMITS,
+  OperatorWorkspaceRestoreUncertainError,
+  prepareOperatorWorkspaceClear,
+  prepareOperatorWorkspaceRestore,
+  type OperatorWorkspaceBundle,
+  type OperatorWorkspaceClearProposal,
+  type OperatorWorkspaceRestoreProposal
+} from "../lib/operator-workspace-bundle";
 import { createTabularWorkspaceScriptDefinition } from "../lib/tabular-workspace-script";
 import { prepareWorkspaceScriptRun } from "../lib/workspace-script";
 import { serializeWorkspaceScriptManifest } from "../lib/workspace-script-contract";
@@ -198,6 +210,13 @@ export function OperatorPage() {
   const [artifactSheetChoice, setArtifactSheetChoice] = useState("");
   const [importingArtifact, setImportingArtifact] = useState(false);
   const [exportingArtifact, setExportingArtifact] = useState(false);
+  const [workspaceArchiveBusy, setWorkspaceArchiveBusy] = useState(false);
+  const [pendingWorkspaceRestore, setPendingWorkspaceRestore] = useState<{
+    fileName: string;
+    bytes: Uint8Array;
+    proposal: OperatorWorkspaceRestoreProposal;
+  } | null>(null);
+  const [pendingWorkspaceClear, setPendingWorkspaceClear] = useState<OperatorWorkspaceClearProposal | null>(null);
   const [runningWorkspaceScript, setRunningWorkspaceScript] = useState(false);
   const [googleClientId, setGoogleClientId] = useState(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "");
   const [connectingGoogle, setConnectingGoogle] = useState(false);
@@ -208,10 +227,11 @@ export function OperatorPage() {
   const effectExecutor = useRef(new SpreadsheetEffectExecutor());
   const credentialBroker = useRef(new CredentialBroker());
   const googleOAuth = useRef(new GoogleOAuthSession());
-  const workspace = useRef(createWorkspaceStore());
+  const workspace = useRef(createOperatorWorkspaceStore());
   const runJournal = useRef<RunJournal | null>(null);
   if (!runJournal.current) runJournal.current = initialOperatorJournal();
   const artifactInput = useRef<HTMLInputElement>(null);
+  const workspaceBundleInput = useRef<HTMLInputElement>(null);
   const authorityEpoch = useRef(0);
   const scriptRevision = useRef(0);
   const taskRevision = useRef(0);
@@ -1102,6 +1122,346 @@ export function OperatorPage() {
     }
   };
 
+  const adoptRestoredWorkspace = (bundle: OperatorWorkspaceBundle) => {
+    const activePath = bundle.manifest.activeArtifactPath;
+    if (activePath) {
+      const activeFile = bundle.files.find((file) => file.path === activePath);
+      if (!activeFile) throw new Error("Restored workspace is missing its active artifact.");
+      const snapshot = parseNormalizedArtifactJson(activeFile.content);
+      setRows(snapshot.rows.map((row) => [...row]));
+      setArtifact(snapshot.provenance);
+      setArtifactWorkspacePath(activePath);
+      setArtifactSheetChoice(snapshot.provenance.sheetName);
+      setSource("artifact");
+    } else {
+      setRows(DEMO_ROWS);
+      setArtifact(null);
+      setArtifactWorkspacePath(null);
+      setArtifactSheetChoice("");
+      setSource("demo");
+    }
+    setArtifactFile(null);
+    setLoadedGoogleTarget(null);
+    setPlan(null);
+    setAgentTrace([]);
+    setAgentBudget(null);
+    scriptRevision.current += 1;
+    setScript(DEFAULT_SCRIPT);
+  };
+
+  const exportOperatorWorkspace = async () => {
+    if (workspaceArchiveBusy || committing) return;
+    if (!ensureJournalCapacity(1)) return;
+    setWorkspaceArchiveBusy(true);
+    setError("");
+    try {
+      const exported = await createOperatorWorkspaceBundle(workspace.current, {
+        activeArtifactPath: source === "artifact" ? artifactWorkspacePath : null
+      });
+      const copy = new Uint8Array(exported.bytes.byteLength);
+      copy.set(exported.bytes);
+      const url = URL.createObjectURL(new Blob([copy.buffer], { type: "application/zip" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = exported.fileName;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      setStatus(`Exported ${exported.manifest.files.length} workspace files`);
+      record({
+        title: "Operator workspace exported",
+        detail: `${exported.fileName} · ${exported.manifest.files.length} files · ${exported.manifest.totalBytes} B text · ${exported.bytes.byteLength} B ZIP`,
+        tone: "accent",
+        category: "export",
+        outcome: "completed",
+        evidence: {
+          format: "wasmhatch.operator-workspace.v1",
+          file_name: exported.fileName,
+          files: exported.manifest.files.length,
+          text_bytes: exported.manifest.totalBytes,
+          archive_bytes: exported.bytes.byteLength,
+          active_artifact_path: exported.manifest.activeArtifactPath
+        }
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Operator workspace export failed.";
+      setError(message);
+      setStatus("Operator workspace export blocked");
+      record({ title: "Operator workspace export blocked", detail: message, tone: "muted", category: "export", outcome: "failed" });
+    } finally {
+      setWorkspaceArchiveBusy(false);
+    }
+  };
+
+  const stageOperatorWorkspaceRestore = async (file: File) => {
+    if (workspaceArchiveBusy || committing) return;
+    if (!ensureJournalCapacity(2)) return;
+    setWorkspaceArchiveBusy(true);
+    setError("");
+    try {
+      if (!file.size || file.size > OPERATOR_WORKSPACE_BUNDLE_LIMITS.archiveBytes) {
+        throw new Error("Choose a non-empty WasmHatch operator workspace ZIP up to 8 MB.");
+      }
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const policyDecision = createPolicyDecisionEnvelope({
+        policyId: EXPLICIT_APPROVAL_POLICY,
+        capability: "workspace.replace",
+        resource: OPERATOR_WORKSPACE_ROOT,
+        decision: "stage",
+        actor: "host-policy",
+        reason: "Allow an exact restore proposal only; the current workspace identity must be rechecked before replacement."
+      });
+      const proposal = await prepareOperatorWorkspaceRestore(workspace.current, bytes, policyDecision.decisionId);
+      setPendingWorkspaceClear(null);
+      setPendingWorkspaceRestore({ fileName: file.name, bytes, proposal });
+      setStatus(`${proposal.bundle.files.length} restored files ready for review`);
+      record({
+        title: "Policy allowed workspace restore staging",
+        detail: `${policyDecision.decisionId.slice(-12)} · replacement authority not granted`,
+        tone: "accent",
+        category: "policy",
+        outcome: "allowed",
+        evidence: { decision_id: policyDecision.decisionId, capability: policyDecision.capability, decision: policyDecision.decision }
+      });
+      record({
+        title: "Operator workspace restore proposal prepared",
+        detail: `${proposal.proposalId.slice(-12)} · replace ${proposal.base.files.length} current files with ${proposal.bundle.files.length} reviewed files · ${proposal.bundle.totalBytes} B`,
+        tone: "accent",
+        category: "proposal",
+        outcome: "prepared",
+        evidence: {
+          proposal_id: proposal.proposalId,
+          policy_decision_id: proposal.policyDecisionId,
+          archive_sha256: proposal.archiveSha256,
+          base_sha256: proposal.base.sha256,
+          current_files: proposal.base.files.length,
+          restored_files: proposal.bundle.files.length,
+          restored_bytes: proposal.bundle.totalBytes,
+          active_artifact_path: proposal.bundle.activeArtifactPath
+        }
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Operator workspace restore could not be staged.";
+      setPendingWorkspaceRestore(null);
+      setError(message);
+      setStatus("Operator workspace restore blocked");
+      record({ title: "Operator workspace restore blocked", detail: message, tone: "muted", category: "proposal", outcome: "failed", evidence: { file_name: file.name } });
+    } finally {
+      setWorkspaceArchiveBusy(false);
+      if (workspaceBundleInput.current) workspaceBundleInput.current.value = "";
+    }
+  };
+
+  const approveOperatorWorkspaceRestore = async () => {
+    if (!pendingWorkspaceRestore || committing) return;
+    if (!ensureJournalCapacity(2) || !ensureJournalCapacity(4, true)) return;
+    planningAbort.current?.abort();
+    authorityEpoch.current += 1;
+    invalidateProposal("operator workspace restore approved");
+    setCommitting(true);
+    setError("");
+    const { proposal: restoreProposal, bytes } = pendingWorkspaceRestore;
+    record({
+      title: "Operator workspace restore approved",
+      detail: `${restoreProposal.proposalId.slice(-12)} · exact archive and current base only`,
+      tone: "accent",
+      category: "approval",
+      outcome: "approved",
+      evidence: { proposal_id: restoreProposal.proposalId, actor: "foreground-user", decision: "approve" }
+    });
+    try {
+      const outcome = await executeOperatorWorkspaceRestore(workspace.current, bytes, restoreProposal);
+      if (outcome.status === "conflict") {
+        setPendingWorkspaceRestore(null);
+        setStatus("Workspace restore blocked by a newer local state");
+        setError("The operator workspace changed after this restore was reviewed. Stage the ZIP again against the current workspace.");
+        record({
+          title: "Operator workspace restore blocked: conflict",
+          detail: `expected ${outcome.expectedBaseSha256.slice(-12)} · observed ${outcome.observedBaseSha256.slice(-12)} · no files replaced`,
+          tone: "muted",
+          category: "effect",
+          outcome: "conflict",
+          evidence: { proposal_id: restoreProposal.proposalId, expected_base_sha256: outcome.expectedBaseSha256, observed_base_sha256: outcome.observedBaseSha256 }
+        });
+        return;
+      }
+      if (!outcome.bundle) throw new Error("Committed restore did not return its validated bundle.");
+      adoptRestoredWorkspace(outcome.bundle);
+      setPendingWorkspaceRestore(null);
+      setStatus(`Restored and verified ${outcome.receipt.files} workspace files`);
+      record({
+        title: "Operator workspace restore committed",
+        detail: `${outcome.receipt.receiptId.slice(-12)} · ${outcome.receipt.files} files · ${outcome.receipt.totalBytes} B · active ${outcome.receipt.activeArtifactPath ?? "none"}`,
+        tone: "accent",
+        category: "effect",
+        outcome: "committed",
+        evidence: {
+          proposal_id: restoreProposal.proposalId,
+          receipt_id: outcome.receipt.receiptId,
+          files: outcome.receipt.files,
+          bytes: outcome.receipt.totalBytes,
+          active_artifact_path: outcome.receipt.activeArtifactPath
+        }
+      });
+    } catch (caught) {
+      const uncertain = caught instanceof OperatorWorkspaceRestoreUncertainError;
+      const message = caught instanceof Error ? caught.message : "Operator workspace restore failed.";
+      if (uncertain) setPendingWorkspaceRestore(null);
+      setError(message);
+      setStatus(uncertain ? "Workspace restore outcome requires recovery" : "Workspace restore failed; previous state verified");
+      record({
+        title: uncertain ? "Operator workspace restore uncertain" : "Operator workspace restore failed safely",
+        detail: message,
+        tone: "muted",
+        category: "effect",
+        outcome: uncertain ? "uncertain" : "failed",
+        evidence: { proposal_id: restoreProposal.proposalId, rollback_verified: !uncertain }
+      });
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  const rejectOperatorWorkspaceRestore = () => {
+    if (!pendingWorkspaceRestore || committing) return;
+    const proposalId = pendingWorkspaceRestore.proposal.proposalId;
+    setPendingWorkspaceRestore(null);
+    setStatus("Operator workspace restore rejected; current files unchanged");
+    record({ title: "Operator workspace restore rejected", detail: proposalId.slice(-12), tone: "muted", category: "approval", outcome: "rejected", evidence: { proposal_id: proposalId, actor: "foreground-user", decision: "reject" } });
+  };
+
+  const stageOperatorWorkspaceClear = async () => {
+    if (workspaceArchiveBusy || committing) return;
+    if (!ensureJournalCapacity(2)) return;
+    setWorkspaceArchiveBusy(true);
+    setError("");
+    try {
+      const policyDecision = createPolicyDecisionEnvelope({
+        policyId: EXPLICIT_APPROVAL_POLICY,
+        capability: "workspace.clear",
+        resource: OPERATOR_WORKSPACE_ROOT,
+        decision: "stage",
+        actor: "host-policy",
+        reason: "Allow an exact clear proposal only; the listed workspace identity must be rechecked before deletion."
+      });
+      const clearProposal = await prepareOperatorWorkspaceClear(workspace.current, policyDecision.decisionId);
+      if (!clearProposal.base.files.length) throw new Error("The operator workspace is already empty.");
+      setPendingWorkspaceRestore(null);
+      setPendingWorkspaceClear(clearProposal);
+      setStatus(`${clearProposal.base.files.length} workspace files ready for clear review`);
+      record({
+        title: "Policy allowed workspace clear staging",
+        detail: `${policyDecision.decisionId.slice(-12)} · delete authority not granted`,
+        tone: "accent",
+        category: "policy",
+        outcome: "allowed",
+        evidence: { decision_id: policyDecision.decisionId, capability: policyDecision.capability, decision: policyDecision.decision }
+      });
+      record({
+        title: "Operator workspace clear proposal prepared",
+        detail: `${clearProposal.proposalId.slice(-12)} · ${clearProposal.base.files.length} exact files · export before approval if needed`,
+        tone: "accent",
+        category: "proposal",
+        outcome: "prepared",
+        evidence: {
+          proposal_id: clearProposal.proposalId,
+          policy_decision_id: clearProposal.policyDecisionId,
+          base_sha256: clearProposal.base.sha256,
+          files: clearProposal.base.files.length,
+          bytes: clearProposal.base.files.reduce((total, file) => total + file.bytes, 0)
+        }
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Operator workspace clear could not be staged.";
+      setPendingWorkspaceClear(null);
+      setError(message);
+      setStatus("Operator workspace clear blocked");
+      record({ title: "Operator workspace clear blocked", detail: message, tone: "muted", category: "proposal", outcome: "failed" });
+    } finally {
+      setWorkspaceArchiveBusy(false);
+    }
+  };
+
+  const approveOperatorWorkspaceClear = async () => {
+    if (!pendingWorkspaceClear || committing) return;
+    if (!ensureJournalCapacity(2) || !ensureJournalCapacity(4, true)) return;
+    planningAbort.current?.abort();
+    authorityEpoch.current += 1;
+    invalidateProposal("operator workspace clear approved");
+    setCommitting(true);
+    setError("");
+    const clearProposal = pendingWorkspaceClear;
+    record({
+      title: "Operator workspace clear approved",
+      detail: `${clearProposal.proposalId.slice(-12)} · ${clearProposal.base.files.length} exact files`,
+      tone: "accent",
+      category: "approval",
+      outcome: "approved",
+      evidence: { proposal_id: clearProposal.proposalId, actor: "foreground-user", decision: "approve" }
+    });
+    try {
+      const outcome = await executeOperatorWorkspaceClear(workspace.current, clearProposal);
+      if (outcome.status === "conflict") {
+        setPendingWorkspaceClear(null);
+        setStatus("Workspace clear blocked by a newer local state");
+        setError("The operator workspace changed after clear review. Review the current files again.");
+        record({
+          title: "Operator workspace clear blocked: conflict",
+          detail: `expected ${outcome.expectedBaseSha256.slice(-12)} · observed ${outcome.observedBaseSha256.slice(-12)} · no files deleted`,
+          tone: "muted",
+          category: "effect",
+          outcome: "conflict",
+          evidence: { proposal_id: clearProposal.proposalId, expected_base_sha256: outcome.expectedBaseSha256, observed_base_sha256: outcome.observedBaseSha256 }
+        });
+        return;
+      }
+      adoptRestoredWorkspace({
+        manifest: {
+          schemaVersion: 1,
+          kind: "wasmhatch.operator-workspace",
+          exportedAt: new Date().toISOString(),
+          activeArtifactPath: null,
+          files: [],
+          totalBytes: 0
+        },
+        files: []
+      });
+      setPendingWorkspaceClear(null);
+      setStatus(`Cleared and verified ${outcome.receipt.files} operator workspace files`);
+      record({
+        title: "Operator workspace clear committed",
+        detail: `${outcome.receipt.receiptId.slice(-12)} · ${outcome.receipt.files} files · legacy coding workspace untouched`,
+        tone: "accent",
+        category: "effect",
+        outcome: "committed",
+        evidence: { proposal_id: clearProposal.proposalId, receipt_id: outcome.receipt.receiptId, files: outcome.receipt.files, bytes: outcome.receipt.totalBytes }
+      });
+    } catch (caught) {
+      const uncertain = caught instanceof OperatorWorkspaceRestoreUncertainError;
+      const message = caught instanceof Error ? caught.message : "Operator workspace clear failed.";
+      if (uncertain) setPendingWorkspaceClear(null);
+      setError(message);
+      setStatus(uncertain ? "Workspace clear outcome requires recovery" : "Workspace clear failed; previous state verified");
+      record({
+        title: uncertain ? "Operator workspace clear uncertain" : "Operator workspace clear failed safely",
+        detail: message,
+        tone: "muted",
+        category: "effect",
+        outcome: uncertain ? "uncertain" : "failed",
+        evidence: { proposal_id: clearProposal.proposalId, rollback_verified: !uncertain }
+      });
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  const rejectOperatorWorkspaceClear = () => {
+    if (!pendingWorkspaceClear || committing) return;
+    const proposalId = pendingWorkspaceClear.proposalId;
+    setPendingWorkspaceClear(null);
+    setStatus("Operator workspace clear rejected; files unchanged");
+    record({ title: "Operator workspace clear rejected", detail: proposalId.slice(-12), tone: "muted", category: "approval", outcome: "rejected", evidence: { proposal_id: proposalId, actor: "foreground-user", decision: "reject" } });
+  };
+
   const exportRunJournal = () => {
     setError("");
     try {
@@ -1185,6 +1545,39 @@ export function OperatorPage() {
             <p>Imports run in a Worker. Macros are rejected; formulas and external links never execute. The normalized JSON snapshot is stored without the original workbook payload.</p>
             {artifactFile && artifact && artifact.sheets.filter((sheet) => sheet.visibility === "visible").length > 1 && <div className="artifact-sheet-picker"><label>Visible worksheet<select value={artifactSheetChoice} onChange={(event) => setArtifactSheetChoice(event.target.value)} disabled={committing || importingArtifact}>{artifact.sheets.filter((sheet) => sheet.visibility === "visible").map((sheet) => <option key={sheet.name} value={sheet.name}>{sheet.name}</option>)}</select></label><button onClick={() => void importLocalArtifact(artifactFile, artifactSheetChoice)} disabled={committing || importingArtifact || artifactSheetChoice === artifact.sheetName}>Load sheet</button></div>}
             {artifact && <dl className="artifact-provenance"><div><dt>Source</dt><dd>{formatArtifactBytes(artifact.sourceBytes)} · {artifact.sourceSha256.slice(0, 12)}</dd></div><div><dt>Workspace</dt><dd>{artifactWorkspacePath ?? "memory only"}</dd></div><div><dt>Warnings</dt><dd>{artifact.warnings.length} · formulas {artifact.formulaCells} · links {artifact.externalLinks}</dd></div></dl>}
+          </div>
+          <div className="connector-form workspace-recovery">
+            <div className="workspace-recovery-actions">
+              <button onClick={() => void exportOperatorWorkspace()} disabled={committing || workspaceArchiveBusy}><Download size={13} /> {workspaceArchiveBusy ? "Checking…" : "Export workspace"}</button>
+              <button className="secondary-recovery" onClick={() => workspaceBundleInput.current?.click()} disabled={committing || workspaceArchiveBusy}><UploadCloud size={13} /> Review restore</button>
+            </div>
+            <input ref={workspaceBundleInput} className="operator-file-input" type="file" accept=".zip,application/zip" aria-label="Restore operator workspace ZIP" onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void stageOperatorWorkspaceRestore(file);
+            }} />
+            <button className="clear-operator-workspace" onClick={() => void stageOperatorWorkspaceClear()} disabled={committing || workspaceArchiveBusy}>Review workspace clear</button>
+            <p>Portable ZIP contains only bounded text artifacts from the isolated Operator namespace. Restore and clear bind the reviewed file set, recheck it, verify the result, and roll back on a proven failure.</p>
+            {pendingWorkspaceRestore && (
+              <div className="workspace-recovery-review" role="group" aria-label="Operator workspace restore review">
+                <strong>Restore approval required</strong>
+                <span>{pendingWorkspaceRestore.fileName}</span>
+                <code>{pendingWorkspaceRestore.proposal.proposalId.slice(-12)} · base {pendingWorkspaceRestore.proposal.base.sha256.slice(-12)}</code>
+                <p>Replace {pendingWorkspaceRestore.proposal.base.files.length} current files with {pendingWorkspaceRestore.proposal.bundle.files.length} files ({formatArtifactBytes(pendingWorkspaceRestore.proposal.bundle.totalBytes)}).</p>
+                <pre>{pendingWorkspaceRestore.proposal.bundle.files.map((file) => `${file.path} · ${file.bytes} B · ${file.sha256.slice(-12)}`).join("\n") || "(restore to an empty workspace)"}</pre>
+                <button onClick={() => void approveOperatorWorkspaceRestore()} disabled={committing}>Approve exact restore</button>
+                <button className="reject-recovery" onClick={rejectOperatorWorkspaceRestore} disabled={committing}>Reject restore</button>
+              </div>
+            )}
+            {pendingWorkspaceClear && (
+              <div className="workspace-recovery-review danger" role="group" aria-label="Operator workspace clear review">
+                <strong>Clear approval required</strong>
+                <code>{pendingWorkspaceClear.proposalId.slice(-12)} · base {pendingWorkspaceClear.base.sha256.slice(-12)}</code>
+                <p>Delete these {pendingWorkspaceClear.base.files.length} exact Operator files. The legacy coding workspace is a separate namespace.</p>
+                <pre>{pendingWorkspaceClear.base.files.map((file) => `${file.path} · ${file.bytes} B · ${file.sha256.slice(-12)}`).join("\n")}</pre>
+                <button onClick={() => void approveOperatorWorkspaceClear()} disabled={committing}>Approve exact clear</button>
+                <button className="reject-recovery" onClick={rejectOperatorWorkspaceClear} disabled={committing}>Reject clear</button>
+              </div>
+            )}
           </div>
           <div className={source === "google" ? "connector-row active static" : "connector-row static"}>
             <Table2 size={16} /><span><strong>Google Sheets</strong><small>{googleConnectionLabel(googleAuthStatus)}</small></span>

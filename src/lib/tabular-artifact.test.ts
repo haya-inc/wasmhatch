@@ -4,7 +4,7 @@ import {
   exportTabularArtifact,
   importTabularArtifact
 } from "./tabular-artifact";
-import { normalizedArtifactJson, normalizedArtifactPath } from "./tabular-artifact-persistence";
+import { normalizedArtifactJson, normalizedArtifactPath, parseNormalizedArtifactJson } from "./tabular-artifact-persistence";
 
 function csv(value: string) {
   return importTabularArtifact({ name: "sample.csv", mediaType: "text/csv", bytes: strToU8(value) });
@@ -175,9 +175,24 @@ describe("tabular artifact boundary", () => {
 
   it("serializes an inspectable workspace snapshot without executable workbook state", async () => {
     const snapshot = await csv("name,amount\nAya,10\n");
-    const persisted = JSON.parse(normalizedArtifactJson(snapshot)) as Record<string, unknown>;
+    const serialized = normalizedArtifactJson(snapshot);
+    const persisted = JSON.parse(serialized) as Record<string, unknown>;
 
     expect(persisted).toMatchObject({ schema: "wasmhatch.tabular-snapshot.v1", rows: [["name", "amount"], ["Aya", "10"]] });
     expect(normalizedArtifactPath(snapshot)).toMatch(/^inputs\/sample--CSV--[a-f0-9]{12}\.json$/);
+    expect(parseNormalizedArtifactJson(serialized)).toEqual(snapshot);
+    expect(Object.isFrozen(parseNormalizedArtifactJson(serialized).rows)).toBe(true);
+  });
+
+  it("rejects restored snapshots with edited provenance, dimensions, or executable-shaped fields", async () => {
+    const snapshot = await csv("name,amount\nAya,10\n");
+    const base = JSON.parse(normalizedArtifactJson(snapshot)) as Record<string, unknown>;
+    const provenance = base.provenance as Record<string, unknown>;
+    expect(() => parseNormalizedArtifactJson(JSON.stringify({ ...base, provenance: { ...provenance, rows: 99 } })))
+      .toThrow("dimensions do not match");
+    expect(() => parseNormalizedArtifactJson(JSON.stringify({ ...base, provenance: { ...provenance, sourceSha256: "not-a-hash" } })))
+      .toThrow("source hash is invalid");
+    expect(() => parseNormalizedArtifactJson(JSON.stringify({ ...base, network: true })))
+      .toThrow("missing or unsupported fields");
   });
 });

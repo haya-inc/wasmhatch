@@ -38,6 +38,9 @@ The foundation slice now ships:
   OAuth credentials, connector handles, or ambient network access;
 - immutable workspace-file proposals that recheck the manifest, source, every
   input, and output base before an approved diff is written;
+- an Operator-only OPFS namespace plus a bounded portable workspace ZIP whose
+  restore and clear proposals bind the exact archive/current file identities,
+  recheck before replacement, verify every result, and roll back proven failures;
 - a checkpointed OpenAI workspace loop that lists, searches, and reads only an
   exact artifact grant, records model egress, enforces request/token/tool budgets,
   and stops at a reviewable script proposal;
@@ -62,7 +65,8 @@ guide](docs/google-oauth.md), [CSV/XLSX artifact
 boundary](docs/tabular-artifacts.md), [workspace script and file-effect
 contract](docs/workspace-scripts.md), [checkpointed workspace agent
 loop](docs/workspace-agent-loop.md), [run journal and policy decision
-contract](docs/run-journal.md), and [business-agent
+contract](docs/run-journal.md), [Operator workspace portability and recovery
+contract](docs/operator-workspace-portability.md), and [business-agent
 landscape](docs/landscape.md).
 
 For pilots, use the [business pilot and OSS adoption
@@ -184,6 +188,7 @@ expose file deletion.
 | Checkpointed workspace AI tools | Available for one exact imported artifact grant |
 | Model-egress and agent budgets | Available for list/read/search/tabular planning loop |
 | Structured run journal | Available as an explicit credential-field-free, defensively redacted JSON export with derived pilot metrics |
+| Operator workspace export/restore | Available as a bounded text-only ZIP with exact restore/clear review, stale-base rejection, verification, and rollback |
 | OPFS workspace with localStorage fallback | Available |
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |

@@ -55,7 +55,9 @@ describe("public sharing metadata", () => {
     expect(plan).toContain("checkpointed OpenAI Responses tool loop");
     expect(readFileSync("docs/workspace-agent-loop.md", "utf8")).toContain("Provider usage is required in every response");
     expect(readFileSync("docs/run-journal.md", "utf8")).toContain("The decision ID is bound into the effect proposal");
+    expect(readFileSync("docs/operator-workspace-portability.md", "utf8")).toContain("Selecting a ZIP does not replace files");
     expect(readme).toContain("a shared run journal and policy-decision envelope");
+    expect(readme).toContain("an Operator-only OPFS namespace plus a bounded portable workspace ZIP");
     expect(launchPlaybook).toContain("five real business workflows have been attempted");
     expect(launchPlaybook).toContain("not count as evidence that the business operator succeeds");
     expect(viteConfig).toContain('"worker-src \'self\'"');

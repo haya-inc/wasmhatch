@@ -34,6 +34,8 @@ data, or exported run journals to this public repository.
 - Result: committed / rejected / conflict / uncertain / failed / abandoned
 - Proposal type: spreadsheet cells / workspace file / other
 - Changed cells or files:
+- Portable workspace exported: yes / no / not applicable
+- Clear/restore exercised: committed / rejected / conflict / uncertain / not exercised
 - Credential observed in model, script, storage, log, or journal: yes / no
 
 ## Human assessment

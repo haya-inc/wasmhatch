@@ -20,7 +20,7 @@ test("imports a CSV as a persisted value snapshot, transforms it, and exports a 
 
   const persisted = await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
-    const workspace = await root.getDirectoryHandle("wasmhatch-workspace");
+    const workspace = await root.getDirectoryHandle("wasmhatch-operator-workspace-v1");
     const inputs = await workspace.getDirectoryHandle("inputs");
     const names: string[] = [];
     for await (const [name] of (inputs as FileSystemDirectoryHandle & {
@@ -180,7 +180,7 @@ test("lets AI inspect one exact workspace snapshot through checkpointed bounded 
 
   const durableFiles = await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
-    const workspace = await root.getDirectoryHandle("wasmhatch-workspace");
+    const workspace = await root.getDirectoryHandle("wasmhatch-operator-workspace-v1");
     const names: string[] = [];
     const walk = async (directory: FileSystemDirectoryHandle, prefix = "") => {
       for await (const [name, handle] of (directory as FileSystemDirectoryHandle & {
@@ -216,7 +216,7 @@ test("runs a saved manifest against the granted snapshot and writes only after f
   await expect(page.getByLabel("Workspace file diff")).toContainText('"AYA"');
   const beforeApproval = await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
-    const workspace = await root.getDirectoryHandle("wasmhatch-workspace");
+    const workspace = await root.getDirectoryHandle("wasmhatch-operator-workspace-v1");
     const list = async (directoryName: string) => {
       const directory = await workspace.getDirectoryHandle(directoryName);
       const names: string[] = [];
@@ -237,7 +237,7 @@ test("runs a saved manifest against the granted snapshot and writes only after f
   await expect(page.getByText("Workspace file effect committed", { exact: true })).toBeVisible();
   const persisted = await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
-    const workspace = await root.getDirectoryHandle("wasmhatch-workspace");
+    const workspace = await root.getDirectoryHandle("wasmhatch-operator-workspace-v1");
     const outputs = await workspace.getDirectoryHandle("outputs");
     const names: string[] = [];
     for await (const [name] of (outputs as FileSystemDirectoryHandle & {
@@ -249,6 +249,116 @@ test("runs a saved manifest against the granted snapshot and writes only after f
   expect(persisted).toMatchObject({
     schema: "wasmhatch.tabular-output.v1",
     rows: [["Owner", "Amount"], ["AYA", 10]]
+  });
+});
+
+test("exports, reviews, clears, restores, and resumes the isolated operator workspace", async ({ page }) => {
+  await page.goto("/?view=operator");
+  await page.getByLabel("Import CSV or XLSX").setInputFiles({
+    name: "recovery.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Owner,Amount\r\naya,10\r\n", "utf8")
+  });
+  await expect(page.getByText("Local tabular artifact imported", { exact: true })).toBeVisible();
+  await page.getByRole("textbox", { name: "Sandbox transformation script" }).fill(
+    "(rows) => rows.map((row, index) => index ? [String(row[0]).toUpperCase(), Number(row[1])] : row)"
+  );
+  await page.getByRole("button", { name: "Save & stage workspace output" }).click();
+  await page.getByRole("button", { name: "Approve and write workspace file" }).click();
+  await expect(page.getByText("Workspace file effect committed", { exact: true })).toBeVisible();
+
+  await page.evaluate(async () => {
+    const origin = await navigator.storage.getDirectory();
+    const write = async (rootName: string, path: string, content: string) => {
+      const parts = path.split("/");
+      const fileName = parts.pop()!;
+      let directory = await origin.getDirectoryHandle(rootName, { create: true });
+      for (const part of parts) directory = await directory.getDirectoryHandle(part, { create: true });
+      const handle = await directory.getFileHandle(fileName, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+    };
+    await write("wasmhatch-operator-workspace-v1", "work/exceptions.csv", "Owner,Reason\naya,review\n");
+    await write("wasmhatch-operator-workspace-v1", "outputs/summary.md", "# Recovery report\n");
+    await write("wasmhatch-workspace", "legacy/keep.txt", "legacy remains\n");
+  });
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export workspace" }).click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  const archive = Buffer.concat(chunks);
+  const entries = unzipSync(archive);
+  const manifest = JSON.parse(strFromU8(entries["wasmhatch-operator-workspace/manifest.json"])) as {
+    activeArtifactPath: string;
+    files: Array<{ path: string; sha256: string }>;
+  };
+  expect(download.suggestedFilename()).toMatch(/^wasmhatch-operator-workspace-\d{4}-\d{2}-\d{2}\.zip$/);
+  expect(manifest.activeArtifactPath).toMatch(/^inputs\/recovery--CSV--[a-f0-9]{12}\.json$/);
+  expect(manifest.files.some((file) => file.path === "work/exceptions.csv")).toBe(true);
+  expect(manifest.files.some((file) => file.path === "outputs/summary.md")).toBe(true);
+  expect(manifest.files.some((file) => file.path.endsWith(".js"))).toBe(true);
+  expect(manifest.files.every((file) => /^sha256:[a-f0-9]{64}$/.test(file.sha256))).toBe(true);
+
+  await page.getByRole("button", { name: "Review workspace clear" }).click();
+  const clearReview = page.getByRole("group", { name: "Operator workspace clear review" });
+  await expect(clearReview).toContainText("work/exceptions.csv");
+  await expect(clearReview).toContainText("outputs/summary.md");
+  await clearReview.getByRole("button", { name: "Approve exact clear" }).click();
+  await expect(page.getByText("Operator workspace clear committed", { exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "aya tanaka" })).toBeVisible();
+
+  const afterClear = await page.evaluate(async () => {
+    const origin = await navigator.storage.getDirectory();
+    let operatorFiles = 0;
+    try {
+      const operator = await origin.getDirectoryHandle("wasmhatch-operator-workspace-v1");
+      for await (const _entry of (operator as FileSystemDirectoryHandle & {
+        entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+      }).entries()) operatorFiles += 1;
+    } catch { /* Clear may remove the root entirely. */ }
+    const legacy = await origin.getDirectoryHandle("wasmhatch-workspace");
+    const legacyDirectory = await legacy.getDirectoryHandle("legacy");
+    const legacyFile = await legacyDirectory.getFileHandle("keep.txt");
+    return { operatorFiles, legacy: await (await legacyFile.getFile()).text() };
+  });
+  expect(afterClear).toEqual({ operatorFiles: 0, legacy: "legacy remains\n" });
+
+  await page.getByLabel("Restore operator workspace ZIP").setInputFiles({
+    name: "recovery.zip",
+    mimeType: "application/zip",
+    buffer: archive
+  });
+  const restoreReview = page.getByRole("group", { name: "Operator workspace restore review" });
+  await expect(restoreReview).toContainText("work/exceptions.csv");
+  await expect(restoreReview).toContainText("outputs/summary.md");
+  await restoreReview.getByRole("button", { name: "Approve exact restore" }).click();
+
+  await expect(page.getByText("Operator workspace restore committed", { exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "aya", exact: true })).toBeVisible();
+  await expect(page.locator(".artifact-provenance")).toContainText("inputs/recovery--CSV--");
+  const restored = await page.evaluate(async () => {
+    const origin = await navigator.storage.getDirectory();
+    const operator = await origin.getDirectoryHandle("wasmhatch-operator-workspace-v1");
+    const work = await operator.getDirectoryHandle("work");
+    const outputs = await operator.getDirectoryHandle("outputs");
+    const csv = await work.getFileHandle("exceptions.csv");
+    const markdown = await outputs.getFileHandle("summary.md");
+    const legacy = await origin.getDirectoryHandle("wasmhatch-workspace");
+    const legacyFile = await (await legacy.getDirectoryHandle("legacy")).getFileHandle("keep.txt");
+    return {
+      csv: await (await csv.getFile()).text(),
+      markdown: await (await markdown.getFile()).text(),
+      legacy: await (await legacyFile.getFile()).text()
+    };
+  });
+  expect(restored).toEqual({
+    csv: "Owner,Reason\naya,review\n",
+    markdown: "# Recovery report\n",
+    legacy: "legacy remains\n"
   });
 });
 
@@ -266,7 +376,7 @@ test("blocks a stale workspace output after an external OPFS edit", async ({ pag
   await expect(page.getByText("Workspace file proposal prepared", { exact: true })).toBeVisible();
   await page.evaluate(async () => {
     const root = await navigator.storage.getDirectory();
-    const workspace = await root.getDirectoryHandle("wasmhatch-workspace");
+    const workspace = await root.getDirectoryHandle("wasmhatch-operator-workspace-v1");
     const outputs = await workspace.getDirectoryHandle("outputs", { create: true });
     const handle = await outputs.getFileHandle("tabular-placeholder", { create: true });
     await (await handle.createWritable()).close();

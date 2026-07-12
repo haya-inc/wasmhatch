@@ -88,4 +88,16 @@ security fixes.
 - Run journal exports are neither signed nor tamper-evident. They link policy,
   proposal, source, run, and receipt identities for inspection but do not grant
   authority, prove business correctness, or replace provider-native audit logs.
+- Operator artifacts use a dedicated OPFS/localStorage namespace separate from
+  the retained coding workspace. Operator export, restore, and clear never list
+  or mutate the legacy namespace.
+- Portable Operator ZIPs accept at most 128 bounded UTF-8 text files under the
+  documented artifact roots. Paths, types, pre-inflation sizes, expanded bytes,
+  manifest fields, active artifact provenance, and every SHA-256 are validated
+  before a restore proposal can be staged.
+- Restore and clear are immutable reviewed effects bound to a host policy
+  decision and the current workspace identity. Approval rechecks that base,
+  verifies the resulting files, and rolls back a proven failure. An unverifiable
+  rollback is terminally `uncertain`; OPFS replacement is not described as an
+  atomic cross-tab transaction.
 - Browser command execution is not yet enabled.

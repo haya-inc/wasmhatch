@@ -71,6 +71,11 @@ require a separately deployed server adapter.
   source, every input, and output base before an approved write. Each output is
   an independent proposal; multi-file atomicity is not claimed. See
   [Workspace Scripts](workspace-scripts.md).
+- A dedicated Operator OPFS/localStorage namespace and portable text-only ZIP.
+  Restore and clear bind policy, archive/current file identities, review,
+  conflict detection, result verification, bounded rollback, and terminal
+  uncertainty without touching the legacy coding workspace. See
+  [Operator Workspace Portability](operator-workspace-portability.md).
 - A checkpointed OpenAI Responses tool loop for imported workspace artifacts:
   exact path grants, bounded list/read/literal-search/tabular-window tools,
   visible model egress, cancellation, cumulative request/token/tool/egress
@@ -730,15 +735,18 @@ not automatically retried.
   imported snapshots, saved scripts/manifests, and approved output files; the
   general file browser remains.
 - Make Markdown, CSV, JSON, JavaScript, manifests, and reports visible,
-  exportable workspace artifacts. A full file-tree IDE is not an exit
-  requirement.
+  exportable workspace artifacts — portable export/review is complete for the
+  dedicated Operator namespace; a general artifact browser remains. A full
+  file-tree IDE is not an exit requirement.
 - Add bounded list, stat, range-read, and text-search tools needed by pilot
   workflows.
 - Stage create and patch behind filesystem proposals — complete for declared
   script outputs with one proposal per file. Add rename and delete only after
   their conflict and recovery semantics are proven.
 - Add source hashes, stale-proposal rejection, undo, archive export, and
-  recovery diagnostics.
+  recovery diagnostics — exact archive export, stale restore/clear rejection,
+  verified replacement, rollback, and uncertain recovery diagnostics are
+  complete; user-invoked undo of earlier committed file effects remains.
 - Persist generated scripts and manifests as inspectable workspace files —
   complete for imported tabular workflows. Fixtures, general reports, and audit
   exports remain.
@@ -860,7 +868,8 @@ The coding-contributor metric is retired. Product evidence is:
 - At least 2 pilot users repeat the workflow in a later session.
 - A workspace containing Markdown, CSV, and scripts can be exported, cleared,
   restored, and used without silent data loss. If an embedded database is
-  promoted, its portable export and restore must pass the same test.
+  promoted, its portable export and restore must pass the same test. The
+  text-workspace contract and browser E2E are complete; pilot evidence remains.
 - Every agent-read file/range/table appears in the model-egress ledger with its
   source identity and byte or row bounds.
 - Every script run records source, input manifest, limits, output manifest, and
@@ -876,6 +885,7 @@ The coding-contributor metric is retired. Product evidence is:
 1. Continue the five pilot workflows and record evidence for architecture gates.
 2. Add granted connector reads and sandbox execution to the checkpointed planner
    loop without letting model output authorize an effect.
-3. Add workspace export, restore, and recovery tests to the operator slice.
+3. Add the thin Operator artifact browser and explicit run-journal/workspace
+   attachment flow needed by pilots.
 4. Use exported run journals and pilot observations to choose the first
    post-P0 adapter spike.

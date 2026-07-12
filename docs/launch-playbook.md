@@ -81,8 +81,9 @@ rejected alternative, and an exit condition.
 
 ## Stage B: public operator pilots
 
-Begin public recruitment only after the local demo, CSV/XLSX import/export, and
-run-journal export are working on the public project page. Recruit individual
+Begin public recruitment only after the local demo, CSV/XLSX import/export,
+reviewed workspace export/restore, and run-journal export are working on the
+public project page. Recruit individual
 operators or maintainers who already handle a suitable bounded workflow; do not
 send bulk messages.
 
