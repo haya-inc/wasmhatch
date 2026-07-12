@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { SessionPermissionStore, type PermissionDecision, type WritePermissionRequest } from "./chat-permissions";
-import { CHAT_READ_MAX_LINES, CHAT_WRITE_MAX_BYTES, createChatToolExecutor } from "./chat-tools";
+import {
+  CHAT_READ_MAX_LINES,
+  CHAT_WRITE_MAX_BYTES,
+  createChatToolExecutor,
+  type AppliedWrite,
+  type WritePolicy
+} from "./chat-tools";
 import type { WorkspaceStore } from "./workspace";
 
 function memoryWorkspace(initial: Record<string, string> = {}): WorkspaceStore {
@@ -35,6 +41,7 @@ function memoryWorkspace(initial: Record<string, string> = {}): WorkspaceStore {
 function executorWith(options: {
   files?: Record<string, string>;
   decision?: PermissionDecision;
+  policy?: WritePolicy;
   onGate?: (request: WritePermissionRequest) => void;
 }) {
   const workspace = memoryWorkspace(options.files);
@@ -44,13 +51,16 @@ function executorWith(options: {
     return options.decision ?? "allow-once";
   });
   const writes: string[] = [];
+  const applied: AppliedWrite[] = [];
   const execute = createChatToolExecutor({
     workspace,
     permissions,
     gate,
-    onWrite: (path) => writes.push(path)
+    policy: () => options.policy ?? "careful",
+    onWrite: (path) => writes.push(path),
+    onAppliedWrite: (write) => applied.push(write)
   });
-  return { workspace, permissions, gate, execute, writes };
+  return { workspace, permissions, gate, execute, writes, applied };
 }
 
 describe("SessionPermissionStore", () => {
@@ -171,5 +181,52 @@ describe("createChatToolExecutor", () => {
   it("fails unknown tools", async () => {
     const { execute } = executorWith({});
     expect((await execute("mystery", {}, {})).isError).toBe(true);
+  });
+});
+
+describe("autonomous write policy", () => {
+  it("writes immediately without prompting and reports the applied diff", async () => {
+    const { execute, workspace, gate, applied } = executorWith({
+      files: { "a.txt": "old\n" },
+      policy: "autonomous"
+    });
+    const outcome = await execute("write_file", { path: "a.txt", content: "new\n" }, {});
+    expect(outcome.isError).toBeFalsy();
+    expect(outcome.content).toContain("revertible");
+    expect(gate).not.toHaveBeenCalled();
+    expect(await workspace.readFile("a.txt")).toBe("new\n");
+    expect(applied).toHaveLength(1);
+    expect(applied[0]).toMatchObject({ path: "a.txt", creates: false, before: "old\n", policy: "autonomous" });
+    expect(applied[0].diff).toContain("-old");
+    expect(applied[0].diff).toContain("+new");
+  });
+
+  it("is the default when no policy callback is supplied", async () => {
+    const workspace = memoryWorkspace({ "a.txt": "v1\n" });
+    const gate = vi.fn(async (): Promise<PermissionDecision> => "reject");
+    const execute = createChatToolExecutor({ workspace, permissions: new SessionPermissionStore(), gate });
+    const outcome = await execute("write_file", { path: "a.txt", content: "v2\n" }, {});
+    expect(outcome.isError).toBeFalsy();
+    expect(gate).not.toHaveBeenCalled();
+    expect(await workspace.readFile("a.txt")).toBe("v2\n");
+  });
+
+  it("still refuses protected paths and oversized writes", async () => {
+    const { execute, gate } = executorWith({ policy: "autonomous" });
+    expect((await execute("write_file", { path: ".env", content: "x" }, {})).isError).toBe(true);
+    const huge = "x".repeat(CHAT_WRITE_MAX_BYTES + 1);
+    expect((await execute("write_file", { path: "big.bin", content: huge }, {})).isError).toBe(true);
+    expect(gate).not.toHaveBeenCalled();
+  });
+
+  it("reports careful-mode writes through onAppliedWrite as well", async () => {
+    const { execute, applied } = executorWith({
+      files: { "a.txt": "old\n" },
+      policy: "careful",
+      decision: "allow-once"
+    });
+    await execute("write_file", { path: "a.txt", content: "new\n" }, {});
+    expect(applied).toHaveLength(1);
+    expect(applied[0].policy).toBe("careful");
   });
 });

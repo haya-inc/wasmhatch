@@ -59,9 +59,9 @@ describe("public sharing metadata", () => {
     expect(readme).toContain("Worker-isolated CSV/XLSX import");
     expect(readme).toContain("an ephemeral snapshot VFS inside QuickJS");
     expect(plan).toContain("general AI agent that runs entirely in a browser tab");
-    expect(plan).toContain("generated code executes in the Wasm sandbox");
+    expect(plan).toContain("Generated code executes in the Wasm sandbox");
     expect(plan).toContain("Outside the boundary (stated, not hidden)");
-    expect(plan).toContain("an exact diff behind a permission prompt");
+    expect(plan).toContain("Approval is a mode,");
     expect(readFileSync("docs/workspace-scripts.md", "utf8")).toContain("each output is reviewed and committed as its own proposal");
     expect(plan).toContain("BYOK streaming chat across Anthropic / OpenAI-compatible providers");
     expect(readFileSync("docs/agent-loop-design.md", "utf8")).toContain("Budgets are soft");

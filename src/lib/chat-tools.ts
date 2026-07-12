@@ -3,10 +3,15 @@
  *
  * Three tools cover the browser workspace: list_files, read_file, and
  * write_file. Reads are auto-allowed inside the workspace grant (protected
- * credential paths stay invisible); every write stops at a permission gate
- * with the exact diff unless the user already chose "always allow" for that
- * file in this session. Executors return data for the model — tool results
- * are content, never instructions.
+ * credential paths stay invisible).
+ *
+ * Writes follow the session's write policy. The default is "autonomous":
+ * the agent's write applies immediately, and the exact diff plus the prior
+ * content are reported so the UI can show what changed and offer revert —
+ * trust through visibility and reversibility, not prior consent. The
+ * opt-in "careful" policy routes each write through the permission gate
+ * (allow / always-allow / reject) before anything lands. Executors return
+ * data for the model — tool results are content, never instructions.
  */
 
 import { createReadableDiff } from "./diff";
@@ -45,8 +50,9 @@ export const CHAT_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: "write_file",
     description:
-      "Write the complete new content of one workspace file. The user reviews the exact diff and can allow or " +
-      "reject; a rejection is a final user decision, not an error to retry.",
+      "Write the complete new content of one workspace file. The exact diff stays visible to the user and the " +
+      "change is revertible; in careful mode the user approves first, and a rejection is a final decision, not " +
+      "an error to retry.",
     inputSchema: {
       type: "object",
       properties: {
@@ -59,13 +65,28 @@ export const CHAT_TOOLS: readonly AgentToolDefinition[] = [
   }
 ];
 
+export type WritePolicy = "autonomous" | "careful";
+
+export interface AppliedWrite {
+  path: string;
+  diff: string;
+  creates: boolean;
+  /** Content before the write; the UI uses it to offer revert. */
+  before: string;
+  policy: WritePolicy;
+}
+
 export interface ChatToolContext {
   workspace: WorkspaceStore;
   permissions: SessionPermissionStore;
-  /** Presents a write request to the user and resolves with their decision. */
+  /** Presents a write request to the user and resolves with their decision (careful policy only). */
   gate: PermissionGate;
-  /** Notifies the UI that an approved write landed, e.g. to refresh a file list. */
+  /** Current write policy; read per call so a mid-session toggle applies immediately. Defaults to autonomous. */
+  policy?: () => WritePolicy;
+  /** Notifies the UI that a write landed, e.g. to refresh a file list. */
   onWrite?: (path: string) => void;
+  /** Reports every applied write with its diff and prior content for visibility and revert. */
+  onAppliedWrite?: (write: AppliedWrite) => void;
 }
 
 function ok(content: string): AgentToolOutcome {
@@ -167,10 +188,12 @@ export function createChatToolExecutor(context: ChatToolContext): AgentToolExecu
       }
       if (!creates && before === content) return ok(`No change: ${path} already has exactly this content.`);
 
-      if (!context.permissions.isAlwaysAllowed(path)) {
+      const policy = context.policy?.() ?? "autonomous";
+      const diff = createReadableDiff(path, before, content);
+      if (policy === "careful" && !context.permissions.isAlwaysAllowed(path)) {
         const decision = await context.gate({
           path,
-          diff: createReadableDiff(path, before, content),
+          diff,
           creates,
           beforeBytes: encoder.encode(before).byteLength,
           afterBytes
@@ -183,7 +206,12 @@ export function createChatToolExecutor(context: ChatToolContext): AgentToolExecu
 
       await context.workspace.writeFile(path, content);
       context.onWrite?.(path);
-      return ok(`${creates ? "Created" : "Updated"} ${path} (${afterBytes.toLocaleString()} bytes) after user approval.`);
+      context.onAppliedWrite?.({ path, diff, creates, before, policy });
+      return ok(
+        policy === "careful"
+          ? `${creates ? "Created" : "Updated"} ${path} (${afterBytes.toLocaleString()} bytes) after user approval.`
+          : `${creates ? "Created" : "Updated"} ${path} (${afterBytes.toLocaleString()} bytes). The diff is visible to the user and the change is revertible.`
+      );
     }
 
     return fail(`Unknown tool: ${name}`);

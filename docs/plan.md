@@ -22,11 +22,14 @@ Three product values, in order:
 2. **Documents made in front of you.** Self-contained single-file HTML
    artifacts (reports, dashboards, slide decks) rendered in-tab in a
    sandboxed frame, downloadable, printable to PDF.
-3. **A trustworthy default posture.** Everything runs foreground, writes
-   stop at an exact diff behind a permission prompt (allow / always-allow /
-   reject), generated code executes in the Wasm sandbox, and tokens are
-   held memory-only behind the credential broker. These are quiet defaults
-   like an editor's undo — load-bearing, not the headline.
+3. **Trust through visibility, not ceremony.** The agent acts autonomously
+   by default: writes apply immediately, every change surfaces its exact
+   diff in the transcript, and one click reverts. An opt-in Careful mode
+   gates each write behind approval for the people and moments that want
+   it. Generated code executes in the Wasm sandbox and tokens are held
+   memory-only behind the credential broker. These are quiet defaults like
+   an editor's undo — load-bearing, not the headline. Approval is a mode,
+   never the message.
 
 ## The parity boundary
 

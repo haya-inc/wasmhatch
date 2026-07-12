@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="WasmHatch privacy policy: a client-side AI workspace with no WasmHatch server, no analytics, memory-only credentials, and user-approved writes."
+      content="WasmHatch privacy policy: a client-side AI workspace with no WasmHatch server, no analytics, memory-only credentials, and visible, revertible writes."
     />
     <link rel="canonical" href="https://wasmhatch.com/privacy.html" />
     <link rel="icon" href="./mark.svg" type="image/svg+xml" />
@@ -96,7 +96,7 @@
           <li>Your files, workspace, and conversation history stay on your device unless you take an action that sends them somewhere.</li>
           <li>Data leaves your browser only on your action: to the AI model provider you configure, directly to Google APIs under scopes you grant, or directly to Slack with a token you supply.</li>
           <li>Access tokens and API keys are held in the memory of the open tab only — never stored, never sent to us.</li>
-          <li>Every external write is shown to you as an exact preview and happens only after you approve it.</li>
+          <li>Every write the agent makes is shown to you with its exact change, and workspace changes can be reverted; an optional Careful mode requires your approval before each write.</li>
         </ul>
       </section>
 
@@ -104,12 +104,14 @@
         <h2>What WasmHatch is</h2>
         <p>
           WasmHatch (<a href="https://wasmhatch.com">https://wasmhatch.com</a>)
-          is an open-source, client-side AI workspace. You describe work in
-          natural language, the app plans it with an AI model you choose, and
-          it shows you the exact result — a file diff, cell changes, or an
-          event's full details — before anything durable is written. The
-          application is a static web page: all application logic runs in your
-          browser, and WasmHatch operates no backend server of its own.
+          is an open-source, client-side AI agent. You describe work in
+          natural language and the agent does it with an AI model you choose,
+          showing you the exact result of every change — a file diff, cell
+          changes, or a document link — as it works, with one-click revert for
+          workspace changes and an optional Careful mode that asks before each
+          write. The application is a static web page: all application logic
+          runs in your browser, and WasmHatch operates no backend server of
+          its own.
         </p>
       </section>
 
@@ -159,15 +161,16 @@
           <li>
             <strong>Slack.</strong> If you connect Slack with a token you
             supply, requests go directly from your browser to Slack's API using
-            that token, and any message or update is shown for your approval
-            before it is sent.
+            that token, and every message or update the agent sends is shown to
+            you in the conversation as it happens.
           </li>
         </ul>
         <p>
           A credential-broker layer inside the app keeps token and key text out
           of AI-model requests, generated scripts, and logs. Every external
           write — a spreadsheet edit, a document, a calendar event, a message —
-          requires you to approve an explicit preview first.
+          is surfaced to you with its exact content in the conversation, and an
+          optional Careful mode requires your approval before each write.
         </p>
         <p>
           Like any website, the static application files are delivered by a
@@ -185,7 +188,7 @@
           <li>No analytics, tracking, or advertising of any kind.</li>
           <li>No persistence of OAuth tokens or API keys — they live only in the memory of the open tab.</li>
           <li>No sale of data, and no sharing of your data with anyone beyond the direct, user-initiated calls listed above.</li>
-          <li>No writes to any external system without your explicit approval of the exact change.</li>
+          <li>No hidden writes: every change the agent makes to any system is shown to you with its exact content, workspace changes are revertible, and the optional Careful mode adds prior approval.</li>
         </ul>
       </section>
 

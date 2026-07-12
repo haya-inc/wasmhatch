@@ -23,17 +23,19 @@ feature. Un-advertised capability gaps kill agents; documented limits do not.
 - [ ] Chat-first UI replacing the operator wizard (transcript, streaming
       text, tool-call chips, artifact panel slot). `OperatorPage.tsx` becomes
       a parts donor and retires.
-- [ ] Effect review recast as permission prompts: reads auto-allowed by
-      connection grant; writes show the existing exact diff with
-      Allow / Always-allow-for-this-resource / Reject. Proposal/manifest
-      vocabulary disappears from UI strings.
+- [x] Autonomy by default: writes apply immediately with the exact diff
+      surfaced in the transcript and one-click revert; the opt-in Careful
+      mode gates writes behind Allow / Always-allow / Reject. Proposal and
+      manifest vocabulary disappears from UI strings. Approval is a mode,
+      never the message.
 - [ ] Remove anti-parity ceilings (one-tool-per-turn, six-call caps, egress
       caps) in favor of visible soft budgets.
 - [ ] Custom domain + production OAuth client + Sensitive-scope verification
       submitted (lead time runs in parallel with development).
 
-Exit: a real model streams, calls tools, and edits a file through a
-permission prompt end-to-end with zero legacy vocabulary on screen.
+Exit: a real model streams, calls tools, and edits a file end-to-end —
+autonomously with a visible, revertible diff — with zero legacy
+vocabulary on screen.
 
 ## Phase 1 — Connectivity and artifacts (~6 → 12 weeks)
 
@@ -51,13 +53,14 @@ permission prompt end-to-end with zero legacy vocabulary on screen.
       Calendar until verification clears, arbitrary web browsing, background
       runs, non-CORS MCP servers, admin-managed Workspace accounts.
 - [ ] The demo GIF: one uncut 30-second take — open URL, connect Google in
-      3 clicks, real AI edits a real Sheet behind a diff approval, a deck
-      appears in-tab, download.
+      3 clicks, real AI edits a real Sheet with the diff visible in the
+      transcript, a deck appears in-tab, download.
 
 Exit — the five launch conditions, one uncut take, or no launch date:
 1. Key-free path shows first tokens in under 60 seconds.
 2. Google connects in 3 clicks with no warning screen.
-3. A real write to a real Sheet lands behind a diff approval.
+3. A real write to a real Sheet lands with its diff visible in the
+   transcript.
 4. An artifact renders in-tab and downloads as a single HTML file.
 5. Every error message explains itself without jargon.
 
