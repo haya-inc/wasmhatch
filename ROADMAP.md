@@ -20,9 +20,12 @@ feature. Un-advertised capability gaps kill agents; documented limits do not.
       See `docs/agent-loop-design.md`.
 - [x] Chrome built-in AI tool-call emulation spike (`builtin-ai-loop.ts`) —
       the key-free first-run path.
-- [ ] Chat-first UI replacing the operator wizard (transcript, streaming
-      text, tool-call chips, artifact panel slot). `OperatorPage.tsx` becomes
-      a parts donor and retires.
+- [x] Chat-first UI (transcript, streaming text, tool-call chips, artifact
+      panel) shipped as `ChatPage.tsx` at `?view=chat`, the advertised entry
+      point.
+- [ ] Retire `OperatorPage.tsx` once its remaining flows (guided demos,
+      Google Sheets range effects, run journal) have chat-side homes; until
+      then it stays a parts donor.
 - [x] Autonomy by default: writes apply immediately with the exact diff
       surfaced in the transcript and one-click revert; the opt-in Careful
       mode gates writes behind Allow / Always-allow / Reject. Proposal and
@@ -31,7 +34,9 @@ feature. Un-advertised capability gaps kill agents; documented limits do not.
 - [ ] Remove anti-parity ceilings (one-tool-per-turn, six-call caps, egress
       caps) in favor of visible soft budgets.
 - [ ] Custom domain + production OAuth client + Sensitive-scope verification
-      submitted (lead time runs in parallel with development).
+      submitted (lead time runs in parallel with development). Done so far:
+      wasmhatch.com is live and the production OAuth client is provisioned;
+      the verification submission is the open step.
 
 Exit: a real model streams, calls tools, and edits a file end-to-end —
 autonomously with a visible, revertible diff — with zero legacy
@@ -42,9 +47,13 @@ vocabulary on screen.
 - [ ] Google: drive.file + Picker as an agent tool (file handover is a
       visible consent step in the conversation); create/read/write for
       Sheets, Docs, Slides via direct REST; silent token re-grant.
-- [ ] HTML artifact panel: sandboxed iframe (`srcdoc`, `allow-scripts`,
-      never `allow-same-origin`), self-contained single-file HTML as the
-      standard output (documents, dashboards, reveal.js decks, print-to-PDF).
+      Shipped so far: the agent creates Docs, Sheets, and Slides and edits
+      the ones it created (`google-connectors.ts`); Picker handover and
+      silent re-grant remain.
+- [x] HTML artifact panel: sandboxed iframe (`srcdoc`, `allow-scripts`,
+      never `allow-same-origin`) with an injected frame policy;
+      self-contained single-file HTML renders beside the chat and downloads
+      instantly (`ArtifactPanel.tsx`, `artifact.ts`).
 - [ ] Slack, staged: Incoming Webhook connector (60-second setup), then
       form-encoded body-token Web API client with guided internal-app
       manifest install; startup CORS probe with plain-language diagnostics;

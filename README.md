@@ -2,6 +2,8 @@
 
 > The AI assistant that actually does the work — right in your browser.
 
+[![CI](https://github.com/haya-inc/wasmhatch/actions/workflows/ci.yml/badge.svg)](https://github.com/haya-inc/wasmhatch/actions/workflows/ci.yml)
+
 ![WasmHatch — the AI assistant that actually does the work](https://wasmhatch.com/social-preview.png?v=0.44.0)
 
 **[Open WasmHatch](https://wasmhatch.com/?view=chat)** — free, no install, no account.
@@ -22,6 +24,8 @@ approve things first? Switch on Careful mode.
   download instantly.
 - Run with your own AI key (Claude or OpenAI), or with Chrome's built-in
   on-device model — free, no key at all.
+- Keep your work safe without an account: pin browser storage so it isn't
+  cleared, and download everything as a ZIP backup in one click.
 
 ## What it can't do yet
 
