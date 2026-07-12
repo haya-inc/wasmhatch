@@ -55,4 +55,19 @@ security fixes.
   formula prefixes are neutralized before download.
 - Original XLSX bytes are not persisted or mounted into generated scripts. The
   OPFS workspace receives a JSON value snapshot with SHA-256 provenance.
+- Workspace script source and its versioned manifest are persisted as inspectable
+  files, but QuickJS receives copied input snapshots and an in-memory virtual
+  mount only. Generated code has no live OPFS, DOM, network, connector, OAuth,
+  model-client, timer, async, or dynamic-module capability.
+- Workspace manifests grant exact input and output paths with per-file and
+  aggregate bounds. Traversal, duplicate mounts, protected credential paths,
+  undeclared reads or writes, missing required outputs, and unsupported media
+  types fail closed.
+- A workspace output is not durable until its exact file proposal is approved.
+  Commit re-hashes the persisted manifest, script source, every input, and the
+  output base. Conflicts write nothing. Unverifiable writes are terminally
+  `uncertain` and are never automatically retried.
+- Workspace file commit currently provides a `recheck` precondition, not an
+  atomic compare-and-swap guarantee across browser tabs. Multi-file output is
+  one proposal per file and is not described as a transaction.
 - Browser command execution is not yet enabled.

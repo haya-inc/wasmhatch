@@ -30,7 +30,7 @@ const workflows = [
     source: "CSV / XLSX",
     scope: "Ad-hoc analysis",
     title: "Turn raw exports into a report",
-    description: "Transform local tabular data without installing Python or uploading credentials to a script runtime."
+    description: "Save the generated script and manifest, run against an exact snapshot, then approve the output file diff."
   }
 ];
 
@@ -108,8 +108,8 @@ export function BusinessLandingPage() {
         </div>
         <div className="workflow-sequence">
           <article><span className="step-number">01</span><Database aria-hidden="true" /><h3>Connect the data</h3><p>Authorize a short-lived Google session or grant a local workbook for the foreground task.</p></article>
-          <article><span className="step-number">02</span><Play aria-hidden="true" /><h3>Run isolated logic</h3><p>The agent can compose a transformation that runs in a resource-limited Wasm Worker without network access.</p></article>
-          <article><span className="step-number">03</span><Check aria-hidden="true" /><h3>Approve the effect</h3><p>Review cell-level changes and the complete audit trail before an external API write occurs.</p></article>
+          <article><span className="step-number">02</span><Play aria-hidden="true" /><h3>Run isolated logic</h3><p>A saved script reads only its declared snapshots and writes only to ephemeral outputs in a resource-limited Wasm Worker.</p></article>
+          <article><span className="step-number">03</span><Check aria-hidden="true" /><h3>Approve the effect</h3><p>Review a cell or file diff before anything durable is written. Changed dependencies invalidate the proposal.</p></article>
         </div>
       </section>
 
@@ -123,9 +123,9 @@ export function BusinessLandingPage() {
           <article className="fit-primary"><span>01</span><h3>Artifact worker</h3><p>Turns untrusted CSV/XLSX bytes into bounded values and provenance</p><small>Value-only · no network</small></article>
           <article><span>02</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
           <article><span>03</span><h3>Agent planner</h3><p>Selects tools and prepares bounded operations</p><small>No raw tokens</small></article>
-          <article><span>04</span><h3>Wasm script worker</h3><p>Transforms JSON and tabular data under CPU and memory limits</p><small>No fetch or DOM</small></article>
-          <article><span>05</span><h3>Write review</h3><p>One typed mutation bundle drives preview and commit</p><small>Human in loop</small></article>
-          <article><span>06</span><h3>Audit trail</h3><p>Records provenance, model egress, scripts, and approvals</p><small>Inspectable</small></article>
+          <article><span>04</span><h3>Snapshot VFS</h3><p>Mounts exact copied inputs and transient declared outputs inside QuickJS</p><small>No live OPFS or network</small></article>
+          <article><span>05</span><h3>Effect review</h3><p>Cell mutations or file diffs bind the reviewed base and payload</p><small>Exact approval</small></article>
+          <article><span>06</span><h3>Recheck + receipt</h3><p>Revalidates every dependency before commit and records the result</p><small>Conflict-aware</small></article>
         </div>
       </section>
 
@@ -157,10 +157,10 @@ export function BusinessLandingPage() {
         <div className="proof-log">
           <div><span>00:00</span><p>Imported <strong>pipeline.xlsx / Forecast</strong> in a codec Worker</p></div>
           <div><span>00:02</span><p>Stored a SHA-256-bound normalized snapshot in OPFS</p></div>
-          <div><span>00:04</span><p>Ran transformation in <strong>QuickJS Wasm</strong></p></div>
-          <div><span>00:05</span><p>Sandbox had no network, token, or DOM access</p></div>
-          <div className="log-accent"><span>00:06</span><p>Staged 12 typed cell changes for approval</p></div>
-          <div><span>00:08</span><p>No external write occurred without approval</p></div>
+          <div><span>00:04</span><p>Saved an inspectable script and versioned input/output manifest</p></div>
+          <div><span>00:05</span><p>Ran <strong>QuickJS Wasm</strong> against an ephemeral snapshot VFS</p></div>
+          <div className="log-accent"><span>00:06</span><p>Staged an exact file diff; OPFS output still unchanged</p></div>
+          <div><span>00:08</span><p>Rechecked manifest, source, input, and base after approval</p></div>
         </div>
       </section>
 
@@ -171,8 +171,8 @@ export function BusinessLandingPage() {
           <div><span>Local files</span><strong>Worker codec → value snapshot</strong><em>01</em></div>
           <div><span>Credentials</span><strong>Short-lived GIS → host broker</strong><em>02</em></div>
           <div><span>Model access</span><strong>Typed, bounded tool results</strong><em>03</em></div>
-          <div><span>Scripts</span><strong>Wasm Worker · no host access</strong><em>04</em></div>
-          <div><span>Writes</span><strong>Cell-level approval first</strong><em>05</em></div>
+          <div><span>Scripts</span><strong>Snapshot VFS · no live host access</strong><em>04</em></div>
+          <div><span>Writes</span><strong>Cell or file diff approval first</strong><em>05</em></div>
           <div><span>Autonomy</span><strong>Foreground session in alpha</strong><em>06</em></div>
         </div>
         <p className="trust-note"><ShieldCheck size={20} /> The alpha deliberately excludes background execution and persisted OAuth tokens. Those require a separate server trust model.</p>

@@ -44,12 +44,23 @@ import {
   type GoogleOAuthStatus
 } from "../lib/google-oauth";
 import { exportTabularArtifactInWorker, importTabularArtifactInWorker } from "../lib/browser-tabular-artifact";
+import { runWorkspaceScriptInWorker } from "../lib/browser-workspace-script";
 import {
   type TabularArtifactFormat,
   type TabularArtifactProvenance
 } from "../lib/tabular-artifact-contract";
 import { normalizedArtifactJson, normalizedArtifactPath } from "../lib/tabular-artifact-persistence";
 import { createWorkspaceStore } from "../lib/workspace";
+import { createTabularWorkspaceScriptDefinition } from "../lib/tabular-workspace-script";
+import { prepareWorkspaceScriptRun } from "../lib/workspace-script";
+import { serializeWorkspaceScriptManifest } from "../lib/workspace-script-contract";
+import {
+  decideWorkspaceFileEffect,
+  executeWorkspaceFileEffect,
+  prepareWorkspaceFileEffects,
+  workspaceFileEffectDiff,
+  type WorkspaceFileEffectProposal
+} from "../lib/workspace-file-effect";
 
 const DEMO_ROWS: SpreadsheetRows = [
   ["Owner", "Region", "Amount", "Stage"],
@@ -122,6 +133,7 @@ export function OperatorPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const [rows, setRows] = useState<SpreadsheetRows>(DEMO_ROWS);
   const [proposal, setProposal] = useState<SpreadsheetEffectProposal | null>(null);
+  const [workspaceProposal, setWorkspaceProposal] = useState<WorkspaceFileEffectProposal | null>(null);
   const [task, setTask] = useState("Normalize names and regions, convert amounts to numbers, and standardize stages.");
   const [script, setScript] = useState(DEFAULT_SCRIPT);
   const [plan, setPlan] = useState<SpreadsheetPlan | null>(null);
@@ -138,6 +150,7 @@ export function OperatorPage() {
   const [artifactSheetChoice, setArtifactSheetChoice] = useState("");
   const [importingArtifact, setImportingArtifact] = useState(false);
   const [exportingArtifact, setExportingArtifact] = useState(false);
+  const [runningWorkspaceScript, setRunningWorkspaceScript] = useState(false);
   const [googleClientId, setGoogleClientId] = useState(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "");
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [revokingGoogle, setRevokingGoogle] = useState(false);
@@ -150,6 +163,7 @@ export function OperatorPage() {
   const workspace = useRef(createWorkspaceStore());
   const artifactInput = useRef<HTMLInputElement>(null);
   const authorityEpoch = useRef(0);
+  const scriptRevision = useRef(0);
   const [googleAuthStatus, setGoogleAuthStatus] = useState(() => googleOAuth.current.status());
   const [audit, setAudit] = useState<AuditEntry[]>([
     { time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }
@@ -158,6 +172,10 @@ export function OperatorPage() {
   const changes = useMemo(
     () => proposal ? proposal.mutations.mutations : [],
     [proposal]
+  );
+  const workspaceDiff = useMemo(
+    () => workspaceProposal ? workspaceFileEffectDiff(workspaceProposal) : "",
+    [workspaceProposal]
   );
 
   useEffect(() => {
@@ -173,19 +191,30 @@ export function OperatorPage() {
   };
 
   const invalidateProposal = (reason: string) => {
-    if (!proposal) return;
-    record({
-      title: "Write proposal invalidated",
-      detail: `${proposal.proposalId.slice(-12)} · ${reason}`,
-      tone: "muted"
-    });
-    setProposal(null);
+    if (proposal) {
+      record({
+        title: "Write proposal invalidated",
+        detail: `${proposal.proposalId.slice(-12)} · ${reason}`,
+        tone: "muted"
+      });
+      setProposal(null);
+    }
+    if (workspaceProposal) {
+      record({
+        title: "Workspace proposal invalidated",
+        detail: `${workspaceProposal.proposalId.slice(-12)} · ${reason}`,
+        tone: "muted"
+      });
+      setWorkspaceProposal(null);
+    }
   };
 
   const runScript = async () => {
+    invalidateProposal("sandbox transform requested again");
     setStatus("Running in Wasm worker…");
     setError("");
     const startingAuthorityEpoch = authorityEpoch.current;
+    const startingScriptRevision = scriptRevision.current;
     try {
       if (source === "google" && !loadedGoogleTarget) {
         throw new Error("Read the selected Google Sheets range again before preparing a write.");
@@ -193,6 +222,9 @@ export function OperatorPage() {
       const result = await runBusinessScriptInWorker(script, rows);
       if (startingAuthorityEpoch !== authorityEpoch.current) {
         throw new Error("Google authorization changed during the transform. Read the range and run the script again.");
+      }
+      if (startingScriptRevision !== scriptRevision.current) {
+        throw new Error("The sandbox script changed during execution. Run the current source again.");
       }
       const nextRows = spreadsheetRowsFromBusinessValue(result.output);
       const nextProposal = await prepareSpreadsheetEffect({
@@ -231,6 +263,7 @@ export function OperatorPage() {
       const planner = new OpenAIPlanner(plannerApiKey);
       const nextPlan = await planner.planSpreadsheetTransform({ task, rows, model: plannerModel });
       setPlan(nextPlan);
+      scriptRevision.current += 1;
       setScript(nextPlan.script);
       setStatus("AI plan staged for review");
       record({
@@ -442,10 +475,148 @@ export function OperatorPage() {
     }
   };
 
+  const runWorkspaceOutput = async () => {
+    if (!artifact || !artifactWorkspacePath || runningWorkspaceScript || committing) return;
+    invalidateProposal("workspace script requested");
+    setRunningWorkspaceScript(true);
+    setError("");
+    setStatus("Saving a manifest-bound workspace script…");
+    const startingAuthorityEpoch = authorityEpoch.current;
+    const startingScriptRevision = scriptRevision.current;
+    try {
+      const definition = createTabularWorkspaceScriptDefinition({
+        provenance: artifact,
+        inputPath: artifactWorkspacePath,
+        transformSource: script
+      });
+      await workspace.current.writeFile(definition.manifest.sourcePath, definition.source);
+      await workspace.current.writeFile(
+        definition.manifestPath,
+        serializeWorkspaceScriptManifest(definition.manifest)
+      );
+      if (
+        startingAuthorityEpoch !== authorityEpoch.current ||
+        startingScriptRevision !== scriptRevision.current
+      ) {
+        throw new Error("The source artifact or script changed while the workspace definition was saved.");
+      }
+      record({
+        title: "Workspace script definition saved",
+        detail: `${definition.manifest.sourcePath} · ${definition.manifestPath} · 1 exact input grant · 1 exact output grant`,
+        tone: "accent"
+      });
+      setStatus("Running against the granted input snapshot…");
+      const snapshot = await prepareWorkspaceScriptRun(workspace.current, definition.manifest);
+      const execution = await runWorkspaceScriptInWorker(snapshot);
+      if (
+        startingAuthorityEpoch !== authorityEpoch.current ||
+        startingScriptRevision !== scriptRevision.current
+      ) {
+        throw new Error("The source artifact or script changed during workspace execution.");
+      }
+      const proposals = await prepareWorkspaceFileEffects(
+        snapshot,
+        execution,
+        EXPLICIT_APPROVAL_POLICY
+      );
+      if (!proposals.length) {
+        setStatus("Workspace script completed with no file changes");
+        record({
+          title: "Workspace run produced no file effect",
+          detail: `${snapshot.runId.slice(-12)} · ${execution.inputBytes} B in · ${execution.outputBytes} B transient output`,
+          tone: "muted"
+        });
+        return;
+      }
+      setWorkspaceProposal(proposals[0]);
+      setStatus(`Workspace output ready for review: ${proposals[0].target.workspacePath}`);
+      record({
+        title: "Workspace file proposal prepared",
+        detail: `${snapshot.runId.slice(-12)} · ${proposals[0].proposalId.slice(-12)} · ${execution.inputBytes} B in · ${execution.outputBytes} B out · live OPFS was not mounted`,
+        tone: "accent"
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Workspace script failed.";
+      setError(message);
+      setStatus("Workspace script blocked");
+      record({ title: "Workspace script blocked", detail: message, tone: "muted" });
+    } finally {
+      setRunningWorkspaceScript(false);
+    }
+  };
+
+  const approveWorkspaceFile = async () => {
+    if (!workspaceProposal || committing) return;
+    setCommitting(true);
+    setError("");
+    setStatus("Rechecking the workspace script dependencies and output base…");
+    try {
+      const outcome = await executeWorkspaceFileEffect(
+        workspaceProposal,
+        decideWorkspaceFileEffect(workspaceProposal, "approve", "foreground-user"),
+        workspace.current
+      );
+      if (outcome.status === "committed") {
+        setWorkspaceProposal(null);
+        setStatus(`Saved ${outcome.receipt.workspacePath}`);
+        record({
+          title: "Workspace file effect committed",
+          detail: `${outcome.receipt.receiptId.slice(-12)} · ${outcome.receipt.workspacePath} · ${outcome.receipt.bytes} B · recheck`,
+          tone: "accent"
+        });
+      } else if (outcome.status === "conflict") {
+        setWorkspaceProposal(null);
+        setStatus("Workspace write blocked by source conflict");
+        setError(`${outcome.resourcePath} changed after this proposal was prepared. Run the workspace script again against current workspace state.`);
+        record({
+          title: "Workspace write blocked: conflict",
+          detail: `${outcome.resourcePath} · expected ${outcome.expectedSha256.slice(-12)} · observed ${outcome.observedSha256.slice(-12)}`,
+          tone: "muted"
+        });
+      } else if (outcome.status === "uncertain") {
+        setWorkspaceProposal(null);
+        setStatus("Workspace write outcome uncertain — reconciliation required");
+        setError(outcome.reason);
+        record({ title: "Workspace write outcome uncertain", detail: outcome.reason, tone: "muted" });
+      } else if (outcome.status === "failed") {
+        if (!outcome.retryable) setWorkspaceProposal(null);
+        setStatus(outcome.retryable ? "Workspace validation failed — safe to retry" : "Workspace effect blocked");
+        setError(outcome.reason);
+        record({ title: "Workspace effect blocked", detail: outcome.reason, tone: "muted" });
+      }
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Workspace effect execution failed.";
+      setWorkspaceProposal(null);
+      setStatus("Workspace effect outcome requires reconciliation");
+      setError(message);
+      record({ title: "Workspace effect execution failed", detail: message, tone: "muted" });
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  const rejectWorkspaceFile = async () => {
+    if (!workspaceProposal || committing) return;
+    const outcome = await executeWorkspaceFileEffect(
+      workspaceProposal,
+      decideWorkspaceFileEffect(workspaceProposal, "reject", "foreground-user"),
+      workspace.current
+    );
+    if (outcome.status === "rejected") {
+      record({ title: "Workspace file proposal rejected", detail: workspaceProposal.proposalId.slice(-12), tone: "muted" });
+      setWorkspaceProposal(null);
+      setStatus("Workspace file proposal rejected; no output was written");
+    } else if (outcome.status === "failed") {
+      setError(outcome.reason);
+      setStatus("Workspace proposal rejection could not be recorded");
+    }
+  };
+
   const resetDemo = () => {
     authorityEpoch.current += 1;
     setRows(DEMO_ROWS);
     setProposal(null);
+    setWorkspaceProposal(null);
     setPlan(null);
     setArtifact(null);
     setArtifactWorkspacePath(null);
@@ -666,18 +837,34 @@ export function OperatorPage() {
 
           <div className="operator-script">
             <div className="operator-task-label"><span>Sandbox script</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
-            <textarea value={script} onChange={(event) => { setScript(event.target.value); setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" disabled={committing} />
+            <textarea value={script} onChange={(event) => { scriptRevision.current += 1; setScript(event.target.value); setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" disabled={committing} />
             <div className="operator-script-actions">
               <button onClick={() => void runScript()} disabled={committing || connectingGoogle || revokingGoogle || (source === "google" && !loadedGoogleTarget)}><Play size={14} /> Run in Wasm sandbox</button>
-              <span>Input and output are JSON-only · 750 ms CPU limit · 32 MB memory limit</span>
+              {artifact && artifactWorkspacePath && <button className="workspace-output" onClick={() => void runWorkspaceOutput()} disabled={committing || runningWorkspaceScript}><UploadCloud size={14} /> {runningWorkspaceScript ? "Running snapshot…" : "Save & stage workspace output"}</button>}
+              <span>JSON transform or manifest-bound snapshot VFS · 750 ms · 32 MB</span>
             </div>
           </div>
           {error && <p className="operator-error" role="alert">{error}</p>}
         </section>
 
         <aside className="operator-review" aria-label="Review and audit">
-          <div className="operator-panel-heading"><span>Write review</span><small>{changes.length} changes</small></div>
-          {proposal ? (
+          <div className="operator-panel-heading"><span>Write review</span><small>{workspaceProposal ? "1 file" : `${changes.length} changes`}</small></div>
+          {workspaceProposal ? (
+            <div className="change-review workspace-file-review">
+              <div className="change-summary"><UploadCloud size={18} /><div><strong>Workspace file approval required</strong><p>The sandbox wrote only to a transient mount. Approve this exact diff to save {workspaceProposal.target.workspacePath}.</p></div></div>
+              <div className="proposal-identity" role="group" aria-label="Immutable workspace proposal identity">
+                <span><b>Proposal</b><code>{workspaceProposal.proposalId.slice(-12)}</code></span>
+                <span><b>Run</b><code>{workspaceProposal.run.runId.slice(-12)}</code></span>
+                <span><b>Base</b><code>{workspaceProposal.base.sha256.slice(-12)}</code></span>
+                <span><b>Payload</b><code>{workspaceProposal.output.bytes} bytes</code></span>
+              </div>
+              <pre className="workspace-file-diff" aria-label="Workspace file diff">{workspaceDiff.slice(0, 16_000)}{workspaceDiff.length > 16_000 ? "\n… diff preview truncated at 16 KB" : ""}</pre>
+              <button className="approve-write" onClick={() => void approveWorkspaceFile()} disabled={committing}>
+                <Check size={15} /> {committing ? "Rechecking base…" : "Approve and write workspace file"}
+              </button>
+              <button className="reject-write" onClick={() => void rejectWorkspaceFile()} disabled={committing}>Reject file proposal</button>
+            </div>
+          ) : proposal ? (
             <div className="change-review">
               <div className="change-summary"><UploadCloud size={18} /><div><strong>Explicit approval required</strong><p>{changes.length} cell changes will be written to {proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? proposal.target.range : source === "artifact" ? "the imported working snapshot" : "the local demo"}.</p></div></div>
               <div className="proposal-identity" role="group" aria-label="Immutable proposal identity">
@@ -703,7 +890,7 @@ export function OperatorPage() {
               <button className="reject-write" onClick={() => void rejectWrite()} disabled={committing}>Reject proposal</button>
             </div>
           ) : (
-            <div className="empty-review"><ShieldCheck size={22} /><strong>No pending write</strong><p>Run the sandbox script to create a cell-level preview. Nothing writes automatically.</p></div>
+            <div className="empty-review"><ShieldCheck size={22} /><strong>No pending write</strong><p>Run a transform for a cell preview, or stage a workspace output for a file diff. Nothing writes automatically.</p></div>
           )}
 
           <div className="operator-panel-heading audit-heading"><span>Audit trail</span><small>this tab</small></div>

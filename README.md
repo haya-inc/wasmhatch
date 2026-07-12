@@ -32,6 +32,12 @@ The foundation slice now ships:
 - QuickJS compiled to Wasm and executed in a Web Worker;
 - CPU, memory, source, input, and output limits;
 - spreadsheet-shaped JSON transformations with no `fetch`, DOM, or host access;
+- saved JavaScript and versioned manifests with exact workspace input/output
+  grants;
+- an ephemeral snapshot VFS inside QuickJS: scripts never receive live OPFS,
+  OAuth credentials, connector handles, or ambient network access;
+- immutable workspace-file proposals that recheck the manifest, source, every
+  input, and output base before an approved diff is written;
 - typed cell-mutation bundles that generate preview, summary, commit payload,
   and inverse receipt metadata from one immutable source;
 - explicit rejection of structural changes and ungranted formula writes;
@@ -46,7 +52,8 @@ See the current [product plan](docs/plan.md), [connector authoring
 guide](docs/connector-authoring.md), [tabular mutation
 contract](docs/tabular-mutations.md), [Google OAuth deployment
 guide](docs/google-oauth.md), [CSV/XLSX artifact
-boundary](docs/tabular-artifacts.md), and [business-agent
+boundary](docs/tabular-artifacts.md), [workspace script and file-effect
+contract](docs/workspace-scripts.md), and [business-agent
 landscape](docs/landscape.md).
 
 ## Legacy coding workspace
@@ -156,6 +163,9 @@ expose file deletion.
 | --- | --- |
 | Business-operator runtime | React UI; QuickJS Wasm script Worker; CSV/XLSX codec Worker |
 | CSV/XLSX artifact boundary | Available, value-only with provenance and safe export |
+| Manifest-bound workspace scripts | Available for imported tabular snapshots |
+| Snapshot virtual filesystem | Available; exact inputs and ephemeral outputs only |
+| Workspace file-diff approval | Available; manifest/source/input/base recheck before write |
 | OPFS workspace with localStorage fallback | Available |
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |
@@ -212,6 +222,12 @@ Local-first does not mean secret or offline.
 - Imported archives are limited to 20 MB, 500 text files, and 2 MB per file.
 - Local tabular imports are limited to 8 MB compressed, 32 MB declared XLSX
   expansion, 64 worksheets, 5,000 rows, 200 columns, and 200,000 cells.
+- Workspace scripts persist source and manifest files, but run only against copied
+  input snapshots. Their virtual filesystem has no live OPFS, DOM, network,
+  connector, credential, or model authority.
+- Workspace output remains transient until its exact unified diff is approved.
+  Commit rechecks the manifest, source, every input, and output base; conflicts
+  write nothing, while ambiguous writes require reconciliation.
 - ZIP metadata is checked before inflation for unsafe paths, duplicate normalized
   paths, excessive file counts, and more than 20 MB of accepted expanded content.
 - Paths are normalized and traversal outside the workspace is rejected.
@@ -224,20 +240,23 @@ Read the full [project plan](docs/plan.md) and [security policy](SECURITY.md).
 
 ```mermaid
 flowchart LR
-    UI[Landing page and workspace] --> FS[WorkspaceStore]
-    FS --> OPFS[OPFS]
-    FS --> LS[localStorage fallback]
-    UI --> AGENT[Bounded agent loop]
-    AGENT --> API[Anthropic Messages API]
-    AGENT --> READ[Read-only workspace tools]
-    AGENT --> STAGE[Staged file proposal]
-    STAGE --> REVIEW[User diff review]
-    REVIEW --> FS
+    UI[Operator UI] --> ART[Bounded artifact or connector snapshot]
+    ART --> FS[WorkspaceStore / OPFS]
+    UI --> PLAN[AI planner]
+    PLAN --> DEF[Saved script and manifest]
+    FS --> SNAP[Immutable input snapshot]
+    DEF --> WORKER[QuickJS Wasm Worker]
+    SNAP --> WORKER
+    WORKER --> TEMP[Ephemeral declared outputs]
+    TEMP --> EFFECT[Immutable file proposal]
+    EFFECT --> REVIEW[Exact diff approval]
+    REVIEW --> RECHECK[Recheck manifest, source, inputs, base]
+    RECHECK --> FS
 ```
 
-The browser command runtime remains an adapter rather than a core dependency.
-This lets the editing and review flow work without a proprietary or
-vendor-hosted runtime.
+The sandbox is intentionally smaller than a browser command runtime. It executes
+bounded data transforms without a proprietary or vendor-hosted container and
+without exposing the host workspace as a general filesystem.
 
 ## Contributing
 

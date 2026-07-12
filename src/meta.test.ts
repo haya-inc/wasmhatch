@@ -45,9 +45,12 @@ describe("public sharing metadata", () => {
 
     expect(readme).toContain("QuickJS compiled to Wasm and executed in a Web Worker");
     expect(readme).toContain("Worker-isolated CSV/XLSX import");
+    expect(readme).toContain("an ephemeral snapshot VFS inside QuickJS");
     expect(plan).toContain("A browser-native AI operator for visible, permissioned business work");
     expect(plan).toContain("no host functions, network, DOM, OPFS, OAuth token, or model client");
     expect(plan).toContain("formula/macro/external-link handling — complete");
+    expect(plan).toContain("Workspace file proposals that show a unified diff");
+    expect(readFileSync("docs/workspace-scripts.md", "utf8")).toContain("each output is reviewed and committed as its own proposal");
     expect(viteConfig).toContain('"worker-src \'self\'"');
     expect(viteConfig).toContain("'wasm-unsafe-eval'");
     expect(viteConfig).toContain("https://sheets.googleapis.com");

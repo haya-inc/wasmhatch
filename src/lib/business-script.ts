@@ -35,6 +35,16 @@ const DEFAULT_LIMITS = {
   maxSourceBytes: 24 * 1024
 };
 
+export interface QuickJsProgramLimits {
+  timeoutMs: number;
+  memoryLimitBytes: number;
+}
+
+export interface QuickJsProgramResult {
+  value: unknown;
+  durationMs: number;
+}
+
 let quickJsPromise: ReturnType<typeof newQuickJSWASMModuleFromVariant> | undefined;
 
 function getQuickJS() {
@@ -63,6 +73,27 @@ function errorMessage(error: unknown) {
     if (typeof message === "string" && message.trim()) return message;
   }
   return String(error);
+}
+
+export async function evaluateQuickJsProgram(
+  program: string,
+  limits: QuickJsProgramLimits
+): Promise<QuickJsProgramResult> {
+  const startedAt = performance.now();
+  try {
+    const quickJs = await getQuickJS();
+    const value = quickJs.evalCode(program, {
+      shouldInterrupt: shouldInterruptAfterDeadline(Date.now() + limits.timeoutMs),
+      memoryLimitBytes: limits.memoryLimitBytes,
+      maxStackSizeBytes: 512 * 1024
+    });
+    return { value, durationMs: Math.max(0, performance.now() - startedAt) };
+  } catch (error) {
+    const message = errorMessage(error);
+    if (/interrupted/i.test(message)) throw new Error("Script exceeded its execution time limit.");
+    if (/out of memory|memory limit/i.test(message)) throw new Error("Script exceeded its memory limit.");
+    throw new Error(message);
+  }
 }
 
 export async function executeBusinessScript(
@@ -99,14 +130,9 @@ export async function executeBusinessScript(
     })()
   `;
 
-  const startedAt = performance.now();
   try {
-    const quickJs = await getQuickJS();
-    const output = quickJs.evalCode(program, {
-      shouldInterrupt: shouldInterruptAfterDeadline(Date.now() + effective.timeoutMs),
-      memoryLimitBytes: effective.memoryLimitBytes,
-      maxStackSizeBytes: 512 * 1024
-    }) as BusinessValue;
+    const evaluated = await evaluateQuickJsProgram(program, effective);
+    const output = evaluated.value as BusinessValue;
     const serializedOutput = serializeJson(output, "Script output");
     const outputBytes = byteLength(serializedOutput);
     if (outputBytes > effective.maxOutputBytes) {
@@ -114,14 +140,13 @@ export async function executeBusinessScript(
     }
     return {
       output,
-      durationMs: Math.max(0, performance.now() - startedAt),
+      durationMs: evaluated.durationMs,
       inputBytes,
       outputBytes
     };
   } catch (error) {
     const message = errorMessage(error);
-    if (/interrupted/i.test(message)) throw new Error("Script exceeded its execution time limit.");
-    if (/out of memory|memory limit/i.test(message)) throw new Error("Script exceeded its memory limit.");
+    if (/^Script exceeded its (?:execution time|memory) limit\.$/.test(message)) throw new Error(message);
     throw new Error(`Sandbox script failed: ${message}`);
   }
 }

@@ -65,6 +65,12 @@ require a separately deployed server adapter.
 - A QuickJS runtime compiled to Wasm and loaded inside a Web Worker.
 - Synchronous JSON-to-JSON transformation scripts with CPU, memory, source,
   input, and output limits.
+- Persisted JavaScript and versioned workspace manifests with exact input/output
+  grants, immutable run snapshots, and an ephemeral in-Worker virtual mount.
+- Workspace file proposals that show a unified diff and recheck the manifest,
+  source, every input, and output base before an approved write. Each output is
+  an independent proposal; multi-file atomicity is not claimed. See
+  [Workspace Scripts](workspace-scripts.md).
 - Content-addressed, deeply frozen spreadsheet proposals that bind connector
   version, target, base snapshot, typed mutations, summary, and policy decision.
 - A strict typed mutation bundle from which preview, summary, commit values, and
@@ -158,6 +164,39 @@ evidence, not a template; see [OSS Design Study](oss-design-study.md).
 library. “Pilot-gated” requires observed workflows. “Research candidate” and
 “watchlist” must not create implementation work until promoted by a recorded
 decision.
+
+### 3.2 Canonical adoption of the proposed roadmap
+
+The roadmap is adopted with the following interpretation. Priority labels rank
+what to validate; they are not promises to ship every item in that order.
+
+1. **Adopt the browser workspace and script boundary as product architecture.**
+   OPFS-backed artifacts, the conventional directories, saved JavaScript and
+   manifests, snapshot-only inputs, ephemeral outputs, diff review, and stale
+   dependency checks are part of the canonical plan.
+2. **Keep CSV/XLSX and Google Sheets as the delivered P0 baseline.** Future
+   connector work starts only after the common workspace, tool-loop, policy, and
+   effect foundations are usable in pilots.
+3. **Treat Drive/Docs, Calendar, and Linear as an evaluation cohort, not three
+   parallel P1 commitments.** Pilot evidence promotes at most the smallest set
+   needed for a repeated cross-system workflow. Jira is evaluated with that
+   cohort but requires the server boundary under its current OAuth contract.
+4. **Do not adopt a three-database stack.** SQLite-Wasm is the first durability
+   spike, DuckDB-Wasm is a separate analytical spike, and PGlite remains outside
+   the implementation backlog. More than one engine is allowed only when
+   measured workloads prove that their distinct roles justify the operational
+   and bundle cost.
+5. **Keep Microsoft Graph and mail as research tracks.** Microsoft Graph must be
+   split by resource family. Mail remains draft-first and is not promoted merely
+   because a browser OAuth flow exists.
+6. **Run pilots in parallel with core implementation.** Milestones 5 through 8
+   are conditional branches selected by evidence from Milestone 4, not a
+   mandatory sequential delivery train.
+
+Every promotion after P0 requires a short decision record containing the pilot
+workflow, repeated demand, browser/server boundary, requested scopes, review
+surface, conflict model, bundle and runtime cost where relevant, rejected
+alternative, and measurable exit condition.
 
 The canonical implementation order is the common artifact and effect boundary
 first, followed by domain adapters. CSV/XLSX and Google Sheets converge on the
@@ -272,16 +311,17 @@ The planner-facing tool stages a content-addressed proposal rather than calling
 and invokes the manifest-bound connector. Local and fixture connectors use the
 same versioned contribution contract without requiring application UI.
 
-Only P0 connector delivery is committed. Later rows are ranked hypotheses that
-must pass the milestone decision gates:
+P0 is the delivered baseline, not the start of an unconditional connector
+queue. Later rows are ranked hypotheses that must pass the milestone decision
+gates:
 
-| Priority | Adapter | Initial typed operations | Delivery boundary |
+| Status / evaluation order | Adapter | Initial typed operations | Delivery boundary |
 | --- | --- | --- | --- |
-| P0 artifact | CSV/XLSX | validate bytes, inspect sheets, import a bounded value table, export values | Foreground local file; no credential or network authority |
-| P0 connector | Google Sheets | read range, propose range write | Foreground browser through the credential broker |
-| P1 candidate | Google Drive / Docs | pick a file, read/export selected content, propose document creation or update | Foreground browser with per-file `drive.file` access; repeated pilot demand required |
-| P1 candidate | Google Calendar | list bounded events, free/busy, propose event create or update | Foreground browser; attendee notifications require explicit review; repeated pilot demand required |
-| P1 candidate | Linear | read issues, propose issue creation, field update, or comment | Browser PKCE and CORS feasibility confirmed; repeated pilot demand still required |
+| P0 delivered baseline | CSV/XLSX | validate bytes, inspect sheets, import a bounded value table, export values | Foreground local file; no credential or network authority |
+| P0 delivered baseline | Google Sheets | read range, propose range write | Foreground browser through the credential broker |
+| First pilot-gated cohort | Google Drive / Docs | pick a file, read/export selected content, propose document creation or update | Foreground browser with per-file `drive.file` access; repeated pilot demand required |
+| First pilot-gated cohort | Google Calendar | list bounded events, free/busy, propose event create or update | Foreground browser; attendee notifications require explicit review; repeated pilot demand required |
+| First pilot-gated cohort | Linear | read issues, propose issue creation, field update, or comment | Browser PKCE and CORS feasibility confirmed; repeated pilot demand still required |
 | Server candidate | Jira | read issues, propose issue creation, field update, or comment | Current 3LO token exchange requires a client secret; promote only with the optional server adapter |
 | Research | Microsoft Graph | Outlook, Calendar, OneDrive, and SharePoint reads and typed proposals | Foreground SPA with PKCE where tenant policy permits; no delivery commitment |
 | Research | Gmail / Outlook Mail | bounded search/read, classify, draft reply, explicit send | Draft-first; restricted scopes, verification, and send risk require a separate gate |
@@ -358,6 +398,9 @@ Worker:
    state, audit indexes, structured user tables, and small transactional
    workloads. It becomes a dependency only if the spike proves recovery,
    portability, transaction, and bundle-cost advantages over smaller OPFS files.
+   The spike must choose and test an explicit OPFS VFS strategy; the default
+   concurrent VFS may require cross-origin isolation, while the SAH pool trades
+   multi-connection support for simpler deployment and higher throughput.
 2. **DuckDB-Wasm as an analytical adapter** for bounded SQL over CSV, JSON,
    Parquet, and larger local tables when pilot data justifies its bundle cost.
 3. **PGlite stays on the watchlist**, not the delivery roadmap, until Postgres
@@ -403,14 +446,16 @@ This is sufficient for filtering, mapping, normalization, joins over bounded
 data, derived columns, validation, and report shaping. Pyodide or DuckDB-Wasm
 may be added as separate runners when pilot workloads demonstrate a need.
 
-The next script contract adds a bounded virtual mount without exposing live
+The workspace script contract adds a bounded virtual mount without exposing live
 OPFS. Before execution, the host snapshots explicitly granted input files into
 the Worker. The script may read those snapshots and write only to an ephemeral
 output directory. The host then validates size, type, and path, and turns the
 result into a filesystem proposal. Scripts never receive OAuth credentials,
 connector handles, DOM access, browser storage access, or ambient network
 access. A script source file and its input/output manifest are saved together so
-the run can be inspected and repeated.
+the run can be inspected and repeated. The initial tabular integration and
+one-file approval path are complete; general planner tools and broader workspace
+UI remain Milestone 3 work. See [Workspace Scripts](workspace-scripts.md).
 
 QuickJS remains the default JavaScript runner. Pyodide is a later optional
 runner for pandas and existing Python workflows; it must implement the same
@@ -670,18 +715,22 @@ not automatically retried.
 
 ### Milestone 3: Browser-local workspace vertical slice
 
-- Move the reusable OPFS workspace into the operator surface.
+- Move the reusable OPFS workspace into the operator surface — complete for
+  imported snapshots, saved scripts/manifests, and approved output files; the
+  general file browser remains.
 - Make Markdown, CSV, JSON, JavaScript, manifests, and reports visible,
   exportable workspace artifacts. A full file-tree IDE is not an exit
   requirement.
 - Add bounded list, stat, range-read, and text-search tools needed by pilot
   workflows.
-- Stage create and patch behind filesystem proposals; add rename and delete only
-  after their conflict and recovery semantics are proven.
+- Stage create and patch behind filesystem proposals — complete for declared
+  script outputs with one proposal per file. Add rename and delete only after
+  their conflict and recovery semantics are proven.
 - Add source hashes, stale-proposal rejection, undo, archive export, and
   recovery diagnostics.
-- Persist generated scripts, manifests, fixtures, reports, and audit exports as
-  inspectable workspace files.
+- Persist generated scripts and manifests as inspectable workspace files —
+  complete for imported tabular workflows. Fixtures, general reports, and audit
+  exports remain.
 
 Exit condition: the agent can inspect granted workspace files, generate a
 Markdown or CSV output plus a script, run the script against an explicit input
@@ -811,7 +860,6 @@ The coding-contributor metric is retired. Product evidence is:
 ## 11. Immediate next issues
 
 1. Continue the five pilot workflows and record evidence for architecture gates.
-2. Define the script input/output manifest and ephemeral virtual mount contract.
+2. Add bounded workspace list/read/search tools to the checkpointed planner loop.
 3. Implement the checkpointed approval loop and policy decision envelope.
-4. Move the smallest OPFS workspace slice into the operator with export and
-   recovery tests.
+4. Add workspace export, restore, and recovery tests to the operator slice.
