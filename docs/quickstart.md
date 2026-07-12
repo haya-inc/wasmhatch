@@ -5,13 +5,16 @@ the browser, makes no network request, and stops before a durable change.
 
 ## 60-second local demo
 
-Open the [guided local demo](https://haya-inc.github.io/wasmhatch/?view=operator&demo=local).
+Open the [guided local demo](https://haya-inc.github.io/wasmhatch/?view=work&demo=local).
 
-1. Select **Run bounded transform**. The preset synchronous function executes in
+1. Select **Prepare changes**. The preset synchronous function executes in
    the QuickJS Wasm Worker against the four copied demo rows.
-2. Inspect the 12 typed before/after cells. The working data is still unchanged.
+2. Activity opens automatically. Inspect the 12 typed before/after cells. The
+   working data is still unchanged.
 3. Select **Approve and apply locally**, or reject the proposal. Approval changes
    only the in-tab demo state.
+4. Copy the source-free result shown in the conversation and, if you choose,
+   open the public feedback form.
 
 No account, API key, OAuth client, upload, or server is involved. The guide is a
 product walkthrough, not an authorization shortcut: script execution and effect
@@ -21,11 +24,11 @@ visible while connector and credential settings stay collapsed behind
 
 ## Invoice reconciliation sample
 
-Open the [guided reconciliation sample](https://haya-inc.github.io/wasmhatch/?view=operator&demo=reconciliation).
+Open the [guided reconciliation sample](https://haya-inc.github.io/wasmhatch/?view=work&demo=reconciliation).
 
 1. Review the bundled synthetic ERP and payout values. One invoice differs and
    one payout is missing.
-2. Select **Run bounded transform**. QuickJS derives only the variance and status
+2. Select **Prepare changes**. QuickJS derives only the variance and status
    fields; source identifiers and amounts remain unchanged.
 3. Inspect the seven typed changes, including `REVIEW` and `MISSING`, then approve
    or reject the local effect.
@@ -36,7 +39,7 @@ network request and contains no real invoice or customer data.
 
 ## Try a local workbook
 
-Open the [real-file entry](https://haya-inc.github.io/wasmhatch/?view=operator&start=upload)
+Open the [real-file entry](https://haya-inc.github.io/wasmhatch/?view=work&start=upload)
 to start with the local source picker instead of a synthetic demo.
 
 1. Select **CSV / XLSX** and choose a bounded workbook. If you do not have a
@@ -45,11 +48,12 @@ to start with the local source picker instead of a synthetic demo.
    QuickJS sandbox, typed review, and safe export path as a user-selected CSV.
 2. Review the detected sheet, dimensions, source hash, formula count, external
    link count, and warnings.
-3. On a compatible Chrome desktop, keep **Chrome built-in AI** selected, enter
-   the task, and choose **Draft with local AI**. Chrome may first download its
+3. On a compatible Chrome desktop, keep **Chrome built-in AI** selected under
+   **Context**, enter the task, and choose **Ask WasmHatch**. Chrome may first download its
    model, but the task and rows stay on the device. On other browsers, select
    the OpenAI session planner or edit the script manually.
-4. Inspect or edit the staged script, then run it in the QuickJS Wasm Worker.
+4. Expand **View execution details** if you want to inspect or edit the staged
+   script, then prepare the changes in the QuickJS Wasm Worker.
 5. Review the typed cell proposal before applying it to the working snapshot.
 6. Export a safe CSV/value-only XLSX, or save a manifest-bound workspace output.
 
@@ -70,7 +74,7 @@ origin and a memory-only OpenAI API key.
 
 1. Connect Google Sheets and load one exact range.
 2. Confirm **AI read grant ready** for the displayed range.
-3. Choose **Artifact output**, enter the task, and start the AI plan.
+3. Choose **Create a file**, enter the task, and start the AI plan.
 4. If requested, the host re-reads only that range and materializes a
    credential-free content-addressed JSON input.
 5. Review the generated script and output identity, run it in QuickJS, inspect
@@ -83,9 +87,9 @@ for the complete authority and stale-state rules.
 ## Pilot evidence
 
 After a guided demo, local CSV/XLSX workflow, or foreground Google Sheets
-workflow commits—or you reject its proposal—select **Copy pilot report**. The
-guided action appears in the walkthrough; real-workflow actions appear beside
-**Export JSON** in the run journal. WasmHatch derives a Markdown summary from
+workflow commits—or you reject its proposal—select **Copy source-free result**
+in the conversation. The same action remains available in **Activity** beside
+**Export JSON**. WasmHatch derives a Markdown summary from
 host-defined workflow metadata and aggregate run metrics only. It excludes
 source rows, file names, sheet targets, task text, resource identifiers, and the
 run ID. A rejected report states that no effect occurred from that proposal and

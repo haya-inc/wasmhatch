@@ -9,11 +9,11 @@ describe the outcome first; add context and technical detail only when needed.
 
 [Open the advanced business operator](https://haya-inc.github.io/wasmhatch/?view=operator)
 
-[Run the 60-second local demo](https://haya-inc.github.io/wasmhatch/?view=operator&demo=local) — no account, API key, OAuth, upload, or server required.
+[Run the 60-second local demo](https://haya-inc.github.io/wasmhatch/?view=work&demo=local) — no account, API key, OAuth, upload, or server required.
 
-[Try invoice reconciliation](https://haya-inc.github.io/wasmhatch/?view=operator&demo=reconciliation) — compare synthetic ERP and payout values, then review seven derived cells.
+[Try invoice reconciliation](https://haya-inc.github.io/wasmhatch/?view=work&demo=reconciliation) — compare synthetic ERP and payout values, then review seven derived cells.
 
-[Start with your CSV/XLSX](https://haya-inc.github.io/wasmhatch/?view=operator&start=upload) — opens the local, Worker-isolated import path directly.
+[Start with your CSV/XLSX](https://haya-inc.github.io/wasmhatch/?view=work&start=upload) — opens the local, Worker-isolated import path directly.
 
 WasmHatch is an open-source, browser-native AI operator for general business
 work. It gives an AI typed access to spreadsheets and future business APIs,

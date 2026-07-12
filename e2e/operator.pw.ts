@@ -43,6 +43,10 @@ test("keeps the general work surface calm until context or review is needed", as
   await expect(page.getByText("Explicit approval required", { exact: true })).toBeVisible();
   await expect(page.getByText("7 cell changes will be written to the local demo.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Activity" })).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+  await expect(page.getByText("This run is ready to share.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy source-free result" })).toBeVisible();
+  await expect(page.getByLabel("Review and audit")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 

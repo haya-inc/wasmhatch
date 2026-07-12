@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   Bot,
   Check,
   Database,
@@ -2205,6 +2206,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
           : "Google Sheets";
   const reviewNeedsAttention = Boolean(
     proposal || workspaceProposal || reversalProposalKind || pendingWorkspaceRestore || pendingWorkspaceClear
+    || localDemoFinished || journalPilotReportReady
   );
 
   const startWorkExample = (example: "clean" | "compare" | "report" | "sheets") => {
@@ -2506,6 +2508,21 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
                   <button type="button" onClick={() => startWorkExample("report")}>Create a report</button>
                   <button type="button" onClick={() => startWorkExample("sheets")}>Update a Google Sheet</button>
                 </div>
+                {(localDemoFinished || journalPilotReportReady) && (
+                  <div className="simple-pilot-result" role="status">
+                    <Check size={17} />
+                    <span>
+                      <strong>{localDemoOutcome === "rejected" ? "You stopped the change safely." : "This run is ready to share."}</strong>
+                      <small>WasmHatch can create a source-free summary. Inspect it, then share only the feedback you choose.</small>
+                    </span>
+                    {pilotReportDelivery
+                      ? <a href={PUBLIC_PILOT_REPORT_URL} target="_blank" rel="noreferrer">Open feedback form <ArrowRight size={13} /></a>
+                      : <button type="button" onClick={() => {
+                          if (pilotReportDownload) downloadPilotReportCopy();
+                          else void copyPilotReport();
+                        }}>{pilotReportDownload ? "Download source-free result" : "Copy source-free result"}</button>}
+                  </div>
+                )}
               </div>
             </div>
           )}
