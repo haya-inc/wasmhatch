@@ -32,19 +32,33 @@ export function createReadableDiff(path: string, before: string, after: string):
     `@@ -${oldStart},${oldCount} +${newStart},${newCount} @@`
   ];
 
-  for (let index = contextStart; index < prefix; index += 1) output.push(` ${oldLines[index]}`);
-  for (let index = prefix; index <= oldSuffix; index += 1) output.push(`-${oldLines[index]}`);
-  for (let index = prefix; index <= newSuffix; index += 1) output.push(`+${newLines[index]}`);
+  for (let index = contextStart; index < prefix; index += 1) pushDiffLine(output, " ", oldLines[index]);
+  for (let index = prefix; index <= oldSuffix; index += 1) pushDiffLine(output, "-", oldLines[index]);
+  for (let index = prefix; index <= newSuffix; index += 1) pushDiffLine(output, "+", newLines[index]);
   const trailing = newLines.slice(newSuffix + 1, newEnd);
-  for (const line of trailing) output.push(` ${line}`);
+  for (const line of trailing) pushDiffLine(output, " ", line);
 
   return output.join("\n");
 }
 
+// Lines keep their "\n" terminator so a file that only gains or loses its final
+// newline still compares as changed and the patch stays honest about it.
 function splitLines(content: string) {
   if (!content) return [];
-  const withoutFinalNewline = content.endsWith("\n") ? content.slice(0, -1) : content;
-  return withoutFinalNewline.split("\n");
+  const lines = content.split("\n");
+  const last = lines.pop()!;
+  const terminated = lines.map((line) => `${line}\n`);
+  if (last) terminated.push(last);
+  return terminated;
+}
+
+function pushDiffLine(output: string[], marker: string, line: string) {
+  if (line.endsWith("\n")) {
+    output.push(`${marker}${line.slice(0, -1)}`);
+  } else {
+    output.push(`${marker}${line}`);
+    output.push("\\ No newline at end of file");
+  }
 }
 
 export function createWorkspacePatch(

@@ -58,6 +58,7 @@ import {
 } from "../lib/google-oauth";
 import { exportTabularArtifactInWorker, importTabularArtifactInWorker } from "../lib/browser-tabular-artifact";
 import { FIRST_RUN_CSV_SAMPLE } from "../lib/first-run-csv-sample";
+import { BUSINESS_BRIEF_SAMPLE, businessBriefSamplePlan } from "../lib/business-brief-sample";
 import { runWorkspaceScriptInWorker } from "../lib/browser-workspace-script";
 import {
   type TabularArtifactFormat,
@@ -199,6 +200,16 @@ function initialOperatorJournal(demo: GuidedDemoDefinition = guidedDemoDefinitio
   });
 }
 
+function initialBusinessBriefJournal() {
+  return appendRunJournalEvent(createRunJournal(), {
+    category: "source",
+    outcome: "completed",
+    summary: "Weekly operations brief sample loaded",
+    detail: "Bundled synthetic Markdown · no external request",
+    evidence: { source_kind: "bundled-markdown", sample_id: "weekly-operations-brief-v1" }
+  });
+}
+
 function cellLabel(row: number, column: number) {
   let label = "";
   for (let value = column + 1; value > 0; value = Math.floor((value - 1) / 26)) {
@@ -311,6 +322,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
   const [artifactWorkspacePath, setArtifactWorkspacePath] = useState<string | null>(null);
   const [artifactFile, setArtifactFile] = useState<File | null>(null);
   const [firstRunSampleActive, setFirstRunSampleActive] = useState(false);
+  const [briefSampleActive, setBriefSampleActive] = useState(false);
   const [artifactSheetChoice, setArtifactSheetChoice] = useState("");
   const [importingArtifact, setImportingArtifact] = useState(false);
   const [exportingArtifact, setExportingArtifact] = useState(false);
@@ -352,6 +364,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
   const scriptRevision = useRef(0);
   const taskRevision = useRef(0);
   const planningAbort = useRef<AbortController | null>(null);
+  const initialWorkExampleHydrated = useRef(false);
   const [googleAuthStatus, setGoogleAuthStatus] = useState(() => googleOAuth.current.status());
   const [audit, setAudit] = useState<AuditEntry[]>(() =>
     runJournal.current ? runJournal.current.events.map(auditEntryFromJournalEvent) : []
@@ -464,6 +477,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
   };
 
   const currentPublicPilotWorkflow = (): PublicPilotWorkflowId => {
+    if (briefSampleActive) return "brief-to-report";
     if (source === "demo") return demoId;
     if (source === "artifact" && firstRunSampleActive) return "first-run-csv";
     if (source === "artifact") return artifact?.format === "xlsx" ? "local-xlsx" : "local-csv";
@@ -1147,6 +1161,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
       setArtifactWorkspacePath(null);
       setArtifactFile(null);
       setArtifactSheetChoice("");
+      setBriefSampleActive(false);
       setSource("google");
       setMobileSourcesOpen(false);
       setUploadPromptVisible(false);
@@ -1612,6 +1627,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
     setArtifactWorkspacePath(null);
     setArtifactFile(null);
     setFirstRunSampleActive(false);
+    setBriefSampleActive(false);
     setArtifactSheetChoice("");
     setSource("demo");
     setShowLocalDemoGuide(true);
@@ -1659,6 +1675,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
       setArtifactWorkspacePath(persistedPath);
       setArtifactFile(file);
       setFirstRunSampleActive(Boolean(preset?.firstRunSample));
+      setBriefSampleActive(false);
       setArtifactSheetChoice(snapshot.provenance.sheetName);
       if (preset) {
         taskRevision.current += 1;
@@ -1787,6 +1804,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
     }
     setArtifactFile(null);
     setFirstRunSampleActive(false);
+    setBriefSampleActive(false);
     setLoadedGoogleTarget(null);
     clearAiPlans();
     setAgentTrace([]);
@@ -2189,7 +2207,8 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
   const journalPilotReportReady = pilotReportWorkflow === "first-run-csv"
     || pilotReportWorkflow === "local-csv"
     || pilotReportWorkflow === "local-xlsx"
-    || pilotReportWorkflow === "google-sheets";
+    || pilotReportWorkflow === "google-sheets"
+    || pilotReportWorkflow === "brief-to-report";
   const localReversalAvailable = Boolean(
     lastLocalEffect &&
     source === "artifact" &&
@@ -2198,19 +2217,83 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
     !workspaceProposal
   );
   const nextLocalReversalKind = lastLocalEffect?.lastAction === "undo" ? "redo" : "undo";
-  const currentSourceLabel = uploadPromptVisible
-    ? "CSV / XLSX not selected"
-    : source === "demo"
-      ? demo.label
-      : source === "artifact"
-        ? artifact?.sourceName ?? "CSV / XLSX"
-        : loadedGoogleTarget
-          ? `Google Sheets · ${loadedGoogleTarget.range}`
-          : "Google Sheets";
+  const currentSourceLabel = briefSampleActive
+    ? "Weekly operations brief sample"
+    : uploadPromptVisible
+      ? "CSV / XLSX not selected"
+      : source === "demo"
+        ? demo.label
+        : source === "artifact"
+          ? artifact?.sourceName ?? "CSV / XLSX"
+          : loadedGoogleTarget
+            ? `Google Sheets · ${loadedGoogleTarget.range}`
+            : "Google Sheets";
   const reviewNeedsAttention = Boolean(
     proposal || workspaceProposal || reversalProposalKind || pendingWorkspaceRestore || pendingWorkspaceClear
     || localDemoFinished || journalPilotReportReady
   );
+
+  const loadBusinessBriefSample = async () => {
+    if (committing || runningWorkspaceScript) return;
+    if (!ensureJournalCapacity(6)) return;
+    planningAbort.current?.abort();
+    const sampleEpoch = authorityEpoch.current + 1;
+    authorityEpoch.current = sampleEpoch;
+    setStatus("Preparing a bundled weekly brief…");
+    setError("");
+    invalidateProposal("business brief sample selected");
+    try {
+      const paths = await workspace.current.listFiles();
+      if (paths.includes(BUSINESS_BRIEF_SAMPLE.inputPath)) {
+        const existing = await workspace.current.readFile(BUSINESS_BRIEF_SAMPLE.inputPath);
+        if (existing !== BUSINESS_BRIEF_SAMPLE.content) {
+          throw new Error("The bundled sample path already contains different workspace content. Export or rename it before loading the sample.");
+        }
+      } else {
+        await workspace.current.writeFile(BUSINESS_BRIEF_SAMPLE.inputPath, BUSINESS_BRIEF_SAMPLE.content);
+      }
+      const attachment = await prepareOperatorArtifactAttachment(workspace.current, BUSINESS_BRIEF_SAMPLE.inputPath);
+      const preview = await readOperatorArtifactPreview(workspace.current, BUSINESS_BRIEF_SAMPLE.inputPath);
+      const draft = createWorkspaceArtifactWorkflowDraft(businessBriefSamplePlan(), [attachment]);
+      if (sampleEpoch !== authorityEpoch.current) throw new Error("A newer source replaced the weekly brief sample.");
+
+      setBriefSampleActive(true);
+      setFirstRunSampleActive(false);
+      setSource("demo");
+      setArtifact(null);
+      setArtifactWorkspacePath(null);
+      setArtifactFile(null);
+      setArtifactSheetChoice("");
+      setLoadedGoogleTarget(null);
+      setLastLocalEffect(null);
+      setPlanMode("artifact-output");
+      setPlan(null);
+      setArtifactWorkflowDraft(draft);
+      taskRevision.current += 1;
+      setTask(BUSINESS_BRIEF_SAMPLE.task);
+      scriptRevision.current += 1;
+      setScript(draft.plan.script);
+      setAgentTrace([]);
+      setAgentBudget(null);
+      setWorkspaceAttachment(attachment);
+      setSelectedWorkspaceArtifact(preview.artifact);
+      setWorkspaceArtifactPreview(preview);
+      setShowLocalDemoGuide(false);
+      setLocalDemoOutcome(null);
+      clearPublicPilotReport();
+      setMobileSourcesOpen(false);
+      setUploadPromptVisible(false);
+      refreshWorkspaceArtifacts();
+      const nextJournal = initialBusinessBriefJournal();
+      runJournal.current = nextJournal;
+      setAudit(nextJournal.events.map(auditEntryFromJournalEvent));
+      setStatus("Weekly brief ready — prepare one reviewed report");
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "The weekly brief sample could not be prepared.";
+      setError(message);
+      setStatus("Weekly brief sample blocked");
+    }
+  };
 
   const startWorkExample = (example: "clean" | "compare" | "report" | "sheets") => {
     if (example === "clean") {
@@ -2221,19 +2304,28 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
       resetDemo("reconciliation");
       return;
     }
+    if (example === "report") {
+      void loadBusinessBriefSample();
+      return;
+    }
 
     planningAbort.current?.abort();
     taskRevision.current += 1;
     clearAiPlans();
     invalidateProposal("work example changed");
-    setTask(example === "report"
-      ? "Create a concise Markdown report that summarizes the important findings and exceptions."
-      : "Review this Google Sheets range, explain what stands out, and prepare only the updates I approve.");
-    if (example === "report" && planMode !== "artifact-output") changePlanMode("artifact-output");
+    setBriefSampleActive(false);
+    setWorkspaceAttachment(null);
+    setTask("Review this Google Sheets range, explain what stands out, and prepare only the updates I approve.");
     if (example === "sheets" && planMode !== "spreadsheet-transform") changePlanMode("spreadsheet-transform");
     setMobileSourcesOpen(true);
-    setStatus(example === "report" ? "Add a file to create a report" : "Connect a Google Sheet when you are ready");
+    setStatus("Connect a Google Sheet when you are ready");
   };
+
+  useEffect(() => {
+    if (!simple || initialWorkExample !== "report" || initialWorkExampleHydrated.current) return;
+    initialWorkExampleHydrated.current = true;
+    void loadBusinessBriefSample();
+  }, []);
 
   const openPlannerSetup = () => {
     setMobileSourcesOpen(true);
@@ -2508,7 +2600,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
         </aside>
 
         <section className="operator-workbench">
-          <div className="operator-panel-heading workbench-heading"><span>{simple ? "Conversation" : "Working data"}</span><small>{simple ? source === "demo" && !showLocalDemoGuide && !mobileSourcesOpen ? "No context added" : currentSourceLabel : `${rows.length} rows · ${Math.max(0, ...rows.map((row) => row.length))} columns${rows.length > TABLE_PREVIEW_ROWS ? ` · previewing ${TABLE_PREVIEW_ROWS}` : ""}`}</small></div>
+          <div className="operator-panel-heading workbench-heading"><span>{simple ? "Conversation" : "Working data"}</span><small>{simple ? source === "demo" && !briefSampleActive && !showLocalDemoGuide && !mobileSourcesOpen ? "No context added" : currentSourceLabel : `${rows.length} rows · ${Math.max(0, ...rows.map((row) => row.length))} columns${rows.length > TABLE_PREVIEW_ROWS ? ` · previewing ${TABLE_PREVIEW_ROWS}` : ""}`}</small></div>
           {simple && (
             <div className="simple-work-intro">
               <span className="simple-assistant-mark"><Sparkles size={18} /></span>
@@ -2539,6 +2631,13 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
               </div>
             </div>
           )}
+          {simple && briefSampleActive && (
+            <div className="simple-brief-preview" aria-label="Weekly operations brief sample">
+              <header><FileText size={17} /><span><strong>Weekly operations brief</strong><small>Bundled Markdown · synthetic · local workspace</small></span></header>
+              <pre>{BUSINESS_BRIEF_SAMPLE.content}</pre>
+              <p>WasmHatch will create one separate Markdown decision report. The source brief remains unchanged.</p>
+            </div>
+          )}
           {showLocalDemoGuide && source === "demo" && (
             <div className={localDemoFinished ? "operator-demo-guide complete" : proposal ? "operator-demo-guide review" : "operator-demo-guide"} role="region" aria-label={demo.label} aria-live="polite">
               <span className="operator-demo-step">{localDemoFinished ? "03" : proposal ? "02" : "01"}</span>
@@ -2567,7 +2666,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
               <button className="operator-demo-close" onClick={() => setShowLocalDemoGuide(false)} aria-label="Dismiss local demo guide"><X size={13} /></button>
             </div>
           )}
-          <div className={`operator-table-wrap simple-work-context-preview${simple && source === "demo" && !showLocalDemoGuide && !mobileSourcesOpen ? " is-waiting" : ""}`}>
+          <div className={`operator-table-wrap simple-work-context-preview${simple && (briefSampleActive || source === "demo" && !showLocalDemoGuide && !mobileSourcesOpen) ? " is-waiting" : ""}`}>
             <table className="operator-table">
               <tbody>
                 {rows.slice(0, TABLE_PREVIEW_ROWS).map((row, rowIndex) => (
@@ -2589,14 +2688,15 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
               <button className={planMode === "artifact-output" ? "active" : ""} aria-pressed={planMode === "artifact-output"} onClick={() => changePlanMode("artifact-output")} disabled={planning || committing}><span>{simple ? "Create a file" : "Artifact output"}</span><small>{simple ? "review before saving" : "one reviewed file"}</small></button>
             </div>
             <div className="operator-planner-actions">
-              <button onClick={() => {
-                if (planning) cancelPlanning();
-                else if (simple && !plannerRequestReady) openPlannerSetup();
-                else void draftWithAI();
-              }} disabled={committing || (!planning && (!task.trim() || !simple && !plannerRequestReady || plannerRequestReady && planMode === "artifact-output" && !artifactPlanContextReady))}>
-                {planning ? <Square size={12} /> : plannerProvider === "chrome-built-in" ? <Bot size={14} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : simple && !plannerRequestReady ? "Set up AI" : simple ? "Ask WasmHatch" : plannerProvider === "chrome-built-in" ? "Draft with local AI" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
-              </button>
-              <span>{simple
+              {briefSampleActive ? <div className="simple-local-plan-ready"><ShieldCheck size={15} /><span><strong>Local sample plan ready</strong><small>No AI setup, model request, account, or API key is used.</small></span></div> : <>
+                <button onClick={() => {
+                  if (planning) cancelPlanning();
+                  else if (simple && !plannerRequestReady) openPlannerSetup();
+                  else void draftWithAI();
+                }} disabled={committing || (!planning && (!task.trim() || !simple && !plannerRequestReady || plannerRequestReady && planMode === "artifact-output" && !artifactPlanContextReady))}>
+                  {planning ? <Square size={12} /> : plannerProvider === "chrome-built-in" ? <Bot size={14} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : simple && !plannerRequestReady ? "Set up AI" : simple ? "Ask WasmHatch" : plannerProvider === "chrome-built-in" ? "Draft with local AI" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
+                </button>
+                <span>{simple
                 ? !task.trim()
                   ? "Describe the outcome first. Add a file or connected sheet only when the request needs context."
                   : !plannerRequestReady
@@ -2617,6 +2717,7 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
                 : source === "artifact" && artifactWorkspacePath
                   ? "Grants one identity-bound snapshot path. Only tool-requested bounded rows are sent to OpenAI; credentials and live OPFS stay excluded."
                 : `Explicitly sends this task and ${rows.length} visible rows to OpenAI. Sheets and API credentials are excluded.`}</span>
+              </>}
             </div>
           </div>
 

@@ -2,8 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { runAnthropicAgent, type AgentBudgetSnapshot, type ModelEgressEvent } from "./agent";
 import type { WorkspaceStore } from "./workspace";
 
-function apiResponse(content: unknown[], usage?: { input_tokens: number; output_tokens: number }) {
-  return new Response(JSON.stringify({ content, usage }), {
+function apiResponse(
+  content: unknown[],
+  usage?: { input_tokens: number; output_tokens: number },
+  stopReason?: string
+) {
+  return new Response(JSON.stringify({ content, usage, stop_reason: stopReason }), {
     status: 200,
     headers: { "content-type": "application/json" }
   });
@@ -465,6 +469,77 @@ describe("runAnthropicAgent", () => {
         content: "content must be a string."
       })
     ]);
+  });
+
+  it("rejects a response truncated at the per-request output limit", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(apiResponse(
+      [{ type: "text", text: "Partial answer that stopped mid-" }],
+      { input_tokens: 100, output_tokens: 2_048 },
+      "max_tokens"
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(runAnthropicAgent(agentOptions(createWorkspace())))
+      .rejects.toThrow("Anthropic truncated the response at the per-request output limit");
+  });
+
+  it("retries transient rate limits before succeeding", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(new Response("", { status: 429 }))
+        .mockResolvedValueOnce(new Response("", { status: 503 }))
+        .mockResolvedValueOnce(apiResponse([{ type: "text", text: "Recovered." }]));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const run = runAnthropicAgent(agentOptions(createWorkspace()));
+      await vi.runAllTimersAsync();
+
+      await expect(run).resolves.toBe("Recovered.");
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports a persistent rate limit after retries are exhausted", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn().mockResolvedValue(new Response("", { status: 429 }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const run = runAnthropicAgent(agentOptions(createWorkspace()));
+      run.catch(() => { /* Asserted below after the timers run. */ });
+      await vi.runAllTimersAsync();
+
+      await expect(run).rejects.toThrow("Anthropic rate limit reached (429). Wait briefly and try again.");
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("cancels while waiting on a retry delay", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn().mockResolvedValue(new Response("", { status: 429 }));
+      vi.stubGlobal("fetch", fetchMock);
+      const controller = new AbortController();
+
+      const run = runAnthropicAgent({
+        ...agentOptions(createWorkspace()),
+        signal: controller.signal
+      });
+      run.catch(() => { /* Asserted below after the abort. */ });
+      await vi.advanceTimersByTimeAsync(100);
+      controller.abort();
+
+      await expect(run).rejects.toThrow("Agent run cancelled.");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("returns an actionable authentication error without exposing the response body", async () => {

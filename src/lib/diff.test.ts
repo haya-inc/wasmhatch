@@ -18,6 +18,45 @@ describe("createReadableDiff", () => {
     expect(createReadableDiff("same.ts", "same", "same")).toContain("(no changes)");
   });
 
+  it("marks a missing final newline on both sides", () => {
+    const diff = createReadableDiff("greet.ts", "hello\nworld", "hello\nfriend");
+    expect(diff).toBe([
+      "--- a/greet.ts",
+      "+++ b/greet.ts",
+      "@@ -1,2 +1,2 @@",
+      " hello",
+      "-world",
+      "\\ No newline at end of file",
+      "+friend",
+      "\\ No newline at end of file"
+    ].join("\n"));
+  });
+
+  it("treats a final-newline-only change as a real change", () => {
+    const diff = createReadableDiff("greet.ts", "hello", "hello\n");
+    expect(diff).toBe([
+      "--- a/greet.ts",
+      "+++ b/greet.ts",
+      "@@ -1,1 +1,1 @@",
+      "-hello",
+      "\\ No newline at end of file",
+      "+hello"
+    ].join("\n"));
+  });
+
+  it("marks a missing final newline on a trailing context line", () => {
+    const diff = createReadableDiff("greet.ts", "old\nshared", "new\nshared");
+    expect(diff).toBe([
+      "--- a/greet.ts",
+      "+++ b/greet.ts",
+      "@@ -1,2 +1,2 @@",
+      "-old",
+      "+new",
+      " shared",
+      "\\ No newline at end of file"
+    ].join("\n"));
+  });
+
   it("creates a multi-file patch and omits unchanged files", () => {
     const patch = createWorkspacePatch([
       { path: "a.ts", before: "export const a = 1;\n", after: "export const a = 2;\n" },
@@ -43,6 +82,25 @@ describe("createReadableDiff", () => {
       execFileSync("git", ["apply", "change.patch"], { cwd: directory });
       expect(readFileSync(join(directory, "a.ts"), "utf8")).toBe("export const a = 2;\n");
       expect(readFileSync(join(directory, "new.ts"), "utf8")).toBe("export const created = true;\n");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("produces a git-appliable patch for files without a final newline", () => {
+    const directory = mkdtempSync(join(tmpdir(), "wasmhatch-patch-"));
+    try {
+      writeFileSync(join(directory, "no-eol.ts"), "export const a = 1;");
+      writeFileSync(join(directory, "gains-eol.ts"), "export const b = 1;");
+      const patch = createWorkspacePatch([
+        { path: "no-eol.ts", before: "export const a = 1;", after: "export const a = 2;" },
+        { path: "gains-eol.ts", before: "export const b = 1;", after: "export const b = 1;\n" }
+      ]);
+      writeFileSync(join(directory, "change.patch"), `${patch}\n`);
+      execFileSync("git", ["apply", "--check", "change.patch"], { cwd: directory });
+      execFileSync("git", ["apply", "change.patch"], { cwd: directory });
+      expect(readFileSync(join(directory, "no-eol.ts"), "utf8")).toBe("export const a = 2;");
+      expect(readFileSync(join(directory, "gains-eol.ts"), "utf8")).toBe("export const b = 1;\n");
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

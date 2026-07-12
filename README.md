@@ -2,7 +2,7 @@
 
 > Describe the work. Review the result.
 
-![WasmHatch — natural-language work with reviewed effects](https://haya-inc.github.io/wasmhatch/social-preview.png?v=0.42.0)
+![WasmHatch — natural-language work with reviewed effects](https://haya-inc.github.io/wasmhatch/social-preview.png?v=0.43.0)
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/haya-inc/wasmhatch?quickstart=1)
 
@@ -44,6 +44,7 @@ foreground-only: it does not schedule background work or persist OAuth tokens.
 | --- | --- |
 | Understand the review model without an account or key | [60-second normalization](https://haya-inc.github.io/wasmhatch/?view=work&demo=local) |
 | Compare two synthetic exports | [Invoice reconciliation](https://haya-inc.github.io/wasmhatch/?view=work&demo=reconciliation) |
+| Turn a Markdown brief into a reviewed report | [Weekly brief sample](https://haya-inc.github.io/wasmhatch/?view=work&example=report) |
 | Bring an authorized local file | [CSV/XLSX entry](https://haya-inc.github.io/wasmhatch/?view=work&start=upload) |
 | Inspect every advanced boundary | [Advanced Operator](https://haya-inc.github.io/wasmhatch/?view=operator) |
 
@@ -239,6 +240,10 @@ tree. Use **Patch** in the workspace header to download the difference as
 git apply --check wasmhatch.patch
 git apply wasmhatch.patch
 ```
+
+The current editor buffer is saved before file switches, agent runs, and patch
+generation. Closing or reloading a tab with a remaining unsaved edit triggers the
+browser's leave-page warning.
 
 The baseline is stored separately in OPFS and survives reload. The patch can
 represent modified, added, and removed text files; the current UI does not yet

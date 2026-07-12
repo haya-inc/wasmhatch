@@ -20,6 +20,7 @@ body:
       label: Source kind
       options:
         - Guided synthetic demo
+        - Guided Markdown report sample
         - Local CSV
         - Local XLSX
         - Google Sheets

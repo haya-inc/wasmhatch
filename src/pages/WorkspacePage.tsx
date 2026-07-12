@@ -90,6 +90,7 @@ export function WorkspacePage() {
   );
   const [proposal, setProposal] = useState<FileProposal | null>(null);
   const [proposalBefore, setProposalBefore] = useState("");
+  const [proposalBaseExists, setProposalBaseExists] = useState(false);
   const [busy, setBusy] = useState(false);
   const [workspaceReady, setWorkspaceReady] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
@@ -105,6 +106,20 @@ export function WorkspacePage() {
   const [browserStorage, setBrowserStorage] = useState<BrowserStorageStatus | null>(null);
   const storageBackend = store.current.backend;
 
+  const persistCurrentEdit = async (announce = false) => {
+    if (!selectedPath || editor === savedEditor) return;
+    await store.current.writeFile(selectedPath, editor);
+    setPatchExported(false);
+    setSavedEditor(editor);
+    if (announce) setNotice(`Saved ${selectedPath} locally.`);
+  };
+
+  const confirmDiscardForImport = () => (
+    !selectedPath || editor === savedEditor || window.confirm(
+      "Importing replaces the current workspace. Discard the unsaved edit and continue?"
+    )
+  );
+
   const refreshFiles = async (preferredPath?: string) => {
     const nextFiles = await store.current.listFiles();
     setFiles(nextFiles);
@@ -113,18 +128,23 @@ export function WorkspacePage() {
       : selectedPath && nextFiles.includes(selectedPath)
         ? selectedPath
         : nextFiles[0] || "";
-    if (nextPath) await selectFile(nextPath);
+    if (nextPath) await selectFile(nextPath, false);
   };
 
-  const selectFile = async (path: string) => {
+  const selectFile = async (path: string, saveCurrent = true) => {
     const selection = ++fileSelection.current;
     setFileLoading(true);
     try {
+      if (saveCurrent) await persistCurrentEdit();
       const content = await store.current.readFile(path);
       if (selection !== fileSelection.current) return;
       setSelectedPath(path);
       setEditor(content);
       setSavedEditor(content);
+    } catch (error) {
+      if (selection === fileSelection.current) {
+        setNotice(error instanceof Error ? error.message : "File could not be opened.");
+      }
     } finally {
       if (selection === fileSelection.current) setFileLoading(false);
     }
@@ -186,16 +206,26 @@ export function WorkspacePage() {
     if (storageOpen && !storageBusy) storageCancel.current?.focus();
   }, [storageOpen, storageBusy]);
 
+  useEffect(() => {
+    if (!selectedPath || editor === savedEditor) return;
+    const warnAboutUnsavedEdit = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnAboutUnsavedEdit);
+    return () => window.removeEventListener("beforeunload", warnAboutUnsavedEdit);
+  }, [editor, savedEditor, selectedPath]);
+
   const saveEditor = async () => {
-    if (!selectedPath) return;
-    await store.current.writeFile(selectedPath, editor);
-    setPatchExported(false);
-    setSavedEditor(editor);
-    setNotice(`Saved ${selectedPath} locally.`);
+    try {
+      await persistCurrentEdit(true);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "File could not be saved.");
+    }
   };
 
   const importRepository = async () => {
-    if (!workspaceReady || !repo.trim()) return;
+    if (!workspaceReady || !repo.trim() || !confirmDiscardForImport()) return;
     setBusy(true);
     setStatus("Importing from GitHub");
     try {
@@ -221,6 +251,10 @@ export function WorkspacePage() {
   const importArchive = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !workspaceReady) {
+      event.target.value = "";
+      return;
+    }
+    if (!confirmDiscardForImport()) {
       event.target.value = "";
       return;
     }
@@ -340,22 +374,29 @@ export function WorkspacePage() {
   };
 
   const exportPatch = async () => {
-    const { patch, changedFileCount } = await buildWorkspacePatch(store.current);
-    if (!patch) {
-      setNotice("No changes from the imported baseline to export.");
-      return;
+    try {
+      await persistCurrentEdit();
+      const { patch, changedFileCount } = await buildWorkspacePatch(store.current);
+      if (!patch) {
+        setNotice("No changes from the imported baseline to export.");
+        return;
+      }
+      download(new Blob([`${patch}\n`], { type: "text/x-diff;charset=utf-8" }), "wasmhatch.patch");
+      setPatchExported(true);
+      setNotice(
+        `Exported ${changedFileCount} changed file(s) as a patch.${issueNumber ? ` Return to Issue #${issueNumber} when it is ready.` : ""}`
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Patch could not be exported.");
     }
-    download(new Blob([`${patch}\n`], { type: "text/x-diff;charset=utf-8" }), "wasmhatch.patch");
-    setPatchExported(true);
-    setNotice(
-      `Exported ${changedFileCount} changed file(s) as a patch.${issueNumber ? ` Return to Issue #${issueNumber} when it is ready.` : ""}`
-    );
   };
 
   const stageProposal = async (next: FileProposal) => {
     let before = "";
-    try { before = await store.current.readFile(next.path); } catch { /* New file. */ }
+    let baseExists = true;
+    try { before = await store.current.readFile(next.path); } catch { baseExists = false; }
     setProposalBefore(before);
+    setProposalBaseExists(baseExists);
     setProposal(next);
   };
 
@@ -363,18 +404,25 @@ export function WorkspacePage() {
     if (!demoAvailable) return;
     setBusy(true);
     setProposal(null);
-    setStatus("Reading src/greet.ts");
-    setAnswer("Inspecting the smallest relevant surface…");
-    await new Promise((resolve) => window.setTimeout(resolve, 500));
-    setStatus("Preparing a reviewable patch");
-    await stageProposal({
-      path: "src/greet.ts",
-      rationale: "Trim the input and use a friendly fallback without changing the public API.",
-      content: `export function greet(name: string): string {\n  const cleanName = name.trim();\n  return \`Hello, \${cleanName || "friend"}!\`;\n}\n`
-    });
-    setAnswer("I found one focused edge case and staged a complete-file patch. Nothing has been written yet.");
-    setStatus("1 change awaiting review");
-    setBusy(false);
+    try {
+      await persistCurrentEdit();
+      setStatus("Reading src/greet.ts");
+      setAnswer("Inspecting the smallest relevant surface…");
+      await new Promise((resolve) => window.setTimeout(resolve, 500));
+      setStatus("Preparing a reviewable patch");
+      await stageProposal({
+        path: "src/greet.ts",
+        rationale: "Trim the input and use a friendly fallback without changing the public API.",
+        content: `export function greet(name: string): string {\n  const cleanName = name.trim();\n  return \`Hello, \${cleanName || "friend"}!\`;\n}\n`
+      });
+      setAnswer("I found one focused edge case and staged a complete-file patch. Nothing has been written yet.");
+      setStatus("1 change awaiting review");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Local demo failed.");
+      setStatus("Demo stopped");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const runAgent = async () => {
@@ -391,7 +439,9 @@ export function WorkspacePage() {
     const controller = new AbortController();
     agentAbort.current = controller;
     let receivedProposal = false;
+    let proposalStage: Promise<void> | null = null;
     try {
+      await persistCurrentEdit();
       const response = await runAnthropicAgent({
         apiKey,
         model,
@@ -400,12 +450,13 @@ export function WorkspacePage() {
         onStatus: setStatus,
         onProposal: (next) => {
           receivedProposal = true;
-          void stageProposal(next);
+          proposalStage = stageProposal(next);
         },
         onEgress: (event) => setModelEgress((current) => [...current, event]),
         onBudget: setAgentBudget,
         signal: controller.signal
       });
+      if (proposalStage) await proposalStage;
       setAnswer(response);
       setStatus(receivedProposal ? "1 change awaiting review" : "Agent finished");
     } catch (error) {
@@ -431,12 +482,29 @@ export function WorkspacePage() {
 
   const acceptProposal = async () => {
     if (!proposal) return;
-    await store.current.writeFile(proposal.path, proposal.content);
-    setPatchExported(false);
-    await refreshFiles(proposal.path);
-    setNotice(`Applied ${proposal.path}.`);
-    setProposal(null);
-    setStatus("Change applied locally");
+    try {
+      let current = "";
+      let currentExists = true;
+      try { current = await store.current.readFile(proposal.path); } catch { currentExists = false; }
+      const dirtyProposalFile = proposal.path === selectedPath && editor !== savedEditor;
+      if (
+        dirtyProposalFile ||
+        currentExists !== proposalBaseExists ||
+        current !== proposalBefore
+      ) {
+        setNotice("The file changed after this proposal was prepared. Review the newer edit, then prepare a new proposal.");
+        setStatus("Proposal conflict");
+        return;
+      }
+      await store.current.writeFile(proposal.path, proposal.content);
+      setPatchExported(false);
+      await refreshFiles(proposal.path);
+      setNotice(`Applied ${proposal.path}.`);
+      setProposal(null);
+      setStatus("Change applied locally");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Proposed change could not be applied.");
+    }
   };
 
   return (

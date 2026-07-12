@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const projectUrl = "https://haya-inc.github.io/wasmhatch/";
-const previewUrl = `${projectUrl}social-preview.png?v=0.42.0`;
+const previewUrl = `${projectUrl}social-preview.png?v=0.43.0`;
 
 describe("public sharing metadata", () => {
   it("publishes canonical Open Graph and large-card metadata", () => {

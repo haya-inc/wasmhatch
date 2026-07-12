@@ -9,6 +9,62 @@ import {
   type WorkspaceStore
 } from "./workspace";
 
+class MemoryFile {
+  readonly kind = "file";
+
+  constructor(private content = "") {}
+
+  async getFile() {
+    return { text: async () => this.content };
+  }
+
+  async createWritable() {
+    let next = this.content;
+    return {
+      write: async (value: string) => { next = value; },
+      close: async () => { this.content = next; }
+    };
+  }
+}
+
+class MemoryDirectory {
+  readonly kind = "directory";
+  readonly children = new Map<string, MemoryDirectory | MemoryFile>();
+  failNextCreate = "";
+
+  async getDirectoryHandle(name: string, options: { create?: boolean } = {}) {
+    const existing = this.children.get(name);
+    if (existing instanceof MemoryDirectory) return existing;
+    if (existing) throw new DOMException("Path is a file.", "TypeMismatchError");
+    if (!options.create) throw new DOMException("Directory not found.", "NotFoundError");
+    if (this.failNextCreate === name) {
+      this.failNextCreate = "";
+      throw new DOMException("Storage is full.", "QuotaExceededError");
+    }
+    const directory = new MemoryDirectory();
+    this.children.set(name, directory);
+    return directory;
+  }
+
+  async getFileHandle(name: string, options: { create?: boolean } = {}) {
+    const existing = this.children.get(name);
+    if (existing instanceof MemoryFile) return existing;
+    if (existing) throw new DOMException("Path is a directory.", "TypeMismatchError");
+    if (!options.create) throw new DOMException("File not found.", "NotFoundError");
+    const file = new MemoryFile();
+    this.children.set(name, file);
+    return file;
+  }
+
+  async removeEntry(name: string) {
+    if (!this.children.delete(name)) throw new DOMException("Path not found.", "NotFoundError");
+  }
+
+  async *entries() {
+    yield* this.children.entries();
+  }
+}
+
 describe("normalizeWorkspacePath", () => {
   it("normalizes separators", () => {
     expect(normalizeWorkspacePath("src\\main.ts")).toBe("src/main.ts");
@@ -63,6 +119,81 @@ describe("workspace clearing", () => {
     await expect(store.listFiles()).resolves.toEqual([]);
     await expect(store.listBaselineFiles()).resolves.toEqual([]);
     expect(removeItem).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears a never-initialized OPFS workspace without an error", async () => {
+    const origin = new MemoryDirectory();
+    vi.stubGlobal("navigator", {
+      storage: { getDirectory: vi.fn().mockResolvedValue(origin) }
+    });
+    const store = createWorkspaceStore();
+    expect(store.backend).toBe("opfs");
+
+    await expect(store.clear()).resolves.toBeUndefined();
+  });
+
+  it("removes both OPFS trees", async () => {
+    const origin = new MemoryDirectory();
+    vi.stubGlobal("navigator", {
+      storage: { getDirectory: vi.fn().mockResolvedValue(origin) }
+    });
+    const store = createWorkspaceStore();
+    await store.replaceAll([{ path: "README.md", content: "private" }]);
+
+    await store.clear();
+
+    expect(origin.children.size).toBe(0);
+  });
+});
+
+describe("workspace replacement", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("restores both localStorage trees when baseline replacement fails", async () => {
+    const values = new Map<string, string>([
+      ["wasmhatch-workspace-v1", JSON.stringify({ "old.ts": "working" })],
+      ["wasmhatch-baseline-v1", JSON.stringify({ "old.ts": "baseline" })]
+    ]);
+    let failNextBaselineWrite = true;
+    vi.stubGlobal("navigator", {});
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        if (key === "wasmhatch-baseline-v1" && value.includes("replacement") && failNextBaselineWrite) {
+          failNextBaselineWrite = false;
+          throw new DOMException("Storage is full.", "QuotaExceededError");
+        }
+        values.set(key, value);
+      },
+      removeItem: (key: string) => values.delete(key)
+    });
+    const store = createWorkspaceStore();
+
+    await expect(store.replaceAll([{ path: "new.ts", content: "replacement" }]))
+      .rejects.toMatchObject({ name: "QuotaExceededError" });
+
+    await expect(store.listFiles()).resolves.toEqual(["old.ts"]);
+    await expect(store.listBaselineFiles()).resolves.toEqual(["old.ts"]);
+    await expect(store.readFile("old.ts")).resolves.toBe("working");
+    await expect(store.readBaselineFile("old.ts")).resolves.toBe("baseline");
+  });
+
+  it("restores both OPFS trees when baseline replacement fails", async () => {
+    const origin = new MemoryDirectory();
+    vi.stubGlobal("navigator", {
+      storage: { getDirectory: vi.fn().mockResolvedValue(origin) }
+    });
+    const store = createWorkspaceStore();
+    await store.replaceAll([{ path: "old.ts", content: "original" }]);
+    origin.failNextCreate = "wasmhatch-baseline";
+
+    await expect(store.replaceAll([{ path: "new.ts", content: "replacement" }]))
+      .rejects.toMatchObject({ name: "QuotaExceededError" });
+
+    await expect(store.listFiles()).resolves.toEqual(["old.ts"]);
+    await expect(store.listBaselineFiles()).resolves.toEqual(["old.ts"]);
+    await expect(store.readFile("old.ts")).resolves.toBe("original");
+    await expect(store.readBaselineFile("old.ts")).resolves.toBe("original");
   });
 });
 

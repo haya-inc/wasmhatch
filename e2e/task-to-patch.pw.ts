@@ -82,3 +82,44 @@ test("carries a contribution target from task link to patch download", async ({ 
   expect(patch).toContain("+  return `Hello, ${name.trim()}!`;");
   await expect(page.getByText(/Patch downloaded\. Apply it in a local branch/)).toBeVisible();
 });
+
+test("preserves the current edit across file switches and patch export", async ({ page }) => {
+  await page.goto("/?view=workspace");
+  await page.getByRole("button", { name: "src/greet.ts" }).click();
+  const editor = page.getByLabel("Code editor");
+  const switchedEdit = "export const preservedAcrossSwitch = true;\n";
+  await editor.fill(switchedEdit);
+
+  await page.getByRole("button", { name: "README.md" }).click();
+  await page.getByRole("button", { name: "src/greet.ts" }).click();
+  await expect(editor).toHaveValue(switchedEdit);
+
+  const unsavedPatchEdit = "export const includedWithoutManualSave = true;\n";
+  await editor.fill(unsavedPatchEdit);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Patch" }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  expect(downloadPath).not.toBeNull();
+  const patch = await readFile(downloadPath!, "utf8");
+  expect(patch).toContain("+export const includedWithoutManualSave = true;");
+});
+
+test("refuses to apply a proposal over a newer edit", async ({ page }) => {
+  await page.goto("/?view=workspace");
+  await page.getByRole("button", { name: "Local demo" }).click();
+  const proposal = page.getByRole("region", { name: "Proposed change" });
+  await expect(proposal).toBeVisible();
+
+  await page.getByRole("button", { name: "src/greet.ts" }).click();
+  const editor = page.getByLabel("Code editor");
+  const newerEdit = "export const newerUserEdit = true;\n";
+  await editor.fill(newerEdit);
+  await page.getByRole("button", { name: "Save" }).click();
+  await proposal.getByRole("button", { name: "Apply change" }).click();
+
+  await expect(page.getByText("The file changed after this proposal was prepared. Review the newer edit, then prepare a new proposal."))
+    .toBeVisible();
+  await expect(editor).toHaveValue(newerEdit);
+  await expect(proposal).toBeVisible();
+});

@@ -520,9 +520,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .simple-work-app .operator-plan-mode { border-radius: 8px; overflow: hidden; }
 .simple-work-app .operator-plan-mode button { height: 44px; font-size: 8px; }
 .simple-work-app .operator-planner-actions button { min-height: 40px; border-radius: 6px; }
+.simple-local-plan-ready { width: 100%; padding: 11px 13px; display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 10px; border: 1px solid #53602b; border-radius: 6px; background: rgba(217,255,67,.035); color: var(--accent); }.simple-local-plan-ready span { display: flex; flex-direction: column; gap: 5px; }.simple-local-plan-ready strong { color: #c7cebb; font-size: 9px; }.simple-local-plan-ready small { color: #727a6e; font-size: 8px; line-height: 1.4; }
 .simple-work-app .operator-demo-guide { display: none; }
 .simple-work-app .simple-work-context-preview { order: 3; min-height: 0; max-height: none; }
 .simple-work-app .simple-work-context-preview.is-waiting { display: none; }
+.simple-brief-preview { order: 3; padding: 22px clamp(20px, 6vw, 72px); border-bottom: 1px solid #292c28; background: #0e110e; }.simple-brief-preview header { display: flex; align-items: center; gap: 11px; color: var(--accent); }.simple-brief-preview header span { display: flex; flex-direction: column; gap: 5px; }.simple-brief-preview header strong { color: #d9ddd5; font-size: 11px; }.simple-brief-preview header small { color: #6f756c; font: 600 7px/1 var(--mono); }.simple-brief-preview pre { max-height: 190px; margin: 16px 0 0; padding: 16px; overflow: auto; border: 1px solid #30352e; border-radius: 7px; background: #090b09; color: #abb1a7; font: 500 9px/1.6 var(--mono); white-space: pre-wrap; }.simple-brief-preview p { margin: 11px 0 0; color: #737a70; font-size: 10px; line-height: 1.5; }
 .simple-work-app .operator-plan, .simple-work-app .artifact-workflow-plan { order: 4; }
 .simple-work-app .operator-script { order: 5; padding: 20px clamp(20px, 6vw, 72px) 28px; border-bottom: 0; }
 .operator-technical-details { margin-bottom: 13px; border: 1px solid #2f342e; background: #0c0e0c; }

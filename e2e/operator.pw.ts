@@ -56,6 +56,52 @@ test("keeps the general work surface calm until context or review is needed", as
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
+test("turns a bundled Markdown brief into a reviewed report without a model or spreadsheet", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  let modelRequests = 0;
+  page.on("request", (request) => {
+    if (request.url().startsWith("https://api.openai.com/")) modelRequests += 1;
+  });
+  await page.goto("/?view=work");
+
+  await page.getByRole("button", { name: "Create a report" }).click();
+  await expect(page.getByLabel("Weekly operations brief sample", { exact: true })).toContainText("Customer onboarding is on schedule");
+  await expect(page.getByLabel("AI artifact workflow plan")).toContainText("Create a weekly decision brief.");
+  await expect(page.getByLabel("Business task")).toHaveValue(/weekly operations brief into a concise decision report/);
+  await expect(page.getByText("Local sample plan ready", { exact: true })).toBeVisible();
+  await expect(page.getByText("No AI setup, model request, account, or API key is used.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Set up AI" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Prepare file" })).toBeEnabled();
+
+  await page.getByRole("button", { name: "Prepare file" }).click();
+  await expect(page.getByLabel("Workspace file diff")).toContainText("# Weekly decision brief");
+  await expect(page.getByLabel("Workspace file diff")).toContainText("## Decisions to make");
+  await expect(page.getByLabel("Workspace file diff")).toContainText("extend the vendor migration by two days");
+  await page.getByRole("button", { name: "Approve and write workspace file" }).click();
+  await expect(page.getByText("Workspace file effect committed", { exact: true })).toBeVisible();
+
+  const readWorkspaceFile = (path: string) => page.evaluate(async (workspacePath) => {
+    try {
+      const origin = await navigator.storage.getDirectory();
+      const root = await origin.getDirectoryHandle("wasmhatch-operator-workspace-v1");
+      const parts = workspacePath.split("/");
+      const name = parts.pop()!;
+      let directory = root;
+      for (const part of parts) directory = await directory.getDirectoryHandle(part);
+      return (await (await directory.getFileHandle(name)).getFile()).text();
+    } catch {
+      return "";
+    }
+  }, path);
+  await expect.poll(() => readWorkspaceFile("inputs/weekly-operations-brief.md")).toContain("# Weekly operations brief");
+  await expect.poll(() => readWorkspaceFile("outputs/weekly-decision-brief.md")).toContain("# Weekly decision brief");
+  await expect.poll(() => readWorkspaceFile("outputs/weekly-decision-brief.md")).toContain("## Risks to watch");
+  await expect(page.getByText("This run is ready to share.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy source-free result" })).toBeVisible();
+  expect(modelRequests).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
 test("opens a real-file entry state and returns to work after local import", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?view=operator&start=upload");

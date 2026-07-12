@@ -54,6 +54,7 @@ interface ToolResultBlock {
 
 interface MessageResponse {
   content: ContentBlock[];
+  stopReason?: string;
   usage?: { inputTokens: number; outputTokens: number };
 }
 
@@ -135,6 +136,8 @@ function parseMessageResponse(value: unknown): MessageResponse {
   }
 
   if (!content.length) throw new Error("Anthropic returned no supported message content.");
+  const rawStopReason = (value as { stop_reason?: unknown }).stop_reason;
+  const stopReason = typeof rawStopReason === "string" ? rawStopReason : undefined;
   const rawUsage = (value as { usage?: unknown }).usage;
   let usage: MessageResponse["usage"];
   if (rawUsage && typeof rawUsage === "object") {
@@ -145,7 +148,7 @@ function parseMessageResponse(value: unknown): MessageResponse {
       typeof outputTokens === "number" && Number.isSafeInteger(outputTokens) && outputTokens >= 0
     ) usage = { inputTokens, outputTokens };
   }
-  return { content, usage };
+  return { content, stopReason, usage };
 }
 
 function readToolString(
@@ -238,33 +241,59 @@ async function apiError(response: Response) {
   return new Error(`Anthropic request failed (${response.status})${detail ? `: ${detail}` : "."}`);
 }
 
+const RETRY_DELAYS_MS = [1_000, 2_000];
+
+function delay(milliseconds: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, milliseconds);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 async function createMessage(
   apiKey: string,
   body: string,
   signal?: AbortSignal
 ) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    signal,
-    body
-  });
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      signal,
+      body
+    });
 
-  if (!response.ok) throw await apiError(response);
+    if ((response.status === 429 || response.status >= 500) && attempt < RETRY_DELAYS_MS.length) {
+      await delay(RETRY_DELAYS_MS[attempt], signal);
+      continue;
+    }
+    if (!response.ok) throw await apiError(response);
 
-  let value: unknown;
-  try {
-    value = await response.json();
-  } catch (error) {
-    if (isAbortError(error)) throw error;
-    throw new Error("Anthropic returned unreadable JSON.");
+    let value: unknown;
+    try {
+      value = await response.json();
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      throw new Error("Anthropic returned unreadable JSON.");
+    }
+    return parseMessageResponse(value);
   }
-  return parseMessageResponse(value);
 }
 
 export async function runAnthropicAgent(options: {
@@ -347,6 +376,11 @@ export async function runAnthropicAgent(options: {
     inputTokens += response.usage?.inputTokens ?? 0;
     outputTokens += response.usage?.outputTokens ?? 0;
     reportBudget();
+    if (response.stopReason === "max_tokens") {
+      throw new Error(
+        "Anthropic truncated the response at the per-request output limit, so it cannot be trusted. Retry with a smaller task or file range."
+      );
+    }
     messages.push({ role: "assistant", content: response.content });
 
     const text = response.content

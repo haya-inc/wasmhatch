@@ -114,6 +114,14 @@ describe("public pilot reports", () => {
     expect(report).not.toContain("user-selected CSV");
   });
 
+  it("uses host-defined metadata for the non-tabular brief sample", () => {
+    const report = createPublicPilotReport(committedJournal(), "brief-to-report");
+    expect(report).toContain("Weekly brief to report sample pilot");
+    expect(report).toContain("bundled Markdown brief transformed into one reviewed Markdown decision report");
+    expect(report).toContain("bundled synthetic weekly operations brief");
+    expect(report).not.toContain("weekly-operations-brief.md");
+  });
+
   it("uses generic host metadata for real local files without leaking identities", () => {
     const csv = createPublicPilotReport(committedJournal(), "local-csv");
     const xlsx = createPublicPilotReport(rejectedJournal(), "local-xlsx");

@@ -89,6 +89,32 @@ describe("archive utilities", () => {
     expect(isSupportedGitHubPath("fonts/mono.woff2")).toBe(false);
   });
 
+  it("skips UTF-16 files that would import as mojibake", () => {
+    const utf16 = new Uint8Array([0xff, 0xfe, 0x42, 0x30, 0x44, 0x30]);
+    const archive = zipSync({
+      "utf16.txt": utf16,
+      "utf8.txt": strToU8("plain\n")
+    });
+    expect(readZipArchive(archive)).toEqual([{ path: "utf8.txt", content: "plain\n" }]);
+  });
+
+  it("explains the GitHub rate limit instead of a bare status code", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", {
+      status: 403,
+      headers: { "x-ratelimit-remaining": "0" }
+    })));
+
+    await expect(fetchGitHubRepository("haya-inc/wasmhatch")).rejects.toThrow(
+      "GitHub API rate limit reached. Unauthenticated imports allow about 60 requests per hour; wait and try again."
+    );
+  });
+
+  it("keeps the status code for non-rate-limit GitHub failures", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 404 })));
+
+    await expect(fetchGitHubRepository("haya-inc/missing")).rejects.toThrow("GitHub import failed (404).");
+  });
+
   it("resolves an explicit Git ref before fetching text files", async () => {
     const fetchMock = vi
       .fn()

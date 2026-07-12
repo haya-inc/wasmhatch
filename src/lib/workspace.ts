@@ -60,6 +60,11 @@ class LocalStorageWorkspace implements WorkspaceStore {
     localStorage.setItem(key, JSON.stringify(files));
   }
 
+  private restore(key: string, value: string | null) {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  }
+
   async listFiles() {
     return Object.keys(this.load()).sort();
   }
@@ -90,13 +95,35 @@ class LocalStorageWorkspace implements WorkspaceStore {
 
   async replaceAll(files: WorkspaceFile[]) {
     const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
-    this.save(next);
-    this.save(next, FALLBACK_BASELINE_KEY);
+    const previousWorking = localStorage.getItem(FALLBACK_KEY);
+    const previousBaseline = localStorage.getItem(FALLBACK_BASELINE_KEY);
+    try {
+      this.save(next);
+      this.save(next, FALLBACK_BASELINE_KEY);
+    } catch (error) {
+      try {
+        this.restore(FALLBACK_KEY, previousWorking);
+        this.restore(FALLBACK_BASELINE_KEY, previousBaseline);
+      } catch (rollbackError) {
+        throw new AggregateError([error, rollbackError], "Workspace replacement and rollback both failed.");
+      }
+      throw error;
+    }
   }
 
   async replaceBaseline(files: WorkspaceFile[]) {
     const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
-    this.save(next, FALLBACK_BASELINE_KEY);
+    const previous = localStorage.getItem(FALLBACK_BASELINE_KEY);
+    try {
+      this.save(next, FALLBACK_BASELINE_KEY);
+    } catch (error) {
+      try {
+        this.restore(FALLBACK_BASELINE_KEY, previous);
+      } catch (rollbackError) {
+        throw new AggregateError([error, rollbackError], "Baseline replacement and rollback both failed.");
+      }
+      throw error;
+    }
   }
 
   async clear() {
@@ -141,6 +168,32 @@ class OpfsWorkspace implements WorkspaceStore {
     return files.sort();
   }
 
+  private async readRoot(rootName: string): Promise<WorkspaceFile[]> {
+    const paths = await this.listRoot(rootName);
+    return Promise.all(paths.map(async (path) => {
+      const handle = await this.fileHandle(path, false, rootName);
+      return { path, content: await (await handle.getFile()).text() };
+    }));
+  }
+
+  private async removeRoot(rootName: string) {
+    const originRoot = await navigator.storage.getDirectory();
+    try {
+      await originRoot.removeEntry(rootName, { recursive: true });
+    } catch (error) {
+      if (!(error && typeof error === "object" && "name" in error && error.name === "NotFoundError")) {
+        throw error;
+      }
+    }
+  }
+
+  private async replaceRoot(rootName: string, files: WorkspaceFile[]) {
+    await this.removeRoot(rootName);
+    const originRoot = await navigator.storage.getDirectory();
+    await originRoot.getDirectoryHandle(rootName, { create: true });
+    for (const file of files) await this.writeToRoot(file.path, file.content, rootName);
+  }
+
   async listFiles() {
     return this.listRoot("wasmhatch-workspace");
   }
@@ -171,30 +224,43 @@ class OpfsWorkspace implements WorkspaceStore {
   }
 
   async replaceAll(files: WorkspaceFile[]) {
-    const originRoot = await navigator.storage.getDirectory();
-    await originRoot.removeEntry("wasmhatch-workspace", { recursive: true }).catch(() => undefined);
-    await originRoot.getDirectoryHandle("wasmhatch-workspace", { create: true });
-    for (const file of files) {
-      await this.writeToRoot(file.path, file.content, "wasmhatch-workspace");
+    const [previousWorking, previousBaseline] = await Promise.all([
+      this.readRoot("wasmhatch-workspace"),
+      this.readRoot("wasmhatch-baseline")
+    ]);
+    try {
+      await this.replaceRoot("wasmhatch-workspace", files);
+      await this.replaceRoot("wasmhatch-baseline", files);
+    } catch (error) {
+      try {
+        await this.replaceRoot("wasmhatch-workspace", previousWorking);
+        await this.replaceRoot("wasmhatch-baseline", previousBaseline);
+      } catch (rollbackError) {
+        throw new AggregateError([error, rollbackError], "Workspace replacement and rollback both failed.");
+      }
+      throw error;
     }
-    await this.replaceBaseline(files);
   }
 
   async replaceBaseline(files: WorkspaceFile[]) {
-    const originRoot = await navigator.storage.getDirectory();
-    await originRoot.removeEntry("wasmhatch-baseline", { recursive: true }).catch(() => undefined);
-    await originRoot.getDirectoryHandle("wasmhatch-baseline", { create: true });
-    for (const file of files) {
-      await this.writeToRoot(file.path, file.content, "wasmhatch-baseline");
+    const previous = await this.readRoot("wasmhatch-baseline");
+    try {
+      await this.replaceRoot("wasmhatch-baseline", files);
+    } catch (error) {
+      try {
+        await this.replaceRoot("wasmhatch-baseline", previous);
+      } catch (rollbackError) {
+        throw new AggregateError([error, rollbackError], "Baseline replacement and rollback both failed.");
+      }
+      throw error;
     }
   }
 
   async clear() {
-    const originRoot = await navigator.storage.getDirectory();
     // Remove the baseline first so a partial failure cannot leave an old baseline
     // paired with a newly seeded working tree on the next visit.
-    await originRoot.removeEntry("wasmhatch-baseline", { recursive: true });
-    await originRoot.removeEntry("wasmhatch-workspace", { recursive: true });
+    await this.removeRoot("wasmhatch-baseline");
+    await this.removeRoot("wasmhatch-workspace");
   }
 }
 

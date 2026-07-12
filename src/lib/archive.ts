@@ -14,6 +14,12 @@ const BINARY_EXTENSIONS = new Set([
 ]);
 
 function isProbablyText(bytes: Uint8Array) {
+  // A UTF-16 byte-order mark means the UTF-8 decoder would import mojibake,
+  // so treat it as binary even when the content has no NUL bytes.
+  if (bytes.length >= 2 && (
+    (bytes[0] === 0xff && bytes[1] === 0xfe) ||
+    (bytes[0] === 0xfe && bytes[1] === 0xff)
+  )) return false;
   return !bytes.subarray(0, 8000).includes(0);
 }
 
@@ -102,7 +108,17 @@ async function githubApi<T>(path: string): Promise<T> {
       "X-GitHub-Api-Version": "2022-11-28"
     }
   });
-  if (!response.ok) throw new Error(`GitHub import failed (${response.status}).`);
+  if (!response.ok) {
+    if (
+      (response.status === 403 || response.status === 429) &&
+      response.headers.get("x-ratelimit-remaining") === "0"
+    ) {
+      throw new Error(
+        "GitHub API rate limit reached. Unauthenticated imports allow about 60 requests per hour; wait and try again."
+      );
+    }
+    throw new Error(`GitHub import failed (${response.status}).`);
+  }
   return response.json() as Promise<T>;
 }
 

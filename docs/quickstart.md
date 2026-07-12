@@ -37,6 +37,23 @@ This path exercises the same snapshot, sandbox, immutable proposal, approval,
 and source-free pilot-report boundaries as the normalization demo. It makes no
 network request and contains no real invoice or customer data.
 
+## Weekly brief to report sample
+
+Open the [guided report sample](https://haya-inc.github.io/wasmhatch/?view=work&example=report).
+
+1. Read the bundled synthetic Markdown operations brief in the conversation.
+2. Inspect the already-staged deterministic artifact plan and expand **View
+   execution details** if you want to read its script.
+3. Select **Prepare file**. The script reads one exact copied Markdown input in
+   QuickJS and writes one transient Markdown decision report.
+4. Inspect the unified file diff in Activity, then approve or reject it.
+5. Copy the source-free result from the conversation if you want to share
+   feedback.
+
+No spreadsheet, account, API key, OAuth, upload, or WasmHatch server is involved.
+The sample proves that the workspace and effect model applies to ordinary text
+artifacts as well as tables; it does not count as a real business pilot.
+
 ## Try a local workbook
 
 Open the [real-file entry](https://haya-inc.github.io/wasmhatch/?view=work&start=upload)

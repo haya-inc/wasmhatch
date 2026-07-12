@@ -61,6 +61,11 @@ require a separately deployed server adapter.
   import Worker and then uses the normal workspace snapshot, QuickJS, typed
   effect review, safe export, and source-free synthetic report boundaries. It
   lowers onboarding friction but does not count as a real business pilot.
+- A bundled non-tabular Markdown sample that turns a weekly operations brief
+  into one reviewed decision report through the production workspace snapshot,
+  QuickJS, transient output, unified file diff, and source-free feedback path.
+  It requires no model, account, key, upload, or server and does not count as a
+  real business pilot.
 - A local spreadsheet demo with editable tabular data.
 - A Worker-isolated CSV/XLSX artifact adapter with pre-inflation ZIP bounds,
   strict UTF-8/XML parsing, visible-sheet selection, formula/macro/external-link
