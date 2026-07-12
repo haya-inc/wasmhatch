@@ -83,8 +83,12 @@ verification cleared.
 
 - Restricted Drive scope + CASA assessment (~$500–1,000/yr) only when usage
   justifies it — unlocks whole-Drive search.
-- Second-origin artifact viewer (`wasmhatch-sandbox` org, reserved early)
-  for script-executing artifacts, claudeusercontent.com-style.
+- Second-origin artifact viewer for script-executing artifacts,
+  claudeusercontent.com-style. The `wasmhatch-usercontent` GitHub org is
+  reserved as the free interim origin (the name itself signals "untrusted
+  generated content, not the product"); the endgame is a separate
+  registrable domain. The plain `wasmhatch` org is reserved for brand
+  protection and as a possible neutral future home for the repository.
 - WebMCP consumer experiment when Chrome ships native support — the
   standards track where an in-tab agent is structurally the right consumer.
 - Browser MCP client layer published as a standalone OSS library.

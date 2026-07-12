@@ -67,7 +67,9 @@ the main preemption risk.
   native support.
 - In-tab artifacts: sandboxed iframe via srcdoc with allow-scripts and
   never allow-same-origin; script-executing artifacts eventually want a
-  second origin (reserved: wasmhatch-sandbox).
+  second origin (reserved: the wasmhatch-usercontent GitHub org, following
+  the claudeusercontent.com naming pattern; a separate registrable domain
+  is the endgame).
 
 ## Standing conclusions
 
