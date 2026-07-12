@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const projectUrl = "https://wasmhatch.com/";
-const previewUrl = `${projectUrl}social-preview.png?v=0.44.0`;
+const previewUrl = `${projectUrl}social-preview.png?v=0.45.0`;
 
 describe("public sharing metadata", () => {
   it("publishes canonical Open Graph and large-card metadata", () => {
@@ -27,7 +27,7 @@ describe("public sharing metadata", () => {
     expect(html).toContain("free, open-source AI assistant");
     expect(robots).toContain(`Sitemap: ${projectUrl}sitemap.xml`);
     expect(sitemap).toContain(`<loc>${projectUrl}</loc>`);
-    expect(sitemap).toContain("<lastmod>2026-07-12</lastmod>");
+    expect(sitemap).toContain("<lastmod>2026-07-13</lastmod>");
   });
 
   it("keeps the PNG preview at the recommended 1200 by 630 dimensions", () => {
