@@ -21,6 +21,8 @@ The foundation slice now ships:
   compatibility, operation, origin, resource, media-type, and size boundaries;
 - a credential broker that validates unsigned connector requests before adding
   authorization, without exposing token text to connector code;
+- Google Identity Services foreground OAuth with short-lived, memory-only
+  Sheets credentials, explicit reauthorization, and grant revocation;
 - an optional OpenAI Responses API planner that turns a business instruction
   and visible rows into a strict, reviewable transformation proposal;
 - QuickJS compiled to Wasm and executed in a Web Worker;
@@ -32,13 +34,14 @@ The foundation slice now ships:
 - cell-level write previews with explicit approve/reject controls; and
 - a per-tab audit trail for reads, scripts, and writes.
 
-The current operator uses memory-only development credentials for Google Sheets
-and optional AI planning. Google OAuth, CSV/XLSX, and the multi-step business
-tool loop are the next milestones.
+The current operator accepts a Google OAuth Web client ID as public session
+configuration and an optional memory-only OpenAI API key. CSV/XLSX and the
+multi-step business tool loop are the next milestones.
 
 See the current [product plan](docs/plan.md), [connector authoring
 guide](docs/connector-authoring.md), [tabular mutation
-contract](docs/tabular-mutations.md), and [business-agent
+contract](docs/tabular-mutations.md), [Google OAuth deployment
+guide](docs/google-oauth.md), and [business-agent
 landscape](docs/landscape.md).
 
 ## Legacy coding workspace

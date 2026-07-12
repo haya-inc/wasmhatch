@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Bot,
@@ -28,8 +28,7 @@ import {
 import {
   CredentialBroker,
   GOOGLE_SHEETS_MANIFEST,
-  LOCAL_SPREADSHEET_MANIFEST,
-  createMemoryBearerCredential
+  LOCAL_SPREADSHEET_MANIFEST
 } from "../lib/connector";
 import {
   SpreadsheetEffectExecutor,
@@ -38,6 +37,11 @@ import {
   type SpreadsheetEffectProposal
 } from "../lib/spreadsheet-effect";
 import { applySpreadsheetMutationBundle } from "../lib/spreadsheet-mutation";
+import {
+  GOOGLE_SHEETS_SCOPE,
+  GoogleOAuthSession,
+  type GoogleOAuthStatus
+} from "../lib/google-oauth";
 
 const DEMO_ROWS: SpreadsheetRows = [
   ["Owner", "Region", "Amount", "Stage"],
@@ -93,6 +97,14 @@ function displayCell(value: unknown) {
   return String(value);
 }
 
+function googleConnectionLabel(status: GoogleOAuthStatus) {
+  if (status.state === "connected" && status.expiresAt) {
+    return `Connected until ${new Date(status.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  }
+  if (status.state === "expired") return "Expired · reconnect required";
+  return "Foreground OAuth session";
+}
+
 export function OperatorPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const [rows, setRows] = useState<SpreadsheetRows>(DEMO_ROWS);
@@ -107,12 +119,17 @@ export function OperatorPage() {
   const [status, setStatus] = useState("Ready");
   const [error, setError] = useState("");
   const [source, setSource] = useState<"demo" | "google">("demo");
-  const [accessToken, setAccessToken] = useState("");
+  const [googleClientId, setGoogleClientId] = useState(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "");
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [revokingGoogle, setRevokingGoogle] = useState(false);
   const [spreadsheetId, setSpreadsheetId] = useState("");
   const [range, setRange] = useState("Sheet1!A1:D20");
   const [loadedGoogleTarget, setLoadedGoogleTarget] = useState<{ spreadsheetId: string; range: string } | null>(null);
   const effectExecutor = useRef(new SpreadsheetEffectExecutor());
   const credentialBroker = useRef(new CredentialBroker());
+  const googleOAuth = useRef(new GoogleOAuthSession());
+  const authorityEpoch = useRef(0);
+  const [googleAuthStatus, setGoogleAuthStatus] = useState(() => googleOAuth.current.status());
   const [audit, setAudit] = useState<AuditEntry[]>([
     { time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }
   ]);
@@ -121,6 +138,13 @@ export function OperatorPage() {
     () => proposal ? proposal.mutations.mutations : [],
     [proposal]
   );
+
+  useEffect(() => {
+    if (!googleAuthStatus.expiresAt) return;
+    const delay = Math.max(0, Date.parse(googleAuthStatus.expiresAt) - Date.now() - 30_000);
+    const timer = window.setTimeout(() => setGoogleAuthStatus(googleOAuth.current.status()), delay + 25);
+    return () => window.clearTimeout(timer);
+  }, [googleAuthStatus.expiresAt]);
 
   const record = (entry: Omit<AuditEntry, "time">) => {
     const elapsed = audit.length.toString().padStart(2, "0");
@@ -140,11 +164,15 @@ export function OperatorPage() {
   const runScript = async () => {
     setStatus("Running in Wasm worker…");
     setError("");
+    const startingAuthorityEpoch = authorityEpoch.current;
     try {
       if (source === "google" && !loadedGoogleTarget) {
         throw new Error("Read the selected Google Sheets range again before preparing a write.");
       }
       const result = await runBusinessScriptInWorker(script, rows);
+      if (startingAuthorityEpoch !== authorityEpoch.current) {
+        throw new Error("Google authorization changed during the transform. Read the range and run the script again.");
+      }
       const nextRows = spreadsheetRowsFromBusinessValue(result.output);
       const nextProposal = await prepareSpreadsheetEffect({
         connector: source === "google" ? GOOGLE_SHEETS_MANIFEST : LOCAL_SPREADSHEET_MANIFEST,
@@ -198,16 +226,75 @@ export function OperatorPage() {
     }
   };
 
+  const connectGoogle = async () => {
+    if (connectingGoogle || revokingGoogle) return;
+    setConnectingGoogle(true);
+    setError("");
+    setStatus("Opening Google authorization…");
+    authorityEpoch.current += 1;
+    invalidateProposal("Google authorization requested");
+    setLoadedGoogleTarget(null);
+    try {
+      const nextStatus = await googleOAuth.current.authorize(googleClientId, [GOOGLE_SHEETS_SCOPE]);
+      setGoogleAuthStatus(nextStatus);
+      setStatus("Google Sheets connected — read a range to continue");
+      record({
+        title: "Google Sheets authorized",
+        detail: `Foreground token · Sheets read/write scope · expires ${new Date(nextStatus.expiresAt!).toLocaleTimeString()} · credential not logged`,
+        tone: "accent"
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Google authorization failed.";
+      setGoogleAuthStatus(googleOAuth.current.status());
+      setError(message);
+      setStatus("Google authorization not completed");
+      record({ title: "Google authorization blocked", detail: message, tone: "muted" });
+    } finally {
+      setConnectingGoogle(false);
+    }
+  };
+
+  const revokeGoogle = async () => {
+    if (connectingGoogle || revokingGoogle) return;
+    setRevokingGoogle(true);
+    setError("");
+    setStatus("Revoking Google access…");
+    authorityEpoch.current += 1;
+    invalidateProposal("Google access revoked");
+    setLoadedGoogleTarget(null);
+    setPlan(null);
+    setRows(DEMO_ROWS);
+    setSource("demo");
+    try {
+      setGoogleAuthStatus(await googleOAuth.current.revoke());
+      setStatus("Google access revoked; local demo restored");
+      record({ title: "Google access revoked", detail: "Session token cleared before revocation · local demo restored", tone: "muted" });
+    } catch (caught) {
+      setGoogleAuthStatus(googleOAuth.current.status());
+      const message = caught instanceof Error ? caught.message : "Google access revocation failed.";
+      setError(message);
+      setStatus("Local credential cleared; verify Google Account permissions");
+      record({ title: "Google revocation unconfirmed", detail: message, tone: "muted" });
+    } finally {
+      setRevokingGoogle(false);
+    }
+  };
+
   const loadGoogleSheet = async () => {
+    if (connectingGoogle || revokingGoogle) return;
+    const startingAuthorityEpoch = authorityEpoch.current;
     setStatus("Reading Google Sheets…");
     setError("");
     try {
       const connector = new GoogleSheetsConnector(credentialBroker.current.bind(
         GOOGLE_SHEETS_MANIFEST,
-        createMemoryBearerCredential(accessToken),
+        googleOAuth.current.credentialProvider(),
         googleSheetsGrant({ spreadsheetId, range }, ["read-range"])
       ));
       const snapshot = await connector.read({ spreadsheetId, range });
+      if (startingAuthorityEpoch !== authorityEpoch.current) {
+        throw new Error("Google authorization changed during the range read. Read the range again.");
+      }
       invalidateProposal("source range replaced by a fresh read");
       setRows(snapshot.values);
       setPlan(null);
@@ -223,6 +310,10 @@ export function OperatorPage() {
       });
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Google Sheets read failed.";
+      if (/authorization|reconnect/i.test(message)) {
+        googleOAuth.current.clear();
+        setGoogleAuthStatus(googleOAuth.current.status());
+      }
       setError(message);
       setStatus("Connector read failed");
       record({ title: "Connector read blocked", detail: message, tone: "muted" });
@@ -230,7 +321,7 @@ export function OperatorPage() {
   };
 
   const approveWrite = async () => {
-    if (!proposal || committing) return;
+    if (!proposal || committing || connectingGoogle || revokingGoogle) return;
     setCommitting(true);
     setError("");
     try {
@@ -239,7 +330,7 @@ export function OperatorPage() {
       const connector: SpreadsheetConnector = isGoogle
         ? new GoogleSheetsConnector(credentialBroker.current.bind(
             GOOGLE_SHEETS_MANIFEST,
-            createMemoryBearerCredential(accessToken),
+            googleOAuth.current.credentialProvider(),
             googleSheetsGrant(proposal.target, ["read-range", "write-range"])
           ))
         : new LocalSpreadsheetConnector({
@@ -285,6 +376,10 @@ export function OperatorPage() {
         setError(outcome.reason);
         record({ title: "Write outcome uncertain", detail: "No automatic retry · read the target before another proposal", tone: "muted" });
       } else if (outcome.status === "failed") {
+        if (outcome.code === "source_recheck_failed" && /authorization|reconnect/i.test(outcome.reason)) {
+          googleOAuth.current.clear();
+          setGoogleAuthStatus(googleOAuth.current.status());
+        }
         if (!outcome.retryable) setProposal(null);
         setStatus(outcome.retryable ? "Source recheck failed — safe to retry" : "Approved write blocked");
         setError(outcome.reason);
@@ -346,7 +441,8 @@ export function OperatorPage() {
             <Database size={16} /><span><strong>Local demo</strong><small>No network</small></span><Check size={14} />
           </button>
           <div className={source === "google" ? "connector-row active static" : "connector-row static"}>
-            <Table2 size={16} /><span><strong>Google Sheets</strong><small>OAuth access token</small></span>
+            <Table2 size={16} /><span><strong>Google Sheets</strong><small>{googleConnectionLabel(googleAuthStatus)}</small></span>
+            {googleAuthStatus.connected && <Check size={14} />}
           </div>
           <div className="connector-row static planner-connector">
             <Bot size={16} /><span><strong>OpenAI planner</strong><small>Responses API · optional</small></span>
@@ -363,7 +459,15 @@ export function OperatorPage() {
             <p>The key stays in this tab and is used only in the Authorization header. It never enters spreadsheet data, the model prompt, or the Wasm worker.</p>
           </div>
           <div className="connector-form">
-            <label>Development access token<input type="password" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} autoComplete="off" placeholder="Memory only" disabled={committing} /></label>
+            <label>Google OAuth Web client ID<input value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" placeholder="123…apps.googleusercontent.com" aria-label="Google OAuth Web client ID" disabled={committing || connectingGoogle || revokingGoogle || googleAuthStatus.connected} /></label>
+            <button onClick={() => void connectGoogle()} disabled={committing || connectingGoogle || revokingGoogle || !googleClientId.trim()}>
+              <KeyRound size={13} /> {connectingGoogle ? "Authorizing…" : googleAuthStatus.connected ? "Switch Google account" : googleAuthStatus.state === "expired" ? "Reconnect Google Sheets" : "Connect Google Sheets"}
+            </button>
+            {googleAuthStatus.connected && (
+              <button className="revoke-google" onClick={() => void revokeGoogle()} disabled={committing || connectingGoogle || revokingGoogle}>
+                {revokingGoogle ? "Revoking…" : "Revoke Google access"}
+              </button>
+            )}
             <label>Spreadsheet ID<input value={spreadsheetId} onChange={(event) => {
               setSpreadsheetId(event.target.value);
               if (source === "google") {
@@ -380,14 +484,14 @@ export function OperatorPage() {
                 setStatus("Target changed — read the range again");
               }
             }} placeholder="Sheet1!A1:D20" disabled={committing} /></label>
-            <button onClick={() => void loadGoogleSheet()} disabled={committing || !accessToken.trim() || !spreadsheetId.trim() || !range.trim()}>
+            <button onClick={() => void loadGoogleSheet()} disabled={committing || connectingGoogle || revokingGoogle || !googleAuthStatus.connected || !spreadsheetId.trim() || !range.trim()}>
               <RefreshCw size={13} /> Read range
             </button>
-            <p>The host broker holds this token and attaches it only after connector origin, operation, method, path, query, headers, and size limits pass. Connector code, the model, and sandbox scripts never receive it.</p>
+            <p>Requests the sensitive Sheets read/write scope for this foreground session only. The host broker attaches the short-lived token after validating connector operation and exact target. It is never persisted or exposed to connector, model, or script code.</p>
           </div>
           <div className="operator-scope">
             <ShieldCheck size={16} />
-            <div><strong>Current boundary</strong><p>Foreground session only. Manifest-bound transport, no raw connector credential, scheduling, refresh-token storage, or unattended writes.</p></div>
+            <div><strong>Current boundary</strong><p>Foreground GIS token model. Expiry requires a new user gesture; no refresh token, scheduling, or unattended write.</p></div>
           </div>
         </aside>
 
@@ -432,7 +536,7 @@ export function OperatorPage() {
             <div className="operator-task-label"><span>Sandbox script</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
             <textarea value={script} onChange={(event) => { setScript(event.target.value); setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" disabled={committing} />
             <div className="operator-script-actions">
-              <button onClick={() => void runScript()} disabled={committing || (source === "google" && !loadedGoogleTarget)}><Play size={14} /> Run in Wasm sandbox</button>
+              <button onClick={() => void runScript()} disabled={committing || connectingGoogle || revokingGoogle || (source === "google" && !loadedGoogleTarget)}><Play size={14} /> Run in Wasm sandbox</button>
               <span>Input and output are JSON-only · 750 ms CPU limit · 32 MB memory limit</span>
             </div>
           </div>
@@ -461,7 +565,7 @@ export function OperatorPage() {
                 ))}
                 {changes.length > 24 && <p>+ {changes.length - 24} more changes</p>}
               </div>
-              <button className="approve-write" onClick={() => void approveWrite()} disabled={committing || !changes.length}>
+              <button className="approve-write" onClick={() => void approveWrite()} disabled={committing || connectingGoogle || revokingGoogle || !changes.length}>
                 <Check size={15} /> {committing ? "Validating source…" : `Approve and ${proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? "write range" : "apply locally"}`}
               </button>
               <button className="reject-write" onClick={() => void rejectWrite()} disabled={committing}>Reject proposal</button>

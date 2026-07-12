@@ -10,11 +10,11 @@ const requiredDirectives = [
   "default-src 'none'",
   "base-uri 'none'",
   "object-src 'none'",
-  "frame-src 'none'",
+  "frame-src https://accounts.google.com/gsi/",
   "form-action 'none'",
-  "script-src 'self' 'wasm-unsafe-eval'",
-  "style-src 'self'",
-  "connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com",
+  "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client",
+  "style-src 'self' https://accounts.google.com/gsi/style",
+  "connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://accounts.google.com/gsi/",
   "worker-src 'self'"
 ];
 

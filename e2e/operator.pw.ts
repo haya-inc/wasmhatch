@@ -1,4 +1,30 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+const GOOGLE_CLIENT_ID = "1234567890-wasmhatch.apps.googleusercontent.com";
+
+async function authorizeGoogleSheets(page: Page) {
+  await page.route("https://accounts.google.com/gsi/client", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `globalThis.google = { accounts: { oauth2: {
+        initTokenClient(config) {
+          return { requestAccessToken() { config.callback({
+            access_token: "test-token",
+            expires_in: 3600,
+            scope: "https://www.googleapis.com/auth/spreadsheets",
+            token_type: "Bearer"
+          }); } };
+        },
+        hasGrantedAllScopes() { return true; },
+        revoke(token, callback) { globalThis.__wasmhatchRevokedToken = token; callback({ successful: true }); }
+      } } };`
+    });
+  });
+  await page.getByLabel("Google OAuth Web client ID").fill(GOOGLE_CLIENT_ID);
+  await page.getByRole("button", { name: "Connect Google Sheets" }).click();
+  await expect(page.getByText("Google Sheets authorized")).toBeVisible();
+}
 
 test("runs a spreadsheet transform in Wasm and requires write approval", async ({ page }) => {
   await page.goto("/?view=operator");
@@ -76,6 +102,48 @@ test("stages an AI plan before the Wasm transform and write review", async ({ pa
   await expect(page.getByText("NORTH", { exact: true })).toBeVisible();
 });
 
+test("keeps the GIS token out of the UI and revokes it on disconnect", async ({ page }) => {
+  await page.goto("/?view=operator");
+  await authorizeGoogleSheets(page);
+
+  await expect(page.getByText(/Connected until/)).toBeVisible();
+  expect(await page.locator("body").innerText()).not.toContain("test-token");
+  await page.getByRole("button", { name: "Revoke Google access" }).click();
+
+  await expect(page.getByText("Google access revoked", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Connect Google Sheets" })).toBeVisible();
+  expect(await page.evaluate(() => (globalThis as typeof globalThis & { __wasmhatchRevokedToken?: string }).__wasmhatchRevokedToken)).toBe("test-token");
+});
+
+test("invalidates a pending proposal before switching Google authority", async ({ page }) => {
+  await page.route("https://sheets.googleapis.com/v4/spreadsheets/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        range: "Ops!A1:D2",
+        values: [
+          ["Owner", "Region", "Amount", "Stage"],
+          [" aya tanaka ", " west ", "12,400", "won"]
+        ]
+      })
+    });
+  });
+  await page.goto("/?view=operator");
+  await authorizeGoogleSheets(page);
+  await page.getByLabel("Spreadsheet ID").fill("sheet-1");
+  await page.getByLabel("Range").fill("Ops!A1:D2");
+  await page.getByRole("button", { name: "Read range" }).click();
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+  await expect(page.getByText("Explicit approval required")).toBeVisible();
+
+  await page.getByRole("button", { name: "Switch Google account" }).click();
+
+  await expect(page.getByText("No pending write")).toBeVisible();
+  await expect(page.getByText("Write proposal invalidated")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Run in Wasm sandbox" })).toBeDisabled();
+});
+
 test("rechecks Google Sheets and blocks a stale approved proposal before PUT", async ({ page }) => {
   let reads = 0;
   let writes = 0;
@@ -105,7 +173,7 @@ test("rechecks Google Sheets and blocks a stale approved proposal before PUT", a
   });
 
   await page.goto("/?view=operator");
-  await page.getByLabel("Development access token").fill("test-token");
+  await authorizeGoogleSheets(page);
   await page.getByLabel("Spreadsheet ID").fill("sheet-1");
   await page.getByLabel("Range").fill("Ops!A1:D4");
   await page.getByRole("button", { name: "Read range" }).click();
@@ -143,7 +211,7 @@ test("does not retry when a Google Sheets write outcome is uncertain", async ({ 
   });
 
   await page.goto("/?view=operator");
-  await page.getByLabel("Development access token").fill("test-token");
+  await authorizeGoogleSheets(page);
   await page.getByLabel("Spreadsheet ID").fill("sheet-1");
   await page.getByLabel("Range").fill("Ops!A1:D2");
   await page.getByRole("button", { name: "Read range" }).click();
@@ -178,7 +246,7 @@ test("invalidates a pending Google proposal when its target is edited", async ({
   });
 
   await page.goto("/?view=operator");
-  await page.getByLabel("Development access token").fill("test-token");
+  await authorizeGoogleSheets(page);
   await page.getByLabel("Spreadsheet ID").fill("sheet-1");
   await page.getByLabel("Range").fill("Ops!A1:D2");
   await page.getByRole("button", { name: "Read range" }).click();

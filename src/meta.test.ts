@@ -49,5 +49,7 @@ describe("public sharing metadata", () => {
     expect(viteConfig).toContain('"worker-src \'self\'"');
     expect(viteConfig).toContain("'wasm-unsafe-eval'");
     expect(viteConfig).toContain("https://sheets.googleapis.com");
+    expect(viteConfig).toContain("https://accounts.google.com/gsi/client");
+    expect(viteConfig).toContain('"same-origin-allow-popups"');
   });
 });

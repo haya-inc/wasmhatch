@@ -48,6 +48,10 @@ require a separately deployed server adapter.
   headers, and byte limits.
 - A `GoogleSheetsConnector` that reads and writes through the broker-bound
   transport rather than receiving a raw token or authenticated `fetch`.
+- A Google Identity Services token-model host with session-only credentials,
+  expiry margin, typed denial/popup/timeout errors, explicit reauthorization,
+  account-switch invalidation, and grant revocation. See
+  [Google Sheets OAuth](google-oauth.md).
 - A provider-neutral `BusinessPlanner` boundary and OpenAI Responses API
   adapter for natural-language spreadsheet transformation plans.
 - Strict function-call output that stages a summary, expected effect,
@@ -78,8 +82,9 @@ require a separately deployed server adapter.
 
 ### 2.2 Not implemented yet
 
-- Google OAuth authorization UI; the foundation screen accepts a development
-  access token for manual testing.
+- A bundled production Google OAuth client, public sensitive-scope verification,
+  Google Picker/`drive.file`, and active account email display. The foreground
+  flow accepts deployer or user-provided Web client ID configuration.
 - A multi-step AI tool loop that can request connector reads, run more than one
   transform, or revise a plan from tool results.
 - Local XLSX/CSV import in the operator surface.
@@ -424,6 +429,11 @@ OPFS remains useful for:
 
 OAuth access and refresh tokens are never stored in OPFS or `localStorage`.
 Formal OAuth support must use browser session memory for the foreground alpha.
+The Google Sheets implementation uses the GIS token model, treats the final 30
+seconds as expired, and requires an explicit reconnect gesture. Its sensitive
+Sheets scope is broader than the broker's exact spreadsheet/range grant; the UI
+discloses that difference and the next per-file authorization spike is
+`drive.file` plus Google Picker.
 The development OpenAI API key follows the same memory-only rule. It is never
 placed in model input, script input, URLs, logs, or browser storage.
 
@@ -566,7 +576,8 @@ Its initial wedge is:
 - Add QuickJS/Wasm Worker with resource limits — complete.
 - Add cell-level transform preview and approval — complete.
 - Add foundation operator UI and local demo — complete.
-- Add Google Identity Services OAuth flow.
+- Add Google Identity Services OAuth flow — complete for the configurable
+  foreground token model; production client verification remains deployment work.
 - Add local CSV/XLSX import and export.
 - Add stale-source precondition before an approved write — complete for
   snapshot `recheck`; provider-native atomic conditions remain connector-gated.
@@ -749,11 +760,9 @@ The coding-contributor metric is retired. Product evidence is:
 
 ## 11. Immediate next issues
 
-1. Add Google Identity Services OAuth with narrow Sheets scopes through the
-   now-stable credential-broker contract.
-2. Add CSV/XLSX import and export through workspace artifacts.
-3. Continue the five pilot workflows and record evidence for architecture gates.
-4. Define the script input/output manifest and ephemeral virtual mount contract.
-5. Implement the checkpointed approval loop and policy decision envelope.
-6. Move the smallest OPFS workspace slice into the operator with export and
+1. Add CSV/XLSX import and export through workspace artifacts.
+2. Continue the five pilot workflows and record evidence for architecture gates.
+3. Define the script input/output manifest and ephemeral virtual mount contract.
+4. Implement the checkpointed approval loop and policy decision envelope.
+5. Move the smallest OPFS workspace slice into the operator with export and
     recovery tests.

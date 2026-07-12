@@ -656,6 +656,13 @@ or application UI. Tests prove unknown-field rejection, incompatible-core
 rejection, undeclared-origin rejection, secret absence from connector-visible
 objects, refresh-provider behavior, and bounded fixtures.
 
+Follow-up on 2026-07-12: the Google Identity Services foreground host now
+implements that provider boundary. It keeps the short-lived access token in an
+ECMAScript private field, fails closed before expiry, requires a new user gesture
+instead of silent refresh, invalidates proposals after account switching, and
+clears local authority before grant revocation. This validates the broker
+callback without introducing a general authenticated HTTP client.
+
 This is a capability boundary for reviewed, bundled connector code, not a
 sandbox for arbitrary third-party JavaScript. Loading untrusted connector
 packages dynamically remains out of scope until their code executes in an

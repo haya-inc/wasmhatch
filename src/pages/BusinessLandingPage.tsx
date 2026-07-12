@@ -107,7 +107,7 @@ export function BusinessLandingPage() {
           <p>WasmHatch lets the model plan with typed business connectors, while scripts receive data—not credentials—and writes stop for review.</p>
         </div>
         <div className="workflow-sequence">
-          <article><span className="step-number">01</span><Database aria-hidden="true" /><h3>Connect the data</h3><p>Grant a bounded spreadsheet range or local workbook for the current browser session.</p></article>
+          <article><span className="step-number">01</span><Database aria-hidden="true" /><h3>Connect the data</h3><p>Authorize a short-lived Google session or grant a local workbook for the foreground task.</p></article>
           <article><span className="step-number">02</span><Play aria-hidden="true" /><h3>Run isolated logic</h3><p>The agent can compose a transformation that runs in a resource-limited Wasm Worker without network access.</p></article>
           <article><span className="step-number">03</span><Check aria-hidden="true" /><h3>Approve the effect</h3><p>Review cell-level changes and the complete audit trail before an external API write occurs.</p></article>
         </div>
@@ -117,10 +117,10 @@ export function BusinessLandingPage() {
         <div className="section-label">Architecture, not magic</div>
         <div className="fit-heading">
           <h2 id="capabilities-title">Browser first.<br />Capability bound.</h2>
-          <div><p>The first release works while the user is present. Versioned connector manifests bind operations and resources; the host broker keeps raw credentials out of connector code.</p><a href={`${repositoryUrl}/blob/main/docs/connector-authoring.md`}>Build a connector <ArrowRight size={16} /></a></div>
+          <div><p>The first release works while the user is present. Google Identity Services issues a short-lived session token; manifests bind the broker to approved operations and resources.</p><a href={`${repositoryUrl}/blob/main/docs/google-oauth.md`}>Configure Google OAuth <ArrowRight size={16} /></a></div>
         </div>
         <div className="fit-list" aria-label="WasmHatch architecture layers">
-          <article className="fit-primary"><span>01</span><h3>Connector broker</h3><p>Manifest-bound operations, resources, origins, and response limits</p><small>No raw credential in connector code</small></article>
+          <article className="fit-primary"><span>01</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
           <article><span>02</span><h3>Agent planner</h3><p>Selects tools and prepares bounded operations</p><small>No raw tokens</small></article>
           <article><span>03</span><h3>Wasm script worker</h3><p>Transforms JSON and tabular data under CPU and memory limits</p><small>No fetch or DOM</small></article>
           <article><span>04</span><h3>Write review</h3><p>One typed mutation bundle drives preview and commit</p><small>Human in loop</small></article>
@@ -167,7 +167,7 @@ export function BusinessLandingPage() {
         <div className="section-label">Trust is the operating system</div>
         <h2 id="trust-title">Local-first.<br />Effect-aware.</h2>
         <div className="trust-lines">
-          <div><span>Credentials</span><strong>Host broker only</strong><em>01</em></div>
+          <div><span>Credentials</span><strong>Short-lived GIS → host broker</strong><em>01</em></div>
           <div><span>Model access</span><strong>Typed, bounded tool results</strong><em>02</em></div>
           <div><span>Scripts</span><strong>Wasm Worker · no host access</strong><em>03</em></div>
           <div><span>Writes</span><strong>Cell-level approval first</strong><em>04</em></div>
