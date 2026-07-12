@@ -36,6 +36,51 @@ test("opens a real-file entry state and returns to work after local import", asy
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
+test("copies a source-free pilot report for a real CSV effect and expires it on new work", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport = value;
+        }
+      }
+    });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?view=operator&start=upload");
+
+  await page.getByLabel("Import CSV or XLSX").setInputFiles({
+    name: "private-customer-list.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Customer,Region\nSecret Customer, west \n")
+  });
+  await page.getByRole("textbox", { name: "Sandbox transformation script" }).fill(
+    "(rows) => rows.map((row, index) => index === 0 ? row : [row[0], String(row[1]).trim().toUpperCase()])"
+  );
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+
+  const audit = page.getByLabel("Review and audit");
+  await audit.getByRole("button", { name: "Copy report" }).click();
+  await expect(audit.getByRole("link", { name: "Pilot form" })).toHaveAttribute(
+    "href",
+    "https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml"
+  );
+  const copied = await page.evaluate(() => (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport ?? "");
+  expect(copied).toContain("Local CSV workflow pilot");
+  expect(copied).toContain("user-selected CSV parsed in a browser Worker");
+  expect(copied).toContain("Result: committed local effect");
+  expect(copied).not.toContain("private-customer-list.csv");
+  expect(copied).not.toContain("Secret Customer");
+  expect(copied).not.toContain("run_journal_");
+
+  await page.getByRole("textbox", { name: "Sandbox transformation script" }).fill("(rows) => rows");
+  await expect(audit.getByRole("link", { name: "Pilot form" })).toHaveCount(0);
+  await expect(audit.getByRole("button", { name: "Copy report" })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
 async function authorizeGoogleSheets(page: Page) {
   await page.route("https://accounts.google.com/gsi/client", async (route) => {
     await route.fulfill({
@@ -356,6 +401,16 @@ test("materializes an exact Google Sheets grant and commits a reviewed artifact"
   const sourceRows = [["Owner", "Amount"], ["Aya", 1200], ["Ken", 900]];
   const requestBodies: Record<string, unknown>[] = [];
   let sheetReads = 0;
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport = value;
+        }
+      }
+    });
+  });
   await page.route("https://sheets.googleapis.com/v4/spreadsheets/**", async (route) => {
     sheetReads += 1;
     expect(route.request().method()).toBe("GET");
@@ -444,6 +499,15 @@ test("materializes an exact Google Sheets grant and commits a reviewed artifact"
   await page.getByRole("button", { name: "Approve and write workspace file" }).click();
   await expect(page.getByText("Workspace file effect committed", { exact: true })).toBeVisible();
   await expect(page.getByRole("option", { name: /google-pipeline\.md/ })).toBeVisible();
+
+  await page.getByLabel("Review and audit").getByRole("button", { name: "Copy report" }).click();
+  const publicReport = await page.evaluate(() => (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport ?? "");
+  expect(publicReport).toContain("Google Sheets workflow pilot");
+  expect(publicReport).toContain("External account or OAuth used: foreground Google account and OAuth");
+  expect(publicReport).toContain("Model requests recorded: yes");
+  expect(publicReport).not.toContain(spreadsheetId);
+  expect(publicReport).not.toContain(range);
+  expect(publicReport).not.toContain("Aya");
 
   const journalDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export JSON" }).click();

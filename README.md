@@ -60,9 +60,10 @@ The foundation slice now ships:
 - a shared run journal and policy-decision envelope that joins model/tool events,
   scripts, proposals, reviews, conflicts, receipts, and pilot timing metrics in
   an explicit credential-field-free, defensively redacted JSON export;
-- a public pilot-report action for committed or safely rejected guided proposals
-  that copies aggregate counts and timings while excluding source contents, task
-  text, resource identities, and run ID;
+- a public pilot-report action for committed or safely rejected guided,
+  CSV/XLSX, and foreground Google Sheets proposals that copies aggregate counts
+  and timings while excluding source contents, task text, resource identities,
+  and run ID;
 - two deterministic, key-free pilot paths for pipeline normalization and invoice
   reconciliation, both using the production sandbox and effect-review protocol;
 - typed cell-mutation bundles that generate preview, summary, commit payload,

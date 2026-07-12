@@ -3,6 +3,54 @@ import { guidedDemoDefinition, type GuidedDemoId } from "./guided-demo";
 
 export const PUBLIC_PILOT_REPORT_SCHEMA = "wasmhatch.public-pilot-report.v1" as const;
 
+export type PublicPilotWorkflowId = GuidedDemoId | "local-csv" | "local-xlsx" | "google-sheets";
+
+interface PublicPilotWorkflowMetadata {
+  readonly label: string;
+  readonly workflow: string;
+  readonly source: string;
+  readonly externalAuthority: string;
+  readonly nextQuestion: string;
+}
+
+const PUBLIC_WORKFLOWS: Readonly<Record<PublicPilotWorkflowId, PublicPilotWorkflowMetadata>> = Object.freeze({
+  normalization: Object.freeze({
+    label: guidedDemoDefinition("normalization").label,
+    workflow: guidedDemoDefinition("normalization").reportWorkflow,
+    source: guidedDemoDefinition("normalization").sourceDescription,
+    externalAuthority: "no",
+    nextQuestion: "What real CSV/XLSX or Google Sheets workflow would you try next?"
+  }),
+  reconciliation: Object.freeze({
+    label: guidedDemoDefinition("reconciliation").label,
+    workflow: guidedDemoDefinition("reconciliation").reportWorkflow,
+    source: guidedDemoDefinition("reconciliation").sourceDescription,
+    externalAuthority: "no",
+    nextQuestion: "What real CSV/XLSX or Google Sheets workflow would you try next?"
+  }),
+  "local-csv": Object.freeze({
+    label: "Local CSV workflow",
+    workflow: "local CSV transformation with typed cell or file-effect review",
+    source: "user-selected CSV parsed in a browser Worker",
+    externalAuthority: "no",
+    nextQuestion: "What capability would make this workflow repeatable?"
+  }),
+  "local-xlsx": Object.freeze({
+    label: "Local XLSX workflow",
+    workflow: "local XLSX transformation with typed cell or file-effect review",
+    source: "user-selected XLSX normalized in a browser Worker",
+    externalAuthority: "no",
+    nextQuestion: "What capability would make this workflow repeatable?"
+  }),
+  "google-sheets": Object.freeze({
+    label: "Google Sheets workflow",
+    workflow: "foreground Google Sheets operation with typed cell or local file-effect review",
+    source: "one foreground-loaded Google Sheets range",
+    externalAuthority: "foreground Google account and OAuth",
+    nextQuestion: "What capability would make this workflow repeatable?"
+  })
+});
+
 function requireMetric(value: number | null, label: string) {
   if (value === null) return null;
   if (!Number.isInteger(value) || value < 0 || value > 24 * 60 * 60 * 1_000) {
@@ -42,9 +90,10 @@ function validateMetrics(metrics: RunJournalMetrics) {
   };
 }
 
-export function createGuidedLocalDemoPilotReport(journal: RunJournal, demoId: GuidedDemoId = "normalization") {
+export function createPublicPilotReport(journal: RunJournal, workflowId: PublicPilotWorkflowId) {
   if (!journal || typeof journal !== "object") throw new Error("Pilot run journal is required.");
-  const demo = guidedDemoDefinition(demoId);
+  const workflow = PUBLIC_WORKFLOWS[workflowId];
+  if (!workflow) throw new Error("Public pilot workflow is unsupported.");
   const metrics = validateMetrics(journal.metrics);
   const terminal = [...journal.events].reverse().find((event) =>
     ["committed", "rejected", "conflict", "uncertain", "failed", "denied"].includes(event.outcome)
@@ -52,13 +101,13 @@ export function createGuidedLocalDemoPilotReport(journal: RunJournal, demoId: Gu
   const committed = terminal?.outcome === "committed" && metrics.commits >= 1 && metrics.approvals >= 1;
   const rejected = terminal?.outcome === "rejected" && metrics.rejections >= 1;
   if (metrics.proposalsPrepared < 1 || (!committed && !rejected)) {
-    throw new Error("Complete an approved or rejected local demo proposal before creating its public pilot report.");
+    throw new Error("Complete an approved or rejected effect proposal before creating its public pilot report.");
   }
   const report = `<!-- ${PUBLIC_PILOT_REPORT_SCHEMA} — inspect before posting; do not add private data. -->
-## ${demo.label} pilot
+## ${workflow.label} pilot
 
-- Workflow: ${demo.reportWorkflow}
-- Source: ${demo.sourceDescription}
+- Workflow: ${workflow.workflow}
+- Source: ${workflow.source}
 - Result: ${committed ? "committed local effect" : "rejected proposal; no effect from that proposal"}
 - Script runs: ${metrics.scriptRuns}
 - Proposals prepared: ${metrics.proposalsPrepared}
@@ -68,16 +117,22 @@ export function createGuidedLocalDemoPilotReport(journal: RunJournal, demoId: Gu
 - Uncertain outcomes: ${metrics.uncertainOutcomes}
 - Time to first proposal: ${formatDuration(metrics.timeToFirstProposalMs)}
 - Time to first commit: ${formatDuration(metrics.timeToFirstCommitMs)}
-- Account, API key, OAuth, upload, or server used: no
+- External account or OAuth used: ${workflow.externalAuthority}
+- Model requests recorded: ${metrics.modelEvents > 0 ? "yes" : "no"}
+- WasmHatch server or source upload used: no
 - Source contents, task text, resource identifiers, and run ID included: no
 
 ### Human assessment
 
 - Was the before/after review clear enough to approve safely?
 - What was the first confusing or slow step?
-- What real CSV/XLSX or Google Sheets workflow would you try next?
+- ${workflow.nextQuestion}
 - Would you use this review model again? yes / maybe / no
 `;
   if (new TextEncoder().encode(report).byteLength > 8 * 1024) throw new Error("Public pilot report exceeds 8 KB.");
   return report;
+}
+
+export function createGuidedLocalDemoPilotReport(journal: RunJournal, demoId: GuidedDemoId = "normalization") {
+  return createPublicPilotReport(journal, demoId);
 }

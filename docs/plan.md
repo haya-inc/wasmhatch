@@ -127,10 +127,13 @@ require a separately deployed server adapter.
   structured reads/model/tools/scripts/proposals/approvals/effects, derived pilot
   timing metrics, credential-shaped text redaction, and explicit JSON export.
   See [Run Journal](run-journal.md).
-- A guided-demo public pilot report for either a committed effect or a safely
-  rejected proposal, derived only from aggregate run metrics and copied for user
-  inspection before a privacy-confirming GitHub Issue Form. It excludes source
-  rows, task text, resource identities, and run ID.
+- A public pilot report for either a committed effect or a safely rejected
+  proposal in guided demos, local CSV/XLSX workflows, and foreground Google
+  Sheets workflows. It is derived only from host-defined workflow metadata and
+  aggregate run metrics, then copied for user inspection before a
+  privacy-confirming GitHub Issue Form. It excludes source rows, file names,
+  sheet targets, task text, resource identities, and run ID, and expires when
+  new work invalidates its terminal context.
 
 ### 2.2 Not implemented yet
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appendRunJournalEvent, createRunJournal } from "./run-journal";
-import { createGuidedLocalDemoPilotReport } from "./public-pilot-report";
+import { createGuidedLocalDemoPilotReport, createPublicPilotReport } from "./public-pilot-report";
 
 function committedJournal() {
   let journal = createRunJournal({
@@ -64,7 +64,9 @@ describe("public pilot reports", () => {
     expect(report).toContain("wasmhatch.public-pilot-report.v1");
     expect(report).toContain("Time to first proposal: 2.5 s");
     expect(report).toContain("Time to first commit: 5.0 s");
-    expect(report).toContain("Account, API key, OAuth, upload, or server used: no");
+    expect(report).toContain("External account or OAuth used: no");
+    expect(report).toContain("Model requests recorded: no");
+    expect(report).toContain("WasmHatch server or source upload used: no");
     expect(report).not.toContain("run_journal_");
     expect(report).not.toContain("aya tanaka");
     expect(new TextEncoder().encode(report).byteLength).toBeLessThanOrEqual(8 * 1024);
@@ -75,7 +77,7 @@ describe("public pilot reports", () => {
       runId: `run_journal_${"b".repeat(32)}`,
       startedAt: "2026-07-12T00:00:00.000Z"
     });
-    expect(() => createGuidedLocalDemoPilotReport(journal)).toThrow("Complete an approved or rejected local demo proposal");
+    expect(() => createGuidedLocalDemoPilotReport(journal)).toThrow("Complete an approved or rejected effect proposal");
   });
 
   it("reports a safe rejection as useful negative pilot evidence", () => {
@@ -94,7 +96,7 @@ describe("public pilot reports", () => {
       summary: "Later effect outcome uncertain",
       occurredAt: "2026-07-12T00:00:06.000Z"
     });
-    expect(() => createGuidedLocalDemoPilotReport(journal)).toThrow("Complete an approved or rejected local demo proposal");
+    expect(() => createGuidedLocalDemoPilotReport(journal)).toThrow("Complete an approved or rejected effect proposal");
   });
 
   it("uses only host-defined reconciliation metadata for the second sample", () => {
@@ -102,5 +104,25 @@ describe("public pilot reports", () => {
     expect(report).toContain("Invoice reconciliation sample pilot");
     expect(report).toContain("local invoice reconciliation with variance and exception review");
     expect(report).toContain("bundled synthetic ERP and payout values");
+  });
+
+  it("uses generic host metadata for real local files without leaking identities", () => {
+    const csv = createPublicPilotReport(committedJournal(), "local-csv");
+    const xlsx = createPublicPilotReport(rejectedJournal(), "local-xlsx");
+    expect(csv).toContain("Local CSV workflow pilot");
+    expect(csv).toContain("user-selected CSV parsed in a browser Worker");
+    expect(xlsx).toContain("Local XLSX workflow pilot");
+    expect(xlsx).toContain("user-selected XLSX normalized in a browser Worker");
+    expect(`${csv}\n${xlsx}`).not.toContain("customer.xlsx");
+    expect(`${csv}\n${xlsx}`).not.toContain("Sheet1");
+  });
+
+  it("discloses foreground Google authority without including its target", () => {
+    const report = createPublicPilotReport(committedJournal(), "google-sheets");
+    expect(report).toContain("Google Sheets workflow pilot");
+    expect(report).toContain("External account or OAuth used: foreground Google account and OAuth");
+    expect(report).toContain("WasmHatch server or source upload used: no");
+    expect(report).not.toContain("spreadsheetId");
+    expect(report).not.toContain("Sheet1!");
   });
 });

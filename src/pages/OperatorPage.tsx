@@ -99,7 +99,10 @@ import {
   type WorkspaceAgentBudget,
   type WorkspaceAgentTraceEvent
 } from "../lib/workspace-agent";
-import { createGuidedLocalDemoPilotReport } from "../lib/public-pilot-report";
+import {
+  createPublicPilotReport,
+  type PublicPilotWorkflowId
+} from "../lib/public-pilot-report";
 import {
   guidedDemoDefinition,
   resolveGuidedDemo,
@@ -253,6 +256,7 @@ export function OperatorPage() {
   const [localDemoOutcome, setLocalDemoOutcome] = useState<"committed" | "rejected" | null>(null);
   const [pilotReportDelivery, setPilotReportDelivery] = useState<"copied" | "downloaded" | null>(null);
   const [pilotReportDownload, setPilotReportDownload] = useState<string | null>(null);
+  const [pilotReportWorkflow, setPilotReportWorkflow] = useState<PublicPilotWorkflowId | null>(null);
   const [mobileSourcesOpen, setMobileSourcesOpen] = useState(initialDemo.startUpload);
   const [uploadPromptVisible, setUploadPromptVisible] = useState(initialDemo.startUpload);
   const [agentTrace, setAgentTrace] = useState<WorkspaceAgentTraceEvent[]>([]);
@@ -400,6 +404,18 @@ export function OperatorPage() {
     setArtifactWorkflowDraft(null);
   };
 
+  const clearPublicPilotReport = () => {
+    setPilotReportWorkflow(null);
+    setPilotReportDelivery(null);
+    setPilotReportDownload(null);
+  };
+
+  const currentPublicPilotWorkflow = (): PublicPilotWorkflowId => {
+    if (source === "demo") return demoId;
+    if (source === "artifact") return artifact?.format === "xlsx" ? "local-xlsx" : "local-csv";
+    return "google-sheets";
+  };
+
   const changePlanMode = (nextMode: "spreadsheet-transform" | "artifact-output") => {
     if (nextMode === planMode || planning || committing) return;
     planningAbort.current?.abort();
@@ -417,6 +433,7 @@ export function OperatorPage() {
   };
 
   const invalidateProposal = (reason: string) => {
+    clearPublicPilotReport();
     if (proposal) {
       record({
         title: "Write proposal invalidated",
@@ -880,8 +897,7 @@ export function OperatorPage() {
     setUploadPromptVisible(false);
     setShowLocalDemoGuide(true);
     setLocalDemoOutcome(null);
-    setPilotReportDelivery(null);
-    setPilotReportDownload(null);
+    clearPublicPilotReport();
     try {
       setGoogleAuthStatus(await googleOAuth.current.revoke());
       setStatus("Google access revoked; local demo restored");
@@ -1000,6 +1016,7 @@ export function OperatorPage() {
           ? `Updated ${outcome.receipt.providerResult.updatedCells} cells in ${outcome.receipt.providerResult.updatedRange}`
           : source === "artifact" ? "Approved changes applied to the imported working snapshot" : "Approved changes applied to the local demo");
         if (source === "demo") setLocalDemoOutcome("committed");
+        setPilotReportWorkflow(currentPublicPilotWorkflow());
         record({
           title: isGoogle ? "Google Sheets effect committed" : "Local effect committed",
           detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}`,
@@ -1072,6 +1089,7 @@ export function OperatorPage() {
       setProposal(null);
       setStatus("Write proposal rejected; no mutation occurred");
       if (source === "demo") setLocalDemoOutcome("rejected");
+      setPilotReportWorkflow(currentPublicPilotWorkflow());
     } else if (outcome.status === "failed") {
       setError(outcome.reason);
       setStatus("Proposal rejection could not be recorded");
@@ -1244,6 +1262,7 @@ export function OperatorPage() {
         setWorkspaceProposal(null);
         refreshWorkspaceArtifacts();
         setStatus(`Saved ${outcome.receipt.workspacePath}`);
+        setPilotReportWorkflow(currentPublicPilotWorkflow());
         record({
           title: "Workspace file effect committed",
           detail: `${outcome.receipt.receiptId.slice(-12)} · ${outcome.receipt.workspacePath} · ${outcome.receipt.bytes} B · recheck`,
@@ -1314,6 +1333,7 @@ export function OperatorPage() {
       });
       setWorkspaceProposal(null);
       setStatus("Workspace file proposal rejected; no output was written");
+      setPilotReportWorkflow(currentPublicPilotWorkflow());
     } else if (outcome.status === "failed") {
       setError(outcome.reason);
       setStatus("Workspace proposal rejection could not be recorded");
@@ -1344,8 +1364,7 @@ export function OperatorPage() {
     setSource("demo");
     setShowLocalDemoGuide(true);
     setLocalDemoOutcome(null);
-    setPilotReportDelivery(null);
-    setPilotReportDownload(null);
+    clearPublicPilotReport();
     setMobileSourcesOpen(false);
     setUploadPromptVisible(false);
     setLoadedGoogleTarget(null);
@@ -1474,6 +1493,7 @@ export function OperatorPage() {
   };
 
   const adoptRestoredWorkspace = (bundle: OperatorWorkspaceBundle) => {
+    clearPublicPilotReport();
     const fallbackDemo = guidedDemoDefinition("normalization");
     const activePath = bundle.manifest.activeArtifactPath;
     if (activePath) {
@@ -1494,8 +1514,6 @@ export function OperatorPage() {
       setSource("demo");
       setShowLocalDemoGuide(true);
       setLocalDemoOutcome(null);
-      setPilotReportDelivery(null);
-      setPilotReportDownload(null);
     }
     setArtifactFile(null);
     setLoadedGoogleTarget(null);
@@ -1889,6 +1907,9 @@ export function OperatorPage() {
 
   const googleArtifactReadReady = source === "google" && Boolean(loadedGoogleTarget) && googleAuthStatus.connected;
   const localDemoFinished = localDemoOutcome !== null;
+  const realWorkflowPilotReady = pilotReportWorkflow === "local-csv"
+    || pilotReportWorkflow === "local-xlsx"
+    || pilotReportWorkflow === "google-sheets";
   const currentSourceLabel = uploadPromptVisible
     ? "CSV / XLSX not selected"
     : source === "demo"
@@ -1899,10 +1920,11 @@ export function OperatorPage() {
           ? `Google Sheets · ${loadedGoogleTarget.range}`
           : "Google Sheets";
 
-  const copyGuidedDemoPilotReport = async () => {
+  const copyPilotReport = async () => {
     try {
-      const report = createGuidedLocalDemoPilotReport(runJournal.current ?? initialOperatorJournal(demo), demoId);
-      let delivery: "copied" | "downloaded" = "copied";
+      if (!pilotReportWorkflow) throw new Error("Complete an approved or rejected effect proposal before creating its public pilot report.");
+      const report = createPublicPilotReport(runJournal.current ?? initialOperatorJournal(demo), pilotReportWorkflow);
+      const delivery = "copied" as const;
       try {
         await copyTextToClipboard(report);
       } catch {
@@ -1927,7 +1949,7 @@ export function OperatorPage() {
     }
   };
 
-  const downloadGuidedDemoPilotReport = () => {
+  const downloadPilotReportCopy = () => {
     if (!pilotReportDownload) return;
     try {
       downloadPilotReport(pilotReportDownload);
@@ -2162,8 +2184,8 @@ export function OperatorPage() {
               {localDemoFinished && pilotReportDelivery
                 ? <a className="operator-demo-action" href={PUBLIC_PILOT_REPORT_URL} target="_blank" rel="noreferrer">Open pilot form</a>
                 : <button className="operator-demo-action" onClick={() => {
-                    if (localDemoFinished && pilotReportDownload) downloadGuidedDemoPilotReport();
-                    else if (localDemoFinished) void copyGuidedDemoPilotReport();
+                    if (localDemoFinished && pilotReportDownload) downloadPilotReportCopy();
+                    else if (localDemoFinished) void copyPilotReport();
                     else if (proposal) document.querySelector<HTMLElement>(".operator-review")?.scrollIntoView({ behavior: "smooth", block: "start" });
                     else void runScript();
                   }} disabled={committing || planning}>{localDemoFinished ? pilotReportDownload ? "Download pilot report" : "Copy pilot report" : proposal ? "Review changes" : "Run bounded transform"}</button>}
@@ -2290,7 +2312,18 @@ export function OperatorPage() {
             <div className="empty-review"><ShieldCheck size={22} /><strong>No pending write</strong><p>Run a transform for a cell preview, or stage a workspace output for a file diff. Nothing writes automatically.</p></div>
           )}
 
-          <div className="operator-panel-heading audit-heading"><span>Run journal</span><button className="journal-export" onClick={exportRunJournal} disabled={committing}><Download size={11} /> Export JSON</button></div>
+          <div className="operator-panel-heading audit-heading">
+            <span>Run journal</span>
+            <div className="journal-actions">
+              {realWorkflowPilotReady && (pilotReportDelivery
+                ? <a className="journal-pilot-action" href={PUBLIC_PILOT_REPORT_URL} target="_blank" rel="noreferrer"><FileText size={11} /> Pilot form</a>
+                : <button className="journal-pilot-action" onClick={() => {
+                    if (pilotReportDownload) downloadPilotReportCopy();
+                    else void copyPilotReport();
+                  }} disabled={committing}><FileText size={11} /> {pilotReportDownload ? "Download report" : "Copy report"}</button>)}
+              <button className="journal-export" onClick={exportRunJournal} disabled={committing}><Download size={11} /> Export JSON</button>
+            </div>
+          </div>
           <div className="operator-audit">
             {audit.map((entry, index) => (
               <div key={`${entry.time}-${index}`} className={entry.tone === "accent" ? "accent" : ""}>

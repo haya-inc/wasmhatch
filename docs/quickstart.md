@@ -69,15 +69,19 @@ for the complete authority and stale-state rules.
 
 ## Pilot evidence
 
-After the guided demo commits or you reject its proposal, select **Copy pilot
-report**. WasmHatch derives a Markdown summary from aggregate run metrics only;
-it excludes source rows, task text, resource identifiers, and the run ID. A
-rejected report states that no effect occurred from that proposal and preserves
-the rejection as useful safety evidence. Inspect the copied text, add only
-feedback you choose, then open the
+After a guided demo, local CSV/XLSX workflow, or foreground Google Sheets
+workflow commits—or you reject its proposal—select **Copy pilot report**. The
+guided action appears in the walkthrough; real-workflow actions appear beside
+**Export JSON** in the run journal. WasmHatch derives a Markdown summary from
+host-defined workflow metadata and aggregate run metrics only. It excludes
+source rows, file names, sheet targets, task text, resource identifiers, and the
+run ID. A rejected report states that no effect occurred from that proposal and
+preserves the rejection as useful safety evidence. Starting new work expires
+the action so an older result cannot be submitted as the current one. Inspect
+the copied text, add only feedback you choose, then open the
 [sanitized pilot report form](https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml).
 
-For a real consented workflow, export the private run journal only to the
-approved internal system and record the result with the
-[pilot evidence template](pilot-evidence-template.md). Public sanitized results
-are indexed from [pilot registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12).
+For deeper internal diagnosis, export the private run journal only to the
+approved internal system and record the result with the [pilot evidence
+template](pilot-evidence-template.md). Public sanitized results are indexed from
+[pilot registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12).
