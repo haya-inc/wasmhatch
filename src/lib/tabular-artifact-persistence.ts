@@ -25,6 +25,13 @@ export function normalizedArtifactPath(snapshot: TabularArtifactSnapshot) {
   return `inputs/${stem}--${sheet}--${snapshot.provenance.sourceSha256.slice(0, 12)}.json`;
 }
 
+export function normalizedWorkingArtifactPath(snapshot: TabularArtifactSnapshot, contentSha256: string) {
+  if (!/^sha256:[a-f0-9]{64}$/.test(contentSha256)) throw new Error("Working artifact content hash is invalid.");
+  const stem = safePathPart(snapshot.provenance.sourceName);
+  const sheet = safePathPart(snapshot.provenance.sheetName);
+  return `work/${stem}--${sheet}--${contentSha256.slice("sha256:".length)}.json`;
+}
+
 function assertRecord(value: unknown, label: string): asserts value is Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${label} must be an object.`);
 }

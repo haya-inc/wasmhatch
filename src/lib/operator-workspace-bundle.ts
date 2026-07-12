@@ -93,6 +93,10 @@ const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const POLICY_DECISION_PATTERN = /^policy_decision_[a-f0-9]{32}$/;
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 
+function isActiveTabularArtifactPath(path: string) {
+  return path.startsWith("inputs/") || path.startsWith("work/");
+}
+
 function byteLength(value: string) {
   return new TextEncoder().encode(value).byteLength;
 }
@@ -268,8 +272,8 @@ function parseManifest(value: unknown): OperatorWorkspaceBundleManifest {
   let activeArtifactPath: string | null = null;
   if (value.activeArtifactPath !== null) {
     activeArtifactPath = validateOperatorWorkspacePath(value.activeArtifactPath);
-    if (!activeArtifactPath.startsWith("inputs/") || !seen.has(activeArtifactPath)) {
-      throw new Error("Operator workspace active artifact is not present under inputs/.");
+    if (!isActiveTabularArtifactPath(activeArtifactPath) || !seen.has(activeArtifactPath)) {
+      throw new Error("Operator workspace active artifact is not present under inputs/ or work/.");
     }
   }
   return deepFreeze({
@@ -289,7 +293,7 @@ export async function createOperatorWorkspaceBundle(store: WorkspaceStore, optio
   const files = await snapshotStore(store);
   const descriptors = await describeFiles(files);
   const activeArtifactPath = options.activeArtifactPath == null ? null : validateOperatorWorkspacePath(options.activeArtifactPath);
-  if (activeArtifactPath && (!activeArtifactPath.startsWith("inputs/") || !files.some((file) => file.path === activeArtifactPath))) {
+  if (activeArtifactPath && (!isActiveTabularArtifactPath(activeArtifactPath) || !files.some((file) => file.path === activeArtifactPath))) {
     throw new Error("Active artifact is not present in the operator workspace.");
   }
   if (activeArtifactPath) {

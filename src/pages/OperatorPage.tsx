@@ -53,7 +53,12 @@ import {
   type TabularArtifactFormat,
   type TabularArtifactProvenance
 } from "../lib/tabular-artifact-contract";
-import { normalizedArtifactJson, normalizedArtifactPath, parseNormalizedArtifactJson } from "../lib/tabular-artifact-persistence";
+import {
+  normalizedArtifactJson,
+  normalizedArtifactPath,
+  normalizedWorkingArtifactPath,
+  parseNormalizedArtifactJson
+} from "../lib/tabular-artifact-persistence";
 import { googleSheetsWorkspaceSnapshotArtifact } from "../lib/google-sheets-workspace-snapshot";
 import {
   listOperatorArtifacts,
@@ -981,6 +986,7 @@ export function OperatorPage() {
     setError("");
     try {
       const isGoogle = proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id;
+      let persistedWorkingPath: string | null = null;
       setStatus(isGoogle ? "Rechecking source before the approved write…" : "Validating the approved local effect…");
       const connector: SpreadsheetConnector = isGoogle
         ? new GoogleSheetsConnector(credentialBroker.current.bind(
@@ -991,7 +997,18 @@ export function OperatorPage() {
         : new LocalSpreadsheetConnector({
             target: proposal.target,
             readValues: () => rows.map((row) => [...row]),
-            writeValues: (values) => setRows(values.map((row) => [...row]))
+            writeValues: async (values) => {
+              if (source !== "artifact" || !artifact) return;
+              const snapshot = { provenance: artifact, rows: values.map((row) => [...row]) };
+              const content = normalizedArtifactJson(snapshot);
+              const contentSha256 = await hashWorkspaceContent(content);
+              const path = normalizedWorkingArtifactPath(snapshot, contentSha256);
+              await workspace.current.writeFile(path, content);
+              const verified = await workspace.current.readFile(path);
+              if (verified !== content) throw new Error("The approved local working snapshot could not be verified after persistence.");
+              parseNormalizedArtifactJson(verified);
+              persistedWorkingPath = path;
+            }
           });
       const approval = decideSpreadsheetEffect(proposal, "approve", "foreground-user");
       record({
@@ -1005,21 +1022,26 @@ export function OperatorPage() {
       const outcome = await effectExecutor.current.execute(proposal, approval, connector);
 
       if (outcome.status === "committed") {
-        setRows(applySpreadsheetMutationBundle(
+        const committedRows = applySpreadsheetMutationBundle(
           proposal.baseValues,
           proposal.mutations,
           proposal.target.inputMode
-        ));
+        );
+        setRows(committedRows);
+        if (persistedWorkingPath) {
+          setArtifactWorkspacePath(persistedWorkingPath);
+          refreshWorkspaceArtifacts();
+        }
         setProposal(null);
         clearAiPlans();
         setStatus(isGoogle
           ? `Updated ${outcome.receipt.providerResult.updatedCells} cells in ${outcome.receipt.providerResult.updatedRange}`
-          : source === "artifact" ? "Approved changes applied to the imported working snapshot" : "Approved changes applied to the local demo");
+          : persistedWorkingPath ? "Approved changes persisted to a verified work/ snapshot" : "Approved changes applied to the local demo");
         if (source === "demo") setLocalDemoOutcome("committed");
         setPilotReportWorkflow(currentPublicPilotWorkflow());
         record({
           title: isGoogle ? "Google Sheets effect committed" : "Local effect committed",
-          detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}`,
+          detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}${persistedWorkingPath ? ` · ${persistedWorkingPath}` : ""}`,
           tone: "accent",
           category: "effect",
           outcome: "committed",
@@ -1028,7 +1050,8 @@ export function OperatorPage() {
             receipt_id: outcome.receipt.receiptId,
             connector_id: outcome.receipt.connector.id,
             changed_cells: proposal.summary.changedCells,
-            precondition_strength: outcome.receipt.preconditionStrength
+            precondition_strength: outcome.receipt.preconditionStrength,
+            workspace_path: persistedWorkingPath
           }
         });
       } else if (outcome.status === "conflict") {

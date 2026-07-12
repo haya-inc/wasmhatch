@@ -4,7 +4,12 @@ import {
   exportTabularArtifact,
   importTabularArtifact
 } from "./tabular-artifact";
-import { normalizedArtifactJson, normalizedArtifactPath, parseNormalizedArtifactJson } from "./tabular-artifact-persistence";
+import {
+  normalizedArtifactJson,
+  normalizedArtifactPath,
+  normalizedWorkingArtifactPath,
+  parseNormalizedArtifactJson
+} from "./tabular-artifact-persistence";
 
 function csv(value: string) {
   return importTabularArtifact({ name: "sample.csv", mediaType: "text/csv", bytes: strToU8(value) });
@@ -180,6 +185,9 @@ describe("tabular artifact boundary", () => {
 
     expect(persisted).toMatchObject({ schema: "wasmhatch.tabular-snapshot.v1", rows: [["name", "amount"], ["Aya", "10"]] });
     expect(normalizedArtifactPath(snapshot)).toMatch(/^inputs\/sample--CSV--[a-f0-9]{12}\.json$/);
+    expect(normalizedWorkingArtifactPath(snapshot, `sha256:${"a".repeat(64)}`))
+      .toBe(`work/sample--CSV--${"a".repeat(64)}.json`);
+    expect(() => normalizedWorkingArtifactPath(snapshot, "sha256:short")).toThrow("content hash is invalid");
     expect(parseNormalizedArtifactJson(serialized)).toEqual(snapshot);
     expect(Object.isFrozen(parseNormalizedArtifactJson(serialized).rows)).toBe(true);
   });

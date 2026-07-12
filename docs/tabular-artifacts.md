@@ -21,8 +21,14 @@ ambient network capability.
    `inputs/` in the existing browser workspace. The original workbook bytes are
    not persisted or mounted into script execution.
 5. QuickJS receives the normalized rows as JSON. The existing immutable typed
-   mutation proposal drives review and local application.
-6. Explicit export creates either a formula-neutralized UTF-8 CSV or a minimal
+   mutation proposal drives review. Approval rechecks the current rows, writes
+   the exact result as a content-addressed `work/` snapshot, reads and strictly
+   validates it, and only then updates the visible working data. The original
+   normalized `inputs/` snapshot remains unchanged.
+6. Subsequent AI grants, workspace scripts, and portable exports bind the active
+   verified `work/` snapshot rather than silently returning to the imported
+   source rows.
+7. Explicit export creates either a formula-neutralized UTF-8 CSV or a minimal
    value-only XLSX in the Worker.
 
 Multiple visible XLSX worksheets are listed in the UI and can be selected. Each
@@ -93,6 +99,13 @@ The source hash and selected worksheet become part of the local spreadsheet
 target identity. A later script proposal still binds the exact base-value hash,
 typed mutations, policy decision, and connector version through the common
 spreadsheet effect protocol.
+
+An approved local effect uses the same normalized schema under `work/`. Its file
+name contains the full SHA-256 of the serialized snapshot. Persistence and
+read-back validation happen inside the connector commit; a write or verification
+failure is not reported as committed. The original `inputs/` artifact remains
+available for provenance and comparison, while the active artifact pointer moves
+to the verified working snapshot.
 
 ## Dependency decision
 

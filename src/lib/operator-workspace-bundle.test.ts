@@ -59,6 +59,7 @@ const TABULAR_SNAPSHOT = `${JSON.stringify({
 
 const FILES = [
   { path: "inputs/pipeline.json", content: TABULAR_SNAPSHOT },
+  { path: "work/pipeline-approved.json", content: TABULAR_SNAPSHOT.replace('"Aya"', '"AYA"') },
   { path: "scripts/pipeline.js", content: "() => null\n" },
   { path: "workflows/pipeline.json", content: "{\"schemaVersion\":1}\n" },
   { path: "outputs/report.md", content: "# Pipeline\n" }
@@ -78,6 +79,17 @@ describe("operator workspace bundle", () => {
     expect(parsed.manifest.activeArtifactPath).toBe("inputs/pipeline.json");
     expect(parsed.manifest.files.every((file) => /^sha256:[a-f0-9]{64}$/.test(file.sha256))).toBe(true);
     expect(Object.isFrozen(parsed.manifest)).toBe(true);
+  });
+
+  it("round-trips an approved work snapshot as the active tabular artifact", async () => {
+    const source = memoryStore(FILES);
+    const exported = await createOperatorWorkspaceBundle(source.store, {
+      activeArtifactPath: "work/pipeline-approved.json",
+      exportedAt: "2026-07-12T00:00:00.000Z"
+    });
+    const parsed = await readOperatorWorkspaceBundle(exported.bytes);
+    expect(parsed.manifest.activeArtifactPath).toBe("work/pipeline-approved.json");
+    expect(parsed.files.find((file) => file.path === parsed.manifest.activeArtifactPath)?.content).toContain("AYA");
   });
 
   it("rejects protected, unsupported, and outside-root files before export", async () => {

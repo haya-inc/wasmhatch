@@ -41,6 +41,25 @@ test("imports a CSV as a persisted value snapshot, transforms it, and exports a 
   await page.getByRole("button", { name: "Approve and apply locally" }).click();
   await expect(page.getByRole("cell", { name: "aya", exact: true })).toBeVisible();
   await expect(page.getByText("Local effect committed", { exact: true })).toBeVisible();
+  await expect(page.locator(".artifact-provenance")).toContainText("work/pipeline--CSV--");
+
+  const durableSnapshots = await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const workspace = await root.getDirectoryHandle("wasmhatch-operator-workspace-v1");
+    const readOnlyJson = async (rootName: "inputs" | "work") => {
+      const directory = await workspace.getDirectoryHandle(rootName);
+      const names: string[] = [];
+      for await (const [name] of (directory as FileSystemDirectoryHandle & {
+        entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+      }).entries()) if (name.endsWith(".json")) names.push(name);
+      const file = await directory.getFileHandle(names[0]);
+      return { name: names[0], value: JSON.parse(await (await file.getFile()).text()) as { rows: unknown[][] } };
+    };
+    return { input: await readOnlyJson("inputs"), work: await readOnlyJson("work") };
+  });
+  expect(durableSnapshots.input.value.rows[1]).toEqual([" aya ", "10", "=2+2"]);
+  expect(durableSnapshots.work.value.rows[1]).toEqual(["aya", 10, "=2+2"]);
+  expect(durableSnapshots.work.name).toMatch(/^pipeline--CSV--[a-f0-9]{64}\.json$/);
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export safe CSV" }).click();
@@ -399,6 +418,9 @@ test("runs a saved manifest against the granted snapshot and writes only after f
   await page.getByRole("textbox", { name: "Sandbox transformation script" }).fill(
     "(rows) => rows.map((row, index) => index ? [String(row[0]).toUpperCase(), Number(row[1])] : row)"
   );
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+  await expect(page.locator(".artifact-provenance")).toContainText("work/workspace-pipeline--CSV--");
   await page.getByRole("button", { name: "Save & stage workspace output" }).click();
 
   await expect(page.getByText("Workspace script definition saved", { exact: true })).toBeVisible();
@@ -454,6 +476,9 @@ test("exports, reviews, clears, restores, and resumes the isolated operator work
   await page.getByRole("textbox", { name: "Sandbox transformation script" }).fill(
     "(rows) => rows.map((row, index) => index ? [String(row[0]).toUpperCase(), Number(row[1])] : row)"
   );
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+  await expect(page.locator(".artifact-provenance")).toContainText("work/recovery--CSV--");
   await page.getByRole("button", { name: "Save & stage workspace output" }).click();
   await page.getByRole("button", { name: "Approve and write workspace file" }).click();
   await expect(page.getByText("Workspace file effect committed", { exact: true })).toBeVisible();
@@ -488,11 +513,14 @@ test("exports, reviews, clears, restores, and resumes the isolated operator work
     files: Array<{ path: string; sha256: string }>;
   };
   expect(download.suggestedFilename()).toMatch(/^wasmhatch-operator-workspace-\d{4}-\d{2}-\d{2}\.zip$/);
-  expect(manifest.activeArtifactPath).toMatch(/^inputs\/recovery--CSV--[a-f0-9]{12}\.json$/);
+  expect(manifest.activeArtifactPath).toMatch(/^work\/recovery--CSV--[a-f0-9]{64}\.json$/);
   expect(manifest.files.some((file) => file.path === "work/exceptions.csv")).toBe(true);
   expect(manifest.files.some((file) => file.path === "outputs/summary.md")).toBe(true);
   expect(manifest.files.some((file) => file.path.endsWith(".js"))).toBe(true);
   expect(manifest.files.every((file) => /^sha256:[a-f0-9]{64}$/.test(file.sha256))).toBe(true);
+  const workflowPath = manifest.files.find((file) => file.path.startsWith("workflows/") && file.path.endsWith(".json"))?.path;
+  if (!workflowPath) throw new Error("Portable workspace did not contain the tabular workflow manifest.");
+  expect(strFromU8(entries[`wasmhatch-operator-workspace/files/${workflowPath}`])).toContain(manifest.activeArtifactPath);
 
   await page.getByRole("button", { name: "Review workspace clear" }).click();
   const clearReview = page.getByRole("group", { name: "Operator workspace clear review" });
@@ -529,8 +557,8 @@ test("exports, reviews, clears, restores, and resumes the isolated operator work
   await restoreReview.getByRole("button", { name: "Approve exact restore" }).click();
 
   await expect(page.getByText("Operator workspace restore committed", { exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "aya", exact: true })).toBeVisible();
-  await expect(page.locator(".artifact-provenance")).toContainText("inputs/recovery--CSV--");
+  await expect(page.getByRole("cell", { name: "AYA", exact: true })).toBeVisible();
+  await expect(page.locator(".artifact-provenance")).toContainText("work/recovery--CSV--");
   const restored = await page.evaluate(async () => {
     const origin = await navigator.storage.getDirectory();
     const operator = await origin.getDirectoryHandle("wasmhatch-operator-workspace-v1");

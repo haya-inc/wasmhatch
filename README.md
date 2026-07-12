@@ -185,7 +185,7 @@ retained legacy route. The Business Operator rows are the canonical product.
 | Capability | Status |
 | --- | --- |
 | Business-operator runtime | React UI; QuickJS Wasm script Worker; CSV/XLSX codec Worker |
-| CSV/XLSX artifact boundary | Available, value-only with provenance and safe export |
+| CSV/XLSX artifact boundary | Available, value-only with immutable input provenance, verified approved `work/` snapshots, and safe export |
 | Manifest-bound workspace scripts | Available for imported tabular snapshots |
 | Snapshot virtual filesystem | Available; exact inputs and ephemeral outputs only |
 | Workspace file-diff approval | Available; manifest/source/input/base recheck before write |

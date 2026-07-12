@@ -54,7 +54,7 @@ The manifest records:
 
 - schema and kind;
 - export time;
-- the active normalized tabular artifact, if any;
+- the active normalized tabular artifact under `inputs/` or `work/`, if any;
 - canonical path, media type, byte count, and SHA-256 for every file; and
 - total uncompressed text bytes.
 
@@ -115,11 +115,13 @@ artifacts later. Merely clicking **Review workspace clear** deletes nothing.
 
 ## Resume behavior
 
-When a committed restore names an active normalized tabular snapshot, the host
-strictly validates its schema, provenance, dimensions, cell values, and source
-hash metadata before showing it as working data. The original workbook is not
-reconstructed. Restored scripts, workflow manifests, reports, CSV files, and
-JSON outputs remain in the dedicated workspace and can be exported again.
+When a committed restore names an active normalized tabular snapshot under
+`inputs/` or `work/`, the host strictly validates its schema, provenance,
+dimensions, cell values, and source-hash metadata before showing it as working
+data. A `work/` snapshot preserves an approved local effect while the immutable
+`inputs/` source remains available in the same bundle. The original workbook is
+not reconstructed. Restored scripts, workflow manifests, reports, CSV files,
+and JSON outputs remain in the dedicated workspace and can be exported again.
 
 ## Current non-goals
 

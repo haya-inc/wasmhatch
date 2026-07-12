@@ -775,8 +775,10 @@ not automatically retried.
   dedicated Operator namespace. Editing and rich rendering remain optional; a
   full file-tree IDE is not an exit requirement. See
   [Operator Artifact Browser](operator-artifact-browser.md).
-- Add bounded list, stat, range-read, and text-search tools needed by pilot
-  workflows.
+- Add bounded list/stat, range-read, and text-search tools needed by pilot
+  workflows — complete through identity-bound workspace listing, line reads,
+  literal search, and tabular row windows with per-call and cumulative egress
+  budgets.
 - Stage create and patch behind filesystem proposals — complete for declared
   script outputs with one proposal per file. Add rename and delete only after
   their conflict and recovery semantics are proven.
@@ -788,7 +790,10 @@ not automatically retried.
 - Add source hashes, stale-proposal rejection, undo, archive export, and
   recovery diagnostics — exact archive export, stale restore/clear rejection,
   verified replacement, rollback, and uncertain recovery diagnostics are
-  complete; user-invoked undo of earlier committed file effects remains.
+  complete. Approved local table effects now persist as verified,
+  content-addressed `work/` snapshots and survive portable export/restore while
+  leaving `inputs/` unchanged; user-invoked undo of earlier committed file
+  effects remains.
 - Persist generated scripts and manifests as inspectable workspace files —
   complete for imported tabular workflows. Fixtures, general reports, and audit
   exports remain.

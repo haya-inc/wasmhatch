@@ -55,6 +55,10 @@ security fixes.
   formula prefixes are neutralized before download.
 - Original XLSX bytes are not persisted or mounted into generated scripts. The
   OPFS workspace receives a JSON value snapshot with SHA-256 provenance.
+- Approved local table effects preserve that imported `inputs/` snapshot and
+  write a content-addressed normalized snapshot under `work/`. The host reads
+  back and strictly validates the exact file before reporting the effect as
+  committed or using it for later AI, script, export, or restore operations.
 - Workspace script source and its versioned manifest are persisted as inspectable
   files, but QuickJS receives copied input snapshots and an in-memory virtual
   mount only. Generated code has no live OPFS, DOM, network, connector, OAuth,
