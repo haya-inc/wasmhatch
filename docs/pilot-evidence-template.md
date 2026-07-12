@@ -21,6 +21,8 @@ data, or exported run journals to this public repository.
 - Sampled, anonymized, synthetic, or production data:
 - Approximate rows and columns:
 - Granted resources:
+- Workspace artifact attached to AI, if any:
+- Attached identity rechecked before model egress: yes / no / not applicable
 - External destination, if any:
 - OAuth scopes shown to the user:
 - Server required: yes / no / unknown
@@ -37,6 +39,7 @@ data, or exported run journals to this public repository.
 - Portable workspace exported: yes / no / not applicable
 - Clear/restore exercised: committed / rejected / conflict / uncertain / not exercised
 - Credential observed in model, script, storage, log, or journal: yes / no
+- Model-read paths/ranges match the visible attachment and journal: yes / no / not reviewed
 
 ## Human assessment
 

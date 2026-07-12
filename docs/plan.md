@@ -76,6 +76,10 @@ require a separately deployed server adapter.
   conflict detection, result verification, bounded rollback, and terminal
   uncertainty without touching the legacy coding workspace. See
   [Operator Workspace Portability](operator-workspace-portability.md).
+- A thin Operator artifact browser that validates the portable workspace,
+  previews bounded text locally, and creates one explicit SHA-256-bound AI
+  attachment. Agent tools reject identity drift before model egress. See
+  [Operator Artifact Browser](operator-artifact-browser.md).
 - A checkpointed OpenAI Responses tool loop for imported workspace artifacts:
   exact path grants, bounded list/read/literal-search/tabular-window tools,
   visible model egress, cancellation, cumulative request/token/tool/egress
@@ -162,7 +166,7 @@ evidence, not a template; see [OSS Design Study](oss-design-study.md).
 | Script boundary: saved source, granted input snapshot, ephemeral output, diff review, no live capabilities | **Committed** | Core execution invariant for every script runner |
 | P0 tabular artifact boundary: CSV/XLSX | **Committed** | Validate untrusted file bytes, normalize one bounded value table plus provenance, and export a safe value-only artifact; this is a file adapter, not a credentialed connector |
 | P0 Google Sheets connector | **Committed** | First external data loop; bounded range reads and typed writes use the credential broker and effect protocol |
-| Browser workspace artifact model | **Committed, thin slice first** | OPFS-backed Markdown/CSV/JSON/JavaScript, manifests, proposals, and export; UI breadth follows evidence |
+| Browser workspace artifact model | **Committed, thin browser delivered** | OPFS-backed Markdown/CSV/JSON/JavaScript, manifests, proposals, portable export, bounded local preview, and identity-bound AI attachment; mutation breadth follows evidence |
 | Google Drive/Docs and Calendar | **Pilot-gated candidate** | Implement the first connector with repeated demand; do not promise both in advance |
 | Linear task-system connector | **Pilot-gated browser candidate** | PKCE and browser CORS are feasible; promote only after repeated workflow demand |
 | Jira task-system connector | **Pilot-gated server candidate** | API CORS exists, but current 3LO token exchange requires a client secret; do not place it on the foreground-browser path |
@@ -732,12 +736,14 @@ not automatically retried.
 ### Milestone 3: Browser-local workspace vertical slice
 
 - Move the reusable OPFS workspace into the operator surface — complete for
-  imported snapshots, saved scripts/manifests, and approved output files; the
-  general file browser remains.
+  imported snapshots, saved scripts/manifests, approved output files, and the
+  thin artifact browser.
 - Make Markdown, CSV, JSON, JavaScript, manifests, and reports visible,
-  exportable workspace artifacts — portable export/review is complete for the
-  dedicated Operator namespace; a general artifact browser remains. A full
-  file-tree IDE is not an exit requirement.
+  exportable workspace artifacts — validated index, bounded local preview,
+  SHA-256-bound AI attachment, and portable export/review are complete for the
+  dedicated Operator namespace. Editing and rich rendering remain optional; a
+  full file-tree IDE is not an exit requirement. See
+  [Operator Artifact Browser](operator-artifact-browser.md).
 - Add bounded list, stat, range-read, and text-search tools needed by pilot
   workflows.
 - Stage create and patch behind filesystem proposals — complete for declared
@@ -885,7 +891,8 @@ The coding-contributor metric is retired. Product evidence is:
 1. Continue the five pilot workflows and record evidence for architecture gates.
 2. Add granted connector reads and sandbox execution to the checkpointed planner
    loop without letting model output authorize an effect.
-3. Add the thin Operator artifact browser and explicit run-journal/workspace
-   attachment flow needed by pilots.
+3. Generalize the spreadsheet-only AI plan into a typed artifact/workflow plan
+   that can propose Markdown, CSV, JSON, or script outputs without weakening the
+   attachment, egress, sandbox, or effect checkpoints.
 4. Use exported run journals and pilot observations to choose the first
    post-P0 adapter spike.

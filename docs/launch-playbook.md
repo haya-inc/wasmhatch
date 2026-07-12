@@ -46,7 +46,8 @@ links, or exported journals into Slack.
    verify it.
 2. The facilitator records the start time and source kind, then lets the owner
    operate the product whenever possible.
-3. The owner inspects the AI plan, generated script, and exact effect preview.
+3. The owner inspects any local workspace preview and explicit AI attachment,
+   then the AI plan, generated script, and exact effect preview.
 4. The owner approves or rejects based on business correctness—not because the
    facilitator expects a successful demo.
 5. The owner explicitly exports the run journal if they consent to sharing its
@@ -82,8 +83,8 @@ rejected alternative, and an exit condition.
 ## Stage B: public operator pilots
 
 Begin public recruitment only after the local demo, CSV/XLSX import/export,
-reviewed workspace export/restore, and run-journal export are working on the
-public project page. Recruit individual
+bounded workspace preview/attachment, reviewed workspace export/restore, and
+run-journal export are working on the public project page. Recruit individual
 operators or maintainers who already handle a suitable bounded workflow; do not
 send bulk messages.
 

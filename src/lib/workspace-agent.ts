@@ -34,6 +34,7 @@ export type WorkspaceAgentToolName =
 export interface WorkspaceAgentGrant {
   readablePaths: readonly string[];
   tabularPaths?: readonly string[];
+  expectedSha256?: Readonly<Record<string, string>>;
 }
 
 export interface WorkspaceAgentBudget {
@@ -274,7 +275,21 @@ function validateGrant(grant: WorkspaceAgentGrant) {
     return path;
   });
   if (new Set(tabularPaths).size !== tabularPaths.length) throw new Error("Workspace tabular grants contain duplicates.");
-  return deepFreeze({ readablePaths, tabularPaths });
+  const expectedSha256: Record<string, string> = {};
+  if (grant.expectedSha256 !== undefined) {
+    if (!grant.expectedSha256 || typeof grant.expectedSha256 !== "object" || Array.isArray(grant.expectedSha256)) {
+      throw new Error("Workspace expected source identities are invalid.");
+    }
+    for (const [rawPath, sha256] of Object.entries(grant.expectedSha256)) {
+      const path = normalizeWorkspacePath(rawPath);
+      if (path !== rawPath || !readablePaths.includes(path)) throw new Error(`Workspace expected source identity is outside the readable grant: ${rawPath}`);
+      if (typeof sha256 !== "string" || !/^sha256:[a-f0-9]{64}$/.test(sha256)) {
+        throw new Error(`Workspace expected source identity is invalid: ${rawPath}`);
+      }
+      expectedSha256[path] = sha256;
+    }
+  }
+  return deepFreeze({ readablePaths, tabularPaths, expectedSha256 });
 }
 
 function mediaTypeForPath(path: string) {
@@ -295,7 +310,7 @@ function requireGrantedPath(value: unknown, grant: ReturnType<typeof validateGra
   return path;
 }
 
-async function readGrantedFile(store: WorkspaceStore, path: string) {
+async function readGrantedFile(store: WorkspaceStore, path: string, expectedSha256?: string) {
   const paths = new Set(await store.listFiles());
   if (!paths.has(path)) throw new Error(`Granted workspace file is missing: ${path}`);
   const content = await store.readFile(path);
@@ -303,7 +318,9 @@ async function readGrantedFile(store: WorkspaceStore, path: string) {
   if (bytes > WORKSPACE_AGENT_LIMITS.maxFileBytes) {
     throw new Error(`Granted workspace file exceeds ${WORKSPACE_AGENT_LIMITS.maxFileBytes} bytes: ${path}`);
   }
-  return { content, bytes, sha256: await hashWorkspaceContent(content) };
+  const sha256 = await hashWorkspaceContent(content);
+  if (expectedSha256 && sha256 !== expectedSha256) throw new Error(`Granted workspace file changed after attachment review: ${path}`);
+  return { content, bytes, sha256 };
 }
 
 function serializeToolOutput(value: unknown) {
@@ -324,7 +341,7 @@ async function executeTool(
   if (call.name === "list_workspace_files") {
     assertExactKeys(args, [], "list_workspace_files arguments");
     const files = await Promise.all(grant.readablePaths.map(async (path) => {
-      const file = await readGrantedFile(store, path);
+      const file = await readGrantedFile(store, path, grant.expectedSha256[path]);
       return { path, bytes: file.bytes, sha256: file.sha256, mediaType: mediaTypeForPath(path) };
     }));
     const serialized = serializeToolOutput({ schema: "wasmhatch.workspace-list.v1", files });
@@ -336,7 +353,7 @@ async function executeTool(
     const path = requireGrantedPath(args.path, grant);
     const startLine = requireInteger(args.start_line, "Workspace read start line", 1, 1_000_000);
     const maxLines = requireInteger(args.max_lines, "Workspace read line count", 1, WORKSPACE_AGENT_LIMITS.maxReadLines);
-    const file = await readGrantedFile(store, path);
+    const file = await readGrantedFile(store, path, grant.expectedSha256[path]);
     const lines = file.content.split(/\r?\n/);
     const selected = lines.slice(startLine - 1, startLine - 1 + maxLines);
     let content = selected.join("\n");
@@ -362,7 +379,7 @@ async function executeTool(
     const path = requireGrantedPath(args.path, grant);
     const query = requireText(args.query, "Workspace search query", MAX_QUERY_LENGTH);
     const maxResults = requireInteger(args.max_results, "Workspace search result count", 1, WORKSPACE_AGENT_LIMITS.maxSearchResults);
-    const file = await readGrantedFile(store, path);
+    const file = await readGrantedFile(store, path, grant.expectedSha256[path]);
     const normalizedQuery = query.toLocaleLowerCase();
     const matches = file.content.split(/\r?\n/).flatMap((line, index) => (
       line.toLocaleLowerCase().includes(normalizedQuery)
@@ -384,7 +401,7 @@ async function executeTool(
     const path = requireGrantedPath(args.path, grant, true);
     const startRow = requireInteger(args.start_row, "Tabular start row", 1, 5_000);
     const rowCount = requireInteger(args.row_count, "Tabular row count", 1, WORKSPACE_AGENT_LIMITS.maxTabularRows);
-    const file = await readGrantedFile(store, path);
+    const file = await readGrantedFile(store, path, grant.expectedSha256[path]);
     let parsed: unknown;
     try { parsed = JSON.parse(file.content); } catch { throw new Error(`Granted tabular artifact is invalid JSON: ${path}`); }
     assertRecord(parsed, "Granted tabular artifact");

@@ -129,7 +129,7 @@ function requireIsoDate(value: unknown) {
   return value;
 }
 
-function mediaTypeForPath(path: string) {
+export function operatorWorkspaceMediaTypeForPath(path: string) {
   if (path.endsWith(".json")) return "application/json";
   if (path.endsWith(".csv")) return "text/csv";
   if (path.endsWith(".md") || path.endsWith(".markdown")) return "text/markdown";
@@ -138,7 +138,7 @@ function mediaTypeForPath(path: string) {
   throw new Error(`Operator workspace file type is unsupported: ${path}`);
 }
 
-function validateWorkspacePath(value: unknown) {
+export function validateOperatorWorkspacePath(value: unknown) {
   if (typeof value !== "string") throw new Error("Operator workspace path must be a string.");
   const path = normalizeWorkspacePath(value);
   if (path !== value) throw new Error(`Operator workspace path is not canonical: ${value}`);
@@ -152,7 +152,7 @@ function validateWorkspacePath(value: unknown) {
     segments.some((segment) => segment === ".env" || segment.startsWith(".env.")) ||
     /(?:^|\/)(?:id_rsa|id_ed25519|[^/]+\.(?:pem|key|p12|pfx))$/i.test(path)
   ) throw new Error(`Operator workspace path targets protected credential material: ${path}`);
-  mediaTypeForPath(path);
+  operatorWorkspaceMediaTypeForPath(path);
   return path;
 }
 
@@ -195,8 +195,11 @@ async function hashIdentity(value: unknown) {
 async function snapshotStore(store: WorkspaceStore) {
   const paths = await store.listFiles();
   if (paths.length > OPERATOR_WORKSPACE_BUNDLE_LIMITS.files) throw new Error("Operator workspace contains more than 128 files.");
-  const canonical = paths.map(validateWorkspacePath);
+  const canonical = paths.map(validateOperatorWorkspacePath);
   if (new Set(canonical).size !== canonical.length) throw new Error("Operator workspace contains duplicate paths.");
+  if (new Set(canonical.map((path) => path.toLowerCase())).size !== canonical.length) {
+    throw new Error("Operator workspace contains case-ambiguous paths.");
+  }
   const files = await Promise.all(canonical.sort().map(async (path) => {
     const content = await store.readFile(path);
     validateTextContent(path, content);
@@ -212,7 +215,7 @@ async function describeFiles(files: readonly WorkspaceFile[]) {
     const bytes = validateTextContent(file.path, file.content);
     return deepFreeze({
       path: file.path,
-      mediaType: mediaTypeForPath(file.path),
+      mediaType: operatorWorkspaceMediaTypeForPath(file.path),
       bytes,
       sha256: await hashText(file.content)
     });
@@ -248,10 +251,10 @@ function parseManifest(value: unknown): OperatorWorkspaceBundleManifest {
   const files = value.files.map((item, index): OperatorWorkspaceBundleFile => {
     assertRecord(item, `Operator workspace manifest file ${index + 1}`);
     assertExactKeys(item, ["path", "mediaType", "bytes", "sha256"], `Operator workspace manifest file ${index + 1}`);
-    const path = validateWorkspacePath(item.path);
+    const path = validateOperatorWorkspacePath(item.path);
     if (seen.has(path)) throw new Error(`Operator workspace manifest contains a duplicate path: ${path}`);
     seen.add(path);
-    const mediaType = mediaTypeForPath(path);
+    const mediaType = operatorWorkspaceMediaTypeForPath(path);
     if (item.mediaType !== mediaType) throw new Error(`Operator workspace media type does not match its path: ${path}`);
     const bytes = requireInteger(item.bytes, `Operator workspace file bytes for ${path}`, 0, OPERATOR_WORKSPACE_BUNDLE_LIMITS.fileBytes);
     if (typeof item.sha256 !== "string" || !HASH_PATTERN.test(item.sha256)) throw new Error(`Operator workspace file hash is invalid: ${path}`);
@@ -264,7 +267,7 @@ function parseManifest(value: unknown): OperatorWorkspaceBundleManifest {
   if (files.reduce((total, file) => total + file.bytes, 0) !== totalBytes) throw new Error("Operator workspace total bytes do not match its files.");
   let activeArtifactPath: string | null = null;
   if (value.activeArtifactPath !== null) {
-    activeArtifactPath = validateWorkspacePath(value.activeArtifactPath);
+    activeArtifactPath = validateOperatorWorkspacePath(value.activeArtifactPath);
     if (!activeArtifactPath.startsWith("inputs/") || !seen.has(activeArtifactPath)) {
       throw new Error("Operator workspace active artifact is not present under inputs/.");
     }
@@ -285,7 +288,7 @@ export async function createOperatorWorkspaceBundle(store: WorkspaceStore, optio
 } = {}) {
   const files = await snapshotStore(store);
   const descriptors = await describeFiles(files);
-  const activeArtifactPath = options.activeArtifactPath == null ? null : validateWorkspacePath(options.activeArtifactPath);
+  const activeArtifactPath = options.activeArtifactPath == null ? null : validateOperatorWorkspacePath(options.activeArtifactPath);
   if (activeArtifactPath && (!activeArtifactPath.startsWith("inputs/") || !files.some((file) => file.path === activeArtifactPath))) {
     throw new Error("Active artifact is not present in the operator workspace.");
   }

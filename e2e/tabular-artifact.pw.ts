@@ -197,6 +197,86 @@ test("lets AI inspect one exact workspace snapshot through checkpointed bounded 
   expect(durableFiles).toEqual([workspacePath]);
 });
 
+test("previews a workspace artifact locally and sends it only through an explicit identity-bound AI attachment", async ({ page }) => {
+  const requestBodies: Record<string, unknown>[] = [];
+  let modelRequest = 0;
+  const briefPath = "work/weekly-brief.md";
+  const briefContent = "# Weekly brief\n\nWEST needs manual review before publication.\n";
+  await page.route("https://api.openai.com/v1/responses", async (route) => {
+    requestBodies.push(route.request().postDataJSON() as Record<string, unknown>);
+    modelRequest += 1;
+    const calls = [
+      { id: "resp_list", callId: "call_list", name: "list_workspace_files", args: {} },
+      { id: "resp_brief", callId: "call_brief", name: "read_workspace_file", args: { path: briefPath, start_line: 1, max_lines: 20 } },
+      {
+        id: "resp_plan",
+        callId: "call_plan",
+        name: "propose_spreadsheet_transform",
+        args: {
+          summary: "Normalize the active table using the reviewed weekly brief.",
+          expected_effect: "Region labels are uppercased while headers and unrelated cells remain unchanged.",
+          script: "(rows) => rows.map((row, index) => index === 0 ? row : [row[0], String(row[1]).toUpperCase()])",
+          assumptions: ["Row 1 is the header."],
+          warnings: ["Review WEST rows before publication."]
+        }
+      }
+    ];
+    const call = calls[modelRequest - 1];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: call.id,
+        output: [
+          { id: `rs_${call.id}`, type: "reasoning", summary: [] },
+          { id: `fc_${call.id}`, type: "function_call", call_id: call.callId, name: call.name, arguments: JSON.stringify(call.args), status: "completed" }
+        ],
+        usage: { input_tokens: 100, output_tokens: 25 }
+      })
+    });
+  });
+
+  await page.goto("/?view=operator");
+  await page.getByLabel("Import CSV or XLSX").setInputFiles({
+    name: "attachment-table.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Owner,Region\r\nAya,west\r\n", "utf8")
+  });
+  await page.evaluate(async ({ path, content }) => {
+    const origin = await navigator.storage.getDirectory();
+    let directory = await origin.getDirectoryHandle("wasmhatch-operator-workspace-v1", { create: true });
+    const parts = path.split("/");
+    const name = parts.pop()!;
+    for (const part of parts) directory = await directory.getDirectoryHandle(part, { create: true });
+    const file = await directory.getFileHandle(name, { create: true });
+    const writer = await file.createWritable();
+    await writer.write(content);
+    await writer.close();
+  }, { path: briefPath, content: briefContent });
+
+  await page.getByLabel("Refresh workspace artifacts").click();
+  const brief = page.getByRole("option", { name: /weekly-brief\.md/ });
+  await expect(brief).toBeVisible();
+  await brief.click();
+  const preview = page.getByLabel("Workspace artifact preview", { exact: true });
+  await expect(preview).toContainText("WEST needs manual review before publication.");
+  await expect(preview).toContainText("Complete local preview.");
+  await preview.getByRole("button", { name: "Attach exact file to AI plan" }).click();
+  await expect(page.getByLabel("AI workspace attachment")).toContainText(briefPath);
+  await expect(page.getByText("Workspace artifact attached for AI review", { exact: true })).toBeVisible();
+
+  await page.getByLabel("OpenAI session API key").fill("sk-artifact-e2e");
+  await page.getByRole("button", { name: "Inspect workspace with AI" }).click();
+  await expect(page.getByRole("heading", { name: "Normalize the active table using the reviewed weekly brief." })).toBeVisible();
+  await expect(page.getByText("AI tool: read_workspace_file", { exact: true })).toBeVisible();
+
+  expect(requestBodies).toHaveLength(3);
+  expect(JSON.stringify(requestBodies[0])).not.toContain("WEST needs manual review");
+  expect(JSON.stringify(requestBodies[1])).not.toContain("WEST needs manual review");
+  expect(JSON.stringify(requestBodies[2])).toContain("WEST needs manual review");
+  expect(JSON.stringify(requestBodies)).not.toContain("sk-artifact-e2e");
+});
+
 test("runs a saved manifest against the granted snapshot and writes only after file-diff approval", async ({ page }) => {
   await page.goto("/?view=operator");
   await page.getByLabel("Import CSV or XLSX").setInputFiles({

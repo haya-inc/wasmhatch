@@ -73,6 +73,10 @@ security fixes.
 - The checkpointed workspace planner grants only explicitly named paths. Model
   calls cannot enumerate or read other OPFS content, and protected credential
   paths remain denied even if included in a malformed grant or tool call.
+- Artifact listing and the 24 KB / 200-line preview remain local. An AI
+  attachment is capped at 512 KB and binds canonical path, media type, bytes,
+  tabular status, and SHA-256. Every model tool rehashes before egress and denies
+  a file changed after foreground attachment review.
 - Workspace planning uses strict single function calls with `store: false`.
   Every list/read/search/tabular result sent to the model records path, source
   hash, and byte count. Missing provider usage, repeated calls, malformed output,

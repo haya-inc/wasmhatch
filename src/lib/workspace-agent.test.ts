@@ -152,6 +152,26 @@ describe("OpenAIWorkspaceAgent", () => {
     expect(events[0]).toMatchObject({ status: "denied" });
   });
 
+  it("denies a file whose identity changed after the foreground attachment review", async () => {
+    const { workspace, readFile } = createWorkspace();
+    const fetcher = vi.fn(async () => toolResponse("resp_read", "call_read", "read_workspace_file", {
+      path: ARTIFACT_PATH, start_line: 1, max_lines: 20
+    }));
+    const events: { status: string; summary: string }[] = [];
+    const agent = new OpenAIWorkspaceAgent("sk-test", workspace, fetcher as typeof fetch);
+
+    await expect(agent.plan(request({
+      grant: {
+        readablePaths: [ARTIFACT_PATH],
+        tabularPaths: [ARTIFACT_PATH],
+        expectedSha256: { [ARTIFACT_PATH]: `sha256:${"0".repeat(64)}` }
+      },
+      onTrace: (event: { status: string; summary: string }) => events.push(event)
+    }))).rejects.toThrow("changed after attachment review");
+    expect(readFile).toHaveBeenCalledWith(ARTIFACT_PATH);
+    expect(events[0]).toMatchObject({ status: "denied" });
+  });
+
   it("requires actual content inspection before accepting a staged plan", async () => {
     const { workspace } = createWorkspace();
     const fetcher = vi.fn(async () => toolResponse("resp_plan", "call_plan", "propose_spreadsheet_transform", PLAN));

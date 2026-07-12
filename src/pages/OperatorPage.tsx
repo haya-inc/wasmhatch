@@ -5,14 +5,17 @@ import {
   Check,
   Database,
   Download,
+  FileText,
   KeyRound,
+  Paperclip,
   Play,
   RefreshCw,
   ShieldCheck,
   Square,
   Sparkles,
   Table2,
-  UploadCloud
+  UploadCloud,
+  X
 } from "lucide-react";
 import { runBusinessScriptInWorker } from "../lib/browser-script-runner";
 import {
@@ -51,6 +54,15 @@ import {
   type TabularArtifactProvenance
 } from "../lib/tabular-artifact-contract";
 import { normalizedArtifactJson, normalizedArtifactPath, parseNormalizedArtifactJson } from "../lib/tabular-artifact-persistence";
+import {
+  listOperatorArtifacts,
+  prepareOperatorArtifactAttachment,
+  readOperatorArtifactPreview,
+  verifyOperatorArtifactAttachment,
+  type OperatorArtifactAttachment,
+  type OperatorArtifactDescriptor,
+  type OperatorArtifactPreview
+} from "../lib/operator-artifact-browser";
 import { createOperatorWorkspaceStore, OPERATOR_WORKSPACE_ROOT } from "../lib/operator-workspace-store";
 import {
   createOperatorWorkspaceBundle,
@@ -211,6 +223,14 @@ export function OperatorPage() {
   const [importingArtifact, setImportingArtifact] = useState(false);
   const [exportingArtifact, setExportingArtifact] = useState(false);
   const [workspaceArchiveBusy, setWorkspaceArchiveBusy] = useState(false);
+  const [workspaceArtifacts, setWorkspaceArtifacts] = useState<readonly OperatorArtifactDescriptor[]>([]);
+  const [workspaceArtifactTotalBytes, setWorkspaceArtifactTotalBytes] = useState(0);
+  const [workspaceArtifactBusy, setWorkspaceArtifactBusy] = useState(false);
+  const [workspaceArtifactError, setWorkspaceArtifactError] = useState("");
+  const [selectedWorkspaceArtifact, setSelectedWorkspaceArtifact] = useState<OperatorArtifactDescriptor | null>(null);
+  const [workspaceArtifactPreview, setWorkspaceArtifactPreview] = useState<OperatorArtifactPreview | null>(null);
+  const [workspaceAttachment, setWorkspaceAttachment] = useState<OperatorArtifactAttachment | null>(null);
+  const [workspaceRevision, setWorkspaceRevision] = useState(0);
   const [pendingWorkspaceRestore, setPendingWorkspaceRestore] = useState<{
     fileName: string;
     bytes: Uint8Array;
@@ -256,6 +276,38 @@ export function OperatorPage() {
     const timer = window.setTimeout(() => setGoogleAuthStatus(googleOAuth.current.status()), delay + 25);
     return () => window.clearTimeout(timer);
   }, [googleAuthStatus.expiresAt]);
+
+  useEffect(() => {
+    let current = true;
+    setWorkspaceArtifactBusy(true);
+    setWorkspaceArtifactError("");
+    void listOperatorArtifacts(workspace.current).then((index) => {
+      if (!current) return;
+      setWorkspaceArtifacts(index.files);
+      setWorkspaceArtifactTotalBytes(index.totalBytes);
+      setSelectedWorkspaceArtifact((selected) => selected
+        ? index.files.find((file) => file.path === selected.path && file.sha256 === selected.sha256) ?? null
+        : null);
+      setWorkspaceArtifactPreview((preview) => preview && index.files.some((file) =>
+        file.path === preview.artifact.path && file.sha256 === preview.artifact.sha256
+      ) ? preview : null);
+      setWorkspaceAttachment((attachment) => attachment && index.files.some((file) =>
+        file.path === attachment.path && file.sha256 === attachment.sha256
+      ) ? attachment : null);
+    }).catch((caught) => {
+      if (!current) return;
+      const message = caught instanceof Error ? caught.message : "Operator artifacts could not be indexed.";
+      setWorkspaceArtifacts([]);
+      setWorkspaceArtifactTotalBytes(0);
+      setSelectedWorkspaceArtifact(null);
+      setWorkspaceArtifactPreview(null);
+      setWorkspaceAttachment(null);
+      setWorkspaceArtifactError(message);
+    }).finally(() => {
+      if (current) setWorkspaceArtifactBusy(false);
+    });
+    return () => { current = false; };
+  }, [workspaceRevision]);
 
   const record = (entry: Omit<AuditEntry, "time">) => {
     try {
@@ -317,6 +369,91 @@ export function OperatorPage() {
       });
       setWorkspaceProposal(null);
     }
+  };
+
+  const refreshWorkspaceArtifacts = () => {
+    setWorkspaceRevision((revision) => revision + 1);
+  };
+
+  const inspectWorkspaceArtifact = async (artifactToInspect: OperatorArtifactDescriptor) => {
+    if (workspaceArtifactBusy || committing) return;
+    setWorkspaceArtifactBusy(true);
+    setWorkspaceArtifactError("");
+    setSelectedWorkspaceArtifact(artifactToInspect);
+    try {
+      const preview = await readOperatorArtifactPreview(workspace.current, artifactToInspect.path);
+      if (preview.artifact.sha256 !== artifactToInspect.sha256) {
+        refreshWorkspaceArtifacts();
+        throw new Error("The workspace artifact changed while its preview was opening. Select the refreshed file again.");
+      }
+      setWorkspaceArtifactPreview(preview);
+      setStatus(`Previewing ${artifactToInspect.path}`);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Operator artifact preview failed.";
+      setWorkspaceArtifactPreview(null);
+      setWorkspaceArtifactError(message);
+      setStatus("Workspace artifact preview blocked");
+    } finally {
+      setWorkspaceArtifactBusy(false);
+    }
+  };
+
+  const attachWorkspaceArtifact = async () => {
+    if (!selectedWorkspaceArtifact || workspaceArtifactBusy || committing) return;
+    if (!ensureJournalCapacity(1)) return;
+    setWorkspaceArtifactBusy(true);
+    setWorkspaceArtifactError("");
+    try {
+      const attachment = await prepareOperatorArtifactAttachment(workspace.current, selectedWorkspaceArtifact.path);
+      if (attachment.sha256 !== selectedWorkspaceArtifact.sha256) {
+        refreshWorkspaceArtifacts();
+        throw new Error("The workspace artifact changed after preview. Review the refreshed file before attaching it.");
+      }
+      planningAbort.current?.abort();
+      authorityEpoch.current += 1;
+      setPlan(null);
+      setWorkspaceAttachment(attachment);
+      setStatus(`Attached ${attachment.path} to the next AI plan`);
+      record({
+        title: "Workspace artifact attached for AI review",
+        detail: `${attachment.path} · ${attachment.bytes} B · ${attachment.sha256.slice(-12)} · content still local until a checkpointed tool reads it`,
+        tone: "accent",
+        category: "source",
+        outcome: "completed",
+        evidence: {
+          workspace_path: attachment.path,
+          source_sha256: attachment.sha256,
+          source_bytes: attachment.bytes,
+          media_type: attachment.mediaType,
+          tabular_snapshot: attachment.tabularSnapshot
+        }
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Operator artifact attachment failed.";
+      setWorkspaceAttachment(null);
+      setWorkspaceArtifactError(message);
+      setStatus("Workspace artifact attachment blocked");
+    } finally {
+      setWorkspaceArtifactBusy(false);
+    }
+  };
+
+  const detachWorkspaceArtifact = () => {
+    if (!workspaceAttachment) return;
+    planningAbort.current?.abort();
+    authorityEpoch.current += 1;
+    setPlan(null);
+    const path = workspaceAttachment.path;
+    setWorkspaceAttachment(null);
+    setStatus(`Detached ${path} from AI planning`);
+    record({
+      title: "Workspace artifact detached from AI review",
+      detail: `${path} · no longer in the next model-readable grant`,
+      tone: "muted",
+      category: "source",
+      outcome: "completed",
+      evidence: { workspace_path: path }
+    });
   };
 
   const runScript = async () => {
@@ -421,7 +558,17 @@ export function OperatorPage() {
     try {
       let nextPlan: SpreadsheetPlan;
       let usedWorkspaceTools = false;
+      const preparedGrants = new Map<string, OperatorArtifactAttachment>();
       if (source === "artifact" && artifactWorkspacePath) {
+        const activeArtifact = await prepareOperatorArtifactAttachment(workspace.current, artifactWorkspacePath);
+        preparedGrants.set(activeArtifact.path, activeArtifact);
+      }
+      if (workspaceAttachment) {
+        const verifiedAttachment = await verifyOperatorArtifactAttachment(workspace.current, workspaceAttachment);
+        preparedGrants.set(verifiedAttachment.path, verifiedAttachment);
+      }
+      const grantedArtifacts = [...preparedGrants.values()];
+      if (grantedArtifacts.length) {
         usedWorkspaceTools = true;
         setStatus("AI is inspecting the exact workspace grant…");
         const agent = new OpenAIWorkspaceAgent(plannerApiKey, workspace.current);
@@ -429,8 +576,9 @@ export function OperatorPage() {
           task,
           model: plannerModel,
           grant: {
-            readablePaths: [artifactWorkspacePath],
-            tabularPaths: [artifactWorkspacePath]
+            readablePaths: grantedArtifacts.map((item) => item.path),
+            tabularPaths: grantedArtifacts.filter((item) => item.tabularSnapshot).map((item) => item.path),
+            expectedSha256: Object.fromEntries(grantedArtifacts.map((item) => [item.path, item.sha256]))
           },
           inputRows: rows.length,
           inputCells: rows.reduce((total, row) => total + row.length, 0),
@@ -462,14 +610,15 @@ export function OperatorPage() {
         setAgentBudget(result.budget);
         record({
           title: "Checkpointed workspace plan staged",
-          detail: `${result.budget.modelRequests} model requests · ${result.budget.toolCalls} tool calls · ${result.budget.egressBytes} B tool egress · no script execution or write`,
+          detail: `${grantedArtifacts.length} identity-bound files · ${result.budget.modelRequests} model requests · ${result.budget.toolCalls} tool calls · ${result.budget.egressBytes} B tool egress · no script execution or write`,
           tone: "accent",
           category: "model",
           outcome: "prepared",
           evidence: {
             model_requests: result.budget.modelRequests,
             tool_calls: result.budget.toolCalls,
-            egress_bytes: result.budget.egressBytes
+            egress_bytes: result.budget.egressBytes,
+            granted_files: grantedArtifacts.length
           }
         });
       } else {
@@ -504,6 +653,10 @@ export function OperatorPage() {
     } catch (caught) {
       const aborted = caught instanceof Error && caught.name === "AbortError";
       const message = aborted ? "AI planning was cancelled before a proposal was staged." : caught instanceof Error ? caught.message : "AI planning failed.";
+      if (message.includes("after attachment review")) {
+        setWorkspaceAttachment(null);
+        refreshWorkspaceArtifacts();
+      }
       setPlan(null);
       if (aborted && startingAuthorityEpoch !== authorityEpoch.current) {
         record({ title: "AI planning cancelled", detail: "A newer source replaced the granted planning context.", tone: "muted", category: "model", outcome: "cancelled" });
@@ -780,6 +933,7 @@ export function OperatorPage() {
         definition.manifestPath,
         serializeWorkspaceScriptManifest(definition.manifest)
       );
+      refreshWorkspaceArtifacts();
       if (
         startingAuthorityEpoch !== authorityEpoch.current ||
         startingScriptRevision !== scriptRevision.current
@@ -911,6 +1065,7 @@ export function OperatorPage() {
       );
       if (outcome.status === "committed") {
         setWorkspaceProposal(null);
+        refreshWorkspaceArtifacts();
         setStatus(`Saved ${outcome.receipt.workspacePath}`);
         record({
           title: "Workspace file effect committed",
@@ -928,6 +1083,7 @@ export function OperatorPage() {
         });
       } else if (outcome.status === "conflict") {
         setWorkspaceProposal(null);
+        refreshWorkspaceArtifacts();
         setStatus("Workspace write blocked by source conflict");
         setError(`${outcome.resourcePath} changed after this proposal was prepared. Run the workspace script again against current workspace state.`);
         record({
@@ -940,6 +1096,7 @@ export function OperatorPage() {
         });
       } else if (outcome.status === "uncertain") {
         setWorkspaceProposal(null);
+        refreshWorkspaceArtifacts();
         setStatus("Workspace write outcome uncertain — reconciliation required");
         setError(outcome.reason);
         record({ title: "Workspace write outcome uncertain", detail: outcome.reason, tone: "muted", category: "effect", outcome: "uncertain", evidence: { proposal_id: workspaceProposal.proposalId, reconciliation_required: true } });
@@ -995,6 +1152,7 @@ export function OperatorPage() {
     setPlan(null);
     setAgentTrace([]);
     setAgentBudget(null);
+    setWorkspaceAttachment(null);
     setArtifact(null);
     setArtifactWorkspacePath(null);
     setArtifactFile(null);
@@ -1030,6 +1188,7 @@ export function OperatorPage() {
       try {
         await workspace.current.writeFile(path, normalizedArtifactJson(snapshot));
         persistedPath = path;
+        refreshWorkspaceArtifacts();
       } catch {
         persistenceWarning = " · OPFS persistence failed; export before closing this tab";
       }
@@ -1145,6 +1304,10 @@ export function OperatorPage() {
     setPlan(null);
     setAgentTrace([]);
     setAgentBudget(null);
+    setWorkspaceAttachment(null);
+    setSelectedWorkspaceArtifact(null);
+    setWorkspaceArtifactPreview(null);
+    refreshWorkspaceArtifacts();
     scriptRevision.current += 1;
     setScript(DEFAULT_SCRIPT);
   };
@@ -1272,6 +1435,7 @@ export function OperatorPage() {
       const outcome = await executeOperatorWorkspaceRestore(workspace.current, bytes, restoreProposal);
       if (outcome.status === "conflict") {
         setPendingWorkspaceRestore(null);
+        refreshWorkspaceArtifacts();
         setStatus("Workspace restore blocked by a newer local state");
         setError("The operator workspace changed after this restore was reviewed. Stage the ZIP again against the current workspace.");
         record({
@@ -1305,7 +1469,10 @@ export function OperatorPage() {
     } catch (caught) {
       const uncertain = caught instanceof OperatorWorkspaceRestoreUncertainError;
       const message = caught instanceof Error ? caught.message : "Operator workspace restore failed.";
-      if (uncertain) setPendingWorkspaceRestore(null);
+      if (uncertain) {
+        setPendingWorkspaceRestore(null);
+        refreshWorkspaceArtifacts();
+      }
       setError(message);
       setStatus(uncertain ? "Workspace restore outcome requires recovery" : "Workspace restore failed; previous state verified");
       record({
@@ -1402,6 +1569,7 @@ export function OperatorPage() {
       const outcome = await executeOperatorWorkspaceClear(workspace.current, clearProposal);
       if (outcome.status === "conflict") {
         setPendingWorkspaceClear(null);
+        refreshWorkspaceArtifacts();
         setStatus("Workspace clear blocked by a newer local state");
         setError("The operator workspace changed after clear review. Review the current files again.");
         record({
@@ -1438,7 +1606,10 @@ export function OperatorPage() {
     } catch (caught) {
       const uncertain = caught instanceof OperatorWorkspaceRestoreUncertainError;
       const message = caught instanceof Error ? caught.message : "Operator workspace clear failed.";
-      if (uncertain) setPendingWorkspaceClear(null);
+      if (uncertain) {
+        setPendingWorkspaceClear(null);
+        refreshWorkspaceArtifacts();
+      }
       setError(message);
       setStatus(uncertain ? "Workspace clear outcome requires recovery" : "Workspace clear failed; previous state verified");
       record({
@@ -1545,6 +1716,49 @@ export function OperatorPage() {
             <p>Imports run in a Worker. Macros are rejected; formulas and external links never execute. The normalized JSON snapshot is stored without the original workbook payload.</p>
             {artifactFile && artifact && artifact.sheets.filter((sheet) => sheet.visibility === "visible").length > 1 && <div className="artifact-sheet-picker"><label>Visible worksheet<select value={artifactSheetChoice} onChange={(event) => setArtifactSheetChoice(event.target.value)} disabled={committing || importingArtifact}>{artifact.sheets.filter((sheet) => sheet.visibility === "visible").map((sheet) => <option key={sheet.name} value={sheet.name}>{sheet.name}</option>)}</select></label><button onClick={() => void importLocalArtifact(artifactFile, artifactSheetChoice)} disabled={committing || importingArtifact || artifactSheetChoice === artifact.sheetName}>Load sheet</button></div>}
             {artifact && <dl className="artifact-provenance"><div><dt>Source</dt><dd>{formatArtifactBytes(artifact.sourceBytes)} · {artifact.sourceSha256.slice(0, 12)}</dd></div><div><dt>Workspace</dt><dd>{artifactWorkspacePath ?? "memory only"}</dd></div><div><dt>Warnings</dt><dd>{artifact.warnings.length} · formulas {artifact.formulaCells} · links {artifact.externalLinks}</dd></div></dl>}
+          </div>
+          <div className="connector-form workspace-artifacts">
+            <div className="workspace-artifact-heading">
+              <span>Workspace artifacts</span>
+              <small>{workspaceArtifacts.length} files · {formatArtifactBytes(workspaceArtifactTotalBytes)}</small>
+              <button onClick={refreshWorkspaceArtifacts} disabled={workspaceArtifactBusy || committing} aria-label="Refresh workspace artifacts"><RefreshCw size={12} /></button>
+            </div>
+            {workspaceAttachment && (
+              <div className="workspace-attachment" aria-label="AI workspace attachment">
+                <Paperclip size={13} />
+                <span><strong>AI attachment</strong><small>{workspaceAttachment.path} · {workspaceAttachment.sha256.slice(-12)}</small></span>
+                <button onClick={detachWorkspaceArtifact} disabled={planning || committing} aria-label="Detach workspace artifact from AI"><X size={12} /></button>
+              </div>
+            )}
+            <div className="workspace-artifact-list" role="listbox" aria-label="Operator workspace artifacts">
+              {workspaceArtifacts.map((workspaceArtifact) => (
+                <button
+                  key={workspaceArtifact.path}
+                  className={selectedWorkspaceArtifact?.path === workspaceArtifact.path ? "active" : ""}
+                  role="option"
+                  aria-selected={selectedWorkspaceArtifact?.path === workspaceArtifact.path}
+                  onClick={() => void inspectWorkspaceArtifact(workspaceArtifact)}
+                  disabled={workspaceArtifactBusy || committing}
+                >
+                  <FileText size={13} />
+                  <span><strong>{workspaceArtifact.name}</strong><small>{workspaceArtifact.root}/ · {workspaceArtifact.kind} · {formatArtifactBytes(workspaceArtifact.bytes)}</small></span>
+                  {workspaceArtifact.tabularSnapshot && <em>table</em>}
+                </button>
+              ))}
+              {!workspaceArtifactBusy && !workspaceArtifacts.length && !workspaceArtifactError && <p>No Operator artifacts yet.</p>}
+              {workspaceArtifactBusy && !workspaceArtifacts.length && <p>Indexing isolated workspace…</p>}
+            </div>
+            {workspaceArtifactError && <p className="workspace-artifact-error" role="alert">{workspaceArtifactError}</p>}
+            {workspaceArtifactPreview && (
+              <div className="workspace-artifact-preview" aria-label="Workspace artifact preview">
+                <header><span>{workspaceArtifactPreview.artifact.path}</span><button onClick={() => { setSelectedWorkspaceArtifact(null); setWorkspaceArtifactPreview(null); }} aria-label="Close workspace artifact preview"><X size={12} /></button></header>
+                <small>{workspaceArtifactPreview.artifact.mediaType} · {workspaceArtifactPreview.artifact.lines} lines · {workspaceArtifactPreview.artifact.sha256.slice(-12)}</small>
+                <pre>{workspaceArtifactPreview.content || "(empty file)"}</pre>
+                <footer>{workspaceArtifactPreview.truncated ? `Preview limited to ${formatArtifactBytes(workspaceArtifactPreview.previewBytes)} / ${workspaceArtifactPreview.previewLines} lines.` : "Complete local preview."}</footer>
+                <button className="attach-workspace-artifact" onClick={() => void attachWorkspaceArtifact()} disabled={workspaceArtifactBusy || committing || workspaceAttachment?.path === workspaceArtifactPreview.artifact.path && workspaceAttachment.sha256 === workspaceArtifactPreview.artifact.sha256}><Paperclip size={13} /> {workspaceAttachment?.path === workspaceArtifactPreview.artifact.path && workspaceAttachment.sha256 === workspaceArtifactPreview.artifact.sha256 ? "Attached to next AI plan" : "Attach exact file to AI plan"}</button>
+              </div>
+            )}
+            <p>Previews stay local and are capped at 24 KB / 200 lines. AI receives nothing until an exact file is attached and a checkpointed tool requests bounded content.</p>
           </div>
           <div className="connector-form workspace-recovery">
             <div className="workspace-recovery-actions">
@@ -1655,10 +1869,12 @@ export function OperatorPage() {
             <textarea value={task} onChange={(event) => { planningAbort.current?.abort(); taskRevision.current += 1; setTask(event.target.value); setPlan(null); invalidateProposal("task intent edited"); }} aria-label="Business task" disabled={committing} />
             <div className="operator-planner-actions">
               <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerApiKey.trim() || !task.trim()))}>
-                {planning ? <Square size={12} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
+                {planning ? <Square size={12} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
               </button>
-              <span>{source === "artifact" && artifactWorkspacePath
-                ? "Grants one exact snapshot path. Only tool-requested bounded rows are sent to OpenAI; credentials and live OPFS stay excluded."
+              <span>{workspaceAttachment
+                ? `Grants identity-bound ${workspaceAttachment.path}${source === "artifact" && artifactWorkspacePath !== workspaceAttachment.path ? " plus the active table" : ""}. Only tool-requested bounded content is sent; live OPFS and credentials stay excluded.`
+                : source === "artifact" && artifactWorkspacePath
+                  ? "Grants one identity-bound snapshot path. Only tool-requested bounded rows are sent to OpenAI; credentials and live OPFS stay excluded."
                 : `Explicitly sends this task and ${rows.length} visible rows to OpenAI. Sheets and API credentials are excluded.`}</span>
             </div>
           </div>

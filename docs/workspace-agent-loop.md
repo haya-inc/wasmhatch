@@ -1,6 +1,6 @@
 # Checkpointed Workspace Agent Loop
 
-- Contract status: foreground implementation in WasmHatch 0.21.0
+- Contract status: foreground implementation, identity-bound grants in WasmHatch 0.24.0
 - Model transport: OpenAI Responses API with `store: false`
 - Initial authority: task text plus an exact list of granted workspace paths
 - Durable effect authority: none; the loop may only stage a transformation plan
@@ -23,18 +23,21 @@ and [tools guide](https://developers.openai.com/api/docs/guides/tools).
 
 1. The user imports a bounded CSV/XLSX artifact. Its normalized, provenance-bound
    JSON snapshot is persisted under `inputs/`.
-2. The user enters a business task and explicitly starts **Inspect workspace
+2. The user may locally preview one indexed text artifact and explicitly attach
+   its path, media type, bytes, and SHA-256 to the next AI plan.
+3. The user enters a business task and explicitly starts **Inspect workspace
    with AI**.
-3. The host grants only the active snapshot path. Other OPFS files, credentials,
-   connectors, outputs, scripts, and workflow definitions are not implied by the
-   active workspace.
-4. The model uses one strict function tool per response. The host validates the
+4. The host grants the active snapshot plus the one supplemental attachment,
+   when present. Every path is bound to its reviewed hash. Other OPFS files,
+   credentials, connectors, outputs, scripts, and workflow definitions are not
+   implied by the active workspace.
+5. The model uses one strict function tool per response. The host validates the
    call, executes a bounded read, records the egress, and returns the result.
-5. The model must inspect granted content before it may call
+6. The model must inspect granted content before it may call
    `propose_spreadsheet_transform`.
-6. A valid proposal fills the existing reviewable script plan. No script runs and
+7. A valid proposal fills the existing reviewable script plan. No script runs and
    no local or external write occurs.
-7. The user may edit the script, run it in the QuickJS Wasm Worker, then review a
+8. The user may edit the script, run it in the QuickJS Wasm Worker, then review a
    cell effect or workspace-file effect through the existing approval boundary.
 
 Google Sheets and the local demo retain the existing single-request planner in
@@ -56,7 +59,9 @@ unknown properties. `parallel_tool_calls` is false and `tool_choice` is
 `required`, so each response contains exactly one checkpoint the host can
 validate and audit. Repeated call IDs, repeated identical calls, unknown tools,
 invalid JSON, ungranted paths, protected credential paths, missing files,
-unsupported tabular schemas, and oversized results stop the loop.
+unsupported tabular schemas, changed attachment identities, and oversized
+results stop the loop. The host rehashes before every list/read/search/tabular
+result, so a path edit cannot silently replace reviewed content.
 
 Search accepts a literal string, not a regular expression. Generic reads are
 limited to 50 KB even when the requested line count is smaller than 200. Every
