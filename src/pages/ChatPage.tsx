@@ -15,8 +15,16 @@ import { SessionPermissionStore, type PermissionDecision, type WritePermissionRe
 import { CHAT_TOOLS, createChatToolExecutor, type AppliedWrite, type WritePolicy } from "../lib/chat-tools";
 import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "../lib/google-connectors";
 import { GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
+import { createZipArchive } from "../lib/archive";
 import { isProtectedAgentPath } from "../lib/secrets";
-import { createWorkspaceStore, sampleWorkspace } from "../lib/workspace";
+import {
+  createWorkspaceStore,
+  formatBytes,
+  inspectBrowserStorage,
+  requestPersistentStorage,
+  sampleWorkspace,
+  type BrowserStorageStatus
+} from "../lib/workspace";
 import { ArtifactPanel } from "./ArtifactPanel";
 
 type ProviderKind = "builtin" | "anthropic" | "openai";
@@ -80,6 +88,15 @@ interface ChromeLanguageModelApi {
   }>;
 }
 
+function storageSummary(status: BrowserStorageStatus): string {
+  const state = status.persistence === "persistent"
+    ? "Your data is pinned — this browser won't clear it on its own."
+    : status.persistence === "best-effort"
+      ? "Not pinned yet — the browser could clear saved work if this device runs low on space."
+      : "This browser can't promise to keep data around, so a backup is the safest bet.";
+  return status.originUsageBytes === null ? state : `${state} ${formatBytes(status.originUsageBytes)} used.`;
+}
+
 function summarizeToolCall(name: string, args: Record<string, unknown>): string {
   const path = typeof args.path === "string" ? args.path : "";
   if (name === "read_file" && path) return `Reading ${path}`;
@@ -114,6 +131,10 @@ export function ChatPage() {
   const [writeMode, setWriteMode] = useState<WritePolicy>("autonomous");
   const writeModeRef = useRef<WritePolicy>("autonomous");
   writeModeRef.current = writeMode;
+  const [storageStatus, setStorageStatus] = useState<BrowserStorageStatus | null>(null);
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinNote, setPinNote] = useState("");
+  const [backupBusy, setBackupBusy] = useState(false);
 
   const pushItem = useCallback((item: Omit<ChatItem, "id">) => {
     const id = nextId.current;
@@ -139,6 +160,14 @@ export function ChatPage() {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [items, permissionQueue]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void inspectBrowserStorage().then((status) => {
+      if (!cancelled) setStorageStatus(status);
+    });
+    return () => { cancelled = true; };
+  }, [files]);
 
   const gate = useCallback((request: WritePermissionRequest) => {
     return new Promise<PermissionDecision>((resolve) => {
@@ -391,6 +420,45 @@ export function ChatPage() {
     setViewer({ path, content });
   }, []);
 
+  const pinStorage = useCallback(async () => {
+    if (pinBusy) return;
+    setPinBusy(true);
+    try {
+      const granted = await requestPersistentStorage();
+      setStorageStatus(await inspectBrowserStorage());
+      setPinNote(granted
+        ? "Done — this browser will keep your data safe."
+        : "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety.");
+    } finally {
+      setPinBusy(false);
+    }
+  }, [pinBusy]);
+
+  const backupWorkspace = useCallback(async () => {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    try {
+      const paths = (await workspace.current.listFiles()).filter((path) => !isProtectedAgentPath(path));
+      const entries = await Promise.all(paths.map(async (path) => ({
+        path,
+        content: await workspace.current.readFile(path)
+      })));
+      const bytes = createZipArchive(entries);
+      const copy = new Uint8Array(bytes.byteLength);
+      copy.set(bytes);
+      const url = URL.createObjectURL(new Blob([copy.buffer], { type: "application/zip" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `wasmhatch-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (error) {
+      notice(error instanceof Error ? error.message : "The backup could not be created.", "error");
+    } finally {
+      setBackupBusy(false);
+    }
+  }, [backupBusy, notice]);
+
   const activePermission = permissionQueue[0];
 
   return (
@@ -639,6 +707,28 @@ export function ChatPage() {
             {permissions.current.grantedPaths().length > 0 && (
               <p className="chat-hint">Always-allowed this session: {permissions.current.grantedPaths().join(", ")}</p>
             )}
+          </section>
+
+          <section className="chat-panel">
+            <h2>Storage</h2>
+            {storageStatus && <p className="chat-hint">{storageSummary(storageStatus)}</p>}
+            {storageStatus?.persistence === "best-effort" && storageStatus.persistenceRequestAvailable && (
+              <button className="button" type="button" disabled={pinBusy} onClick={() => { void pinStorage(); }}>
+                {pinBusy ? "Pinning…" : "Keep my data safe"}
+              </button>
+            )}
+            {pinNote && <p className="chat-hint">{pinNote}</p>}
+            <button
+              className="button"
+              type="button"
+              disabled={backupBusy || files.length === 0}
+              onClick={() => { void backupWorkspace(); }}
+            >
+              {backupBusy ? "Preparing…" : "Back up everything"}
+            </button>
+            <p className="chat-hint">
+              Downloads all your files as one ZIP you can keep anywhere{files.length === 0 ? " — add a file first" : ""}.
+            </p>
           </section>
 
           {viewer && (
