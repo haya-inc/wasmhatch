@@ -14,7 +14,7 @@ const requiredDirectives = [
   "form-action 'none'",
   "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client",
   "style-src 'self' https://accounts.google.com/gsi/style",
-  "connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://accounts.google.com/gsi/",
+  "connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://accounts.google.com/gsi/",
   "worker-src 'self'"
 ];
 

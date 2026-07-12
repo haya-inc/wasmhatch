@@ -616,3 +616,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   .chat-main { border-right: none; }
   .chat-transcript { max-height: none; }
 }
+
+/* Artifact panel */
+.artifact-panel { border: 1px solid var(--accent); border-radius: 12px; padding: 14px; display: grid; gap: 10px; background: rgba(217, 255, 67, 0.03); }
+.artifact-header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.artifact-header h2 { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.artifact-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.artifact-frame { width: 100%; height: 420px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.artifact-note { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }

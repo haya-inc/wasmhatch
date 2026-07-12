@@ -24,7 +24,7 @@ export default defineConfig(({ command, mode }) => ({
             stylePolicy,
             "img-src 'self' data:",
             "font-src 'self'",
-            `connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com ${googleIdentityBase}${developmentConnect}`,
+            `connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com ${googleIdentityBase}${developmentConnect}`,
             "worker-src 'self'",
             "manifest-src 'self'"
           ].join("; ");
