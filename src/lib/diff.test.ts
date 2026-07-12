@@ -78,8 +78,10 @@ describe("createReadableDiff", () => {
         { path: "new.ts", before: "", after: "export const created = true;\n" }
       ]);
       writeFileSync(join(directory, "change.patch"), `${patch}\n`);
-      execFileSync("git", ["apply", "--check", "change.patch"], { cwd: directory });
-      execFileSync("git", ["apply", "change.patch"], { cwd: directory });
+      // Pin autocrlf off so the assertion is byte-exact even when the
+      // contributor's global Git config rewrites line endings (Windows default).
+      execFileSync("git", ["-c", "core.autocrlf=false", "apply", "--check", "change.patch"], { cwd: directory });
+      execFileSync("git", ["-c", "core.autocrlf=false", "apply", "change.patch"], { cwd: directory });
       expect(readFileSync(join(directory, "a.ts"), "utf8")).toBe("export const a = 2;\n");
       expect(readFileSync(join(directory, "new.ts"), "utf8")).toBe("export const created = true;\n");
     } finally {
@@ -97,8 +99,8 @@ describe("createReadableDiff", () => {
         { path: "gains-eol.ts", before: "export const b = 1;", after: "export const b = 1;\n" }
       ]);
       writeFileSync(join(directory, "change.patch"), `${patch}\n`);
-      execFileSync("git", ["apply", "--check", "change.patch"], { cwd: directory });
-      execFileSync("git", ["apply", "change.patch"], { cwd: directory });
+      execFileSync("git", ["-c", "core.autocrlf=false", "apply", "--check", "change.patch"], { cwd: directory });
+      execFileSync("git", ["-c", "core.autocrlf=false", "apply", "change.patch"], { cwd: directory });
       expect(readFileSync(join(directory, "no-eol.ts"), "utf8")).toBe("export const a = 2;");
       expect(readFileSync(join(directory, "gains-eol.ts"), "utf8")).toBe("export const b = 1;\n");
     } finally {

@@ -1,0 +1,7 @@
+# Normalize to LF in the repository and on checkout so tests that compare
+# file bytes behave identically on Windows, macOS, and Linux.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.woff binary
+*.woff2 binary
