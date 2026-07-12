@@ -35,6 +35,8 @@ The foundation slice now ships:
   external links, or hidden workbook payloads;
 - an optional OpenAI Responses API planner that turns a business instruction
   and visible rows into a strict, reviewable transformation proposal;
+- an optional, feature-detected Chrome built-in AI planner that can stage one
+  active-table transform without an API key on compatible desktop devices;
 - QuickJS compiled to Wasm and executed in a Web Worker;
 - CPU, memory, source, input, and output limits;
 - spreadsheet-shaped JSON transformations with no `fetch`, DOM, or host access;
@@ -77,6 +79,10 @@ The foundation slice now ships:
 
 The current operator accepts local CSV/XLSX files, a Google OAuth Web client ID
 as public session configuration, and an optional memory-only OpenAI API key.
+Compatible Chrome desktops can instead process the current task and table with
+the browser's built-in model; Chrome may download model files, but the business
+input stays on the device. This local adapter does not handle workspace
+attachments or artifact-output plans.
 Google Sheets now enters the checkpointed artifact-workflow loop through one
 exact foreground read grant. The broker materializes a credential-free,
 content-addressed workspace snapshot without letting model output select a
@@ -86,7 +92,8 @@ See the current [product plan](docs/plan.md), [connector authoring
 guide](docs/connector-authoring.md), [tabular mutation
 contract](docs/tabular-mutations.md), [Google OAuth deployment
 guide](docs/google-oauth.md), [CSV/XLSX artifact
-boundary](docs/tabular-artifacts.md), [workspace script and file-effect
+boundary](docs/tabular-artifacts.md), [Chrome built-in AI planner
+boundary](docs/chrome-built-in-ai.md), [workspace script and file-effect
 contract](docs/workspace-scripts.md), [checkpointed workspace agent
 loop](docs/workspace-agent-loop.md), [run journal and policy decision
 contract](docs/run-journal.md), [Operator workspace portability and recovery
@@ -188,6 +195,7 @@ retained legacy route. The Business Operator rows are the canonical product.
 | Capability | Status |
 | --- | --- |
 | Business-operator runtime | React UI; QuickJS Wasm script Worker; CSV/XLSX codec Worker |
+| Natural-language table planning | Chrome built-in AI on compatible desktops without an API key, or OpenAI Responses with a memory-only session key |
 | CSV/XLSX artifact boundary | Available, value-only with immutable input provenance, verified approved `work/` snapshots, reviewed session undo/redo, and safe export |
 | Manifest-bound workspace scripts | Available for imported tabular snapshots |
 | Snapshot virtual filesystem | Available; exact inputs and ephemeral outputs only |

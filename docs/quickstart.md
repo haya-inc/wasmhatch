@@ -42,13 +42,20 @@ to start with the local source picker instead of a synthetic demo.
 1. Select **CSV / XLSX** and choose a bounded workbook.
 2. Review the detected sheet, dimensions, source hash, formula count, external
    link count, and warnings.
-3. Edit or run the local transformation script.
-4. Review the typed cell proposal before applying it to the working snapshot.
-5. Export a safe CSV/value-only XLSX, or save a manifest-bound workspace output.
+3. On a compatible Chrome desktop, keep **Chrome built-in AI** selected, enter
+   the task, and choose **Draft with local AI**. Chrome may first download its
+   model, but the task and rows stay on the device. On other browsers, select
+   the OpenAI session planner or edit the script manually.
+4. Inspect or edit the staged script, then run it in the QuickJS Wasm Worker.
+5. Review the typed cell proposal before applying it to the working snapshot.
+6. Export a safe CSV/value-only XLSX, or save a manifest-bound workspace output.
 
 The source workbook bytes are parsed in a Worker and are not retained in the
 Operator workspace. Macros are rejected, formulas do not execute, and generated
 scripts receive copied values rather than browser or connector capabilities.
+The built-in planner currently handles only the active table; workspace
+attachments and artifact-output planning still require the OpenAI bounded tool
+loop. See [Chrome built-in AI planner](chrome-built-in-ai.md).
 
 ## Try the Google Sheets artifact loop
 

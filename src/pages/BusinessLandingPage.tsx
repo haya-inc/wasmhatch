@@ -17,7 +17,7 @@ const workflows = [
     source: "CSV / XLSX",
     scope: "Your foreground file",
     title: "Try one repetitive spreadsheet",
-    description: "Choose an anonymized export, run a bounded transform, then approve or reject the exact cells without uploading the source.",
+    description: "Choose an anonymized export, optionally draft on-device with compatible Chrome, then approve or reject the exact cells without uploading the source.",
     entry: "start=upload",
     action: "Use your file"
   },
@@ -180,7 +180,7 @@ export function BusinessLandingPage() {
         <div className="fit-list" aria-label="WasmHatch architecture layers">
           <article className="fit-primary"><span>01</span><h3>Artifact worker</h3><p>Turns untrusted CSV/XLSX bytes into bounded values and provenance</p><small>Value-only · no network</small></article>
           <article><span>02</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
-          <article><span>03</span><h3>Agent checkpoints</h3><p>Reads only identity-bound files or one host-bound Sheets range, then records bounded model egress</p><small>No token or provider ID</small></article>
+          <article><span>03</span><h3>Planner boundary</h3><p>Uses Chrome built-in AI when available, or identity-bound OpenAI tools for broader plans</p><small>No credential in model input</small></article>
           <article><span>04</span><h3>Artifact workflow</h3><p>Derives one typed output manifest on the host and mounts only copied inputs inside QuickJS</p><small>Markdown · CSV · JSON · text</small></article>
           <article><span>05</span><h3>Effect review</h3><p>Cell mutations, file diffs, and local undo bind the reviewed base and payload</p><small>Exact approval · receipt-bound undo</small></article>
           <article><span>06</span><h3>Run journal</h3><p>Joins policy, tools, approvals, conflicts, receipts, and pilot timing</p><small>Credential fields excluded</small></article>
@@ -234,7 +234,7 @@ export function BusinessLandingPage() {
         <div className="trust-lines">
           <div><span>Local files</span><strong>Isolated OPFS → verified portable ZIP</strong><em>01</em></div>
           <div><span>Credentials</span><strong>Short-lived GIS → host broker</strong><em>02</em></div>
-          <div><span>Model access</span><strong>Reviewed hashes or one exact range · visible tool egress</strong><em>03</em></div>
+          <div><span>Model access</span><strong>On-device table or reviewed hashes · visible network egress</strong><em>03</em></div>
           <div><span>Scripts</span><strong>Snapshot VFS · no live host access</strong><em>04</em></div>
           <div><span>Writes</span><strong>Cell or file diff approval first</strong><em>05</em></div>
           <div><span>Autonomy</span><strong>Foreground session in alpha</strong><em>06</em></div>

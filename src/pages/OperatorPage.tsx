@@ -25,6 +25,11 @@ import {
   type SpreadsheetPlan
 } from "../lib/business-planner";
 import {
+  ChromeBuiltInPlanner,
+  chromeBuiltInPlannerAvailability,
+  type ChromeBuiltInPlannerAvailability
+} from "../lib/chrome-built-in-planner";
+import {
   GoogleSheetsConnector,
   LocalSpreadsheetConnector,
   spreadsheetRowsFromBusinessValue,
@@ -165,6 +170,8 @@ interface ReversibleLocalSpreadsheetEffect {
   readonly lastAction: "forward" | "undo" | "redo";
 }
 
+type PlannerProvider = "chrome-built-in" | "openai";
+
 function auditEntryFromJournalEvent(event: RunJournalEvent): AuditEntry {
   const totalSeconds = Math.floor(event.elapsedMs / 1_000);
   const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
@@ -267,6 +274,9 @@ export function OperatorPage() {
   const [plan, setPlan] = useState<SpreadsheetPlan | null>(null);
   const [planMode, setPlanMode] = useState<"spreadsheet-transform" | "artifact-output">("spreadsheet-transform");
   const [artifactWorkflowDraft, setArtifactWorkflowDraft] = useState<WorkspaceArtifactWorkflowDraft | null>(null);
+  const [plannerProvider, setPlannerProvider] = useState<PlannerProvider>("openai");
+  const [chromePlannerStatus, setChromePlannerStatus] = useState<ChromeBuiltInPlannerAvailability | "checking">("checking");
+  const [chromePlannerDownloadProgress, setChromePlannerDownloadProgress] = useState<number | null>(null);
   const [plannerApiKey, setPlannerApiKey] = useState("");
   const [plannerModel, setPlannerModel] = useState(DEFAULT_PLANNER_MODEL);
   const [planning, setPlanning] = useState(false);
@@ -340,6 +350,16 @@ export function OperatorPage() {
     () => workspaceProposal ? workspaceFileEffectDiff(workspaceProposal) : "",
     [workspaceProposal]
   );
+
+  useEffect(() => {
+    let current = true;
+    void chromeBuiltInPlannerAvailability().then((availability) => {
+      if (!current) return;
+      setChromePlannerStatus(availability);
+      if (availability !== "unavailable") setPlannerProvider("chrome-built-in");
+    });
+    return () => { current = false; };
+  }, []);
 
   useEffect(() => {
     if (!googleAuthStatus.expiresAt) return;
@@ -447,6 +467,19 @@ export function OperatorPage() {
     setAgentBudget(null);
     setScript(nextMode === "spreadsheet-transform" ? demo.script : "");
     setStatus(nextMode === "spreadsheet-transform" ? "Table transform mode" : "Artifact output mode");
+    setError("");
+  };
+
+  const changePlannerProvider = (nextProvider: PlannerProvider) => {
+    if (nextProvider === plannerProvider || planning || committing) return;
+    planningAbort.current?.abort();
+    invalidateProposal("AI planner provider changed");
+    clearAiPlans();
+    setAgentTrace([]);
+    setAgentBudget(null);
+    setPlannerProvider(nextProvider);
+    setChromePlannerDownloadProgress(null);
+    setStatus(nextProvider === "chrome-built-in" ? "Chrome built-in AI selected — rows stay on this device" : "OpenAI session planner selected");
     setError("");
   };
 
@@ -751,6 +784,55 @@ export function OperatorPage() {
     setAgentBudget(null);
     invalidateProposal("AI plan requested");
     try {
+      if (plannerProvider === "chrome-built-in") {
+        if (startingPlanMode !== "spreadsheet-transform") {
+          throw new Error("Chrome built-in AI currently supports active-table transforms only. Choose OpenAI for artifact-output planning.");
+        }
+        if (workspaceAttachment) {
+          throw new Error("Chrome built-in AI cannot read an additional workspace attachment. Detach it or choose OpenAI's bounded tool loop.");
+        }
+        if (chromePlannerStatus === "checking" || chromePlannerStatus === "unavailable") {
+          throw new Error("Chrome built-in AI is unavailable on this browser or device. Choose OpenAI session planning instead.");
+        }
+        setStatus(chromePlannerStatus === "available" ? "Planning on this device with Chrome built-in AI…" : "Preparing Chrome's built-in AI model…");
+        setChromePlannerDownloadProgress(null);
+        const localPlanner = new ChromeBuiltInPlanner(undefined, (progress) => {
+          setChromePlannerStatus("downloading");
+          setChromePlannerDownloadProgress(progress);
+          setStatus(`Downloading Chrome's built-in AI model… ${Math.round(progress * 100)}%`);
+        });
+        const localPlan = await localPlanner.planSpreadsheetTransform({ task, rows }, controller.signal);
+        setChromePlannerStatus("available");
+        if (
+          startingAuthorityEpoch !== authorityEpoch.current ||
+          startingTaskRevision !== taskRevision.current ||
+          startingPlanMode !== planMode
+        ) {
+          throw new Error("The task or active table changed during local AI planning. Start a new plan against the current state.");
+        }
+        setPlan(localPlan);
+        setArtifactWorkflowDraft(null);
+        scriptRevision.current += 1;
+        setScript(localPlan.script);
+        setStatus("Local AI plan staged for review");
+        record({
+          title: "Local AI plan staged",
+          detail: `${localPlan.inputRows} rows / ${localPlan.inputCells} cells processed by Chrome built-in AI · no API key, business-data network egress, execution, or write`,
+          tone: "accent",
+          category: "model",
+          outcome: "prepared",
+          evidence: {
+            model: localPlan.model,
+            plan_kind: localPlan.kind,
+            provider: "browser-built-in",
+            network_egress: false,
+            input_rows: localPlan.inputRows,
+            input_cells: localPlan.inputCells
+          }
+        });
+        return;
+      }
+
       let nextPlan: SpreadsheetPlan | null = null;
       let nextArtifactDraft: WorkspaceArtifactWorkflowDraft | null = null;
       let usedWorkspaceTools = false;
@@ -937,6 +1019,7 @@ export function OperatorPage() {
       record({ title: aborted ? "AI planning cancelled" : "AI plan blocked", detail: message, tone: "muted", category: "model", outcome: aborted ? "cancelled" : "failed" });
     } finally {
       if (planningAbort.current === controller) planningAbort.current = null;
+      setChromePlannerDownloadProgress(null);
       setPlanning(false);
     }
   };
@@ -2060,6 +2143,11 @@ export function OperatorPage() {
   };
 
   const googleArtifactReadReady = source === "google" && Boolean(loadedGoogleTarget) && googleAuthStatus.connected;
+  const chromePlannerReady = chromePlannerStatus !== "checking" && chromePlannerStatus !== "unavailable";
+  const chromePlannerRequestSupported = chromePlannerReady && planMode === "spreadsheet-transform" && !workspaceAttachment;
+  const plannerRequestReady = plannerProvider === "chrome-built-in"
+    ? chromePlannerRequestSupported
+    : Boolean(plannerApiKey.trim());
   const localDemoFinished = localDemoOutcome !== null;
   const realWorkflowPilotReady = pilotReportWorkflow === "local-csv"
     || pilotReportWorkflow === "local-xlsx"
@@ -2262,18 +2350,29 @@ export function OperatorPage() {
             {googleAuthStatus.connected && <Check size={14} />}
           </div>
           <div className="connector-row static planner-connector">
-            <Bot size={16} /><span><strong>OpenAI planner</strong><small>Responses API · bounded tools</small></span>
+            <Bot size={16} /><span><strong>AI planner</strong><small>{plannerProvider === "chrome-built-in" ? "Chrome built-in · local table" : "OpenAI Responses · bounded tools"}</small></span>
           </div>
           <div className="connector-form planner-credentials">
-            <label>Session API key<input type="password" value={plannerApiKey} onChange={(event) => setPlannerApiKey(event.target.value)} autoComplete="off" placeholder="Memory only" aria-label="OpenAI session API key" disabled={committing || planning} /></label>
-            <label>Planning model
-              <select value={plannerModel} onChange={(event) => setPlannerModel(event.target.value)} aria-label="Planning model" disabled={committing || planning}>
-                <option value="gpt-5.6-luna">GPT-5.6 Luna · efficient</option>
-                <option value="gpt-5.6-terra">GPT-5.6 Terra · balanced</option>
-                <option value="gpt-5.6-sol">GPT-5.6 Sol · highest capability</option>
+            <label>Planner provider
+              <select value={plannerProvider} onChange={(event) => changePlannerProvider(event.target.value as PlannerProvider)} aria-label="Planner provider" disabled={committing || planning}>
+                <option value="chrome-built-in" disabled={!chromePlannerReady}>Chrome built-in AI · {chromePlannerStatus === "checking" ? "checking" : chromePlannerStatus === "unavailable" ? "not available" : chromePlannerStatus}</option>
+                <option value="openai">OpenAI API · session key</option>
               </select>
             </label>
-            <p>The key stays in this tab and is used only in the Authorization header. It never enters spreadsheet data, the model prompt, or the Wasm worker.</p>
+            {plannerProvider === "openai" ? <>
+              <label>Session API key<input type="password" value={plannerApiKey} onChange={(event) => setPlannerApiKey(event.target.value)} autoComplete="off" placeholder="Memory only" aria-label="OpenAI session API key" disabled={committing || planning} /></label>
+              <label>Planning model
+                <select value={plannerModel} onChange={(event) => setPlannerModel(event.target.value)} aria-label="Planning model" disabled={committing || planning}>
+                  <option value="gpt-5.6-luna">GPT-5.6 Luna · efficient</option>
+                  <option value="gpt-5.6-terra">GPT-5.6 Terra · balanced</option>
+                  <option value="gpt-5.6-sol">GPT-5.6 Sol · highest capability</option>
+                </select>
+              </label>
+              <p>The key stays in this tab and is used only in the Authorization header. It never enters spreadsheet data, the model prompt, or the Wasm worker.</p>
+            </> : <div className="local-planner-boundary" role="status">
+              <ShieldCheck size={14} />
+              <span><strong>{chromePlannerDownloadProgress !== null ? `Model download ${Math.round(chromePlannerDownloadProgress * 100)}%` : chromePlannerStatus === "available" ? "On-device model ready" : "Model download starts on use"}</strong><small>Current table rows stay on this device. Chrome may download model files, but business data is not sent with that download.</small></span>
+            </div>}
           </div>
           <div className="connector-form">
             <label>Google OAuth Web client ID<input value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" placeholder="123…apps.googleusercontent.com" aria-label="Google OAuth Web client ID" disabled={committing || connectingGoogle || revokingGoogle || googleAuthStatus.connected} /></label>
@@ -2376,10 +2475,14 @@ export function OperatorPage() {
               <button className={planMode === "artifact-output" ? "active" : ""} aria-pressed={planMode === "artifact-output"} onClick={() => changePlanMode("artifact-output")} disabled={planning || committing}><span>Artifact output</span><small>one reviewed file</small></button>
             </div>
             <div className="operator-planner-actions">
-              <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerApiKey.trim() || !task.trim() || planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath) && !googleArtifactReadReady))}>
-                {planning ? <Square size={12} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
+              <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerRequestReady || !task.trim() || planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath) && !googleArtifactReadReady))}>
+                {planning ? <Square size={12} /> : plannerProvider === "chrome-built-in" ? <Bot size={14} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : plannerProvider === "chrome-built-in" ? "Draft with local AI" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
               </button>
-              <span>{planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath) && !googleArtifactReadReady
+              <span>{plannerProvider === "chrome-built-in" && !chromePlannerRequestSupported
+                ? "Chrome built-in AI currently plans the active table only. Choose Table transform without an extra attachment, or switch to OpenAI for bounded workspace tools and artifact output."
+                : plannerProvider === "chrome-built-in"
+                  ? `Processes this task and ${rows.length} visible rows with Chrome's on-device model. Model files may download first; business rows, credentials, execution, and writes stay outside the network request.`
+                : planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath) && !googleArtifactReadReady
                 ? "Attach a workspace file, import a local table, or load a connected Google Sheets range before proposing one output file."
                 : planMode === "artifact-output" && googleArtifactReadReady && loadedGoogleTarget
                   ? `Grants one host-bound read of ${loadedGoogleTarget.range}${workspaceAttachment ? ` plus ${workspaceAttachment.path}` : ""}. On tool request, the broker re-reads only that range and persists a credential-free, identity-bound snapshot; the provider ID and token stay excluded.`

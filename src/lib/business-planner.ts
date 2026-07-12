@@ -87,6 +87,14 @@ function requireStringList(value: unknown, label: string) {
   return value.map((item) => requireText(item, `${label} item`, 500));
 }
 
+function assertExactKeys(value: Record<string, unknown>, expectedKeys: readonly string[], label: string) {
+  const actual = Object.keys(value).sort();
+  const expected = [...expectedKeys].sort();
+  if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
+    throw new Error(`${label} contains missing or unsupported fields.`);
+  }
+}
+
 function validatePlannerRows(value: SpreadsheetRows) {
   const rows = validateSpreadsheetRows(value);
   if (rows.length > MAX_PLANNER_ROWS) {
@@ -100,6 +108,17 @@ function validatePlannerRows(value: SpreadsheetRows) {
     throw new Error("AI planning context is too large. Narrow the spreadsheet range first.");
   }
   return { rows, serialized };
+}
+
+export function prepareSpreadsheetPlanInput(request: SpreadsheetPlanRequest) {
+  const task = requireText(request.task, "Business task", MAX_TASK_LENGTH);
+  const context = validatePlannerRows(request.rows);
+  return {
+    task,
+    rows: context.rows,
+    serializedRows: context.serialized,
+    inputCells: context.rows.reduce((total, row) => total + row.length, 0)
+  };
 }
 
 function plannerApiError(status: number) {
@@ -122,9 +141,10 @@ export function parseSpreadsheetPlanArguments(
   metadata: { model: string; responseId: string; inputRows: number; inputCells: number }
 ): SpreadsheetPlan {
   if (!args || typeof args !== "object" || Array.isArray(args)) {
-    throw new Error("OpenAI returned an invalid spreadsheet plan.");
+    throw new Error("Planner returned an invalid spreadsheet plan.");
   }
   const plan = args as Record<string, unknown>;
+  assertExactKeys(plan, ["summary", "expected_effect", "script", "assumptions", "warnings"], "Spreadsheet plan");
   const script = requireText(plan.script, "Planner script", MAX_SCRIPT_BYTES);
   if (byteLength(script) > MAX_SCRIPT_BYTES) throw new Error("Planner script exceeds the sandbox source limit.");
 
@@ -175,10 +195,8 @@ export class OpenAIPlanner implements BusinessPlanner {
   }
 
   async planSpreadsheetTransform(request: SpreadsheetPlanRequest, signal?: AbortSignal): Promise<SpreadsheetPlan> {
-    const task = requireText(request.task, "Business task", MAX_TASK_LENGTH);
+    const input = prepareSpreadsheetPlanInput(request);
     const model = requireText(request.model ?? DEFAULT_PLANNER_MODEL, "Planner model", 128);
-    const context = validatePlannerRows(request.rows);
-    const inputCells = context.rows.reduce((total, row) => total + row.length, 0);
     const response = await this.fetcher(this.endpoint, {
       method: "POST",
       headers: {
@@ -206,7 +224,7 @@ export class OpenAIPlanner implements BusinessPlanner {
             role: "user",
             content: [{
               type: "input_text",
-              text: `Business task:\n${task}\n\nCurrent spreadsheet rows (JSON):\n${context.serialized}`
+              text: `Business task:\n${input.task}\n\nCurrent spreadsheet rows (JSON):\n${input.serializedRows}`
             }]
           }
         ]
@@ -215,6 +233,6 @@ export class OpenAIPlanner implements BusinessPlanner {
 
     if (!response.ok) throw plannerApiError(response.status);
     const body = await parseJson(response);
-    return parsePlan(body, model, context.rows.length, inputCells);
+    return parsePlan(body, model, input.rows.length, input.inputCells);
   }
 }

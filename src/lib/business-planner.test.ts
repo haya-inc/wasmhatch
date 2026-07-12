@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { OpenAIPlanner } from "./business-planner";
+import { OpenAIPlanner, parseSpreadsheetPlanArguments } from "./business-planner";
 
 function plannerResponse(overrides: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({
@@ -68,5 +68,21 @@ describe("OpenAIPlanner", () => {
     const planner = new OpenAIPlanner("sk-test", fetcher as typeof fetch);
     await expect(planner.planSpreadsheetTransform({ task: "Normalize rows.", rows: [["A"]] }))
       .rejects.toThrow("API key is invalid or expired");
+  });
+
+  it("rejects hidden plan fields even after strict provider output", () => {
+    expect(() => parseSpreadsheetPlanArguments({
+      summary: "Normalize rows.",
+      expected_effect: "One column changes.",
+      script: "(rows) => rows",
+      assumptions: [],
+      warnings: [],
+      hidden_authority: "write"
+    }, {
+      model: "test-model",
+      responseId: "test-response",
+      inputRows: 1,
+      inputCells: 1
+    })).toThrow("missing or unsupported fields");
   });
 });

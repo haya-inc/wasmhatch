@@ -70,6 +70,11 @@ require a separately deployed server adapter.
   [Google Sheets OAuth](google-oauth.md).
 - A provider-neutral `BusinessPlanner` boundary and OpenAI Responses API
   adapter for natural-language spreadsheet transformation plans.
+- A feature-detected Chrome built-in Prompt API adapter for one active-table
+  transformation on compatible desktop devices. It uses JSON Schema constrained
+  output, destroys each local session, and sends no task or row data over the
+  network; model download traffic remains a disclosed browser concern. See
+  [Chrome Built-in AI](chrome-built-in-ai.md).
 - Strict function-call output that stages a summary, expected effect,
   assumptions, warnings, and synchronous script without executing it.
 - Explicit model egress: the planning action sends only the visible task and a
@@ -142,6 +147,9 @@ require a separately deployed server adapter.
   flow accepts deployer or user-provided Web client ID configuration.
 - A general multi-connector AI loop that can select among multiple pre-granted
   resources, run more than one transform, or revise an effect after execution.
+- Chrome built-in AI support for workspace attachments, artifact-output plans,
+  mobile devices, or non-Chrome browsers. Those flows retain the OpenAI tool
+  loop or manual-script path.
 - Full-fidelity workbook editing, formula calculation, legacy `.xls`, and
   password-protected workbook import. The P0 adapter is intentionally
   value-only.
@@ -730,6 +738,9 @@ entering model or script input.
 
 - Implement the provider-neutral planner boundary — complete.
 - Add an OpenAI Responses API planner with strict staged output — complete.
+- Add an optional key-free local planner for compatible browsers — complete for
+  one active-table transform through Chrome's feature-detected Prompt API;
+  browser support and hardware availability are not product guarantees.
 - Let the model inspect an explicitly sent, already-granted range — complete.
 - Let the model generate a bounded transform function for separate review and
   execution — complete.

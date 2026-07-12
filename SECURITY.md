@@ -43,6 +43,13 @@ security fixes.
 - GitHub Pages supplies HTTPS/HSTS but does not allow this project to configure
   response headers. Meta CSP cannot enforce header-only directives such as
   `frame-ancestors`; this remains a documented hosting limitation.
+- On compatible Chrome desktops, the optional built-in planner sends the current
+  bounded task/table to Chrome's on-device `LanguageModel`. Chrome may download
+  model files, but business inputs are not part of that download. The API is
+  feature-detected and receives no credential. Its JSON output is schema-bound,
+  exact-key validated, and inert until separately inspected and run in QuickJS.
+  Workspace attachments and artifact-output planning never silently fall back
+  to this narrower adapter.
 - OPFS data can be deleted when users clear site data.
 - Imported text files are untrusted input.
 - ZIP central-directory metadata is validated before inflation; malformed,

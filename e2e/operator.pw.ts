@@ -14,6 +14,7 @@ test("links the public project page to current newcomer work", async ({ page }) 
   await expect(page.getByRole("link", { name: "60-second demo" }).first()).toHaveAttribute("href", "/?view=operator&demo=local");
   await expect(page.getByRole("heading", { name: "Bring one repetitive spreadsheet." })).toBeVisible();
   await expect(page.getByText("Local files stay in this tab. No account or server upload.")).toBeVisible();
+  await expect(page.getByText("No credential in model input", { exact: true })).toBeVisible();
   await expect(page.getByText("Exact approval · receipt-bound undo", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Read issue #13" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/13");
   await expect(page.getByRole("link", { name: "Read issue #14" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/14");
@@ -48,6 +49,82 @@ test("opens a real-file entry state and returns to work after local import", asy
   await expect(page.getByRole("button", { name: /Current source: pilot.csv/ })).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByText("Choose your local table")).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test("plans a real local table with Chrome built-in AI without an API key", async ({ page }) => {
+  await page.addInitScript(() => {
+    const calls: unknown[] = [];
+    Object.defineProperty(globalThis, "__wasmhatchBuiltInPlannerCalls", { value: calls, configurable: true });
+    Object.defineProperty(globalThis, "LanguageModel", {
+      configurable: true,
+      value: {
+        availability: async (options: unknown) => {
+          calls.push({ kind: "availability", options });
+          return "available";
+        },
+        create: async (options: { initialPrompts: unknown }) => {
+          calls.push({ kind: "create", initialPrompts: options.initialPrompts });
+          return {
+            prompt: async (input: string, promptOptions: { responseConstraint: unknown; omitResponseConstraintInput: boolean }) => {
+              calls.push({
+                kind: "prompt",
+                input,
+                responseConstraint: promptOptions.responseConstraint,
+                omitResponseConstraintInput: promptOptions.omitResponseConstraintInput
+              });
+              return JSON.stringify({
+                summary: "Normalize the region column locally.",
+                expected_effect: "Region values become uppercase; the header and owner cells remain unchanged.",
+                script: "(rows) => rows.map((row, index) => index === 0 ? row : [row[0], String(row[1]).toUpperCase()])",
+                assumptions: ["Row 1 is the header."],
+                warnings: []
+              });
+            },
+            destroy: () => calls.push({ kind: "destroy" })
+          };
+        }
+      }
+    });
+  });
+  await page.goto("/?view=operator&start=upload");
+  await expect(page.getByLabel("Planner provider")).toHaveValue("chrome-built-in");
+  await expect(page.getByText("On-device model ready", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("OpenAI session API key")).toHaveCount(0);
+
+  await page.getByLabel("Import CSV or XLSX").setInputFiles({
+    name: "local-ai.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Owner,Region\r\nAya,west\r\n", "utf8")
+  });
+  await page.getByLabel("Business task").fill("Uppercase the region column.");
+  await page.getByRole("button", { name: "Draft with local AI" }).click();
+
+  await expect(page.getByRole("heading", { name: "Normalize the region column locally." })).toBeVisible();
+  await expect(page.getByLabel("AI transformation plan")).toContainText("chrome-built-in");
+  await expect(page.getByText("Local AI plan staged", { exact: true })).toBeVisible();
+  await expect(page.getByText("Explicit approval required", { exact: true })).toHaveCount(0);
+  const calls = await page.evaluate(() => (
+    globalThis as typeof globalThis & { __wasmhatchBuiltInPlannerCalls: unknown[] }
+  ).__wasmhatchBuiltInPlannerCalls);
+  expect(calls).toHaveLength(4);
+  expect(calls[0]).toMatchObject({ kind: "availability" });
+  expect(calls[1]).toMatchObject({ kind: "create", initialPrompts: [{ role: "system" }] });
+  expect(calls[2]).toMatchObject({
+    kind: "prompt",
+    omitResponseConstraintInput: false,
+    responseConstraint: { additionalProperties: false }
+  });
+  expect(JSON.stringify(calls[2])).toContain("Uppercase the region column");
+  expect(JSON.stringify(calls[2])).toContain("west");
+  expect(calls[3]).toEqual({ kind: "destroy" });
+  expect(JSON.stringify(calls)).not.toContain("sk-");
+
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+  await expect(page.getByText("Explicit approval required", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Immutable proposal identity")).toContainText("1 typed cells");
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+  await expect(page.getByText("Local effect committed", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Review undo" })).toBeVisible();
 });
 
 test("copies a source-free pilot report for a real CSV effect and expires it on new work", async ({ page }) => {
