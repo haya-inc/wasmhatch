@@ -97,6 +97,9 @@ security fixes.
 - Run journal exports are neither signed nor tamper-evident. They link policy,
   proposal, source, run, and receipt identities for inspection but do not grant
   authority, prove business correctness, or replace provider-native audit logs.
+- The guided public pilot report is derived from aggregate counts and timings
+  only. It excludes source contents, task text, resource identities, and run ID;
+  the user must still inspect the copied Markdown before posting it publicly.
 - Operator artifacts use a dedicated OPFS/localStorage namespace separate from
   the retained coding workspace. Operator export, restore, and clear never list
   or mutate the legacy namespace.

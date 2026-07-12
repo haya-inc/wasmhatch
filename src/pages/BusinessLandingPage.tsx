@@ -134,7 +134,7 @@ export function BusinessLandingPage() {
         <div className="section-label">Pilot workflows</div>
         <div className="examples-heading">
           <h2 id="workflows-title">Start with<br />real operations.</h2>
-          <div><p>The first pilots should validate business outcomes, approval clarity, and time saved—not coding contribution metrics.</p><a className="example-report-link" href={`${repositoryUrl}/issues/12`}>Share a sanitized pilot report <ArrowRight size={16} /></a></div>
+          <div><p>The first pilots should validate business outcomes, approval clarity, and time saved—not coding contribution metrics.</p><a className="example-report-link" href={`${repositoryUrl}/issues/new?template=pilot_report.yml`}>Share a sanitized pilot report <ArrowRight size={16} /></a></div>
         </div>
         <div className="example-list">
           {workflows.map((workflow) => (

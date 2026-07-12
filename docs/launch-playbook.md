@@ -105,8 +105,11 @@ source artifact or run journal. A public report should contain only the workflow
 shape, source kind, result, timing totals, first blocker, and links the reporter
 already chose to make public.
 
-Opt-in sanitized reports belong in [business operator pilot registry issue
-#12](https://github.com/haya-inc/wasmhatch/issues/12).
+Opt-in sanitized reports use the
+[public pilot report form](https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml).
+The guided demo can copy a source-free aggregate summary for that form. The
+[business operator pilot registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12)
+indexes notable reports and architecture decisions.
 
 ## Stage C: OSS contribution loop
 

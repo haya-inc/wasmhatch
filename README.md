@@ -56,6 +56,9 @@ The foundation slice now ships:
 - a shared run journal and policy-decision envelope that joins model/tool events,
   scripts, proposals, reviews, conflicts, receipts, and pilot timing metrics in
   an explicit credential-field-free, defensively redacted JSON export;
+- a public pilot-report action for the guided demo that copies aggregate counts
+  and timings while excluding source contents, task text, resource identities,
+  and run ID;
 - typed cell-mutation bundles that generate preview, summary, commit payload,
   and inverse receipt metadata from one immutable source;
 - explicit rejection of structural changes and ungranted formula writes;
@@ -206,6 +209,7 @@ expose file deletion.
 | Checkpointed workspace AI tools | Available for exact local artifact grants and one foreground-loaded Google Sheets target |
 | Model-egress and agent budgets | Available for list/read/search/tabular/Google Sheets planning loops |
 | Structured run journal | Available as an explicit credential-field-free, defensively redacted JSON export with derived pilot metrics |
+| Public pilot feedback | Available as a source-free aggregate Markdown summary plus a privacy-confirming GitHub Issue Form |
 | Operator workspace export/restore | Available as a bounded text-only ZIP with exact restore/clear review, stale-base rejection, verification, and rollback |
 | Operator artifact browser | Available with validated metadata, bounded local text preview, and one explicit SHA-256-bound AI attachment |
 | Typed workspace artifact workflow | Available for one host-manifested Markdown/CSV/JSON/text/inert-JavaScript output through QuickJS and exact file-diff approval |

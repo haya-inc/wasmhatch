@@ -1,13 +1,13 @@
 name: Feature request
-description: Propose a focused improvement to the repository-to-patch workflow
+description: Propose a focused improvement to the business-operator workflow
 title: "feature: "
 labels: [enhancement]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Contributor problem
-      description: What setup or contribution friction does this remove?
+      label: Business workflow problem
+      description: What bounded operator task, review, or trust-boundary friction does this address?
     validations:
       required: true
   - type: textarea
@@ -20,3 +20,4 @@ body:
     id: boundaries
     attributes:
       label: Security, licensing, or browser constraints
+      description: Include requested data access, durable effects, conflict behavior, and whether a server would be required.

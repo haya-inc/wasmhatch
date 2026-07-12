@@ -1,0 +1,76 @@
+name: Sanitized pilot report
+description: Share one bounded business workflow without private data
+title: "pilot: "
+labels: [pilot-report]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share workflow shape and human assessment only. Do not include customer data, source rows, file links, spreadsheet IDs, credentials, task text containing private data, or an exported run journal.
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow and business outcome
+      description: What bounded result did you try to produce, and how would you know it was correct?
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source kind
+      options:
+        - Guided synthetic demo
+        - Local CSV
+        - Local XLSX
+        - Google Sheets
+        - Other bounded source
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Committed
+        - Rejected after review
+        - Conflict detected
+        - Uncertain outcome
+        - Failed or blocked
+        - Abandoned
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Sanitized run summary
+      description: Paste the source-free summary copied by WasmHatch, or provide only aggregate timings and effect counts.
+    validations:
+      required: true
+  - type: textarea
+    id: assessment
+    attributes:
+      label: Human assessment
+      description: Was the proposal correct? Was the review sufficient to approve or reject safely?
+    validations:
+      required: true
+  - type: textarea
+    id: blocker
+    attributes:
+      label: First blocker or unclear boundary
+  - type: dropdown
+    id: repeat
+    attributes:
+      label: Would you repeat this workflow?
+      options:
+        - "Yes"
+        - Maybe, after a specific fix
+        - "No"
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Public-data confirmation
+      options:
+        - label: I reviewed this report and removed private source data, credentials, resource identifiers, and exported journal contents.
+          required: true

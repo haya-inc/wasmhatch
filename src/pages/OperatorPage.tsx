@@ -99,6 +99,7 @@ import {
   type WorkspaceAgentBudget,
   type WorkspaceAgentTraceEvent
 } from "../lib/workspace-agent";
+import { createGuidedLocalDemoPilotReport } from "../lib/public-pilot-report";
 import {
   appendRunJournalEvent,
   createPolicyDecisionEnvelope,
@@ -118,6 +119,8 @@ const DEMO_ROWS: SpreadsheetRows = [
   ["KEN ITO  ", "East", "8300", "OPEN"],
   [" mei sato ", " north", "6,250", " Won "]
 ];
+
+const PUBLIC_PILOT_REPORT_URL = "https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml";
 
 const DEFAULT_SCRIPT = `(rows) => rows.map((row, index) => {
   if (index === 0) return row;
@@ -207,6 +210,42 @@ function formatArtifactBytes(bytes: number) {
   return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`;
 }
 
+async function copyTextToClipboard(value: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      let timeout = 0;
+      await Promise.race([
+        navigator.clipboard.writeText(value),
+        new Promise<never>((_, reject) => {
+          timeout = window.setTimeout(() => reject(new Error("Clipboard API timed out.")), 1_000);
+        })
+      ]).finally(() => window.clearTimeout(timeout));
+      return;
+    } catch {
+      // Fall back to a foreground selection for browsers that deny Clipboard API writes.
+    }
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("This browser blocked the clipboard write.");
+}
+
+function downloadPilotReport(value: string) {
+  const url = URL.createObjectURL(new Blob([value], { type: "text/markdown;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "wasmhatch-pilot-report.md";
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export function OperatorPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const [rows, setRows] = useState<SpreadsheetRows>(DEMO_ROWS);
@@ -224,6 +263,8 @@ export function OperatorPage() {
     new URLSearchParams(window.location.search).get("demo") === "local"
   ));
   const [localDemoCompleted, setLocalDemoCompleted] = useState(false);
+  const [pilotReportDelivery, setPilotReportDelivery] = useState<"copied" | "downloaded" | null>(null);
+  const [pilotReportDownload, setPilotReportDownload] = useState<string | null>(null);
   const [agentTrace, setAgentTrace] = useState<WorkspaceAgentTraceEvent[]>([]);
   const [agentBudget, setAgentBudget] = useState<WorkspaceAgentBudget | null>(null);
   const [committing, setCommitting] = useState(false);
@@ -1295,6 +1336,8 @@ export function OperatorPage() {
     setSource("demo");
     setShowLocalDemoGuide(true);
     setLocalDemoCompleted(false);
+    setPilotReportDelivery(null);
+    setPilotReportDownload(null);
     setLoadedGoogleTarget(null);
     setStatus("Ready");
     setError("");
@@ -1826,6 +1869,56 @@ export function OperatorPage() {
 
   const googleArtifactReadReady = source === "google" && Boolean(loadedGoogleTarget) && googleAuthStatus.connected;
 
+  const copyGuidedDemoPilotReport = async () => {
+    try {
+      const report = createGuidedLocalDemoPilotReport(runJournal.current ?? initialOperatorJournal());
+      let delivery: "copied" | "downloaded" = "copied";
+      try {
+        await copyTextToClipboard(report);
+      } catch {
+        setPilotReportDownload(report);
+        setStatus("Clipboard unavailable — download the sanitized pilot report instead");
+        return;
+      }
+      setPilotReportDelivery(delivery);
+      setStatus(`Sanitized pilot report ${delivery} — inspect it before posting`);
+      record({
+        title: `Sanitized pilot report ${delivery}`,
+        detail: "Aggregate metrics and human-assessment prompts only · source contents, task, resources, and run ID excluded",
+        tone: "accent",
+        category: "export",
+        outcome: "completed",
+        evidence: { format: "wasmhatch.public-pilot-report.v1", destination: delivery === "copied" ? "clipboard" : "markdown-download" }
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Pilot report copy failed.";
+      setError(message);
+      setStatus("Pilot report copy blocked");
+    }
+  };
+
+  const downloadGuidedDemoPilotReport = () => {
+    if (!pilotReportDownload) return;
+    try {
+      downloadPilotReport(pilotReportDownload);
+      setPilotReportDownload(null);
+      setPilotReportDelivery("downloaded");
+      setStatus("Sanitized pilot report downloaded — inspect it before posting");
+      record({
+        title: "Sanitized pilot report downloaded",
+        detail: "Aggregate metrics and human-assessment prompts only · source contents, task, resources, and run ID excluded",
+        tone: "accent",
+        category: "export",
+        outcome: "completed",
+        evidence: { format: "wasmhatch.public-pilot-report.v1", destination: "markdown-download" }
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Pilot report download failed.";
+      setError(message);
+      setStatus("Pilot report download blocked");
+    }
+  };
+
   return (
     <main className="operator-app">
       <header className="operator-header">
@@ -2007,16 +2100,23 @@ export function OperatorPage() {
               <div>
                 <strong>{localDemoCompleted ? "Local loop complete" : proposal ? `${changes.length} typed changes staged` : "60-second local demo"}</strong>
                 <small>{localDemoCompleted
-                  ? "The approved values changed only in this tab. Import a CSV/XLSX when you are ready for your own data."
+                  ? pilotReportDelivery
+                    ? `Source-free Markdown ${pilotReportDelivery}. Inspect it, then add only feedback you choose to the public form.`
+                    : pilotReportDownload
+                      ? "Clipboard unavailable. Download the same source-free Markdown, inspect it, then open the public form."
+                    : "Copy a source-free metrics summary, inspect it, then add only feedback you choose to the public pilot form."
                   : proposal
                     ? "Review the exact before/after cells. Nothing has been written yet."
                     : "No account or API key. Run the preset in QuickJS, inspect the cell diff, then choose whether to apply it."}</small>
               </div>
-              <button className="operator-demo-action" onClick={() => {
-                if (localDemoCompleted) setShowLocalDemoGuide(false);
-                else if (proposal) document.querySelector<HTMLElement>(".operator-review")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                else void runScript();
-              }} disabled={committing || planning}>{localDemoCompleted ? "Done" : proposal ? "Review changes" : "Run bounded transform"}</button>
+              {localDemoCompleted && pilotReportDelivery
+                ? <a className="operator-demo-action" href={PUBLIC_PILOT_REPORT_URL} target="_blank" rel="noreferrer">Open pilot form</a>
+                : <button className="operator-demo-action" onClick={() => {
+                    if (localDemoCompleted && pilotReportDownload) downloadGuidedDemoPilotReport();
+                    else if (localDemoCompleted) void copyGuidedDemoPilotReport();
+                    else if (proposal) document.querySelector<HTMLElement>(".operator-review")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    else void runScript();
+                  }} disabled={committing || planning}>{localDemoCompleted ? pilotReportDownload ? "Download pilot report" : "Copy pilot report" : proposal ? "Review changes" : "Run bounded transform"}</button>}
               <button className="operator-demo-close" onClick={() => setShowLocalDemoGuide(false)} aria-label="Dismiss local demo guide"><X size={13} /></button>
             </div>
           )}

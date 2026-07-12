@@ -1,17 +1,19 @@
 # Contributing to WasmHatch
 
-Thanks for helping remove setup friction from open-source contribution.
+Thanks for helping make browser-native business automation inspectable,
+permissioned, and useful in real workflows.
 
-## Pick and claim a starter task
+## Pick and claim a task
 
-The project page publishes a [contribution board](https://haya-inc.github.io/wasmhatch/#contribute)
-with revision-pinned `good first issue` tasks. Before editing:
+Start with an unclaimed [`good first issue`](https://github.com/haya-inc/wasmhatch/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+or a focused bug that can be reproduced with public or synthetic data. Before
+editing:
 
 1. Open the GitHub issue and read its acceptance criteria.
 2. Comment **I’m working on this** to claim the lane.
 3. If another contributor already claimed it, choose another open lane.
-4. Use **Open task** to start from the pinned source, then export a patch for
-   local checks and your pull request.
+4. Confirm that the issue can be validated locally without private credentials
+   or Haya-only context.
 
 Claims with no update for seven days may be released so another contributor can continue.
 
@@ -36,8 +38,9 @@ npm audit --audit-level=moderate
 ```
 
 The Playwright browser install is required once per development machine. The
-end-to-end test builds the production app and verifies the task-link-to-patch
-handoff without calling GitHub or a model provider.
+end-to-end suite builds the production app and verifies local demo, CSV/XLSX,
+Google connector fixtures, workspace recovery, legacy task-to-patch, and
+effect-review paths without calling live model or business providers.
 
 The primary development target is current desktop Chromium. Responsive layouts
 must also be checked at a narrow mobile viewport, even when a browser API is not
@@ -54,9 +57,10 @@ available there.
 
 ## Scope and design
 
-WasmHatch favors a small vertical workflow over IDE feature parity. Prefer
-improvements that shorten the path from repository link to exported patch.
-Large abstractions, broad provider matrices, and command emulation should follow
-measured user need.
+WasmHatch favors a small, visible business workflow over connector count or
+general automation-server parity. Prefer improvements that shorten the path from
+a bounded source to a reviewable local or external effect. New connectors,
+databases, background execution, and broad abstractions require pilot evidence,
+a credential boundary, conflict semantics, and a domain-specific review design.
 
 Be respectful and follow the [Code of Conduct](CODE_OF_CONDUCT.md).

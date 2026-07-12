@@ -49,6 +49,13 @@ for the complete authority and stale-state rules.
 
 ## Pilot evidence
 
-Export the run journal after a consented workflow and record the result with the
+After the guided demo commits, select **Copy pilot report**. WasmHatch derives a
+Markdown summary from aggregate run metrics only; it excludes source rows, task
+text, resource identifiers, and the run ID. Inspect the copied text, add only
+feedback you choose, then open the
+[sanitized pilot report form](https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml).
+
+For a real consented workflow, export the private run journal only to the
+approved internal system and record the result with the
 [pilot evidence template](pilot-evidence-template.md). Public sanitized results
-can be added to [pilot registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12).
+are indexed from [pilot registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12).

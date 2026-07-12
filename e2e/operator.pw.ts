@@ -50,6 +50,16 @@ test("runs a spreadsheet transform in Wasm and requires write approval", async (
 });
 
 test("completes the 60-second local demo without an account or API key", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport = value;
+        }
+      }
+    });
+  });
   await page.goto("/?view=operator&demo=local");
 
   const guide = page.getByRole("region", { name: "60-second local demo" });
@@ -63,7 +73,15 @@ test("completes the 60-second local demo without an account or API key", async (
 
   await expect(page.getByText("Local effect committed", { exact: true })).toBeVisible();
   await expect(guide).toContainText("Local loop complete");
-  await guide.getByRole("button", { name: "Done" }).click();
+  await guide.getByRole("button", { name: "Copy pilot report" }).click();
+  const pilotForm = guide.getByRole("link", { name: "Open pilot form" });
+  await expect(pilotForm).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml");
+  const copied = await page.evaluate(() => (globalThis as typeof globalThis & { __copiedPilotReport?: string }).__copiedPilotReport ?? "");
+  expect(copied).toContain("wasmhatch.public-pilot-report.v1");
+  expect(copied).toContain("Time to first proposal:");
+  expect(copied).not.toContain("run_journal_");
+  expect(copied).not.toContain("aya tanaka");
+  await guide.getByRole("button", { name: "Dismiss local demo guide" }).click();
   await expect(guide).toBeHidden();
   expect(await page.getByLabel("OpenAI session API key").inputValue()).toBe("");
 });
@@ -78,6 +96,40 @@ test("keeps the guided local demo usable at 390 pixels", async ({ page }) => {
   await expect(action).toBeVisible();
   expect((await action.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test("downloads the source-free pilot report when the clipboard API hangs", async ({ page }) => {
+  await page.goto("/?view=operator&demo=local");
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true,
+      value: () => new Promise<void>(() => undefined)
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: () => false
+    });
+  });
+  await page.getByRole("button", { name: "Run bounded transform" }).click();
+  await expect(page.getByText("Explicit approval required")).toBeVisible();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+  await expect(page.getByText("Local effect committed", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Copy pilot report" }).click();
+  const downloadButton = page.getByRole("button", { name: "Download pilot report" });
+  await expect(downloadButton).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await downloadButton.click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("wasmhatch-pilot-report.md");
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  const report = Buffer.concat(chunks).toString("utf8");
+  expect(report).toContain("wasmhatch.public-pilot-report.v1");
+  expect(report).not.toContain("run_journal_");
+  expect(report).not.toContain("aya tanaka");
+  await expect(page.getByRole("link", { name: "Open pilot form" })).toBeVisible();
 });
 
 test("exports a credential-field-free structured run journal with pilot timing evidence", async ({ page }) => {
