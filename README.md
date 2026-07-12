@@ -47,9 +47,10 @@ The foundation slice now ships:
 - a typed artifact workflow mode that stages one Markdown/CSV/JSON/text/JavaScript
   output, derives its manifest authority on the host, runs against copied inputs
   in QuickJS, and stops at an exact file diff;
-- a checkpointed OpenAI workspace loop that lists, searches, and reads only an
-  exact artifact grant, records model egress, enforces request/token/tool budgets,
-  and stops at a reviewable script proposal;
+- a checkpointed OpenAI workspace loop that lists, searches, and reads only
+  exact local artifact grants or one foreground-loaded Google Sheets target,
+  records model egress, enforces request/token/tool budgets, and stops at a
+  reviewable script proposal;
 - a shared run journal and policy-decision envelope that joins model/tool events,
   scripts, proposals, reviews, conflicts, receipts, and pilot timing metrics in
   an explicit credential-field-free, defensively redacted JSON export;
@@ -61,9 +62,10 @@ The foundation slice now ships:
 
 The current operator accepts local CSV/XLSX files, a Google OAuth Web client ID
 as public session configuration, and an optional memory-only OpenAI API key.
-The next foundation work brings granted connector reads into the same
-checkpointed snapshot and artifact-workflow loop without letting model output
-authorize effects.
+Google Sheets now enters the checkpointed artifact-workflow loop through one
+exact foreground read grant. The broker materializes a credential-free,
+content-addressed workspace snapshot without letting model output select a
+provider resource or authorize an effect.
 
 See the current [product plan](docs/plan.md), [connector authoring
 guide](docs/connector-authoring.md), [tabular mutation
@@ -75,7 +77,8 @@ loop](docs/workspace-agent-loop.md), [run journal and policy decision
 contract](docs/run-journal.md), [Operator workspace portability and recovery
 contract](docs/operator-workspace-portability.md), [Operator artifact browser
 and AI attachment contract](docs/operator-artifact-browser.md), [typed workspace
-artifact workflow contract](docs/workspace-artifact-workflows.md), and [business-agent
+artifact workflow contract](docs/workspace-artifact-workflows.md), [Google Sheets
+workspace snapshot contract](docs/google-sheets-workspace-snapshots.md), and [business-agent
 landscape](docs/landscape.md).
 
 For pilots, use the [business pilot and OSS adoption
@@ -194,12 +197,13 @@ expose file deletion.
 | Manifest-bound workspace scripts | Available for imported tabular snapshots |
 | Snapshot virtual filesystem | Available; exact inputs and ephemeral outputs only |
 | Workspace file-diff approval | Available; manifest/source/input/base recheck before write |
-| Checkpointed workspace AI tools | Available for one exact imported artifact grant |
-| Model-egress and agent budgets | Available for list/read/search/tabular planning loop |
+| Checkpointed workspace AI tools | Available for exact local artifact grants and one foreground-loaded Google Sheets target |
+| Model-egress and agent budgets | Available for list/read/search/tabular/Google Sheets planning loops |
 | Structured run journal | Available as an explicit credential-field-free, defensively redacted JSON export with derived pilot metrics |
 | Operator workspace export/restore | Available as a bounded text-only ZIP with exact restore/clear review, stale-base rejection, verification, and rollback |
 | Operator artifact browser | Available with validated metadata, bounded local text preview, and one explicit SHA-256-bound AI attachment |
 | Typed workspace artifact workflow | Available for one host-manifested Markdown/CSV/JSON/text/inert-JavaScript output through QuickJS and exact file-diff approval |
+| Google Sheets snapshot-to-artifact workflow | Available as one zero-argument exact connector read, credential-free content-addressed OPFS input, bounded model preview, QuickJS run, and approved output diff |
 | OPFS workspace with localStorage fallback | Available |
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |

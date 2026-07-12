@@ -54,6 +54,7 @@ import {
   type TabularArtifactProvenance
 } from "../lib/tabular-artifact-contract";
 import { normalizedArtifactJson, normalizedArtifactPath, parseNormalizedArtifactJson } from "../lib/tabular-artifact-persistence";
+import { googleSheetsWorkspaceSnapshotArtifact } from "../lib/google-sheets-workspace-snapshot";
 import {
   listOperatorArtifacts,
   prepareOperatorArtifactAttachment,
@@ -84,7 +85,7 @@ import {
   type OperatorWorkspaceRestoreProposal
 } from "../lib/operator-workspace-bundle";
 import { createTabularWorkspaceScriptDefinition } from "../lib/tabular-workspace-script";
-import { prepareWorkspaceScriptRun } from "../lib/workspace-script";
+import { hashWorkspaceContent, prepareWorkspaceScriptRun } from "../lib/workspace-script";
 import { serializeWorkspaceScriptManifest } from "../lib/workspace-script-contract";
 import {
   decideWorkspaceFileEffect,
@@ -252,7 +253,11 @@ export function OperatorPage() {
   const [revokingGoogle, setRevokingGoogle] = useState(false);
   const [spreadsheetId, setSpreadsheetId] = useState("");
   const [range, setRange] = useState("Sheet1!A1:D20");
-  const [loadedGoogleTarget, setLoadedGoogleTarget] = useState<{ spreadsheetId: string; range: string } | null>(null);
+  const [loadedGoogleTarget, setLoadedGoogleTarget] = useState<{
+    spreadsheetId: string;
+    spreadsheetIdSha256: string;
+    range: string;
+  } | null>(null);
   const effectExecutor = useRef(new SpreadsheetEffectExecutor());
   const credentialBroker = useRef(new CredentialBroker());
   const googleOAuth = useRef(new GoogleOAuthSession());
@@ -522,7 +527,7 @@ export function OperatorPage() {
       const policyDecision = createPolicyDecisionEnvelope({
         policyId: EXPLICIT_APPROVAL_POLICY,
         capability: "spreadsheet.cells.update",
-        resource: `${connectorManifest.id}:${effectTarget.spreadsheetId}:${effectTarget.range}`,
+        resource: `${connectorManifest.id}:${source === "google" ? loadedGoogleTarget!.spreadsheetIdSha256 : effectTarget.spreadsheetId}:${effectTarget.range}`,
         decision: "stage",
         actor: "host-policy",
         reason: "Allow an immutable proposal only; foreground approval and a current-source check remain required."
@@ -600,16 +605,19 @@ export function OperatorPage() {
         preparedGrants.set(verifiedAttachment.path, verifiedAttachment);
       }
       const grantedArtifacts = [...preparedGrants.values()];
-      if (startingPlanMode === "artifact-output" && !grantedArtifacts.length) {
-        throw new Error("Attach a workspace artifact or import a local table before drafting an artifact output.");
+      const googleTarget = startingPlanMode === "artifact-output" && source === "google" && loadedGoogleTarget
+        ? { ...loadedGoogleTarget }
+        : null;
+      if (startingPlanMode === "artifact-output" && !grantedArtifacts.length && !googleTarget) {
+        throw new Error("Attach a workspace artifact, import a local table, or grant the loaded Google Sheets range before drafting an artifact output.");
       }
       if (
         startingPlanMode === "artifact-output" &&
         grantedArtifacts.reduce((total, item) => total + Math.max(1, item.bytes), 0) > 512 * 1024
       ) throw new Error("Artifact workflow inputs exceed the 512 KB sandbox limit. Attach a smaller source or split the workflow.");
-      if (grantedArtifacts.length) {
+      if (grantedArtifacts.length || googleTarget) {
         usedWorkspaceTools = true;
-        setStatus("AI is inspecting the exact workspace grant…");
+        setStatus(googleTarget ? "AI may request the exact Google Sheets read grant…" : "AI is inspecting the exact workspace grant…");
         const agent = new OpenAIWorkspaceAgent(plannerApiKey, workspace.current);
         const result = await agent.plan({
           task,
@@ -620,6 +628,50 @@ export function OperatorPage() {
             tabularPaths: grantedArtifacts.filter((item) => item.tabularSnapshot).map((item) => item.path),
             expectedSha256: Object.fromEntries(grantedArtifacts.map((item) => [item.path, item.sha256]))
           },
+          googleSheetsRead: googleTarget ? {
+            range: googleTarget.range,
+            materialize: async (signal) => {
+              if (startingAuthorityEpoch !== authorityEpoch.current) {
+                throw new Error("The Google Sheets grant changed before the requested read.");
+              }
+              const connector = new GoogleSheetsConnector(credentialBroker.current.bind(
+                GOOGLE_SHEETS_MANIFEST,
+                googleOAuth.current.credentialProvider(),
+                googleSheetsGrant(googleTarget, ["read-range"])
+              ));
+              const snapshot = await connector.read(googleTarget, signal);
+              if (
+                startingAuthorityEpoch !== authorityEpoch.current ||
+                snapshot.spreadsheetId !== googleTarget.spreadsheetId ||
+                snapshot.range !== googleTarget.range
+              ) throw new Error("The Google Sheets target changed during the requested read.");
+              const artifact = await googleSheetsWorkspaceSnapshotArtifact(snapshot);
+              await workspace.current.writeFile(artifact.path, artifact.content);
+              const attachment = await prepareOperatorArtifactAttachment(workspace.current, artifact.path);
+              if (attachment.sha256 !== artifact.sha256 || attachment.bytes !== artifact.bytes) {
+                throw new Error("The Google Sheets workspace snapshot changed during materialization.");
+              }
+              refreshWorkspaceArtifacts();
+              record({
+                title: "Google Sheets AI read snapshot materialized",
+                detail: `${snapshot.range} · ${snapshot.values.length} rows · ${attachment.path} · ${attachment.sha256.slice(-12)} · credential and provider resource ID excluded`,
+                tone: "accent",
+                category: "source",
+                outcome: "completed",
+                evidence: {
+                  connector_id: GOOGLE_SHEETS_MANIFEST.id,
+                  connector_version: GOOGLE_SHEETS_MANIFEST.version,
+                  range: snapshot.range,
+                  rows: snapshot.values.length,
+                  columns: snapshot.values.reduce((maximum, row) => Math.max(maximum, row.length), 0),
+                  workspace_path: attachment.path,
+                  source_sha256: attachment.sha256,
+                  source_bytes: attachment.bytes
+                }
+              });
+              return attachment;
+            }
+          } : undefined,
           inputRows: rows.length,
           inputCells: rows.reduce((total, row) => total + row.length, 0),
           signal: controller.signal,
@@ -647,7 +699,10 @@ export function OperatorPage() {
         });
         if (startingPlanMode === "artifact-output") {
           if (result.plan.kind !== "artifact-output") throw new Error("Workspace agent returned the wrong plan type.");
-          nextArtifactDraft = createWorkspaceArtifactWorkflowDraft(result.plan, grantedArtifacts);
+          nextArtifactDraft = createWorkspaceArtifactWorkflowDraft(result.plan, [
+            ...grantedArtifacts,
+            ...result.materializedArtifacts
+          ]);
         } else {
           if (result.plan.kind !== "spreadsheet-transform") throw new Error("Workspace agent returned the wrong plan type.");
           nextPlan = result.plan;
@@ -656,7 +711,7 @@ export function OperatorPage() {
         setAgentBudget(result.budget);
         record({
           title: "Checkpointed workspace plan staged",
-          detail: `${grantedArtifacts.length} identity-bound files · ${result.budget.modelRequests} model requests · ${result.budget.toolCalls} tool calls · ${result.budget.egressBytes} B tool egress · no script execution or write`,
+          detail: `${result.grantedPaths.length} identity-bound files · ${result.budget.modelRequests} model requests · ${result.budget.toolCalls} tool calls · ${result.budget.egressBytes} B tool egress · no script execution or external write`,
           tone: "accent",
           category: "model",
           outcome: "prepared",
@@ -664,11 +719,12 @@ export function OperatorPage() {
             model_requests: result.budget.modelRequests,
             tool_calls: result.budget.toolCalls,
             egress_bytes: result.budget.egressBytes,
-            granted_files: grantedArtifacts.length
+            granted_files: result.grantedPaths.length,
+            materialized_connector_snapshots: result.materializedArtifacts.length
           }
         });
       } else {
-        if (startingPlanMode !== "spreadsheet-transform") throw new Error("Artifact output planning requires an exact workspace input.");
+        if (startingPlanMode !== "spreadsheet-transform") throw new Error("Artifact output planning requires an exact workspace or connector input.");
         const planner = new OpenAIPlanner(plannerApiKey);
         nextPlan = await planner.planSpreadsheetTransform({ task, rows, model: plannerModel }, controller.signal);
       }
@@ -820,19 +876,23 @@ export function OperatorPage() {
       setArtifactFile(null);
       setArtifactSheetChoice("");
       setSource("google");
-      setLoadedGoogleTarget({ spreadsheetId: snapshot.spreadsheetId, range: snapshot.range });
+      setLoadedGoogleTarget({
+        spreadsheetId: snapshot.spreadsheetId,
+        spreadsheetIdSha256: await hashWorkspaceContent(snapshot.spreadsheetId),
+        range: snapshot.range
+      });
       setSpreadsheetId(snapshot.spreadsheetId);
       setRange(snapshot.range);
       setStatus(`Loaded ${snapshot.values.length} rows from ${snapshot.range}`);
       record({
         title: "Google Sheets range read",
-        detail: `${snapshot.range} · ${snapshot.values.length} rows · broker attached credential after manifest validation`,
+        detail: `${snapshot.range} · ${snapshot.values.length} rows · broker attached credential after manifest validation · provider resource ID not logged`,
         tone: "accent",
         category: "source",
         outcome: "completed",
         evidence: {
           connector_id: GOOGLE_SHEETS_MANIFEST.id,
-          spreadsheet_id: snapshot.spreadsheetId,
+          target_bound: true,
           range: snapshot.range,
           rows: snapshot.values.length,
           columns: snapshot.values.reduce((maximum, row) => Math.max(maximum, row.length), 0)
@@ -1732,7 +1792,7 @@ export function OperatorPage() {
             ? {
                 kind: "google" as const,
                 connectorId: GOOGLE_SHEETS_MANIFEST.id,
-                resource: loadedGoogleTarget ? `${loadedGoogleTarget.spreadsheetId}:${loadedGoogleTarget.range}` : "unloaded Google Sheets target",
+                resource: loadedGoogleTarget ? `google-sheets:${loadedGoogleTarget.spreadsheetIdSha256}:${loadedGoogleTarget.range}` : "unloaded Google Sheets target",
                 sourceSha256: null
               }
             : {
@@ -1756,6 +1816,8 @@ export function OperatorPage() {
       setStatus("Run journal export blocked");
     }
   };
+
+  const googleArtifactReadReady = source === "google" && Boolean(loadedGoogleTarget) && googleAuthStatus.connected;
 
   return (
     <main className="operator-app">
@@ -1893,6 +1955,8 @@ export function OperatorPage() {
               </button>
             )}
             <label>Spreadsheet ID<input value={spreadsheetId} onChange={(event) => {
+              planningAbort.current?.abort();
+              authorityEpoch.current += 1;
               setSpreadsheetId(event.target.value);
               if (source === "google") {
                 invalidateProposal("Google spreadsheet target edited");
@@ -1901,6 +1965,8 @@ export function OperatorPage() {
               }
             }} placeholder="1abc…" disabled={committing} /></label>
             <label>Range<input value={range} onChange={(event) => {
+              planningAbort.current?.abort();
+              authorityEpoch.current += 1;
               setRange(event.target.value);
               if (source === "google") {
                 invalidateProposal("Google range target edited");
@@ -1911,6 +1977,13 @@ export function OperatorPage() {
             <button onClick={() => void loadGoogleSheet()} disabled={committing || connectingGoogle || revokingGoogle || !googleAuthStatus.connected || !spreadsheetId.trim() || !range.trim()}>
               <RefreshCw size={13} /> Read range
             </button>
+            {googleArtifactReadReady && loadedGoogleTarget && (
+              <div className="google-ai-grant" role="status">
+                <ShieldCheck size={13} />
+                <span><strong>AI read grant ready</strong><small>{loadedGoogleTarget.range} · exact read-only target</small></span>
+                <em>snapshot on request</em>
+              </div>
+            )}
             <p>Requests the sensitive Sheets read/write scope for this foreground session only. The host broker attaches the short-lived token after validating connector operation and exact target. It is never persisted or exposed to connector, model, or script code.</p>
           </div>
           <div className="operator-scope">
@@ -1943,11 +2016,13 @@ export function OperatorPage() {
               <button className={planMode === "artifact-output" ? "active" : ""} aria-pressed={planMode === "artifact-output"} onClick={() => changePlanMode("artifact-output")} disabled={planning || committing}><span>Artifact output</span><small>one reviewed file</small></button>
             </div>
             <div className="operator-planner-actions">
-              <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerApiKey.trim() || !task.trim() || planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath)))}>
+              <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerApiKey.trim() || !task.trim() || planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath) && !googleArtifactReadReady))}>
                 {planning ? <Square size={12} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
               </button>
-              <span>{planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath)
-                ? "Attach a workspace file or import a local table. The model may inspect only those identity-bound inputs before proposing one output file."
+              <span>{planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath) && !googleArtifactReadReady
+                ? "Attach a workspace file, import a local table, or load a connected Google Sheets range before proposing one output file."
+                : planMode === "artifact-output" && googleArtifactReadReady && loadedGoogleTarget
+                  ? `Grants one host-bound read of ${loadedGoogleTarget.range}${workspaceAttachment ? ` plus ${workspaceAttachment.path}` : ""}. On tool request, the broker re-reads only that range and persists a credential-free, identity-bound snapshot; the provider ID and token stay excluded.`
                 : workspaceAttachment
                 ? `Grants identity-bound ${workspaceAttachment.path}${source === "artifact" && artifactWorkspacePath !== workspaceAttachment.path ? " plus the active table" : ""}. Only tool-requested bounded content is sent; live OPFS and credentials stay excluded.`
                 : source === "artifact" && artifactWorkspacePath

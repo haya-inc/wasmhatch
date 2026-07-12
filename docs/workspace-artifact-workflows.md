@@ -1,6 +1,6 @@
 # Typed workspace artifact workflows
 
-- Contract status: foreground implementation in WasmHatch 0.25.0
+- Contract status: local and connector-snapshot implementation in WasmHatch 0.26.0
 - Planner output: one typed artifact proposal
 - Runtime: QuickJS Wasm Worker with an ephemeral snapshot VFS
 - Durable effect: one independently reviewed workspace file proposal
@@ -21,8 +21,11 @@ The Operator exposes two explicit modes:
   and writes one declared text artifact.
 
 Changing mode invalidates the previous plan and any pending effect. Artifact
-mode requires at least one active or explicitly attached workspace file; it does
-not silently serialize the local demo or a live connector response.
+mode requires at least one active or explicitly attached workspace file or one
+explicitly loaded Google Sheets range. A Google source is re-read only if the
+model calls its exact foreground grant; the host then persists a credential-free
+identity-bound snapshot. It does not silently serialize the local demo or expose
+a live connector to the script.
 
 ## Model proposal boundary
 
@@ -98,6 +101,6 @@ run, policy decision, proposal, approval, and receipt as separate events.
 - model-selected permissions or resource limits; and
 - automatic approval of generated source or output.
 
-The next core integration is to expose granted connector reads as another
-checkpointed input source while continuing to materialize a bounded snapshot
-before script execution.
+Google Sheets is the first granted connector-read input. Other connectors must
+earn a resource-specific snapshot schema and review boundary; this contract does
+not imply a generic authenticated network tool.

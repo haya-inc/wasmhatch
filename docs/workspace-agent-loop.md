@@ -1,6 +1,6 @@
 # Checkpointed Workspace Agent Loop
 
-- Contract status: identity-bound grants and typed artifact plans in WasmHatch 0.25.0
+- Contract status: local and Google Sheets grants with typed artifact plans in WasmHatch 0.26.0
 - Model transport: OpenAI Responses API with `store: false`
 - Initial authority: task text plus an exact list of granted workspace paths
 - Durable effect authority: none; the loop may only stage a transformation plan
@@ -21,29 +21,32 @@ and [tools guide](https://developers.openai.com/api/docs/guides/tools).
 
 ## Current Operator flow
 
-1. The user imports a bounded CSV/XLSX artifact. Its normalized, provenance-bound
-   JSON snapshot is persisted under `inputs/`.
+1. The user imports a bounded CSV/XLSX artifact or explicitly loads one Google
+   Sheets range. A local import is persisted immediately; a Google range becomes
+   one exact foreground read grant.
 2. The user may locally preview one indexed text artifact and explicitly attach
    its path, media type, bytes, and SHA-256 to the next AI plan.
 3. The user enters a business task and explicitly starts **Inspect workspace
    with AI**.
 4. The host grants the active snapshot plus the one supplemental attachment,
-   when present. Every path is bound to its reviewed hash. Other OPFS files,
-   credentials, connectors, outputs, scripts, and workflow definitions are not
-   implied by the active workspace.
+   when present. In artifact mode it may also expose one zero-argument Google
+   Sheets read tool bound to the already loaded target. Every local path is
+   bound to its reviewed hash. Other OPFS files, connector targets, credentials,
+   outputs, scripts, and workflow definitions are not implied.
 5. The model uses one strict function tool per response. The host validates the
    call, executes a bounded read, records the egress, and returns the result.
 6. The model must inspect granted content before it may call the selected final
    tool: `propose_spreadsheet_transform` or `propose_workspace_artifact`.
-7. A valid proposal fills the existing reviewable script plan. Artifact mode
-   also shows one output path/type and host-derived input count. No script runs
-   and no local or external write occurs.
+7. A Google read materializes a credential-free content-addressed JSON input and
+   returns only a bounded preview. A valid proposal fills the existing
+   reviewable script plan. Artifact mode also shows one output path/type and
+   host-derived input count. No script runs and no external write occurs.
 8. The user may edit the script, run it in the QuickJS Wasm Worker, then review a
    cell effect or workspace-file effect through the existing approval boundary.
 
-Google Sheets and the local demo retain the existing single-request planner in
-this release. Bringing connector reads into the same checkpointed loop requires
-a separately granted connector tool and is not implied by this workspace slice.
+Table-transform mode keeps the existing single-request planner for the visible
+Google/local rows. Artifact mode uses the checkpointed connector snapshot
+contract documented in [Google Sheets workspace snapshots](google-sheets-workspace-snapshots.md).
 
 ## Tool registry
 
@@ -53,6 +56,7 @@ a separately granted connector tool and is not implied by this workspace slice.
 | `read_workspace_file` | 1–200 lines from one granted text file | bounded content, source hash, line range |
 | `search_workspace_text` | Literal case-insensitive search in one granted file | at most 20 line previews |
 | `read_tabular_rows` | 1–200 rows from a granted `wasmhatch.tabular-snapshot.v1` file | row window, dimensions, source hash |
+| `read_google_sheets_range` | One fresh read of the exact foreground target; no arguments | bounded rows, range, connector version, content-addressed path/mount, dimensions, source hash |
 | `propose_spreadsheet_transform` | Stage one synchronous JSON transformation | summary, expected effect, script, assumptions, warnings |
 | `propose_workspace_artifact` | Stage one synchronous single-output workflow | summary, expected effect, output path/type, script, assumptions, warnings |
 
@@ -94,7 +98,8 @@ limits remain external concerns.
 
 ## Egress and audit semantics
 
-The initial request contains the task and grant counts, not file content. Each
+The initial request contains the task, grant counts, and the user-visible Google
+range when granted, not file content, provider ID, or credentials. Each
 completed tool event records:
 
 - tool and call identity;

@@ -90,6 +90,11 @@ require a separately deployed server adapter.
   visible model egress, cancellation, cumulative request/token/tool/egress
   budgets, and a final inert script proposal. See
   [Workspace Agent Loop](workspace-agent-loop.md).
+- A zero-argument Google Sheets planner tool bound to the one foreground-loaded
+  target. It re-reads through the credential broker, hashes rather than stores
+  the provider resource ID, materializes a content-addressed OPFS input, and
+  exposes only a bounded preview plus provenance to the model. See
+  [Google Sheets Workspace Snapshots](google-sheets-workspace-snapshots.md).
 - Content-addressed, deeply frozen spreadsheet proposals that bind connector
   version, target, base snapshot, typed mutations, summary, and policy decision.
 - A strict typed mutation bundle from which preview, summary, commit values, and
@@ -116,8 +121,8 @@ require a separately deployed server adapter.
 - A bundled production Google OAuth client, public sensitive-scope verification,
   Google Picker/`drive.file`, and active account email display. The foreground
   flow accepts deployer or user-provided Web client ID configuration.
-- A multi-step AI tool loop that can request connector reads, run more than one
-  transform, or revise a plan from tool results.
+- A general multi-connector AI loop that can select among multiple pre-granted
+  resources, run more than one transform, or revise an effect after execution.
 - Full-fidelity workbook editing, formula calculation, legacy `.xls`, and
   password-protected workbook import. The P0 adapter is intentionally
   value-only.
@@ -514,7 +519,7 @@ The next planner tool set is:
 | --- | --- | --- |
 | `list_connectors` | Read metadata | Allow |
 | `describe_spreadsheet` | Read metadata | Allow after connector grant |
-| `read_spreadsheet_range` | Model egress | Ask on first range |
+| `read_google_sheets_range` | Fresh model egress plus local snapshot | Allow only for the one foreground-loaded exact target; zero model-selected target arguments |
 | `run_transform_script` | Local computation | Allow within limits |
 | `propose_spreadsheet_write` | Stage external effect | Stage only |
 | `execute_approved_write` | External mutation | User approval required |
@@ -725,7 +730,8 @@ entering model or script input.
 - Implement the bounded multi-step business tool registry and checkpointed loop —
   workspace list/read/search plus table-transform and typed-artifact planning
   are complete. Script execution and effect preparation remain deliberately
-  separate foreground checkpoints; granted connector reads remain to integrate.
+  separate foreground checkpoints; the exact Google Sheets read grant now
+  materializes a credential-free identity-bound input for artifact workflows.
 - Display model egress, script source, tool calls, policy decisions, approvals,
   conflicts, and receipts together — shared foreground run journal and explicit
   JSON export complete for the Operator; durable cross-session storage remains.
@@ -767,6 +773,10 @@ not automatically retried.
 - Persist generated scripts and manifests as inspectable workspace files —
   complete for imported tabular workflows. Fixtures, general reports, and audit
   exports remain.
+- Materialize exact connector reads as portable workspace inputs — complete for
+  one foreground-loaded Google Sheets range, with provider resource ID and
+  credential excluded. See
+  [Google Sheets workspace snapshots](google-sheets-workspace-snapshots.md).
 
 Exit condition: the agent can inspect granted workspace files, generate a
 Markdown or CSV output plus a script, run the script against an explicit input
@@ -900,10 +910,7 @@ The coding-contributor metric is retired. Product evidence is:
 ## 11. Immediate next issues
 
 1. Continue the five pilot workflows and record evidence for architecture gates.
-2. Add a granted Google Sheets read tool to the checkpointed planner without
-   exposing the broker credential or granting connector writes.
-3. Materialize a connector-read result as an identity-bound workspace snapshot
-   so the typed artifact workflow can consume it through the same sandbox and
-   file-effect checkpoints.
-4. Use exported run journals and pilot observations to choose the first
+2. Use the Google Sheets snapshot-to-artifact path in a real pilot and measure
+   whether the exact-read grant and output review are understandable.
+3. Use exported run journals and pilot observations to choose the first
    post-P0 adapter spike.

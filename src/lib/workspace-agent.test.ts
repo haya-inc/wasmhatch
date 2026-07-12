@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { WorkspaceStore } from "./workspace";
+import { googleSheetsWorkspaceSnapshotArtifact } from "./google-sheets-workspace-snapshot";
 import { OpenAIWorkspaceAgent, WORKSPACE_AGENT_LIMITS } from "./workspace-agent";
 
 const ARTIFACT_PATH = "inputs/pipeline.json";
@@ -172,6 +173,63 @@ describe("OpenAIWorkspaceAgent", () => {
     expect(firstBody.tools.map((tool) => tool.name)).not.toContain("propose_spreadsheet_transform");
     expect(JSON.stringify(firstBody.input)).toContain(`${notesPath} -> /inputs/workspace/${notesPath}`);
     expect(JSON.stringify(firstBody)).not.toContain("WEST needs review");
+  });
+
+  it("materializes one exact Google Sheets read as a credential-free artifact input", async () => {
+    const spreadsheetId = "provider-resource-secret";
+    const token = "oauth-access-secret";
+    const range = "Pipeline!A1:B3";
+    const files: Record<string, string> = {};
+    const { workspace } = createWorkspace(files);
+    const artifact = await googleSheetsWorkspaceSnapshotArtifact({
+      spreadsheetId,
+      range,
+      values: [["Owner", "Amount"], ["Aya", 1200], ["Ken", 900]]
+    });
+    vi.mocked(workspace.writeFile).mockImplementation(async (path, content) => { files[path] = content; });
+    const responses = [
+      toolResponse("resp_google", "call_google", "read_google_sheets_range", {}),
+      toolResponse("resp_artifact", "call_artifact", "propose_workspace_artifact", {
+        summary: "Create a pipeline report.",
+        expected_effect: "Write one Markdown report from the immutable Sheets snapshot.",
+        output_path: "outputs/pipeline-report.md",
+        media_type: "text/markdown",
+        script: `({ fs }) => { const source = JSON.parse(fs.readText("/inputs/workspace/${artifact.path}")); fs.writeText("/outputs/result.md", "# Pipeline\\n\\nRows: " + source.rows.length); return { written: 1 }; }`,
+        assumptions: ["The granted range is current."],
+        warnings: []
+      })
+    ];
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => responses.shift()!);
+    const materialize = vi.fn(async () => {
+      await workspace.writeFile(artifact.path, artifact.content);
+      return {
+        path: artifact.path,
+        mediaType: artifact.mediaType,
+        bytes: artifact.bytes,
+        sha256: artifact.sha256,
+        tabularSnapshot: artifact.tabularSnapshot
+      };
+    });
+
+    const result = await new OpenAIWorkspaceAgent("sk-test", workspace, fetcher as typeof fetch).plan(request({
+      planKind: "artifact-output",
+      grant: { readablePaths: [] },
+      googleSheetsRead: { range, materialize }
+    }));
+
+    expect(materialize).toHaveBeenCalledTimes(1);
+    expect(result.plan).toMatchObject({ kind: "artifact-output", inputFiles: 1 });
+    expect(result.materializedArtifacts).toEqual([expect.objectContaining({ path: artifact.path, sha256: artifact.sha256 })]);
+    expect(result.grantedPaths).toEqual([artifact.path]);
+    expect(result.trace[0]).toMatchObject({ tool: "read_google_sheets_range", path: artifact.path, sourceSha256: artifact.sha256 });
+    const bodies = fetcher.mock.calls.map(([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>);
+    expect((bodies[0].tools as Array<{ name: string }>).map((tool) => tool.name)).toContain("read_google_sheets_range");
+    expect(JSON.stringify(bodies[0])).toContain(range);
+    expect(JSON.stringify(bodies[1])).toContain("wasmhatch.google-sheets-window.v1");
+    expect(JSON.stringify(bodies)).not.toContain(spreadsheetId);
+    expect(JSON.stringify(bodies)).not.toContain(token);
+    expect((fetcher.mock.calls[0][1]?.headers as Record<string, string>).authorization).toBe("Bearer sk-test");
+    expect(artifact.content).not.toContain(spreadsheetId);
   });
 
   it("denies an ungranted path before reading or returning data to the model", async () => {

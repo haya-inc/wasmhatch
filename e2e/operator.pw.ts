@@ -156,6 +156,113 @@ test("keeps the GIS token out of the UI and revokes it on disconnect", async ({ 
   expect(await page.evaluate(() => (globalThis as typeof globalThis & { __wasmhatchRevokedToken?: string }).__wasmhatchRevokedToken)).toBe("test-token");
 });
 
+test("materializes an exact Google Sheets grant and commits a reviewed artifact", async ({ page }) => {
+  const spreadsheetId = "sheet-ai-provider-resource";
+  const range = "Ops!A1:B3";
+  const sourceRows = [["Owner", "Amount"], ["Aya", 1200], ["Ken", 900]];
+  const requestBodies: Record<string, unknown>[] = [];
+  let sheetReads = 0;
+  await page.route("https://sheets.googleapis.com/v4/spreadsheets/**", async (route) => {
+    sheetReads += 1;
+    expect(route.request().method()).toBe("GET");
+    expect(route.request().headers().authorization).toBe("Bearer test-token");
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ range, values: sourceRows })
+    });
+  });
+  await page.route("https://api.openai.com/v1/responses", async (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    requestBodies.push(body);
+    const requestNumber = requestBodies.length;
+    let name = "read_google_sheets_range";
+    let args: Record<string, unknown> = {};
+    if (requestNumber === 2) {
+      const serialized = JSON.stringify(body);
+      const inputPath = serialized.match(/inputs\/google-sheets-[a-f0-9]{12}\.json/)?.[0];
+      if (!inputPath) throw new Error("Materialized Google Sheets path was not returned to the model.");
+      name = "propose_workspace_artifact";
+      args = {
+        summary: "Create a Google Sheets pipeline report.",
+        expected_effect: "Write one Markdown total report from the immutable Sheets snapshot.",
+        output_path: "outputs/google-pipeline.md",
+        media_type: "text/markdown",
+        script: `({ fs }) => { const source = JSON.parse(fs.readText("/inputs/workspace/${inputPath}")); const total = source.rows.slice(1).reduce((sum, row) => sum + Number(row[1]), 0); fs.writeText("/outputs/result.md", "# Pipeline total\\n\\n" + total); return { written: 1 }; }`,
+        assumptions: ["Row 1 is the header."],
+        warnings: []
+      };
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: `resp_google_${requestNumber}`,
+        output: [
+          { id: `rs_google_${requestNumber}`, type: "reasoning", summary: [] },
+          { id: `fc_google_${requestNumber}`, type: "function_call", call_id: `call_google_${requestNumber}`, name, arguments: JSON.stringify(args), status: "completed" }
+        ],
+        usage: { input_tokens: 100, output_tokens: 25 }
+      })
+    });
+  });
+
+  await page.goto("/?view=operator");
+  await authorizeGoogleSheets(page);
+  await page.getByLabel("Spreadsheet ID").fill(spreadsheetId);
+  await page.getByLabel("Range").fill(range);
+  await page.getByRole("button", { name: "Read range" }).click();
+  await expect(page.getByText("AI read grant ready", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Artifact output" }).click();
+  await page.getByLabel("Business task").fill("Create a Markdown report with the total amount.");
+  await page.getByLabel("OpenAI session API key").fill("sk-google-artifact-e2e");
+  await page.getByRole("button", { name: "Draft artifact with AI" }).click();
+
+  await expect(page.getByLabel("AI artifact workflow plan")).toContainText("Create a Google Sheets pipeline report.");
+  await expect(page.getByText("Google Sheets AI read snapshot materialized", { exact: true })).toBeVisible();
+  expect(sheetReads).toBe(2);
+  expect(requestBodies).toHaveLength(2);
+  expect(JSON.stringify(requestBodies[0])).toContain("read_google_sheets_range");
+  expect(JSON.stringify(requestBodies[1])).toContain("wasmhatch.google-sheets-window.v1");
+  expect(JSON.stringify(requestBodies[1])).toContain("Aya");
+  expect(JSON.stringify(requestBodies)).not.toContain(spreadsheetId);
+  expect(JSON.stringify(requestBodies)).not.toContain("test-token");
+  expect(JSON.stringify(requestBodies)).not.toContain("sk-google-artifact-e2e");
+
+  const persisted = await page.evaluate(async () => {
+    const origin = await navigator.storage.getDirectory();
+    const workspace = await origin.getDirectoryHandle("wasmhatch-operator-workspace-v1");
+    const inputs = await workspace.getDirectoryHandle("inputs");
+    const names: string[] = [];
+    for await (const [name] of (inputs as FileSystemDirectoryHandle & {
+      entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+    }).entries()) if (name.startsWith("google-sheets-")) names.push(name);
+    const file = await inputs.getFileHandle(names[0]);
+    return { name: names[0], content: await (await file.getFile()).text() };
+  });
+  expect(persisted.name).toMatch(/^google-sheets-[a-f0-9]{12}\.json$/);
+  expect(persisted.content).toContain("wasmhatch.google-sheets-snapshot.v1");
+  expect(persisted.content).toContain("Aya");
+  expect(persisted.content).not.toContain(spreadsheetId);
+
+  await page.getByRole("button", { name: "Run & stage artifact diff" }).click();
+  await expect(page.getByLabel("Workspace file diff")).toContainText("2100");
+  await page.getByRole("button", { name: "Approve and write workspace file" }).click();
+  await expect(page.getByText("Workspace file effect committed", { exact: true })).toBeVisible();
+  await expect(page.getByRole("option", { name: /google-pipeline\.md/ })).toBeVisible();
+
+  const journalDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export JSON" }).click();
+  const journalStream = await (await journalDownload).createReadStream();
+  const journalChunks: Buffer[] = [];
+  for await (const chunk of journalStream) journalChunks.push(Buffer.from(chunk));
+  const journalText = Buffer.concat(journalChunks).toString("utf8");
+  expect(journalText).toContain("google-sheets");
+  expect(journalText).toMatch(/sha256:[a-f0-9]{64}/);
+  expect(journalText).not.toContain(spreadsheetId);
+  expect(journalText).not.toContain("test-token");
+});
+
 test("invalidates a pending proposal before switching Google authority", async ({ page }) => {
   await page.route("https://sheets.googleapis.com/v4/spreadsheets/**", async (route) => {
     await route.fulfill({
