@@ -156,7 +156,9 @@ test("blocks local undo when the durable committed snapshot drifts", async ({ pa
   });
 
   await page.getByRole("button", { name: "Review undo" }).click();
-  await expect(page.getByRole("alert")).toContainText("durable working snapshot changed");
+  // Scoped by text: the artifact indexer owns a second alert surface, and a rare
+  // transient index error must not turn this assertion into a strict-mode clash.
+  await expect(page.getByRole("alert").filter({ hasText: "durable working snapshot changed" })).toBeVisible();
   await expect(page.getByLabel("Review and audit").getByText("Local undo blocked", { exact: true })).toBeVisible();
   await expect(page.getByText("Undo approval required", { exact: true })).toHaveCount(0);
 });
