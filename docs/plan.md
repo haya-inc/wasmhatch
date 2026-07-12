@@ -10,9 +10,10 @@
 ## 1. Product definition
 
 WasmHatch is not a coding assistant or a browser IDE. It is an AI operations
-workspace that can read business data through typed connectors, decide which
-bounded tools to use, create a short transformation script when necessary, and
-stage external effects for review.
+workspace that can read business data through typed connectors, keep inspectable
+artifacts in a browser-local filesystem, create and run bounded transformation
+scripts, and stage every durable effect for review. Embedded query engines may
+accelerate proven workloads, but they are not part of the product definition.
 
 The initial use case is spreadsheet work:
 
@@ -21,6 +22,13 @@ The initial use case is spreadsheet work:
 3. Run generated data-processing code in a resource-limited Wasm sandbox.
 4. Show the exact changed cells and destination.
 5. Write only after the user approves the proposed effect.
+
+The spreadsheet is the first structured workbench, not the product boundary.
+Markdown, CSV, JSON, generated scripts, connector snapshots, reports, and—when
+an embedded engine is promoted—database tables become first-class workspace
+artifacts. The same proposal and approval model applies to local file changes,
+optional database mutations, document creation, calendar changes, task updates,
+and outbound communication.
 
 The product is browser-first, not browser-only at any cost. The foreground
 alpha works without a WasmHatch server. Background schedules, refresh-token
@@ -83,20 +91,61 @@ features.
    generated code, script results, proposed writes, and final outcomes.
 7. **Adapters over lock-in**: connectors, model providers, script engines, and
    future background runners use explicit interfaces.
+8. **Files stay legible**: user-authored knowledge, instructions, intermediate
+   data, and outputs prefer inspectable Markdown, CSV, JSON, and script files
+   over opaque application-only state.
+9. **Databases, if adopted, accelerate files; they do not hide them**: an
+   embedded engine may provide indexing, joins, and transactional metadata,
+   while user artifacts remain exportable and schemas and mutations remain
+   inspectable.
+10. **Execution is capability-scoped**: file access, database access, script
+    execution, connector calls, and network access are independent permissions.
+
+### 3.1 Commitment levels
+
+This plan distinguishes product commitments from candidates. Reference OSS is
+evidence, not a template; see [OSS Design Study](oss-design-study.md).
+
+| Area | Official status | Decision |
+| --- | --- | --- |
+| Effect protocol: prepare, immutable proposal, approval, base-version check, commit receipt | **Committed** | Core safety architecture; implement before broader autonomy |
+| Script boundary: saved source, granted input snapshot, ephemeral output, diff review, no live capabilities | **Committed** | Core execution invariant for every script runner |
+| P0 CSV/XLSX and Google Sheets | **Committed** | First useful local/external data loop |
+| Browser workspace artifact model | **Committed, thin slice first** | OPFS-backed Markdown/CSV/JSON/JavaScript, manifests, proposals, and export; UI breadth follows evidence |
+| Google Drive/Docs and Calendar | **Pilot-gated candidate** | Implement the first connector with repeated demand; do not promise both in advance |
+| Linear first, Jira second | **Pilot- and feasibility-gated candidate** | Promote only after a browser auth/CORS spike and real workflow demand |
+| Microsoft Graph and Gmail/Outlook mail | **Research candidate** | High auth, tenant, restricted-scope, and outbound-effect cost; no P2 delivery promise yet |
+| SQLite-Wasm | **First database spike, not yet a dependency** | Adopt only if it beats a smaller OPFS event/artifact store on recovery and transaction needs |
+| DuckDB-Wasm | **Workload-gated analytical adapter** | Add only after representative benchmarks show value |
+| PGlite | **Watchlist** | Not part of the official delivery path without a Postgres-specific requirement |
+| Optional server adapter | **Interface committed; implementation conditional** | Build only for unattended work or connectors that cannot operate safely in the browser |
+
+“Committed” fixes the behavior and exit condition, not a particular third-party
+library. “Pilot-gated” requires observed workflows. “Research candidate” and
+“watchlist” must not create implementation work until promoted by a recorded
+decision.
 
 ## 4. User flow
 
-1. The user opens WasmHatch and chooses a connector or local workbook.
-2. The connector requests the narrowest usable scope for the current session.
-3. The user describes a business outcome, such as normalizing a sales sheet.
-4. The planner requests a bounded range through a typed read tool.
-5. The planner may generate a synchronous JSON transformation function.
-6. WasmHatch runs the function inside the Wasm Worker without credentials or
-   network access.
-7. The planner proposes a connector write with a range and resulting values.
-8. WasmHatch displays cell-level changes and destination details.
-9. The user approves or rejects the write.
-10. The connector performs the approved request and records the result.
+1. The user opens or creates a browser-local workspace.
+2. The user imports local files, selects connector resources, or creates
+   Markdown, CSV, JSON, and script artifacts in the workspace.
+3. Each connector requests the narrowest usable scope for the current session.
+4. The user describes an outcome, such as reconciling two exports and drafting
+   follow-up tasks.
+5. The planner requests bounded file, range, or connector reads through
+   separately governed tools. Database reads use the same boundary if an
+   embedded engine has been promoted for the workspace.
+6. The planner may create a script proposal and an explicit input/output
+   manifest. WasmHatch executes the approved script in a Worker without
+   credentials, DOM, live OPFS, or ambient network access.
+7. Local file outputs and optional database mutations are staged as diffs.
+   External connector changes are staged as typed effects.
+8. WasmHatch displays the exact target, changed content or fields, assumptions,
+   and stale-source checks.
+9. The user approves or rejects each effect or an explicitly grouped set.
+10. WasmHatch applies only the approved local and external effects and records
+    the results in the workspace audit trail.
 
 Repeated low-risk actions may later receive revocable policy grants. The alpha
 does not persist grants or run unattended.
@@ -109,20 +158,32 @@ flowchart TD
     AG["AI planner and bounded tool loop"]
     POL["Capability policy and approval"]
     CONN["Connector host"]
-    GS["Google Sheets API"]
+    APIS["Business APIs"]
+    VFS["Browser workspace / OPFS"]
+    DB["Optional local data adapter"]
     SCRIPT["ScriptRunner adapter"]
     WORKER["Web Worker"]
-    QJS["QuickJS Wasm: JSON in / JSON out"]
-    AUDIT["Per-session audit trail"]
+    QJS["QuickJS Wasm: bounded files and JSON"]
+    REVIEW["Typed effect review"]
+    AUDIT["Inspectable audit trail"]
 
     UI --> AG
     AG --> POL
     POL --> CONN
-    CONN --> GS
+    CONN --> APIS
+    POL --> VFS
+    POL --> DB
     POL --> SCRIPT
     SCRIPT --> WORKER
     WORKER --> QJS
+    VFS --> SCRIPT
+    VFS --> DB
+    CONN --> REVIEW
+    VFS --> REVIEW
+    REVIEW --> POL
     CONN --> AUDIT
+    VFS --> AUDIT
+    DB --> AUDIT
     SCRIPT --> AUDIT
     POL --> AUDIT
     AUDIT --> UI
@@ -152,7 +213,78 @@ The planner-facing tool must stage a proposal rather than calling `write`
 directly. The current foundation UI invokes the connector after a local review;
 the proposal-ID boundary is the next implementation step.
 
-### 5.2 Script runner
+Only P0 connector delivery is committed. Later rows are ranked hypotheses that
+must pass the milestone decision gates:
+
+| Priority | Connector | Initial typed operations | Delivery boundary |
+| --- | --- | --- | --- |
+| P0 | CSV/XLSX and Google Sheets | import, export, read range, propose range write | Foreground browser |
+| P1 candidate | Google Drive / Docs | pick a file, read/export selected content, propose document creation or update | Foreground browser with per-file `drive.file` access; repeated pilot demand required |
+| P1 candidate | Google Calendar | list bounded events, free/busy, propose event create or update | Foreground browser; attendee notifications require explicit review; repeated pilot demand required |
+| P1-P2 candidate | Linear / Jira | read issues, propose issue creation, field update, or comment | Promote Linear only after PKCE/CORS spike; Jira may require the server adapter |
+| Research | Microsoft Graph | Outlook, Calendar, OneDrive, and SharePoint reads and typed proposals | Foreground SPA with PKCE where tenant policy permits; no delivery commitment |
+| Research | Gmail / Outlook Mail | bounded search/read, classify, draft reply, explicit send | Draft-first; restricted scopes, verification, and send risk require a separate gate |
+
+The roadmap does not imply an unrestricted HTTP tool. Each connector exposes a
+small domain schema and a domain-specific review: cell diff, document diff,
+calendar before/after, issue field diff, or recipients/subject/body for mail.
+
+### 5.2 Browser workspace and virtual filesystem
+
+The operator will reuse and generalize the existing OPFS-backed `WorkspaceStore`
+from the legacy surface. The user sees a file tree even though the files live in
+origin-private browser storage. The initial conventional layout is:
+
+```text
+inputs/       imported and connector-derived snapshots
+work/         editable Markdown, CSV, JSON, and text artifacts
+outputs/      generated reports and export-ready files
+scripts/      reviewed JavaScript transforms and fixtures
+workflows/    Markdown instructions plus machine-readable manifests
+.wasmhatch/   proposals, hashes, audit indexes, and optional database files
+```
+
+Required workspace operations:
+
+- list, glob, stat, bounded read, and text search;
+- create, patch, rename, and delete through a staged filesystem diff;
+- CSV schema inspection and row-window reads rather than unbounded prompt input;
+- Markdown preview and source editing;
+- import/export for individual files and portable workspace archives;
+- source hashes and immutable proposal IDs to reject stale writes;
+- quota, persistence, fallback, recovery, and multi-tab conflict diagnostics.
+
+The planner-facing file tools follow the useful OpenCode separation of
+`read`/`glob`/`grep` from `write`/`edit`/`apply_patch`, but use safer defaults:
+reads are bounded and visible in model-egress history, mutations stage a diff,
+and no file write is silently approved. OpenClaw's visible Markdown memory and
+workspace skill pattern inform `workflows/`, but WasmHatch does not grant those
+files authority to expand tool permissions.
+
+### 5.3 Embedded database adapters
+
+Files remain the portable artifact layer. Databases add query, index, join, and
+transaction capabilities through a separate `DatabaseAdapter` running in a
+Worker:
+
+1. **SQLite-Wasm is the first database spike** for workspace catalog, workflow
+   state, audit indexes, structured user tables, and small transactional
+   workloads. It becomes a dependency only if the spike proves recovery,
+   portability, transaction, and bundle-cost advantages over smaller OPFS files.
+2. **DuckDB-Wasm as an analytical adapter** for bounded SQL over CSV, JSON,
+   Parquet, and larger local tables when pilot data justifies its bundle cost.
+3. **PGlite stays on the watchlist**, not the delivery roadmap, until Postgres
+   compatibility, reactive queries, or pgvector materially improves a real
+   workflow.
+
+Database tools are typed as `describe_database`, `list_tables`, `query_database`,
+`propose_database_mutation`, and `execute_approved_database_mutation`. Read
+queries receive row, byte, time, and statement limits. Mutations run in a
+transaction, produce a row/schema diff when feasible, and cannot commit until
+approved. Dynamic extensions, arbitrary file access, and database-originated
+network requests are disabled by default.
+
+### 5.4 Script runner
 
 The script contract is deliberately smaller than a shell:
 
@@ -177,7 +309,20 @@ This is sufficient for filtering, mapping, normalization, joins over bounded
 data, derived columns, validation, and report shaping. Pyodide or DuckDB-Wasm
 may be added as separate runners when pilot workloads demonstrate a need.
 
-### 5.3 AI planner
+The next script contract adds a bounded virtual mount without exposing live
+OPFS. Before execution, the host snapshots explicitly granted input files into
+the Worker. The script may read those snapshots and write only to an ephemeral
+output directory. The host then validates size, type, and path, and turns the
+result into a filesystem proposal. Scripts never receive OAuth credentials,
+connector handles, DOM access, browser storage access, or ambient network
+access. A script source file and its input/output manifest are saved together so
+the run can be inspected and repeated.
+
+QuickJS remains the default JavaScript runner. Pyodide is a later optional
+runner for pandas and existing Python workflows; it must implement the same
+snapshot, limit, proposal, and audit contract rather than mounting live OPFS.
+
+### 5.5 AI planner
 
 The business surface now defines a provider-neutral `BusinessPlanner` and an
 `OpenAIPlanner` adapter. The first slice calls the Responses API with one forced,
@@ -213,15 +358,25 @@ The next planner tool set is:
 | `run_transform_script` | Local computation | Allow within limits |
 | `propose_spreadsheet_write` | Stage external effect | Stage only |
 | `execute_approved_write` | External mutation | User approval required |
+| `list_workspace_files` | Read metadata | Allow within the active workspace |
+| `read_workspace_file` | Model egress | Ask on first file or grant pattern |
+| `propose_workspace_patch` | Stage local effect | Stage only |
+| `describe_database` | Read metadata | Allow after database grant |
+| `query_database` | Model egress | Allow only for bounded read-only SQL |
+| `propose_database_mutation` | Stage local effect | Stage only |
+| `run_workspace_script` | Local computation | Ask for input manifest; sandboxed |
 
-Tool results must contain bounded data plus provenance: connector ID,
-spreadsheet ID alias, range, row and column counts, and byte size.
+Tool results must contain bounded data plus provenance: connector ID and
+resource alias when external; workspace path and source hash when local; range,
+table, or query identity; row and column counts; and byte size.
 
-### 5.4 Storage
+### 5.6 Storage
 
 OPFS remains useful for:
 
-- local workbook snapshots;
+- the visible browser-local workspace and its baseline;
+- Markdown, CSV, JSON, database, script, and report artifacts;
+- local workbook and connector snapshots;
 - workflow drafts and generated scripts;
 - reversible write proposals;
 - audit export;
@@ -276,6 +431,13 @@ offering.
 - Large ranges or scripts exhausting browser resources.
 - Approval fatigue caused by unclear or overly broad previews.
 - Third-party connector or script-package supply-chain compromise.
+- Path traversal, symlink-like aliasing, or scripts escaping granted workspace
+  paths.
+- Generated scripts overwriting source files or reading unrelated workspace
+  artifacts.
+- Unbounded SQL, malicious database files, extension loading, or schema
+  mutations hidden inside a broad transaction.
+- Cross-tab races that make an approved file or database proposal stale.
 
 ### 7.2 Required controls
 
@@ -289,6 +451,17 @@ offering.
 - Treat formula writes as a separate high-risk capability.
 - Require a fresh proposal if source data changes before approval.
 - Keep CSP allowlists connector-specific; do not add a generic network wildcard.
+- Normalize workspace-relative paths and deny traversal, reserved paths, and
+  writes outside the staged output set.
+- Snapshot script inputs and expose only an ephemeral virtual output directory;
+  never mount live OPFS into generated code.
+- Separate file-read, file-write, database-query, database-mutation, script,
+  connector, and network permissions.
+- Enforce SQL statement, time, memory, row, byte, and transaction limits; block
+  extension loading and network-capable database features by default.
+- Hash file and database sources at proposal time and revalidate them at commit.
+- Export and integrity-test the workspace without requiring the embedded
+  database engine or model provider.
 
 ## 8. OSS landscape and position
 
@@ -302,17 +475,41 @@ Relevant projects validate the category:
   https://www.windmill.dev/docs/core_concepts/ai_agents
 - Google Apps Script demonstrates that spreadsheet users value programmable
   automation close to their data, but it is tied to Google's hosted runtime.
+- OpenCode demonstrates a legible project workspace, separate read/search/edit/
+  execution tools, plan versus build modes, undo, and per-tool `allow`/`ask`/
+  `deny` policy:
+  https://opencode.ai/docs/tools/
+- OpenClaw demonstrates file-backed Markdown memory and skills, explicit
+  workspace access, and a useful separation between sandbox location and tool
+  policy. WasmHatch adopts those patterns without adopting ambient host access
+  or always-on autonomy:
+  https://docs.openclaw.ai/concepts/memory
+  https://docs.openclaw.ai/gateway/sandbox-vs-tool-policy-vs-elevated
+- SQLite-Wasm supports persistent databases in OPFS and is the first candidate
+  for the local catalog and transactional data layer:
+  https://sqlite.org/wasm/doc/tip/persistence.md
+- DuckDB-Wasm runs analytical SQL in a browser Worker and is the candidate
+  engine for larger CSV, JSON, and Parquet analysis:
+  https://duckdb.org/docs/stable/clients/wasm/overview
+- PGlite provides Postgres in Wasm and remains an evaluated alternative where
+  Postgres compatibility or pgvector is a demonstrated requirement:
+  https://pglite.dev/docs/about
+- ZenFS provides a Node-like filesystem facade over OPFS and IndexedDB. It is a
+  reference for adapter semantics; adoption requires a spike against the
+  existing smaller `WorkspaceStore` rather than an automatic rewrite:
+  https://zenfs.dev/core/
 
 WasmHatch should not compete on connector count or background orchestration.
 Its initial wedge is:
 
 1. No server or account for foreground work.
 2. Credentials excluded from model and script contexts.
-3. Generated logic runs locally in a Wasm sandbox.
-4. External effects receive a cell-level review.
-5. The entire reasoning/tool/effect trail is inspectable.
+3. Files, structured data, and scripts remain inspectable and exportable.
+4. Generated logic runs locally in a Wasm sandbox.
+5. Local and external effects receive a domain-specific diff and review.
+6. The entire reasoning/tool/effect trail is inspectable.
 
-## 9. Delivery milestones
+## 9. Delivery milestones and decision gates
 
 ### Milestone 0: Direction reset — complete
 
@@ -334,60 +531,179 @@ Exit condition: a user signs in, reads a bounded range, runs a local transform,
 reviews exact cell changes, and writes the approved values without a credential
 entering model or script input.
 
-### Milestone 2: AI-directed operation
+### Milestone 2: Trustworthy AI-directed spreadsheet operation
 
 - Implement the provider-neutral planner boundary — complete.
 - Add an OpenAI Responses API planner with strict staged output — complete.
 - Let the model inspect an explicitly sent, already-granted range — complete.
 - Let the model generate a bounded transform function for separate review and
   execution — complete.
-- Implement the multi-step business tool registry and loop.
-- Stage model-proposed writes behind immutable proposal IDs.
-- Display model egress, script source, tool calls, and write results together.
-- Add cancellation, request budgets, and retry behavior to the new loop.
+- Implement `prepare -> policy -> approval -> validate -> commit -> receipt` as
+  the shared effect protocol.
+- Stage model-proposed writes behind immutable proposal IDs that bind target,
+  mutations, base version, connector version, and policy decision.
+- Represent spreadsheet changes as typed mutations from which preview and commit
+  payload are both generated.
+- Report precondition strength as `atomic`, `recheck`, or `none`; conflicts
+  always create a new proposal and approval.
+- Implement the bounded multi-step business tool registry and checkpointed loop.
+- Display model egress, script source, tool calls, policy decisions, approvals,
+  conflicts, and receipts together.
+- Add cancellation, request budgets, explicit retry classes, and `uncertain`
+  outcomes to the new loop.
 
 Exit condition: the agent completes the spreadsheet workflow from a natural
-language task while every capability remains independently enforceable.
+language task while every capability remains independently enforceable, stale
+or edited proposals cannot commit, and a simulated ambiguous network result is
+not automatically retried.
 
-### Milestone 3: Five business pilots
+### Milestone 3: Browser-local workspace vertical slice
 
-- Recruit five Haya workflows rather than five coding contributors.
-- Measure time-to-reviewed-result, manual steps removed, corrections required,
-  and whether the user trusted the write preview.
-- Include at least one failed or rejected operation in the evidence set.
-- Use pilot demand to choose the second connector and second script runtime.
+- Move the reusable OPFS workspace into the operator surface.
+- Make Markdown, CSV, JSON, JavaScript, manifests, and reports visible,
+  exportable workspace artifacts. A full file-tree IDE is not an exit
+  requirement.
+- Add bounded list, stat, range-read, and text-search tools needed by pilot
+  workflows.
+- Stage create and patch behind filesystem proposals; add rename and delete only
+  after their conflict and recovery semantics are proven.
+- Add source hashes, stale-proposal rejection, undo, archive export, and
+  recovery diagnostics.
+- Persist generated scripts, manifests, fixtures, reports, and audit exports as
+  inspectable workspace files.
+
+Exit condition: the agent can inspect granted workspace files, generate a
+Markdown or CSV output plus a script, run the script against an explicit input
+snapshot, and apply only an approved filesystem diff.
+
+### Milestone 4: Five business pilots and architecture gates
+
+This milestone starts as soon as Milestone 1 is usable and may run in parallel
+with Milestones 2 and 3. It must not wait for a database or broad connector set.
+
+- Attempt five real Haya workflows with anonymized or sampled data where
+  appropriate.
+- Measure time-to-reviewed-result, corrections, rejected proposals, stale
+  conflicts, approval confidence, and repeated use.
+- Include at least one local file workflow and one Google Sheets workflow.
+- Record missing capabilities without immediately converting each request into
+  a roadmap commitment.
+- Use the evidence to decide whether to promote SQLite, DuckDB, Drive/Docs,
+  Calendar, a task system, mail, or the server adapter.
+
+Exit condition: five workflows are attempted, three reach an approved effect,
+two are repeated in later sessions, the evidence includes at least one rejected
+or stale operation, and every promoted architecture item has a written reason
+and a rejected alternative.
+
+### Milestone 5: Embedded local data — conditional
+
+- Add a Worker-hosted `DatabaseAdapter` contract.
+- Spike SQLite-Wasm against the existing OPFS artifact/event approach. Implement
+  it only if the gate selects it.
+- Add bounded schema inspection and read-only SQL tools.
+- Stage row and schema mutations behind transactional proposals.
+- Spike DuckDB-Wasm against representative CSV/JSON/Parquet reconciliation and
+  reporting workloads; add it only when it provides a measured advantage.
+- Keep PGlite off the implementation backlog unless a Postgres-specific pilot
+  promotes it from the watchlist.
+
+Exit condition when promoted: a user imports CSV data, queries and joins it
+locally, exports a portable result, and reviews every durable database mutation
+without sending the dataset to a server unless explicitly disclosed. If the
+gate rejects an embedded database, record the decision and skip this milestone.
+
+### Milestone 6: Google Workspace expansion — conditional
+
+- Choose Drive/Docs or Calendar from pilot evidence; do not require both for the
+  first expansion.
+- For Drive/Docs, use Google Picker and per-file `drive.file` authorization,
+  bounded snapshots, and document-specific review.
+- For Calendar, use bounded event/free-busy reads and show timezone, attendees,
+  conferencing, and notification effects before approval.
+- Add the second Google connector only after the first reaches repeated use.
 
 Candidate pilots:
 
-1. Normalize a weekly sales pipeline.
-2. Deduplicate a customer or partner list.
-3. Reconcile two spreadsheet exports.
-4. Enrich a sheet from a bounded business API.
-5. Produce a summarized report in a new sheet.
+1. Normalize a weekly sales pipeline from CSV/XLSX or Google Sheets.
+2. Extract selected business content into a reviewable Markdown or CSV report.
+3. Reconcile two exports and publish the result to Sheets; compare plain
+   file processing with SQLite or DuckDB only if data size justifies the spike.
+4. Convert a document or sheet into a reviewed schedule proposal.
+5. Produce a weekly report as Markdown and an approved destination artifact.
 
-### Milestone 4: Optional background adapter
+Exit condition when promoted: one cross-system workflow reaches an approved
+effect and is repeated in a later session without weakening credential or
+approval boundaries.
+
+### Milestone 7: Connector expansion candidates
+
+- Rank Linear, Jira, Microsoft Graph, Gmail, and Outlook from pilot evidence;
+  promoting one does not commit the others.
+- A candidate needs repeated demand, an acceptable license/API policy, a working
+  browser auth/CORS spike or explicit server requirement, typed conflict
+  semantics, and a domain-specific review design.
+- Prefer Linear before Jira when task-system demand is equal because the browser
+  feasibility can be tested independently.
+- Mail remains draft-first. Draft approval never authorizes send; sender,
+  recipients, CC/BCC, subject, body, attachments, thread, and reply/forward
+  semantics require a separate send proposal.
+- Microsoft Graph implementation is subject to tenant consent policy; Gmail is
+  subject to restricted-scope verification and data-handling requirements.
+
+Exit condition for each promoted connector: a real workflow is repeated and all
+reads, proposed effects, conflicts, approvals, and receipts are visible. A
+candidate that fails the gate returns to research rather than blocking the core.
+
+### Milestone 8: Optional background adapter — conditional
 
 - Define refresh-token, scheduling, webhook, retention, and tenant boundaries.
 - Publish a self-hostable connector/scheduler service.
 - Keep browser-only workflows functional without the service.
 - Require explicit migration of credentials from foreground to durable mode.
+- Host connectors that require client secrets, durable refresh tokens, webhooks,
+  or lack browser CORS, including applicable Jira and future Slack/CRM adapters.
+
+Exit condition when promoted: a self-hosted deployment can continue one
+approved workflow after tab close, while the browser-only workflows, connector
+manifests, proposal IDs, and audit format remain compatible. Without unattended
+pilot demand or a required server-only connector, this milestone stays dormant.
 
 ## 10. Success metrics
 
-The coding-contributor metric is retired. Initial product evidence is:
+The coding-contributor metric is retired. Product evidence is:
 
 - 5 real Haya business workflows attempted.
-- 3 workflows reach an approved external write.
+- 3 workflows reach an approved durable local or external effect.
 - Median time from task entry to reviewed proposal under 5 minutes.
 - Zero credentials observed in model messages, script inputs, logs, or storage.
 - Every external write maps to a visible proposal and user approval.
 - At least 2 pilot users repeat the workflow in a later session.
+- A workspace containing Markdown, CSV, and scripts can be exported, cleared,
+  restored, and used without silent data loss. If an embedded database is
+  promoted, its portable export and restore must pass the same test.
+- Every agent-read file/range/table appears in the model-egress ledger with its
+  source identity and byte or row bounds.
+- Every script run records source, input manifest, limits, output manifest, and
+  resulting proposal.
+- Every local file mutation, and every database mutation if that adapter is
+  promoted, maps to an immutable proposal, current source identity, review
+  action, and commit result.
+- At least one post-P0 architecture promotion or rejection is supported by pilot
+  evidence, measurements, and a documented alternative.
 
 ## 11. Immediate next issues
 
-1. Immutable spreadsheet write proposals with source snapshot hashes.
-2. Google Identity Services OAuth with narrow Sheets scopes.
-3. Expand the staged planner into a bounded multi-step business tool loop.
-4. CSV/XLSX import into the same `SpreadsheetRows` contract.
-5. Audit export suitable for a pilot review.
-6. Replace the existing public pilot and contribution messaging.
+1. Spike immutable spreadsheet proposals and `atomic` / `recheck` / `none`
+   conflict behavior, including an `uncertain` network outcome.
+2. Spike the connector manifest and credential broker without exposing raw
+   credentials or unrestricted authenticated HTTP.
+3. Define typed tabular mutations so preview and commit use one source.
+4. Add Google Identity Services OAuth with narrow Sheets scopes after the
+   credential-broker contract is stable.
+5. Add CSV/XLSX import and export through workspace artifacts.
+6. Continue the five pilot workflows and record evidence for architecture gates.
+7. Define the script input/output manifest and ephemeral virtual mount contract.
+8. Implement the checkpointed approval loop and policy decision envelope.
+9. Move the smallest OPFS workspace slice into the operator with export and
+    recovery tests.
