@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const projectUrl = "https://wasmhatch.com/";
-const previewUrl = `${projectUrl}social-preview.png?v=0.43.0`;
+const previewUrl = `${projectUrl}social-preview.png?v=0.44.0`;
 
 describe("public sharing metadata", () => {
   it("publishes canonical Open Graph and large-card metadata", () => {
@@ -24,7 +24,7 @@ describe("public sharing metadata", () => {
     const sitemap = readFileSync("public/sitemap.xml", "utf8");
 
     expect(html).toContain("<noscript>");
-    expect(html).toContain("open-source, browser-native AI operator");
+    expect(html).toContain("free, open-source AI assistant");
     expect(robots).toContain(`Sitemap: ${projectUrl}sitemap.xml`);
     expect(sitemap).toContain(`<loc>${projectUrl}</loc>`);
     expect(sitemap).toContain("<lastmod>2026-07-12</lastmod>");
@@ -43,10 +43,10 @@ describe("public sharing metadata", () => {
     const renderer = readFileSync("scripts/render-social-preview.mjs", "utf8");
 
     expect(packageJson.scripts?.["render:social"]).toBe("node scripts/render-social-preview.mjs");
-    expect(renderer).toContain("<span>Describe</span><span>the work.</span>");
-    expect(renderer).toContain("<em>Review the result.</em>");
-    expect(renderer).toContain("Compare these records and show only the exceptions.");
-    expect(renderer).not.toContain("FROM ISSUE TO PATCH");
+    expect(renderer).toContain("actually does the work.");
+    expect(renderer).toContain("Undo");
+    expect(renderer).not.toContain("Review the result.");
+    expect(renderer).not.toContain("REVIEW CHANGES");
   });
 
   it("keeps public runtime claims aligned with the shipped architecture", () => {
@@ -55,9 +55,9 @@ describe("public sharing metadata", () => {
     const launchPlaybook = readFileSync("docs/launch-playbook.md", "utf8");
     const viteConfig = readFileSync("vite.config.ts", "utf8");
 
-    expect(readme).toContain("QuickJS compiled to Wasm and executed in a Web Worker");
-    expect(readme).toContain("Worker-isolated CSV/XLSX import");
-    expect(readme).toContain("an ephemeral snapshot VFS inside QuickJS");
+    expect(readme).toContain("compiled to Wasm inside a Web Worker");
+    expect(readme).toContain("What it can't do yet");
+    expect(readme).toContain("undo is one click");
     expect(plan).toContain("general AI agent that runs entirely in a browser tab");
     expect(plan).toContain("Generated code executes in the Wasm sandbox");
     expect(plan).toContain("Outside the boundary (stated, not hidden)");
@@ -70,10 +70,8 @@ describe("public sharing metadata", () => {
     expect(readFileSync("docs/operator-workspace-portability.md", "utf8")).toContain("Selecting a ZIP does not replace files");
     expect(readFileSync("docs/operator-artifact-browser.md", "utf8")).toContain("Listing or previewing never sends file content");
     expect(readFileSync("docs/workspace-artifact-workflows.md", "utf8")).toContain("the host derives all filesystem authority");
-    expect(readme).toContain("a shared run journal and policy-decision envelope");
-    expect(readme).toContain("an Operator-only OPFS namespace plus a bounded portable workspace ZIP");
-    expect(readme).toContain("identity-bound AI attachment before any checkpointed model read");
-    expect(readme).toContain("a typed artifact workflow mode");
+    expect(readme).toContain("**No server.**");
+    expect(readme).toContain("held in the memory");
     expect(launchPlaybook).toContain("## Gate: the five launch conditions");
     expect(launchPlaybook).toContain("Non-sensitive `drive.file` only");
     expect(launchPlaybook).toContain("Measurement stays analytics-free");

@@ -1,155 +1,195 @@
 import {
   ArrowRight,
   Check,
+  FileSpreadsheet,
   FileText,
+  FolderOpen,
+  LayoutDashboard,
+  Lock,
   MessageCircle,
-  Paperclip,
-  ShieldCheck,
-  Sparkles
+  RotateCcw,
+  Sparkles,
+  Zap
 } from "lucide-react";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
-const contributorUrl = `${repositoryUrl}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`;
-const contributorGuideUrl = `${repositoryUrl}/blob/main/CONTRIBUTING.md`;
-const codespacesUrl = "https://codespaces.new/haya-inc/wasmhatch?quickstart=1";
 
-const workExamples = [
+const useCases = [
   {
-    title: "Clean up an export",
-    prompt: "Standardize the names and regions, and make the amounts usable.",
-    detail: "CSV and XLSX stay in the browser while WasmHatch prepares exact cell changes."
+    icon: FileSpreadsheet,
+    title: "Fix messy spreadsheets",
+    prompt: "Clean up this export — the names and amounts are all over the place.",
+    detail: "Drop in a CSV or Excel file and it comes back tidy, with every change listed."
   },
   {
-    title: "Compare records",
-    prompt: "Find the mismatches between the ERP export and the payout records.",
-    detail: "Turn repetitive reconciliation into a short exception list you can review."
+    icon: FileText,
+    title: "Draft docs and decks",
+    prompt: "Turn these notes into a Google Doc and a short slide deck.",
+    detail: "Connect Google once and it creates Docs, Sheets, and Slides for you."
   },
   {
-    title: "Create a useful report",
-    prompt: "Summarize the important findings as a concise Markdown report.",
-    detail: "Create a reviewed file from bounded snapshots without giving scripts live access."
+    icon: LayoutDashboard,
+    title: "Build reports and dashboards",
+    prompt: "Make a one-page report I can send to the team.",
+    detail: "Polished pages appear right beside the chat, ready to download and share."
   },
   {
-    title: "Prepare a Sheets update",
-    prompt: "Review this range and prepare only the changes that need my attention.",
-    detail: "Connect Google Sheets for the current session and approve before any write."
+    icon: FolderOpen,
+    title: "Organize your files",
+    prompt: "Merge these three lists and flag anything that looks off.",
+    detail: "It reads, compares, and rewrites files in a private workspace in your browser."
   }
-] as const;
-
-const starterIssues = [
-  { number: 13, title: "Make write review easier to focus", scope: "Accessibility" },
-  { number: 14, title: "Fail closed when guided counts drift", scope: "Safety invariant" },
-  { number: 15, title: "Expose the selected source clearly", scope: "Accessibility" }
 ] as const;
 
 export function BusinessLandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
-  const workUrl = `${homeUrl}?view=work`;
-  const sampleUrl = `${workUrl}&demo=local`;
+  const appUrl = `${homeUrl}?view=chat`;
 
   return (
-    <main className="landing work-landing">
-      <header className="site-header work-site-header">
-        <a className="wordmark" href={homeUrl} aria-label="WasmHatch home">WH<span>／02</span></a>
+    <div className="fresh home">
+      <header className="home-header">
+        <a className="home-brand" href={homeUrl} aria-label="WasmHatch home">
+          <img src={`${homeUrl}mark.svg`} alt="" aria-hidden="true" />
+          WasmHatch
+        </a>
         <nav aria-label="Primary navigation">
-          <a href="#possibilities">What it can do</a>
+          <a href="#can-do">What it can do</a>
           <a href="#how">How it works</a>
-          <a href="#trust">Trust</a>
+          <a href="#trust">Privacy</a>
           <a href={repositoryUrl}>GitHub</a>
         </nav>
-        <a className="header-cta" href={workUrl}>Start a task <ArrowRight size={16} /></a>
+        <a className="btn btn-brand" href={appUrl}>Open WasmHatch</a>
       </header>
 
-      <section className="work-hero" aria-labelledby="hero-title">
-        <div className="work-hero-copy">
-          <p className="kicker"><span /> Open-source · browser-native</p>
-          <h1 id="hero-title">Describe the work.<br /><em>Review the result.</em></h1>
-          <p className="work-hero-lede">WasmHatch is an AI workspace for everyday work. Add the context you choose, explain the outcome in natural language, and stay in control of every change.</p>
-          <div className="hero-actions">
-            <a className="button button-primary" href={workUrl}>Start a task <ArrowRight size={18} /></a>
-            <a className="button button-quiet" href={sampleUrl}>Try a safe sample</a>
-          </div>
-          <p className="hero-assurance"><ShieldCheck size={14} /> No account needed for local files. Nothing writes without approval.</p>
-        </div>
-
-        <div className="conversation-preview" aria-label="Conversation-first work preview">
-          <header><span className="product-mark">WH</span><strong>New task</strong><small><i /> Ready</small></header>
-          <div className="preview-thread">
-            <div className="preview-welcome">
-              <Sparkles size={18} />
-              <p><strong>What do you want to get done?</strong><span>I can work with files and connected sheets, compare records, and create reviewed outputs.</span></p>
+      <main>
+        <section className="home-hero" aria-labelledby="hero-title">
+          <div>
+            <h1 id="hero-title">The AI assistant that <em>actually does the work.</em></h1>
+            <p className="home-lede">
+              Ask for what you need in plain words. WasmHatch cleans your spreadsheets, writes
+              your docs, and builds your reports — right here in your browser, while you watch.
+            </p>
+            <div className="home-cta-row">
+              <a className="btn btn-brand" href={appUrl}>Try it now — it&rsquo;s free <ArrowRight size={17} /></a>
+              <a className="btn btn-ghost" href="#how">See how it works</a>
             </div>
-            <div className="preview-prompt"><Paperclip size={15} /><span>pipeline.csv</span><p>Find inconsistent owner names and prepare a clean version.</p></div>
-            <div className="preview-answer"><span><Check size={14} /></span><p><strong>I found 3 names to standardize.</strong><small>I prepared the exact before-and-after values. Nothing has changed yet.</small><button>Review 3 changes <ArrowRight size={13} /></button></p></div>
+            <ul className="home-assure">
+              <li><Check size={15} /> No install, no account</li>
+              <li><Check size={15} /> Your files stay on your device</li>
+              <li><Check size={15} /> Undo anything in one click</li>
+            </ul>
           </div>
-          <footer><MessageCircle size={15} /><span>Ask a follow-up or describe the next step…</span></footer>
-        </div>
-      </section>
 
-      <section className="work-possibilities" id="possibilities" aria-labelledby="possibilities-title">
-        <div className="section-label">Start with the outcome</div>
-        <div className="work-section-heading">
-          <h2 id="possibilities-title">Work that starts with a request,<br />not a tool.</h2>
-          <p>A spreadsheet is one kind of context—not the product. The same conversation can move from understanding information to transforming it and producing a useful result.</p>
-        </div>
-        <div className="work-example-grid">
-          {workExamples.map((example, index) => (
-            <a key={example.title} href={`${workUrl}${index === 1 ? "&demo=reconciliation" : index === 0 ? "&demo=local" : index === 2 ? "&example=report" : "&example=sheets"}`}>
-              <span>0{index + 1}</span>
-              <h3>{example.title}</h3>
-              <blockquote>“{example.prompt}”</blockquote>
-              <p>{example.detail}</p>
-              <em>Try this request <ArrowRight size={14} /></em>
-            </a>
-          ))}
-        </div>
-      </section>
+          <div className="home-demo" aria-label="Example conversation">
+            <header><i /> WasmHatch</header>
+            <div className="home-demo-thread">
+              <div className="home-msg-user">Turn this sales export into a clean summary I can share.</div>
+              <div className="home-msg-bot">
+                <p>On it — tidying the data and building your summary now.</p>
+                <div className="home-chip">
+                  <Check size={14} />
+                  <span><strong>Cleaned</strong> sales-export.csv · 214 fixes</span>
+                  <span className="home-undo">Undo</span>
+                </div>
+                <div className="home-chip">
+                  <Sparkles size={14} />
+                  <span><strong>Created</strong> Q3 summary — open beside the chat</span>
+                </div>
+                <p>Done! The summary is ready to download. Want it as a Google Doc too?</p>
+              </div>
+            </div>
+            <footer><MessageCircle size={15} /> Ask for anything…</footer>
+          </div>
+        </section>
 
-      <section className="work-how" id="how" aria-labelledby="how-title">
-        <div className="section-label">One understandable loop</div>
-        <h2 id="how-title">Talk naturally.<br />See what happens.</h2>
-        <div className="work-steps">
-          <article><span>01</span><Paperclip /><div><h3>Add context when it helps</h3><p>Choose a local file, a workspace artifact, or a Google Sheets range. WasmHatch shows what is in scope.</p></div></article>
-          <article><span>02</span><MessageCircle /><div><h3>Describe the outcome</h3><p>Ask in plain language and continue the conversation. Execution details stay available without taking over the screen.</p></div></article>
-          <article><span>03</span><Check /><div><h3>Review the real effect</h3><p>Inspect exact cell or file changes before saving. If the source changes, the old proposal becomes invalid.</p></div></article>
-        </div>
-      </section>
+        <section className="home-section" id="can-do" aria-labelledby="can-do-title">
+          <h2 id="can-do-title">One assistant for the busywork.</h2>
+          <p className="home-sub">
+            The tedious parts of everyday work — cleaning data, drafting documents, pulling
+            things together — described in a sentence, done in moments.
+          </p>
+          <div className="home-cards">
+            {useCases.map((useCase) => (
+              <a key={useCase.title} className="home-card" href={appUrl}>
+                <useCase.icon size={22} aria-hidden="true" />
+                <h3>{useCase.title}</h3>
+                <blockquote>&ldquo;{useCase.prompt}&rdquo;</blockquote>
+                <p>{useCase.detail}</p>
+              </a>
+            ))}
+          </div>
+        </section>
 
-      <section className="work-trust" id="trust" aria-labelledby="trust-title">
-        <div>
-          <p className="section-label">Control without the complexity</p>
-          <h2 id="trust-title">The technical boundary stays underneath the conversation.</h2>
-        </div>
-        <div className="work-trust-points">
-          <p><ShieldCheck size={18} /><span><strong>Local by default</strong>Files are parsed in a Worker and are not uploaded to a WasmHatch server.</span></p>
-          <p><FileText size={18} /><span><strong>Bounded execution</strong>Scripts receive copied snapshots—not credentials, the DOM, live storage, or unrestricted network access.</span></p>
-          <p><Check size={18} /><span><strong>Approval before effects</strong>Durable changes wait for an exact diff review, with the decision recorded in the run journal.</span></p>
-          <a href={`${repositoryUrl}/blob/main/docs/conversation-first-ux.md`}>Read the product and UX direction <ArrowRight size={15} /></a>
-        </div>
-      </section>
+        <section className="home-section" id="how" aria-labelledby="how-title">
+          <h2 id="how-title">How it works</h2>
+          <p className="home-sub">No setup wizard, no manual. Three moments, start to done.</p>
+          <div className="home-steps">
+            <article className="home-step">
+              <span>1</span>
+              <h3>Say what you need</h3>
+              <p>Type it like you&rsquo;d tell a colleague. Add a file if it helps, or connect Google in a couple of clicks.</p>
+            </article>
+            <article className="home-step">
+              <span>2</span>
+              <h3>Watch it happen</h3>
+              <p>It gets to work immediately. Every step shows up in the conversation as it runs — no black box.</p>
+            </article>
+            <article className="home-step">
+              <span>3</span>
+              <h3>Keep it or undo it</h3>
+              <p>Each change lists exactly what happened, with one-click undo. Prefer to approve things first? Turn on Careful mode.</p>
+            </article>
+          </div>
+        </section>
 
-      <section className="work-contribute" id="contribute" aria-labelledby="contribute-title">
-        <div className="work-section-heading">
-          <div><p className="section-label">Open source</p><h2 id="contribute-title">Help make AI work understandable.</h2></div>
-          <div><p>Small, scoped issues use synthetic data and explicit acceptance criteria.</p><a href={contributorGuideUrl}>Contributor guide <ArrowRight size={15} /></a><a href={codespacesUrl}>Open a Codespace <ArrowRight size={15} /></a></div>
-        </div>
-        <div className="work-issue-list">
-          {starterIssues.map((issue) => <a key={issue.number} href={`${repositoryUrl}/issues/${issue.number}`}><span>#{issue.number}</span><small>{issue.scope}</small><strong>{issue.title}</strong><ArrowRight size={15} /></a>)}
-        </div>
-      </section>
+        <section className="home-section" id="trust" aria-labelledby="trust-title">
+          <h2 id="trust-title">Fast, and still yours.</h2>
+          <p className="home-sub">Speed doesn&rsquo;t have to cost you control or privacy.</p>
+          <div className="home-trust">
+            <article>
+              <Zap size={20} aria-hidden="true" />
+              <h3>It just acts</h3>
+              <p>No approval pop-ups slowing every step. The assistant does the work and keeps you in the picture as it goes.</p>
+            </article>
+            <article>
+              <RotateCcw size={20} aria-hidden="true" />
+              <h3>Everything is undoable</h3>
+              <p>Every change is shown with exactly what changed. One click puts it back the way it was.</p>
+            </article>
+            <article>
+              <Lock size={20} aria-hidden="true" />
+              <h3>Private by design</h3>
+              <p>It runs in your browser tab. Your files stay on your device, and your keys never leave this tab or get stored anywhere.</p>
+            </article>
+          </div>
+        </section>
 
-      <section className="work-final-cta">
-        <Sparkles size={24} />
-        <h2>What do you want to get done?</h2>
-        <p>Start with a sample, a file, or simply a request.</p>
-        <a className="button button-primary" href={workUrl}>Open WasmHatch <ArrowRight size={18} /></a>
-      </section>
+        <section className="home-section">
+          <div className="home-oss">
+            <Sparkles size={18} aria-hidden="true" />
+            <span><strong>Free and open source</strong> under Apache-2.0 — read every line, run it yourself, or help build it.</span>
+            <a href={repositoryUrl}>Star on GitHub <ArrowRight size={14} /></a>
+          </div>
+        </section>
 
-      <footer className="site-footer work-footer">
-        <a className="wordmark wordmark-dark" href={homeUrl}>WH<span>／02</span></a>
-        <p>Open-source AI work with visible, permissioned effects.</p>
-        <div><a href={repositoryUrl}>GitHub</a><a href={contributorUrl}>Contribute</a><a href={`${repositoryUrl}/blob/main/docs/plan.md`}>Plan</a><span>Apache-2.0</span></div>
+        <section className="home-section home-final">
+          <h2>What should it do for you first?</h2>
+          <p>Open it and ask. That&rsquo;s the whole onboarding.</p>
+          <a className="btn btn-brand" href={appUrl}>Open WasmHatch <ArrowRight size={17} /></a>
+        </section>
+      </main>
+
+      <footer className="home-footer">
+        <a className="home-brand" href={homeUrl}>
+          <img src={`${homeUrl}mark.svg`} alt="" aria-hidden="true" />
+          WasmHatch
+        </a>
+        <span>Your AI assistant, right in the browser.</span>
+        <a href={repositoryUrl}>GitHub</a>
+        <a href={`${repositoryUrl}/blob/main/CONTRIBUTING.md`}>Contribute</a>
+        <a href={`${homeUrl}privacy.html`}>Privacy</a>
+        <span>Apache-2.0</span>
       </footer>
-    </main>
+    </div>
   );
 }

@@ -19,7 +19,7 @@ export function App() {
   const requestedView = new URLSearchParams(window.location.search).get("view");
   if (route.startsWith("chat") || requestedView === "chat") {
     return (
-      <Suspense fallback={<div className="route-loading">Opening the agent…</div>}>
+      <Suspense fallback={<div className="route-loading">Opening WasmHatch…</div>}>
         <ChatPage />
       </Suspense>
     );

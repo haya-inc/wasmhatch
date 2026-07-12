@@ -394,10 +394,10 @@ export function ChatPage() {
   const activePermission = permissionQueue[0];
 
   return (
-    <div className="chat-shell">
+    <div className="fresh chat-shell">
       <header className="chat-header">
         <a className="chat-brand" href="./">WasmHatch</a>
-        <span className="chat-tagline">A general AI agent in your browser tab — it acts fast, and every change stays visible and revertible.</span>
+        <span className="chat-tagline">Your AI assistant, right in this tab — fast, visible, and undoable.</span>
       </header>
 
       <div className="chat-columns">
@@ -407,12 +407,12 @@ export function ChatPage() {
               <div className="chat-empty">
                 <h1>What do you want to get done?</h1>
                 <p>
-                  The agent works in a browser-local workspace and acts on its own: changes land
-                  instantly, every diff stays visible, and one click reverts. Prefer to sign off
-                  first? Switch to Careful mode in the sidebar.
+                  Ask in your own words — it fixes spreadsheets, writes documents, and builds
+                  reports right here. Every change is shown as it happens, and undo is one click.
+                  Prefer to approve things first? Switch to Careful in the sidebar.
                 </p>
                 <button className="button" type="button" onClick={() => { void loadSamples(); }}>
-                  Load sample files
+                  Add sample files
                 </button>
               </div>
             )}
@@ -529,15 +529,15 @@ export function ChatPage() {
 
         <aside className="chat-side">
           <section className="chat-panel">
-            <h2>Model</h2>
+            <h2>Assistant</h2>
             <label className="chat-field">
               <span>Autonomy</span>
               <select
                 value={writeMode}
                 onChange={(event) => setWriteMode(event.target.value as WritePolicy)}
               >
-                <option value="autonomous">Fast — act, show diffs, one-click revert</option>
-                <option value="careful">Careful — approve each write first</option>
+                <option value="autonomous">Fast — just does it (undo anytime)</option>
+                <option value="careful">Careful — asks before saving</option>
               </select>
             </label>
             <label className="chat-field">
@@ -552,10 +552,10 @@ export function ChatPage() {
                 }}
               >
                 <option value="builtin">
-                  Chrome built-in AI (no key{builtinAvailability === "available" ? "" : ` — ${builtinAvailability}`})
+                  Built into Chrome — free, no key{builtinAvailability === "available" ? "" : ` (${builtinAvailability})`}
                 </option>
-                <option value="anthropic">Anthropic (your key)</option>
-                <option value="openai">OpenAI (your key)</option>
+                <option value="anthropic">Claude (your API key)</option>
+                <option value="openai">OpenAI (your API key)</option>
               </select>
             </label>
             {provider !== "builtin" && (
@@ -624,9 +624,9 @@ export function ChatPage() {
           </section>
 
           <section className="chat-panel">
-            <h2>Workspace files</h2>
+            <h2>Your files</h2>
             {files.length === 0
-              ? <p className="chat-hint">Empty. Load the samples or ask the agent to create a file.</p>
+              ? <p className="chat-hint">Nothing here yet. Add the samples or just ask for something — files it creates appear here.</p>
               : (
                 <ul className="chat-files">
                   {files.map((path) => (

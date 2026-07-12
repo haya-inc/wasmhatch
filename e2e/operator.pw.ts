@@ -2,22 +2,25 @@ import { expect, test, type Page } from "@playwright/test";
 
 const GOOGLE_CLIENT_ID = "1234567890-wasmhatch.apps.googleusercontent.com";
 
-test("presents general work before technical architecture", async ({ page }) => {
+test("presents a friendly consumer landing without technical jargon", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /Describe the work/ })).toBeVisible();
-  await expect(page.getByText("WasmHatch is an AI workspace for everyday work.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Start a task" }).first()).toHaveAttribute("href", "/?view=work");
-  await expect(page.getByRole("heading", { name: "Work that starts with a request, not a tool." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Clean up an export" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Compare records" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Create a useful report" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Prepare a Sheets update" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Create a useful report/ })).toHaveAttribute("href", "/?view=work&example=report");
-  await expect(page.getByRole("link", { name: /Prepare a Sheets update/ })).toHaveAttribute("href", "/?view=work&example=sheets");
-  await expect(page.getByRole("link", { name: /Contributor guide/ })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/blob/main/CONTRIBUTING.md");
-  await expect(page.getByRole("link", { name: /Open a Codespace/ })).toHaveAttribute("href", "https://codespaces.new/haya-inc/wasmhatch?quickstart=1");
+  await expect(page.getByRole("heading", { name: /actually does the work/ })).toBeVisible();
+  await expect(page.getByText("No install, no account")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Try it now/ })).toHaveAttribute("href", "/?view=chat");
+  await expect(page.getByRole("heading", { name: "One assistant for the busywork." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Fix messy spreadsheets" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Draft docs and decks" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Keep it or undo it" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Private by design" })).toBeVisible();
+
+  // The first screen a stranger sees must stay free of internal jargon.
+  // The brand name itself contains "wasm", so it is excluded first.
+  const body = (await page.locator("body").innerText()).toLowerCase().replaceAll("wasmhatch", "");
+  for (const banned of ["wasm", "quickjs", "sandbox", "manifest", "opfs", "csp"]) {
+    expect(body, `landing page should not say "${banned}"`).not.toContain(banned);
+  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
