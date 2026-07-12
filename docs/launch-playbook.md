@@ -27,6 +27,12 @@ That recording, trimmed to 30–40 seconds, is the README hero GIF and the
 launch-post demo. If it needs cuts or captions to be comprehensible, the
 product is not ready.
 
+`scripts/record-demo.mjs` records the open-URL → key → visible-diff →
+artifact beats as one uncut .webm against a real model
+(`WASMHATCH_DEMO_KEY=... node scripts/record-demo.mjs https://wasmhatch.com`).
+The Google-connect beats stay a human take: OAuth consent is a real
+account interaction the script must not automate.
+
 ## Pre-launch (starts now, runs in parallel)
 
 - Participate genuinely in r/selfhosted and r/LocalLLaMA (9:1 rule,

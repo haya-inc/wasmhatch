@@ -64,6 +64,9 @@ vocabulary on screen.
 - [ ] The demo GIF: one uncut 30-second take — open URL, connect Google in
       3 clicks, real AI edits a real Sheet with the diff visible in the
       transcript, a deck appears in-tab, download.
+      `scripts/record-demo.mjs` records the non-Google beats (open URL →
+      key → visible diff → in-tab artifact) with a real model; the Google
+      consent beats need a human take.
 
 Exit — the five launch conditions, one uncut take, or no launch date:
 1. Key-free path shows first tokens in under 60 seconds.
