@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://haya-inc.github.io/wasmhatch/sitemap.xml
+Sitemap: https://wasmhatch.com/sitemap.xml

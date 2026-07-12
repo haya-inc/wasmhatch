@@ -69,7 +69,7 @@ try {
               <div class="result"><strong>✓ 7 changes ready</strong><p>Exact before-and-after values prepared. Nothing has changed yet.</p><div class="review">REVIEW CHANGES →</div></div>
             </section>
           </main>
-          <footer><strong>haya-inc.github.io/wasmhatch</strong><span>FILES · SHEETS · REVIEWED OUTPUTS</span></footer>
+          <footer><strong>wasmhatch.com</strong><span>FILES · SHEETS · REVIEWED OUTPUTS</span></footer>
         </div>
       </body>
     </html>`);

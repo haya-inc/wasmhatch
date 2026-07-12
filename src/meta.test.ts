@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const projectUrl = "https://haya-inc.github.io/wasmhatch/";
+const projectUrl = "https://wasmhatch.com/";
 const previewUrl = `${projectUrl}social-preview.png?v=0.43.0`;
 
 describe("public sharing metadata", () => {
