@@ -1,19 +1,60 @@
 # WasmHatch
 
-> Browser-native AI operations with explicit effects.
+> Describe the work. Review the result.
+
+![WasmHatch — natural-language work with reviewed effects](https://haya-inc.github.io/wasmhatch/social-preview.png?v=0.42.0)
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/haya-inc/wasmhatch?quickstart=1)
 
-[Start a general work task](https://haya-inc.github.io/wasmhatch/?view=work) —
-describe the outcome first; add context and technical detail only when needed.
+WasmHatch is an open-source AI workspace for everyday work. Start with the
+outcome in natural language, add only the context the task needs, and review the
+exact result before anything durable changes.
 
-[Open the advanced business operator](https://haya-inc.github.io/wasmhatch/?view=operator)
+**[Start a task](https://haya-inc.github.io/wasmhatch/?view=work)** ·
+**[Try a key-free sample](https://haya-inc.github.io/wasmhatch/?view=work&demo=reconciliation)** ·
+[Read the 2-minute quickstart](docs/quickstart.md)
 
-[Run the 60-second local demo](https://haya-inc.github.io/wasmhatch/?view=work&demo=local) — no account, API key, OAuth, upload, or server required.
+## What can it do?
 
-[Try invoice reconciliation](https://haya-inc.github.io/wasmhatch/?view=work&demo=reconciliation) — compare synthetic ERP and payout values, then review seven derived cells.
+- Clean and standardize a local CSV or XLSX export.
+- Compare records and prepare a short list of exceptions.
+- Create a reviewed Markdown, CSV, JSON, text, or JavaScript artifact.
+- Read a foreground Google Sheets range and prepare only the updates you approve.
 
-[Start with your CSV/XLSX](https://haya-inc.github.io/wasmhatch/?view=work&start=upload) — opens the local, Worker-isolated import path directly.
+A spreadsheet is one source of context, not the product boundary. New document,
+calendar, task, and communication connectors are promoted only after real pilot
+workflows prove the need and the review boundary.
+
+## One understandable loop
+
+1. **Describe the outcome.** Begin in your own words or choose an example.
+2. **Add context when it helps.** Local files stay in the tab; connected sources
+   receive an explicit, bounded grant.
+3. **Review the real effect.** WasmHatch shows exact cell or file changes and
+   writes only after approval.
+
+The key-free samples use the production CSV Worker, QuickJS Wasm sandbox, and
+effect-review path. Natural-language planning uses Chrome built-in AI when it is
+available, or an optional memory-only OpenAI session key. The alpha is
+foreground-only: it does not schedule background work or persist OAuth tokens.
+
+## Try it
+
+| Goal | Entry |
+| --- | --- |
+| Understand the review model without an account or key | [60-second normalization](https://haya-inc.github.io/wasmhatch/?view=work&demo=local) |
+| Compare two synthetic exports | [Invoice reconciliation](https://haya-inc.github.io/wasmhatch/?view=work&demo=reconciliation) |
+| Bring an authorized local file | [CSV/XLSX entry](https://haya-inc.github.io/wasmhatch/?view=work&start=upload) |
+| Inspect every advanced boundary | [Advanced Operator](https://haya-inc.github.io/wasmhatch/?view=operator) |
+
+After a completed or safely rejected run, copy the source-free result shown in
+the conversation and share only the feedback you choose through the
+[pilot report form](https://github.com/haya-inc/wasmhatch/issues/new?template=pilot_report.yml).
+
+<details>
+<summary><strong>Implementation inventory and detailed documentation</strong></summary>
+
+<br />
 
 WasmHatch is an open-source, browser-native AI operator for general business
 work. It gives an AI typed access to spreadsheets and future business APIs,
@@ -123,6 +164,13 @@ template](docs/pilot-evidence-template.md) into the approved internal system.
 Public, sanitized workflow reports can be shared in [business operator pilot
 registry issue #12](https://github.com/haya-inc/wasmhatch/issues/12).
 
+</details>
+
+<details>
+<summary><strong>Legacy coding workspace documentation</strong></summary>
+
+<br />
+
 ## Legacy coding workspace
 
 The earlier issue-to-patch coding workspace remains available at
@@ -195,6 +243,13 @@ git apply wasmhatch.patch
 The baseline is stored separately in OPFS and survives reload. The patch can
 represent modified, added, and removed text files; the current UI does not yet
 expose file deletion.
+
+</details>
+
+<details>
+<summary><strong>Capability matrix, trust model, and architecture</strong></summary>
+
+<br />
 
 ## Current capability matrix
 
@@ -313,20 +368,21 @@ The sandbox is intentionally smaller than a browser command runtime. It executes
 bounded data transforms without a proprietary or vendor-hosted container and
 without exposing the host workspace as a general filesystem.
 
+</details>
+
 ## Contributing
 
-Small, reviewable contributions are welcome. Start with
-[CONTRIBUTING.md](CONTRIBUTING.md), run the test and build commands, and explain
-the user-visible outcome in your pull request.
+Small, reviewable contributions are welcome. Open a
+[Codespace](https://codespaces.new/haya-inc/wasmhatch?quickstart=1) or follow
+[CONTRIBUTING.md](CONTRIBUTING.md), then claim one issue before editing.
 
-High-value areas include:
+- [Focus the exact effect review](https://github.com/haya-inc/wasmhatch/issues/13)
+- [Fail closed on guided-count drift](https://github.com/haya-inc/wasmhatch/issues/14)
+- [Expose the selected source accessibly](https://github.com/haya-inc/wasmhatch/issues/15)
 
-- browser filesystem contract tests;
-- accessible keyboard workflows;
-- safer archive and repository import;
-- deterministic agent fixtures;
-- an embeddable **Open in WasmHatch** link;
-- runtime research with explicit license and security boundaries.
+Run `npm test`, `npm run build`, and the relevant Playwright test. Pull requests
+should explain the user-visible outcome and preserve the review-before-write
+boundary.
 
 ## License
 
