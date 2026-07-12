@@ -14,6 +14,9 @@ test("links the public project page to current newcomer work", async ({ page }) 
   await expect(page.getByRole("link", { name: "60-second demo" }).first()).toHaveAttribute("href", "/?view=operator&demo=local");
   await expect(page.getByRole("heading", { name: "Bring one repetitive spreadsheet." })).toBeVisible();
   await expect(page.getByText("Local files stay in this tab. No account or server upload.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Read issue #13" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/13");
+  await expect(page.getByRole("link", { name: "Read issue #14" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues/14");
+  await expect(page.getByRole("link", { name: "Read the contributor guide" })).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/blob/main/CONTRIBUTING.md");
   const pilotBeforeArchitecture = await page.evaluate(() => {
     const pilot = document.querySelector("#workflows");
     const architecture = document.querySelector("#capabilities");

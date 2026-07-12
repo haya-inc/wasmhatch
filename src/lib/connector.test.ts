@@ -38,7 +38,7 @@ const READ_WRITE_GRANT = {
 
 describe("connector manifest validation", () => {
   it("publishes frozen local and Google manifests compatible with the current core", () => {
-    expect(CONNECTOR_CORE_VERSION).toBe("0.34.0");
+    expect(CONNECTOR_CORE_VERSION).toBe("0.35.0");
     expect(packageJson.version).toBe(CONNECTOR_CORE_VERSION);
     expect(validateConnectorManifest(LOCAL_SPREADSHEET_MANIFEST)).toBeTruthy();
     expect(validateConnectorManifest(GOOGLE_SHEETS_MANIFEST)).toBeTruthy();

@@ -9,6 +9,7 @@ import {
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 const contributorUrl = `${repositoryUrl}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`;
+const contributorGuideUrl = `${repositoryUrl}/blob/main/CONTRIBUTING.md`;
 
 const workflows = [
   {
@@ -39,6 +40,21 @@ const workflows = [
     action: "Run the demo"
   }
 ];
+
+const starterIssues = [
+  {
+    number: 13,
+    scope: "Accessibility · UI + Playwright",
+    title: "Focus the exact write review",
+    description: "Move focus only after the user selects Review changes, without changing proposal or approval behavior."
+  },
+  {
+    number: 14,
+    scope: "Safety invariant · unit + browser",
+    title: "Fail closed on guided count drift",
+    description: "Validate bundled sample mutation counts before review while leaving real CSV/XLSX and Google workflows unchanged."
+  }
+] as const;
 
 function PilotWorkflowsSection({ operatorUrl }: { operatorUrl: string }) {
   return (
@@ -78,6 +94,7 @@ export function BusinessLandingPage() {
           <a href="#how">How it works</a>
           <a href="#workflows">Workflows</a>
           <a href="#trust">Trust model</a>
+          <a href="#contribute">Contribute</a>
           <a href={repositoryUrl}>GitHub</a>
         </nav>
         <a className="header-cta" href={`${operatorUrl}&start=upload`}>Use your CSV <ArrowRight size={16} /></a>
@@ -161,6 +178,27 @@ export function BusinessLandingPage() {
           <article><span>04</span><h3>Artifact workflow</h3><p>Derives one typed output manifest on the host and mounts only copied inputs inside QuickJS</p><small>Markdown · CSV · JSON · text</small></article>
           <article><span>05</span><h3>Effect review</h3><p>Cell mutations or file diffs bind the reviewed base and payload</p><small>Exact approval</small></article>
           <article><span>06</span><h3>Run journal</h3><p>Joins policy, tools, approvals, conflicts, receipts, and pilot timing</p><small>Credential fields excluded</small></article>
+        </div>
+      </section>
+
+      <section className="contribute-section" id="contribute" aria-labelledby="contribute-title">
+        <div className="section-label">Two scoped starter issues</div>
+        <div className="contribute-heading">
+          <h2 id="contribute-title">Improve one visible boundary.</h2>
+          <div>
+            <p>Both tasks use bundled synthetic data and have explicit acceptance criteria. Read the issue, check current comments, then claim it before editing.</p>
+            <a href={contributorGuideUrl}>Read the contributor guide <ArrowRight size={16} /></a>
+          </div>
+        </div>
+        <div className="contribution-list">
+          {starterIssues.map((issue) => (
+            <article key={issue.number}>
+              <span className="contribution-issue">#{issue.number}</span>
+              <div><small>{issue.scope}</small><h3>{issue.title}</h3></div>
+              <p>{issue.description}</p>
+              <div className="contribution-actions"><a className="contribution-open" href={`${repositoryUrl}/issues/${issue.number}`}>Read issue #{issue.number} <ArrowRight size={15} /></a></div>
+            </article>
+          ))}
         </div>
       </section>
 
