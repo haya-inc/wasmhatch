@@ -59,7 +59,7 @@ export function BusinessLandingPage() {
           <h1 id="hero-title" className="reveal reveal-two"><span>Wasm</span><span>Hatch.</span></h1>
           <p className="hero-promise reveal reveal-three">AI work, with<br />every action visible.</p>
           <div className="hero-actions reveal reveal-four">
-            <a className="button button-primary" href={operatorUrl}>Run the local demo <ArrowRight size={18} /></a>
+            <a className="button button-primary" href={operatorUrl}>Open the operator <ArrowRight size={18} /></a>
             <a className="button button-quiet" href={repositoryUrl}><GitFork size={17} /> View source</a>
           </div>
         </div>
@@ -67,16 +67,16 @@ export function BusinessLandingPage() {
         <div className="hero-product reveal reveal-five business-product" aria-label="WasmHatch business operator preview">
           <div className="product-bar">
             <span className="product-mark">WH</span>
-            <span>weekly pipeline / Sheet1!A1:D20</span>
+            <span>pipeline.xlsx / Forecast</span>
             <span className="local-state"><i /> foreground session</span>
           </div>
           <div className="product-body">
             <div className="product-files">
-              <small>CONNECTORS</small>
-              <span className="active">Google Sheets</span>
-              <span>Local workbook</span>
-              <span>HTTP API</span>
-              <span className="connector-note">Broker attaches tokens after validation</span>
+              <small>SOURCES</small>
+              <span className="active">CSV / XLSX</span>
+              <span>Google Sheets</span>
+              <span>OPFS snapshots</span>
+              <span className="connector-note">Local bytes become bounded values + provenance</span>
             </div>
             <div className="business-sheet" aria-label="Example spreadsheet changes">
               <div className="sheet-head"><span>OWNER</span><span>REGION</span><span>AMOUNT</span></div>
@@ -117,14 +117,15 @@ export function BusinessLandingPage() {
         <div className="section-label">Architecture, not magic</div>
         <div className="fit-heading">
           <h2 id="capabilities-title">Browser first.<br />Capability bound.</h2>
-          <div><p>The first release works while the user is present. Google Identity Services issues a short-lived session token; manifests bind the broker to approved operations and resources.</p><a href={`${repositoryUrl}/blob/main/docs/google-oauth.md`}>Configure Google OAuth <ArrowRight size={16} /></a></div>
+          <div><p>The operator imports local workbooks without a server and uses short-lived Google authorization only when requested. File codecs and credentialed connectors remain separate capabilities.</p><a href={`${repositoryUrl}/blob/main/docs/tabular-artifacts.md`}>Read the artifact boundary <ArrowRight size={16} /></a></div>
         </div>
         <div className="fit-list" aria-label="WasmHatch architecture layers">
-          <article className="fit-primary"><span>01</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
-          <article><span>02</span><h3>Agent planner</h3><p>Selects tools and prepares bounded operations</p><small>No raw tokens</small></article>
-          <article><span>03</span><h3>Wasm script worker</h3><p>Transforms JSON and tabular data under CPU and memory limits</p><small>No fetch or DOM</small></article>
-          <article><span>04</span><h3>Write review</h3><p>One typed mutation bundle drives preview and commit</p><small>Human in loop</small></article>
-          <article><span>05</span><h3>Audit trail</h3><p>Records model egress, tool calls, scripts, and approvals</p><small>Inspectable</small></article>
+          <article className="fit-primary"><span>01</span><h3>Artifact worker</h3><p>Turns untrusted CSV/XLSX bytes into bounded values and provenance</p><small>Value-only · no network</small></article>
+          <article><span>02</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
+          <article><span>03</span><h3>Agent planner</h3><p>Selects tools and prepares bounded operations</p><small>No raw tokens</small></article>
+          <article><span>04</span><h3>Wasm script worker</h3><p>Transforms JSON and tabular data under CPU and memory limits</p><small>No fetch or DOM</small></article>
+          <article><span>05</span><h3>Write review</h3><p>One typed mutation bundle drives preview and commit</p><small>Human in loop</small></article>
+          <article><span>06</span><h3>Audit trail</h3><p>Records provenance, model egress, scripts, and approvals</p><small>Inspectable</small></article>
         </div>
       </section>
 
@@ -154,8 +155,8 @@ export function BusinessLandingPage() {
           <a href={operatorUrl} className="text-link">Try the foundation slice <ArrowRight size={17} /></a>
         </div>
         <div className="proof-log">
-          <div><span>00:00</span><p>Granted read access to <strong>Sheet1!A1:D20</strong></p></div>
-          <div><span>00:02</span><p>Returned 4 rows to the task context</p></div>
+          <div><span>00:00</span><p>Imported <strong>pipeline.xlsx / Forecast</strong> in a codec Worker</p></div>
+          <div><span>00:02</span><p>Stored a SHA-256-bound normalized snapshot in OPFS</p></div>
           <div><span>00:04</span><p>Ran transformation in <strong>QuickJS Wasm</strong></p></div>
           <div><span>00:05</span><p>Sandbox had no network, token, or DOM access</p></div>
           <div className="log-accent"><span>00:06</span><p>Staged 12 typed cell changes for approval</p></div>
@@ -167,11 +168,12 @@ export function BusinessLandingPage() {
         <div className="section-label">Trust is the operating system</div>
         <h2 id="trust-title">Local-first.<br />Effect-aware.</h2>
         <div className="trust-lines">
-          <div><span>Credentials</span><strong>Short-lived GIS → host broker</strong><em>01</em></div>
-          <div><span>Model access</span><strong>Typed, bounded tool results</strong><em>02</em></div>
-          <div><span>Scripts</span><strong>Wasm Worker · no host access</strong><em>03</em></div>
-          <div><span>Writes</span><strong>Cell-level approval first</strong><em>04</em></div>
-          <div><span>Autonomy</span><strong>Foreground session in alpha</strong><em>05</em></div>
+          <div><span>Local files</span><strong>Worker codec → value snapshot</strong><em>01</em></div>
+          <div><span>Credentials</span><strong>Short-lived GIS → host broker</strong><em>02</em></div>
+          <div><span>Model access</span><strong>Typed, bounded tool results</strong><em>03</em></div>
+          <div><span>Scripts</span><strong>Wasm Worker · no host access</strong><em>04</em></div>
+          <div><span>Writes</span><strong>Cell-level approval first</strong><em>05</em></div>
+          <div><span>Autonomy</span><strong>Foreground session in alpha</strong><em>06</em></div>
         </div>
         <p className="trust-note"><ShieldCheck size={20} /> The alpha deliberately excludes background execution and persisted OAuth tokens. Those require a separate server trust model.</p>
       </section>

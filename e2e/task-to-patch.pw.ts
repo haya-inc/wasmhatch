@@ -11,12 +11,18 @@ test("carries a contribution target from task link to patch download", async ({ 
   await page.addInitScript(() => {
     const originalGetDirectory = navigator.storage.getDirectory.bind(navigator.storage);
     let firstCall = true;
+    let releaseFirstCall!: () => void;
+    const firstCallGate = new Promise<void>((resolve) => {
+      releaseFirstCall = resolve;
+    });
+    (globalThis as typeof globalThis & { __releaseWorkspaceDirectory?: () => void })
+      .__releaseWorkspaceDirectory = releaseFirstCall;
     Object.defineProperty(navigator.storage, "getDirectory", {
       configurable: true,
       value: async () => {
         if (firstCall) {
           firstCall = false;
-          await new Promise((resolve) => window.setTimeout(resolve, 250));
+          await firstCallGate;
         }
         return originalGetDirectory();
       }
@@ -35,6 +41,10 @@ test("carries a contribution target from task link to patch download", async ({ 
   await expect(page.getByRole("link", { name: "Issue #4" })).toHaveAttribute("href", issueUrl);
   const archiveButton = page.getByRole("button", { name: "Import zip archive" });
   await expect(archiveButton).toBeDisabled();
+  await page.evaluate(() => {
+    (globalThis as typeof globalThis & { __releaseWorkspaceDirectory?: () => void })
+      .__releaseWorkspaceDirectory?.();
+  });
 
   const archive = zipSync({
     "README.md": strToU8("# Fixture\n"),

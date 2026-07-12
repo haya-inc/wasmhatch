@@ -2,7 +2,7 @@
 
 > A browser-native AI operator for visible, permissioned business work.
 
-- Status: Direction reset; foundation slice in progress
+- Status: Canonical browser-first artifact/effect plan; foundation slice in progress
 - Updated: 2026-07-12
 - License: Apache-2.0
 - Primary deployment: static web application
@@ -41,6 +41,10 @@ require a separately deployed server adapter.
 
 - A new business-operator landing page and `/operator` application route.
 - A local spreadsheet demo with editable tabular data.
+- A Worker-isolated CSV/XLSX artifact adapter with pre-inflation ZIP bounds,
+  strict UTF-8/XML parsing, visible-sheet selection, formula/macro/external-link
+  handling, SHA-256 provenance, and normalized JSON persistence. See
+  [Tabular Artifacts](tabular-artifacts.md).
 - Versioned manifests for the local spreadsheet and Google Sheets connectors,
   with strict schema and core-compatibility validation.
 - A credential broker that keeps access tokens outside connector code and adds
@@ -87,7 +91,9 @@ require a separately deployed server adapter.
   flow accepts deployer or user-provided Web client ID configuration.
 - A multi-step AI tool loop that can request connector reads, run more than one
   transform, or revise a plan from tool results.
-- Local XLSX/CSV import in the operator surface.
+- Full-fidelity workbook editing, formula calculation, legacy `.xls`, and
+  password-protected workbook import. The P0 adapter is intentionally
+  value-only.
 - Persisted workflows, schedules, webhooks, or background execution.
 - Refresh tokens, service accounts, team credential vaults, or organization
   administration.
@@ -136,7 +142,8 @@ evidence, not a template; see [OSS Design Study](oss-design-study.md).
 | --- | --- | --- |
 | Effect protocol: prepare, immutable proposal, approval, base-version check, commit receipt | **Committed** | Core safety architecture; implement before broader autonomy |
 | Script boundary: saved source, granted input snapshot, ephemeral output, diff review, no live capabilities | **Committed** | Core execution invariant for every script runner |
-| P0 CSV/XLSX and Google Sheets | **Committed** | First useful local/external data loop |
+| P0 tabular artifact boundary: CSV/XLSX | **Committed** | Validate untrusted file bytes, normalize one bounded value table plus provenance, and export a safe value-only artifact; this is a file adapter, not a credentialed connector |
+| P0 Google Sheets connector | **Committed** | First external data loop; bounded range reads and typed writes use the credential broker and effect protocol |
 | Browser workspace artifact model | **Committed, thin slice first** | OPFS-backed Markdown/CSV/JSON/JavaScript, manifests, proposals, and export; UI breadth follows evidence |
 | Google Drive/Docs and Calendar | **Pilot-gated candidate** | Implement the first connector with repeated demand; do not promise both in advance |
 | Linear task-system connector | **Pilot-gated browser candidate** | PKCE and browser CORS are feasible; promote only after repeated workflow demand |
@@ -151,6 +158,14 @@ evidence, not a template; see [OSS Design Study](oss-design-study.md).
 library. “Pilot-gated” requires observed workflows. “Research candidate” and
 “watchlist” must not create implementation work until promoted by a recorded
 decision.
+
+The canonical implementation order is the common artifact and effect boundary
+first, followed by domain adapters. CSV/XLSX and Google Sheets converge on the
+same bounded tabular snapshot and typed mutation model, but they do not share an
+authorization abstraction: local workbook codecs never masquerade as network
+connectors. Likewise, Microsoft Graph is an API family rather than one broad
+connector. Outlook Mail, Calendar, OneDrive, and SharePoint must each earn a
+separate resource schema, scope request, effect review, and promotion decision.
 
 ## 4. User flow
 
@@ -260,9 +275,10 @@ same versioned contribution contract without requiring application UI.
 Only P0 connector delivery is committed. Later rows are ranked hypotheses that
 must pass the milestone decision gates:
 
-| Priority | Connector | Initial typed operations | Delivery boundary |
+| Priority | Adapter | Initial typed operations | Delivery boundary |
 | --- | --- | --- | --- |
-| P0 | CSV/XLSX and Google Sheets | import, export, read range, propose range write | Foreground browser |
+| P0 artifact | CSV/XLSX | validate bytes, inspect sheets, import a bounded value table, export values | Foreground local file; no credential or network authority |
+| P0 connector | Google Sheets | read range, propose range write | Foreground browser through the credential broker |
 | P1 candidate | Google Drive / Docs | pick a file, read/export selected content, propose document creation or update | Foreground browser with per-file `drive.file` access; repeated pilot demand required |
 | P1 candidate | Google Calendar | list bounded events, free/busy, propose event create or update | Foreground browser; attendee notifications require explicit review; repeated pilot demand required |
 | P1 candidate | Linear | read issues, propose issue creation, field update, or comment | Browser PKCE and CORS feasibility confirmed; repeated pilot demand still required |
@@ -273,6 +289,8 @@ must pass the milestone decision gates:
 The roadmap does not imply an unrestricted HTTP tool. Each connector exposes a
 small domain schema and a domain-specific review: cell diff, document diff,
 calendar before/after, issue field diff, or recipients/subject/body for mail.
+File adapters accept untrusted bytes but receive no OAuth credential, ambient
+network access, or connector transport.
 
 ### 5.2 Browser workspace and virtual filesystem
 
@@ -299,6 +317,30 @@ Required workspace operations:
 - source hashes and immutable proposal IDs to reject stale writes;
 - quota, persistence, fallback, recovery, and multi-tab conflict diagnostics.
 
+The workspace is an artifact store with filesystem-like paths, not a Node.js
+filesystem emulation. The initial API stays smaller than `fs`: normalized
+workspace-relative paths, bounded content reads, and proposal-based mutations.
+That avoids committing the product to POSIX semantics, symlinks, executability,
+or ambient directory handles that neither OPFS nor the security model requires.
+
+CSV/XLSX enters through a separate tabular artifact boundary:
+
+1. Validate media type, byte size, archive expansion, sheet count, dimensions,
+   string sizes, duplicate names, and supported cell types before use.
+2. Convert a selected sheet into a bounded, typed value snapshot with source
+   hash, original filename, sheet name, dimensions, and warnings.
+3. Treat formulas as untrusted workbook metadata. P0 may use an available cached
+   value only while recording the formula-cell count and stale-cache warning; it
+   never evaluates or exports a formula, macro, external link, or hidden payload.
+4. Persist an inspectable normalized CSV/JSON representation for scripts and
+   model reads. The original XLSX envelope is not a live script mount.
+5. Produce CSV or a minimal value-only XLSX export from the reviewed snapshot.
+
+This boundary is the canonical source of tabular provenance for local files and
+feeds the same typed mutation/review code used by Google Sheets. A future binary
+blob store may preserve originals for user download, but it is not required for
+P0 and must not make opaque workbook state authoritative.
+
 The planner-facing file tools follow the useful OpenCode separation of
 `read`/`glob`/`grep` from `write`/`edit`/`apply_patch`, but use safer defaults:
 reads are bounded and visible in model-egress history, mutations stage a diff,
@@ -321,6 +363,13 @@ Worker:
 3. **PGlite stays on the watchlist**, not the delivery roadmap, until Postgres
    compatibility, reactive queries, or pgvector materially improves a real
    workflow.
+
+None of these engines is the workspace source of truth or a prerequisite for
+the audit trail. The first implementation uses exportable artifacts and a small
+append-oriented event/index model. A database is promoted only after a pilot
+demonstrates a measured need and the spike passes Worker isolation,
+cross-browser persistence, multi-tab conflict, crash recovery, export/restore,
+network-disablement, bundle-size, and startup-time checks.
 
 Database tools are typed as `describe_database`, `list_tables`, `query_database`,
 `propose_database_mutation`, and `execute_approved_database_mutation`. Read
@@ -578,7 +627,8 @@ Its initial wedge is:
 - Add foundation operator UI and local demo — complete.
 - Add Google Identity Services OAuth flow — complete for the configurable
   foreground token model; production client verification remains deployment work.
-- Add local CSV/XLSX import and export.
+- Add local CSV/XLSX artifact import and value-only export, including bounds,
+  provenance, and formula/macro/external-link handling — complete.
 - Add stale-source precondition before an approved write — complete for
   snapshot `recheck`; provider-native atomic conditions remain connector-gated.
 
@@ -760,9 +810,8 @@ The coding-contributor metric is retired. Product evidence is:
 
 ## 11. Immediate next issues
 
-1. Add CSV/XLSX import and export through workspace artifacts.
-2. Continue the five pilot workflows and record evidence for architecture gates.
-3. Define the script input/output manifest and ephemeral virtual mount contract.
-4. Implement the checkpointed approval loop and policy decision envelope.
-5. Move the smallest OPFS workspace slice into the operator with export and
-    recovery tests.
+1. Continue the five pilot workflows and record evidence for architecture gates.
+2. Define the script input/output manifest and ephemeral virtual mount contract.
+3. Implement the checkpointed approval loop and policy decision envelope.
+4. Move the smallest OPFS workspace slice into the operator with export and
+   recovery tests.

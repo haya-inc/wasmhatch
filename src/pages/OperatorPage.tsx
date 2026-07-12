@@ -4,6 +4,7 @@ import {
   Bot,
   Check,
   Database,
+  Download,
   KeyRound,
   Play,
   RefreshCw,
@@ -42,6 +43,13 @@ import {
   GoogleOAuthSession,
   type GoogleOAuthStatus
 } from "../lib/google-oauth";
+import { exportTabularArtifactInWorker, importTabularArtifactInWorker } from "../lib/browser-tabular-artifact";
+import {
+  type TabularArtifactFormat,
+  type TabularArtifactProvenance
+} from "../lib/tabular-artifact-contract";
+import { normalizedArtifactJson, normalizedArtifactPath } from "../lib/tabular-artifact-persistence";
+import { createWorkspaceStore } from "../lib/workspace";
 
 const DEMO_ROWS: SpreadsheetRows = [
   ["Owner", "Region", "Amount", "Stage"],
@@ -63,6 +71,7 @@ const DEFAULT_SCRIPT = `(rows) => rows.map((row, index) => {
 })`;
 
 const EXPLICIT_APPROVAL_POLICY = "foreground-explicit-approval-v1";
+const TABLE_PREVIEW_ROWS = 100;
 
 function googleSheetsGrant(
   target: { spreadsheetId: string; range: string },
@@ -105,6 +114,10 @@ function googleConnectionLabel(status: GoogleOAuthStatus) {
   return "Foreground OAuth session";
 }
 
+function formatArtifactBytes(bytes: number) {
+  return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`;
+}
+
 export function OperatorPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const [rows, setRows] = useState<SpreadsheetRows>(DEMO_ROWS);
@@ -118,7 +131,13 @@ export function OperatorPage() {
   const [committing, setCommitting] = useState(false);
   const [status, setStatus] = useState("Ready");
   const [error, setError] = useState("");
-  const [source, setSource] = useState<"demo" | "google">("demo");
+  const [source, setSource] = useState<"demo" | "artifact" | "google">("demo");
+  const [artifact, setArtifact] = useState<TabularArtifactProvenance | null>(null);
+  const [artifactWorkspacePath, setArtifactWorkspacePath] = useState<string | null>(null);
+  const [artifactFile, setArtifactFile] = useState<File | null>(null);
+  const [artifactSheetChoice, setArtifactSheetChoice] = useState("");
+  const [importingArtifact, setImportingArtifact] = useState(false);
+  const [exportingArtifact, setExportingArtifact] = useState(false);
   const [googleClientId, setGoogleClientId] = useState(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "");
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [revokingGoogle, setRevokingGoogle] = useState(false);
@@ -128,6 +147,8 @@ export function OperatorPage() {
   const effectExecutor = useRef(new SpreadsheetEffectExecutor());
   const credentialBroker = useRef(new CredentialBroker());
   const googleOAuth = useRef(new GoogleOAuthSession());
+  const workspace = useRef(createWorkspaceStore());
+  const artifactInput = useRef<HTMLInputElement>(null);
   const authorityEpoch = useRef(0);
   const [googleAuthStatus, setGoogleAuthStatus] = useState(() => googleOAuth.current.status());
   const [audit, setAudit] = useState<AuditEntry[]>([
@@ -178,7 +199,9 @@ export function OperatorPage() {
         connector: source === "google" ? GOOGLE_SHEETS_MANIFEST : LOCAL_SPREADSHEET_MANIFEST,
         target: source === "google"
           ? { ...loadedGoogleTarget!, inputMode: "RAW" }
-          : { spreadsheetId: "local-demo", range: "Demo!A1", inputMode: "RAW" },
+          : source === "artifact" && artifact
+            ? { spreadsheetId: `artifact:${artifact.sourceSha256}`, range: `${artifact.sheetName}!A1`, inputMode: "RAW" }
+            : { spreadsheetId: "local-demo", range: "Demo!A1", inputMode: "RAW" },
         baseValues: rows,
         values: nextRows,
         preconditionStrength: "recheck",
@@ -264,6 +287,10 @@ export function OperatorPage() {
     setLoadedGoogleTarget(null);
     setPlan(null);
     setRows(DEMO_ROWS);
+    setArtifact(null);
+    setArtifactWorkspacePath(null);
+    setArtifactFile(null);
+    setArtifactSheetChoice("");
     setSource("demo");
     try {
       setGoogleAuthStatus(await googleOAuth.current.revoke());
@@ -298,6 +325,10 @@ export function OperatorPage() {
       invalidateProposal("source range replaced by a fresh read");
       setRows(snapshot.values);
       setPlan(null);
+      setArtifact(null);
+      setArtifactWorkspacePath(null);
+      setArtifactFile(null);
+      setArtifactSheetChoice("");
       setSource("google");
       setLoadedGoogleTarget({ spreadsheetId: snapshot.spreadsheetId, range: snapshot.range });
       setSpreadsheetId(snapshot.spreadsheetId);
@@ -351,7 +382,7 @@ export function OperatorPage() {
         setPlan(null);
         setStatus(isGoogle
           ? `Updated ${outcome.receipt.providerResult.updatedCells} cells in ${outcome.receipt.providerResult.updatedRange}`
-          : "Approved changes applied to the local demo");
+          : source === "artifact" ? "Approved changes applied to the imported working snapshot" : "Approved changes applied to the local demo");
         record({
           title: isGoogle ? "Google Sheets effect committed" : "Local effect committed",
           detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}`,
@@ -412,14 +443,101 @@ export function OperatorPage() {
   };
 
   const resetDemo = () => {
+    authorityEpoch.current += 1;
     setRows(DEMO_ROWS);
     setProposal(null);
     setPlan(null);
+    setArtifact(null);
+    setArtifactWorkspacePath(null);
+    setArtifactFile(null);
+    setArtifactSheetChoice("");
     setSource("demo");
     setLoadedGoogleTarget(null);
     setStatus("Ready");
     setError("");
     setAudit([{ time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }]);
+  };
+
+  const importLocalArtifact = async (file: File, sheetName?: string) => {
+    const importEpoch = authorityEpoch.current + 1;
+    authorityEpoch.current = importEpoch;
+    setImportingArtifact(true);
+    setError("");
+    setStatus(`Validating ${file.name} in an import worker…`);
+    invalidateProposal("local artifact import requested");
+    setLoadedGoogleTarget(null);
+    try {
+      const snapshot = await importTabularArtifactInWorker(file, sheetName);
+      if (authorityEpoch.current !== importEpoch) throw new Error("A newer source replaced this import.");
+      const path = normalizedArtifactPath(snapshot);
+      let persistedPath: string | null = null;
+      let persistenceWarning = "";
+      try {
+        await workspace.current.writeFile(path, normalizedArtifactJson(snapshot));
+        persistedPath = path;
+      } catch {
+        persistenceWarning = " · OPFS persistence failed; export before closing this tab";
+      }
+      setRows(snapshot.rows.map((row) => [...row]));
+      setArtifact(snapshot.provenance);
+      setArtifactWorkspacePath(persistedPath);
+      setArtifactFile(file);
+      setArtifactSheetChoice(snapshot.provenance.sheetName);
+      setPlan(null);
+      setSource("artifact");
+      setStatus(`Loaded ${snapshot.provenance.rows} rows from ${snapshot.provenance.sheetName}`);
+      record({
+        title: "Local tabular artifact imported",
+        detail: `${snapshot.provenance.sourceName} · ${snapshot.provenance.format.toUpperCase()} · ${snapshot.provenance.rows}×${snapshot.provenance.columns} · sha256 ${snapshot.provenance.sourceSha256.slice(0, 12)} · ${persistedPath ?? "memory only"}${persistenceWarning}`,
+        tone: "accent"
+      });
+      if (snapshot.provenance.warnings.length) {
+        record({
+          title: "Value-only import boundary",
+          detail: snapshot.provenance.warnings.join(" "),
+          tone: "muted"
+        });
+      }
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Local tabular artifact import failed.";
+      setError(message);
+      setStatus("Local artifact import blocked");
+      record({ title: "Local artifact import blocked", detail: message, tone: "muted" });
+    } finally {
+      setImportingArtifact(false);
+      if (artifactInput.current) artifactInput.current.value = "";
+    }
+  };
+
+  const exportWorkingData = async (format: TabularArtifactFormat) => {
+    if (exportingArtifact) return;
+    setExportingArtifact(true);
+    setError("");
+    try {
+      const baseName = artifact?.sourceName ?? (source === "google" ? "google-sheets-result" : "wasmhatch-demo");
+      const exported = await exportTabularArtifactInWorker(rows, format, baseName);
+      const bytes = new Uint8Array(exported.bytes.byteLength);
+      bytes.set(exported.bytes);
+      const url = URL.createObjectURL(new Blob([bytes.buffer], { type: exported.mediaType }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = exported.fileName;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      setStatus(`Exported ${exported.fileName}`);
+      record({
+        title: "Value-only artifact exported",
+        detail: `${exported.fileName} · ${rows.length} rows · ${exported.bytes.byteLength} B${exported.neutralizedFormulaCells ? ` · ${exported.neutralizedFormulaCells} CSV formula prefixes neutralized` : ""}`,
+        tone: "accent"
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Artifact export failed.";
+      setError(message);
+      setStatus("Artifact export blocked");
+      record({ title: "Artifact export blocked", detail: message, tone: "muted" });
+    } finally {
+      setExportingArtifact(false);
+    }
   };
 
   return (
@@ -435,11 +553,24 @@ export function OperatorPage() {
       </header>
 
       <div className="operator-layout">
-        <aside className="operator-connectors" aria-label="Connectors">
-          <div className="operator-panel-heading"><span>Connectors</span><small>manifest-bound broker</small></div>
+        <aside className="operator-connectors" aria-label="Sources and connectors">
+          <div className="operator-panel-heading"><span>Sources</span><small>bounded authority</small></div>
           <button className={source === "demo" ? "connector-row active" : "connector-row"} onClick={resetDemo} disabled={committing}>
             <Database size={16} /><span><strong>Local demo</strong><small>No network</small></span><Check size={14} />
           </button>
+          <button className={source === "artifact" ? "connector-row active" : "connector-row"} onClick={() => artifactInput.current?.click()} disabled={committing || importingArtifact}>
+            <UploadCloud size={16} /><span><strong>{importingArtifact ? "Validating file…" : artifact?.sourceName ?? "CSV / XLSX"}</strong><small>{artifact ? `${artifact.sheetName} · ${artifact.rows}×${artifact.columns}` : "Worker-isolated value import"}</small></span>{source === "artifact" && <Check size={14} />}
+          </button>
+          <input ref={artifactInput} className="operator-file-input" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Import CSV or XLSX" onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void importLocalArtifact(file);
+          }} />
+          <div className="connector-form artifact-actions">
+            <div><button onClick={() => void exportWorkingData("csv")} disabled={committing || importingArtifact || exportingArtifact}><Download size={13} /> {exportingArtifact ? "Exporting…" : "Export safe CSV"}</button><button className="secondary-artifact" onClick={() => void exportWorkingData("xlsx")} disabled={committing || importingArtifact || exportingArtifact}><Download size={13} /> Export value-only XLSX</button></div>
+            <p>Imports run in a Worker. Macros are rejected; formulas and external links never execute. The normalized JSON snapshot is stored without the original workbook payload.</p>
+            {artifactFile && artifact && artifact.sheets.filter((sheet) => sheet.visibility === "visible").length > 1 && <div className="artifact-sheet-picker"><label>Visible worksheet<select value={artifactSheetChoice} onChange={(event) => setArtifactSheetChoice(event.target.value)} disabled={committing || importingArtifact}>{artifact.sheets.filter((sheet) => sheet.visibility === "visible").map((sheet) => <option key={sheet.name} value={sheet.name}>{sheet.name}</option>)}</select></label><button onClick={() => void importLocalArtifact(artifactFile, artifactSheetChoice)} disabled={committing || importingArtifact || artifactSheetChoice === artifact.sheetName}>Load sheet</button></div>}
+            {artifact && <dl className="artifact-provenance"><div><dt>Source</dt><dd>{formatArtifactBytes(artifact.sourceBytes)} · {artifact.sourceSha256.slice(0, 12)}</dd></div><div><dt>Workspace</dt><dd>{artifactWorkspacePath ?? "memory only"}</dd></div><div><dt>Warnings</dt><dd>{artifact.warnings.length} · formulas {artifact.formulaCells} · links {artifact.externalLinks}</dd></div></dl>}
+          </div>
           <div className={source === "google" ? "connector-row active static" : "connector-row static"}>
             <Table2 size={16} /><span><strong>Google Sheets</strong><small>{googleConnectionLabel(googleAuthStatus)}</small></span>
             {googleAuthStatus.connected && <Check size={14} />}
@@ -496,11 +627,11 @@ export function OperatorPage() {
         </aside>
 
         <section className="operator-workbench">
-          <div className="operator-panel-heading"><span>Working data</span><small>{rows.length} rows · {Math.max(0, ...rows.map((row) => row.length))} columns</small></div>
+          <div className="operator-panel-heading"><span>Working data</span><small>{rows.length} rows · {Math.max(0, ...rows.map((row) => row.length))} columns{rows.length > TABLE_PREVIEW_ROWS ? ` · previewing ${TABLE_PREVIEW_ROWS}` : ""}</small></div>
           <div className="operator-table-wrap">
             <table className="operator-table">
               <tbody>
-                {rows.map((row, rowIndex) => (
+                {rows.slice(0, TABLE_PREVIEW_ROWS).map((row, rowIndex) => (
                   <tr key={rowIndex}>
                     <th>{rowIndex + 1}</th>
                     {row.map((cell, columnIndex) => <td key={columnIndex}>{displayCell(cell)}</td>)}
@@ -508,6 +639,7 @@ export function OperatorPage() {
                 ))}
               </tbody>
             </table>
+            {rows.length > TABLE_PREVIEW_ROWS && <p className="operator-table-limit">Preview limited to the first {TABLE_PREVIEW_ROWS} rows. The bounded snapshot retains all {rows.length} rows.</p>}
           </div>
 
           <div className="operator-task">
@@ -547,7 +679,7 @@ export function OperatorPage() {
           <div className="operator-panel-heading"><span>Write review</span><small>{changes.length} changes</small></div>
           {proposal ? (
             <div className="change-review">
-              <div className="change-summary"><UploadCloud size={18} /><div><strong>Explicit approval required</strong><p>{changes.length} cell changes will be written to {proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? proposal.target.range : "the local demo"}.</p></div></div>
+              <div className="change-summary"><UploadCloud size={18} /><div><strong>Explicit approval required</strong><p>{changes.length} cell changes will be written to {proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? proposal.target.range : source === "artifact" ? "the imported working snapshot" : "the local demo"}.</p></div></div>
               <div className="proposal-identity" role="group" aria-label="Immutable proposal identity">
                 <span><b>Proposal</b><code>{proposal.proposalId.slice(-12)}</code></span>
                 <span><b>Source check</b><code>{proposal.baseVersion.strength}</code></span>

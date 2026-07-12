@@ -1,6 +1,7 @@
 # Security policy
 
-WasmHatch handles source files and optional model credentials in a browser. We
+WasmHatch handles business artifacts, source files, and optional model and OAuth
+credentials in a browser. We
 treat reports involving credential exposure, path traversal, unintended data
 egress, destructive writes, archive bombs, and sandbox escape as security
 issues.
@@ -37,7 +38,8 @@ security fixes.
 - File reads are limited to 200 lines and 50 KB per call. Runs are bounded by
   request count, cumulative serialized payload, and provider-reported token usage.
 - The production HTML applies a default-deny meta CSP and restricts network
-  connections to the GitHub and Anthropic endpoints used by the application.
+  connections to the explicit GitHub, Google, OpenAI, and Anthropic endpoints
+  used by the current legacy and business-operator surfaces.
 - GitHub Pages supplies HTTPS/HSTS but does not allow this project to configure
   response headers. Meta CSP cannot enforce header-only directives such as
   `frame-ancestors`; this remains a documented hosting limitation.
@@ -45,4 +47,12 @@ security fixes.
 - Imported text files are untrusted input.
 - ZIP central-directory metadata is validated before inflation; malformed,
   traversing, duplicate-path, oversized, and excessive-file archives are rejected.
+- CSV/XLSX import and export run in a dedicated Worker with an eight-second
+  deadline. Inputs are limited to 8 MB compressed, 32 MB declared expansion,
+  512 ZIP entries, 64 sheets, 5,000 rows, 200 columns, and 200,000 cells.
+- Macro-bearing workbooks are rejected. Formulas are never evaluated, external
+  links and hidden cells are excluded, and exports contain values only. CSV
+  formula prefixes are neutralized before download.
+- Original XLSX bytes are not persisted or mounted into generated scripts. The
+  OPFS workspace receives a JSON value snapshot with SHA-256 provenance.
 - Browser command execution is not yet enabled.

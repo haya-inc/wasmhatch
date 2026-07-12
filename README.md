@@ -23,6 +23,10 @@ The foundation slice now ships:
   authorization, without exposing token text to connector code;
 - Google Identity Services foreground OAuth with short-lived, memory-only
   Sheets credentials, explicit reauthorization, and grant revocation;
+- Worker-isolated CSV/XLSX import with ZIP/XML/shape limits, SHA-256 provenance,
+  visible-sheet selection, macro rejection, and normalized JSON persistence;
+- safe CSV and value-only XLSX export that never emits source formulas, macros,
+  external links, or hidden workbook payloads;
 - an optional OpenAI Responses API planner that turns a business instruction
   and visible rows into a strict, reviewable transformation proposal;
 - QuickJS compiled to Wasm and executed in a Web Worker;
@@ -34,14 +38,15 @@ The foundation slice now ships:
 - cell-level write previews with explicit approve/reject controls; and
 - a per-tab audit trail for reads, scripts, and writes.
 
-The current operator accepts a Google OAuth Web client ID as public session
-configuration and an optional memory-only OpenAI API key. CSV/XLSX and the
-multi-step business tool loop are the next milestones.
+The current operator accepts local CSV/XLSX files, a Google OAuth Web client ID
+as public session configuration, and an optional memory-only OpenAI API key.
+The checkpointed multi-step business tool loop is the next foundation milestone.
 
 See the current [product plan](docs/plan.md), [connector authoring
 guide](docs/connector-authoring.md), [tabular mutation
 contract](docs/tabular-mutations.md), [Google OAuth deployment
-guide](docs/google-oauth.md), and [business-agent
+guide](docs/google-oauth.md), [CSV/XLSX artifact
+boundary](docs/tabular-artifacts.md), and [business-agent
 landscape](docs/landscape.md).
 
 ## Legacy coding workspace
@@ -149,7 +154,8 @@ expose file deletion.
 
 | Capability | Status |
 | --- | --- |
-| Runtime implementation | React + TypeScript on the browser main thread; no Wasm/Worker |
+| Business-operator runtime | React UI; QuickJS Wasm script Worker; CSV/XLSX codec Worker |
+| CSV/XLSX artifact boundary | Available, value-only with provenance and safe export |
 | OPFS workspace with localStorage fallback | Available |
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |
@@ -204,6 +210,8 @@ Local-first does not mean secret or offline.
   key into a perfectly isolated secret, so use a dedicated key with a spending
   limit and revoke it after testing.
 - Imported archives are limited to 20 MB, 500 text files, and 2 MB per file.
+- Local tabular imports are limited to 8 MB compressed, 32 MB declared XLSX
+  expansion, 64 worksheets, 5,000 rows, 200 columns, and 200,000 cells.
 - ZIP metadata is checked before inflation for unsafe paths, duplicate normalized
   paths, excessive file counts, and more than 20 MB of accepted expanded content.
 - Paths are normalized and traversal outside the workspace is rejected.

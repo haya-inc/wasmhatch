@@ -44,8 +44,10 @@ describe("public sharing metadata", () => {
     const viteConfig = readFileSync("vite.config.ts", "utf8");
 
     expect(readme).toContain("QuickJS compiled to Wasm and executed in a Web Worker");
+    expect(readme).toContain("Worker-isolated CSV/XLSX import");
     expect(plan).toContain("A browser-native AI operator for visible, permissioned business work");
     expect(plan).toContain("no host functions, network, DOM, OPFS, OAuth token, or model client");
+    expect(plan).toContain("formula/macro/external-link handling — complete");
     expect(viteConfig).toContain('"worker-src \'self\'"');
     expect(viteConfig).toContain("'wasm-unsafe-eval'");
     expect(viteConfig).toContain("https://sheets.googleapis.com");
