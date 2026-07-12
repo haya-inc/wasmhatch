@@ -29,7 +29,7 @@ async function authorizeGoogleSheets(page: Page) {
 test("runs a spreadsheet transform in Wasm and requires write approval", async ({ page }) => {
   await page.goto("/?view=operator");
 
-  await expect(page.getByText("Spreadsheet transformation")).toBeVisible();
+  await expect(page.getByText("Business artifact operation")).toBeVisible();
   await expect(page.getByRole("cell", { name: "aya tanaka" })).toBeVisible();
   await expect(page.getByText("No pending write")).toBeVisible();
 

@@ -90,7 +90,7 @@ const PROPOSAL_PREFIX = "file_effect_";
 const RECEIPT_PREFIX = "file_receipt_";
 const MISSING_HASH = "missing";
 const MEDIA_TYPES = new Set<WorkspaceTextMediaType>([
-  "application/json", "text/csv", "text/markdown", "text/plain"
+  "application/json", "text/csv", "text/javascript", "text/markdown", "text/plain"
 ]);
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const RUN_ID_PATTERN = /^run_[a-f0-9]{64}$/;
@@ -219,7 +219,7 @@ async function assertValidProposal(proposal: WorkspaceFileEffectProposal) {
     assertExactKeys(input, ["workspacePath", "mountPath", "sha256", "bytes"], `Workspace input binding ${index + 1}`);
     const inputPath = requireText(input.workspacePath, `Workspace input binding ${index + 1} path`);
     const normalizedInputPath = normalizeWorkspacePath(inputPath);
-    if (normalizedInputPath !== inputPath || !/^(?:inputs|work|outputs)\//.test(inputPath)) {
+    if (normalizedInputPath !== inputPath || !/^(?:inputs|work|outputs|scripts|workflows)\//.test(inputPath)) {
       throw new Error(`Workspace input binding ${index + 1} path is outside the readable artifact roots.`);
     }
     const mountPath = requireMountPath(input.mountPath, `Workspace input binding ${index + 1} mount`, "/inputs/");

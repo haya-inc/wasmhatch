@@ -79,8 +79,8 @@ This distinguishes three facts that must not be conflated:
 - rich Markdown, spreadsheet, or code rendering;
 - full-text UI search;
 - editing or filesystem mutation from the browser; and
-- general non-spreadsheet plan/output schemas.
+- multi-file AI attachment or output selection.
 
-The next product slice should generalize the current spreadsheet plan into a
-typed artifact/workflow plan while preserving the same attachment, tool-egress,
-script, and effect checkpoints.
+Typed single-output artifact workflows now reuse the same attachment,
+tool-egress, script, and effect checkpoints; see
+[Workspace Artifact Workflows](workspace-artifact-workflows.md).

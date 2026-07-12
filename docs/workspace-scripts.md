@@ -32,9 +32,10 @@ authorize any other file or connector effect.
    deterministic receipt; an ambiguous result becomes `uncertain` and requires
    reconciliation rather than automatic retry.
 
-The current Operator integration creates this flow from an imported CSV/XLSX
-snapshot. It saves a wrapper script and manifest, transforms the granted table,
-and stages one JSON output. The underlying contract supports multiple declared
+The Operator creates this flow either from an imported CSV/XLSX snapshot or a
+typed artifact workflow over exact attached text inputs. The tabular path stages
+one normalized JSON output; artifact mode stages one Markdown, CSV, JSON, text,
+or inert JavaScript output. The underlying contract supports multiple declared
 outputs, but each output is reviewed and committed as its own proposal. It does
 not claim a multi-file atomic transaction.
 
@@ -76,13 +77,15 @@ not claim a multi-file atomic transaction.
 
 Manifest objects reject missing and unknown fields. IDs use lower-case kebab
 syntax and versions use a strict three-part semantic version. Source paths must
-be `.js` files under `scripts/`. Inputs may come only from `inputs/`, `work/`, or
-`outputs/`; outputs must be under `outputs/`. Workspace and mount paths are
+be `.js` files under `scripts/`. Inputs may come from any portable Operator root:
+`inputs/`, `work/`, `outputs/`, `scripts/`, or `workflows/`; outputs must be
+under `outputs/`. Workspace and mount paths are
 normalized, unique, traversal-free, and checked against protected credential
 path patterns.
 
-Supported text media types are `application/json`, `text/csv`, `text/markdown`,
-and `text/plain`. A manifest may grant 1–32 inputs and 1–16 outputs, subject to
+Supported text media types are `application/json`, `text/csv`, `text/javascript`,
+`text/markdown`, and `text/plain`. JavaScript is treated as text; an output under
+`outputs/` is never executed automatically. A manifest may grant 1–32 inputs and 1–16 outputs, subject to
 both per-file and aggregate limits. The default aggregate input and output limit
 is 512 KB each.
 

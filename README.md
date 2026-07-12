@@ -44,6 +44,9 @@ The foundation slice now ships:
 - a thin artifact browser that validates and hashes workspace text files,
   previews at most 24 KB / 200 lines locally, and records one explicit,
   identity-bound AI attachment before any checkpointed model read;
+- a typed artifact workflow mode that stages one Markdown/CSV/JSON/text/JavaScript
+  output, derives its manifest authority on the host, runs against copied inputs
+  in QuickJS, and stops at an exact file diff;
 - a checkpointed OpenAI workspace loop that lists, searches, and reads only an
   exact artifact grant, records model egress, enforces request/token/tool budgets,
   and stops at a reviewable script proposal;
@@ -58,8 +61,9 @@ The foundation slice now ships:
 
 The current operator accepts local CSV/XLSX files, a Google OAuth Web client ID
 as public session configuration, and an optional memory-only OpenAI API key.
-The next foundation work brings granted connector reads and sandbox execution
-into the same checkpointed loop without letting model output authorize effects.
+The next foundation work brings granted connector reads into the same
+checkpointed snapshot and artifact-workflow loop without letting model output
+authorize effects.
 
 See the current [product plan](docs/plan.md), [connector authoring
 guide](docs/connector-authoring.md), [tabular mutation
@@ -70,7 +74,8 @@ contract](docs/workspace-scripts.md), [checkpointed workspace agent
 loop](docs/workspace-agent-loop.md), [run journal and policy decision
 contract](docs/run-journal.md), [Operator workspace portability and recovery
 contract](docs/operator-workspace-portability.md), [Operator artifact browser
-and AI attachment contract](docs/operator-artifact-browser.md), and [business-agent
+and AI attachment contract](docs/operator-artifact-browser.md), [typed workspace
+artifact workflow contract](docs/workspace-artifact-workflows.md), and [business-agent
 landscape](docs/landscape.md).
 
 For pilots, use the [business pilot and OSS adoption
@@ -194,6 +199,7 @@ expose file deletion.
 | Structured run journal | Available as an explicit credential-field-free, defensively redacted JSON export with derived pilot metrics |
 | Operator workspace export/restore | Available as a bounded text-only ZIP with exact restore/clear review, stale-base rejection, verification, and rollback |
 | Operator artifact browser | Available with validated metadata, bounded local text preview, and one explicit SHA-256-bound AI attachment |
+| Typed workspace artifact workflow | Available for one host-manifested Markdown/CSV/JSON/text/inert-JavaScript output through QuickJS and exact file-diff approval |
 | OPFS workspace with localStorage fallback | Available |
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |

@@ -137,6 +137,43 @@ describe("OpenAIWorkspaceAgent", () => {
     expect(result.budget.egressBytes).toBeLessThanOrEqual(WORKSPACE_AGENT_LIMITS.maxEgressBytes);
   });
 
+  it("stages one typed workspace artifact plan after bounded identity-bound reads", async () => {
+    const notesPath = "work/weekly-brief.md";
+    const notes = "# Weekly brief\n\nWEST needs review.\n";
+    const { workspace } = createWorkspace({ [notesPath]: notes });
+    const responses = [
+      toolResponse("resp_list", "call_list", "list_workspace_files", {}),
+      toolResponse("resp_read", "call_read", "read_workspace_file", { path: notesPath, start_line: 1, max_lines: 20 }),
+      toolResponse("resp_artifact", "call_artifact", "propose_workspace_artifact", {
+        summary: "Create a weekly review report.",
+        expected_effect: "Write one Markdown report; the brief remains unchanged.",
+        output_path: "outputs/weekly-review.md",
+        media_type: "text/markdown",
+        script: `({ fs }) => { const brief = fs.readText("/inputs/workspace/work/weekly-brief.md"); fs.writeText("/outputs/result.md", "# Review\\n\\n" + brief); return { written: 1 }; }`,
+        assumptions: ["The brief is current."],
+        warnings: []
+      })
+    ];
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => responses.shift()!);
+    const result = await new OpenAIWorkspaceAgent("sk-test", workspace, fetcher as typeof fetch).plan(request({
+      planKind: "artifact-output",
+      grant: { readablePaths: [notesPath] }
+    }));
+
+    expect(result.plan).toMatchObject({
+      kind: "artifact-output",
+      outputPath: "outputs/weekly-review.md",
+      outputMediaType: "text/markdown",
+      inputFiles: 1
+    });
+    expect(result.trace.at(-1)).toMatchObject({ tool: "propose_workspace_artifact", status: "completed" });
+    const firstBody = JSON.parse(String(fetcher.mock.calls[0][1]?.body)) as { tools: Array<{ name: string }>; input: unknown };
+    expect(firstBody.tools.map((tool) => tool.name)).toContain("propose_workspace_artifact");
+    expect(firstBody.tools.map((tool) => tool.name)).not.toContain("propose_spreadsheet_transform");
+    expect(JSON.stringify(firstBody.input)).toContain(`${notesPath} -> /inputs/workspace/${notesPath}`);
+    expect(JSON.stringify(firstBody)).not.toContain("WEST needs review");
+  });
+
   it("denies an ungranted path before reading or returning data to the model", async () => {
     const { workspace, readFile } = createWorkspace();
     const fetcher = vi.fn(async () => toolResponse("resp_bad", "call_bad", "read_workspace_file", {

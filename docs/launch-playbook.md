@@ -47,7 +47,8 @@ links, or exported journals into Slack.
 2. The facilitator records the start time and source kind, then lets the owner
    operate the product whenever possible.
 3. The owner inspects any local workspace preview and explicit AI attachment,
-   then the AI plan, generated script, and exact effect preview.
+   chooses table-transform or artifact-output mode, then inspects the AI plan,
+   generated script, output path/type, and exact effect preview.
 4. The owner approves or rejects based on business correctness—not because the
    facilitator expects a successful demo.
 5. The owner explicitly exports the run journal if they consent to sharing its

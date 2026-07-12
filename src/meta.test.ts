@@ -57,9 +57,11 @@ describe("public sharing metadata", () => {
     expect(readFileSync("docs/run-journal.md", "utf8")).toContain("The decision ID is bound into the effect proposal");
     expect(readFileSync("docs/operator-workspace-portability.md", "utf8")).toContain("Selecting a ZIP does not replace files");
     expect(readFileSync("docs/operator-artifact-browser.md", "utf8")).toContain("Listing or previewing never sends file content");
+    expect(readFileSync("docs/workspace-artifact-workflows.md", "utf8")).toContain("the host derives all filesystem authority");
     expect(readme).toContain("a shared run journal and policy-decision envelope");
     expect(readme).toContain("an Operator-only OPFS namespace plus a bounded portable workspace ZIP");
     expect(readme).toContain("identity-bound AI attachment before any checkpointed model read");
+    expect(readme).toContain("a typed artifact workflow mode");
     expect(launchPlaybook).toContain("five real business workflows have been attempted");
     expect(launchPlaybook).toContain("not count as evidence that the business operator succeeds");
     expect(viteConfig).toContain('"worker-src \'self\'"');

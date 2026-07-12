@@ -63,6 +63,13 @@ import {
   type OperatorArtifactDescriptor,
   type OperatorArtifactPreview
 } from "../lib/operator-artifact-browser";
+import { validateWorkspaceArtifactOutputContent } from "../lib/workspace-artifact-plan";
+import {
+  assertWorkspaceArtifactRunInputs,
+  createWorkspaceArtifactScriptDefinition,
+  createWorkspaceArtifactWorkflowDraft,
+  type WorkspaceArtifactWorkflowDraft
+} from "../lib/workspace-artifact-workflow";
 import { createOperatorWorkspaceStore, OPERATOR_WORKSPACE_ROOT } from "../lib/operator-workspace-store";
 import {
   createOperatorWorkspaceBundle,
@@ -207,6 +214,8 @@ export function OperatorPage() {
   const [task, setTask] = useState("Normalize names and regions, convert amounts to numbers, and standardize stages.");
   const [script, setScript] = useState(DEFAULT_SCRIPT);
   const [plan, setPlan] = useState<SpreadsheetPlan | null>(null);
+  const [planMode, setPlanMode] = useState<"spreadsheet-transform" | "artifact-output">("spreadsheet-transform");
+  const [artifactWorkflowDraft, setArtifactWorkflowDraft] = useState<WorkspaceArtifactWorkflowDraft | null>(null);
   const [plannerApiKey, setPlannerApiKey] = useState("");
   const [plannerModel, setPlannerModel] = useState(DEFAULT_PLANNER_MODEL);
   const [planning, setPlanning] = useState(false);
@@ -346,6 +355,27 @@ export function OperatorPage() {
     return false;
   };
 
+  const clearAiPlans = () => {
+    setPlan(null);
+    setArtifactWorkflowDraft(null);
+  };
+
+  const changePlanMode = (nextMode: "spreadsheet-transform" | "artifact-output") => {
+    if (nextMode === planMode || planning || committing) return;
+    planningAbort.current?.abort();
+    authorityEpoch.current += 1;
+    taskRevision.current += 1;
+    scriptRevision.current += 1;
+    invalidateProposal("AI plan mode changed");
+    setPlanMode(nextMode);
+    clearAiPlans();
+    setAgentTrace([]);
+    setAgentBudget(null);
+    setScript(nextMode === "spreadsheet-transform" ? DEFAULT_SCRIPT : "");
+    setStatus(nextMode === "spreadsheet-transform" ? "Table transform mode" : "Artifact output mode");
+    setError("");
+  };
+
   const invalidateProposal = (reason: string) => {
     if (proposal) {
       record({
@@ -411,7 +441,7 @@ export function OperatorPage() {
       }
       planningAbort.current?.abort();
       authorityEpoch.current += 1;
-      setPlan(null);
+      clearAiPlans();
       setWorkspaceAttachment(attachment);
       setStatus(`Attached ${attachment.path} to the next AI plan`);
       record({
@@ -442,7 +472,7 @@ export function OperatorPage() {
     if (!workspaceAttachment) return;
     planningAbort.current?.abort();
     authorityEpoch.current += 1;
-    setPlan(null);
+    clearAiPlans();
     const path = workspaceAttachment.path;
     setWorkspaceAttachment(null);
     setStatus(`Detached ${path} from AI planning`);
@@ -546,6 +576,7 @@ export function OperatorPage() {
     if (!ensureJournalCapacity(10)) return;
     const startingAuthorityEpoch = authorityEpoch.current;
     const startingTaskRevision = taskRevision.current;
+    const startingPlanMode = planMode;
     const controller = new AbortController();
     planningAbort.current?.abort();
     planningAbort.current = controller;
@@ -556,7 +587,8 @@ export function OperatorPage() {
     setAgentBudget(null);
     invalidateProposal("AI plan requested");
     try {
-      let nextPlan: SpreadsheetPlan;
+      let nextPlan: SpreadsheetPlan | null = null;
+      let nextArtifactDraft: WorkspaceArtifactWorkflowDraft | null = null;
       let usedWorkspaceTools = false;
       const preparedGrants = new Map<string, OperatorArtifactAttachment>();
       if (source === "artifact" && artifactWorkspacePath) {
@@ -568,6 +600,13 @@ export function OperatorPage() {
         preparedGrants.set(verifiedAttachment.path, verifiedAttachment);
       }
       const grantedArtifacts = [...preparedGrants.values()];
+      if (startingPlanMode === "artifact-output" && !grantedArtifacts.length) {
+        throw new Error("Attach a workspace artifact or import a local table before drafting an artifact output.");
+      }
+      if (
+        startingPlanMode === "artifact-output" &&
+        grantedArtifacts.reduce((total, item) => total + Math.max(1, item.bytes), 0) > 512 * 1024
+      ) throw new Error("Artifact workflow inputs exceed the 512 KB sandbox limit. Attach a smaller source or split the workflow.");
       if (grantedArtifacts.length) {
         usedWorkspaceTools = true;
         setStatus("AI is inspecting the exact workspace grant…");
@@ -575,6 +614,7 @@ export function OperatorPage() {
         const result = await agent.plan({
           task,
           model: plannerModel,
+          planKind: startingPlanMode,
           grant: {
             readablePaths: grantedArtifacts.map((item) => item.path),
             tabularPaths: grantedArtifacts.filter((item) => item.tabularSnapshot).map((item) => item.path),
@@ -605,7 +645,13 @@ export function OperatorPage() {
             });
           }
         });
-        nextPlan = result.plan;
+        if (startingPlanMode === "artifact-output") {
+          if (result.plan.kind !== "artifact-output") throw new Error("Workspace agent returned the wrong plan type.");
+          nextArtifactDraft = createWorkspaceArtifactWorkflowDraft(result.plan, grantedArtifacts);
+        } else {
+          if (result.plan.kind !== "spreadsheet-transform") throw new Error("Workspace agent returned the wrong plan type.");
+          nextPlan = result.plan;
+        }
         setAgentTrace([...result.trace]);
         setAgentBudget(result.budget);
         record({
@@ -622,32 +668,41 @@ export function OperatorPage() {
           }
         });
       } else {
+        if (startingPlanMode !== "spreadsheet-transform") throw new Error("Artifact output planning requires an exact workspace input.");
         const planner = new OpenAIPlanner(plannerApiKey);
         nextPlan = await planner.planSpreadsheetTransform({ task, rows, model: plannerModel }, controller.signal);
       }
       if (
         startingAuthorityEpoch !== authorityEpoch.current ||
-        startingTaskRevision !== taskRevision.current
+        startingTaskRevision !== taskRevision.current ||
+        startingPlanMode !== planMode
       ) {
         throw new Error("The task or granted source changed during AI planning. Start a new plan against the current state.");
       }
+      if (!nextPlan && !nextArtifactDraft) throw new Error("AI planning returned no staged plan.");
       setPlan(nextPlan);
+      setArtifactWorkflowDraft(nextArtifactDraft);
       scriptRevision.current += 1;
-      setScript(nextPlan.script);
-      setStatus("AI plan staged for review");
+      setScript(nextArtifactDraft?.plan.script ?? nextPlan!.script);
+      setStatus(nextArtifactDraft ? "Artifact workflow staged for review" : "AI plan staged for review");
+      const stagedPlan = nextArtifactDraft?.plan ?? nextPlan!;
       record({
-        title: "AI plan staged",
+        title: nextArtifactDraft ? "AI artifact workflow staged" : "AI plan staged",
         detail: usedWorkspaceTools
-          ? `${nextPlan.model} · checkpointed workspace egress recorded above · no credential, execution, or write`
-          : `${nextPlan.model} · ${nextPlan.inputRows} rows / ${nextPlan.inputCells} cells sent · no credential or write`,
+          ? `${stagedPlan.model} · checkpointed workspace egress recorded above · no credential, execution, or write`
+          : `${nextPlan!.model} · ${nextPlan!.inputRows} rows / ${nextPlan!.inputCells} cells sent · no credential or write`,
         tone: "accent",
         category: "model",
         outcome: "prepared",
         evidence: {
-          model: nextPlan.model,
+          model: stagedPlan.model,
+          plan_kind: stagedPlan.kind,
           checkpointed_tools: usedWorkspaceTools,
-          input_rows: nextPlan.inputRows,
-          input_cells: nextPlan.inputCells
+          input_rows: nextPlan?.inputRows ?? 0,
+          input_cells: nextPlan?.inputCells ?? 0,
+          input_files: nextArtifactDraft?.inputs.length ?? 0,
+          output_path: nextArtifactDraft?.plan.outputPath ?? null,
+          output_media_type: nextArtifactDraft?.plan.outputMediaType ?? null
         }
       });
     } catch (caught) {
@@ -657,7 +712,7 @@ export function OperatorPage() {
         setWorkspaceAttachment(null);
         refreshWorkspaceArtifacts();
       }
-      setPlan(null);
+      clearAiPlans();
       if (aborted && startingAuthorityEpoch !== authorityEpoch.current) {
         record({ title: "AI planning cancelled", detail: "A newer source replaced the granted planning context.", tone: "muted", category: "model", outcome: "cancelled" });
         return;
@@ -718,7 +773,7 @@ export function OperatorPage() {
     authorityEpoch.current += 1;
     invalidateProposal("Google access revoked");
     setLoadedGoogleTarget(null);
-    setPlan(null);
+    clearAiPlans();
     setRows(DEMO_ROWS);
     setArtifact(null);
     setArtifactWorkspacePath(null);
@@ -759,7 +814,7 @@ export function OperatorPage() {
       }
       invalidateProposal("source range replaced by a fresh read");
       setRows(snapshot.values);
-      setPlan(null);
+      clearAiPlans();
       setArtifact(null);
       setArtifactWorkspacePath(null);
       setArtifactFile(null);
@@ -832,7 +887,7 @@ export function OperatorPage() {
           proposal.target.inputMode
         ));
         setProposal(null);
-        setPlan(null);
+        clearAiPlans();
         setStatus(isGoogle
           ? `Updated ${outcome.receipt.providerResult.updatedCells} cells in ${outcome.receipt.providerResult.updatedRange}`
           : source === "artifact" ? "Approved changes applied to the imported working snapshot" : "Approved changes applied to the local demo");
@@ -854,7 +909,7 @@ export function OperatorPage() {
         if (outcome.observedValues) setRows(outcome.observedValues);
         else setLoadedGoogleTarget(null);
         setProposal(null);
-        setPlan(null);
+        clearAiPlans();
         setStatus("Write blocked by source conflict");
         setError("The source changed after this proposal was prepared. Review the latest values and prepare a new proposal.");
         record({
@@ -914,7 +969,9 @@ export function OperatorPage() {
   };
 
   const runWorkspaceOutput = async () => {
-    if (!artifact || !artifactWorkspacePath || runningWorkspaceScript || committing) return;
+    const artifactDraft = artifactWorkflowDraft;
+    const tabularReady = Boolean(artifact && artifactWorkspacePath);
+    if ((!artifactDraft && !tabularReady) || runningWorkspaceScript || committing) return;
     if (!ensureJournalCapacity(6)) return;
     invalidateProposal("workspace script requested");
     setRunningWorkspaceScript(true);
@@ -923,11 +980,16 @@ export function OperatorPage() {
     const startingAuthorityEpoch = authorityEpoch.current;
     const startingScriptRevision = scriptRevision.current;
     try {
-      const definition = createTabularWorkspaceScriptDefinition({
-        provenance: artifact,
-        inputPath: artifactWorkspacePath,
-        transformSource: script
-      });
+      if (artifactDraft) {
+        for (const input of artifactDraft.inputs) await verifyOperatorArtifactAttachment(workspace.current, input);
+      }
+      const definition = artifactDraft
+        ? createWorkspaceArtifactScriptDefinition(artifactDraft, script)
+        : createTabularWorkspaceScriptDefinition({
+            provenance: artifact!,
+            inputPath: artifactWorkspacePath!,
+            transformSource: script
+          });
       await workspace.current.writeFile(definition.manifest.sourcePath, definition.source);
       await workspace.current.writeFile(
         definition.manifestPath,
@@ -941,8 +1003,8 @@ export function OperatorPage() {
         throw new Error("The source artifact or script changed while the workspace definition was saved.");
       }
       record({
-        title: "Workspace script definition saved",
-        detail: `${definition.manifest.sourcePath} · ${definition.manifestPath} · 1 exact input grant · 1 exact output grant`,
+        title: artifactDraft ? "Artifact workflow definition saved" : "Workspace script definition saved",
+        detail: `${definition.manifest.sourcePath} · ${definition.manifestPath} · ${definition.manifest.inputs.length} exact input grant${definition.manifest.inputs.length === 1 ? "" : "s"} · 1 exact output grant`,
         tone: "accent",
         category: "script",
         outcome: "prepared",
@@ -957,6 +1019,7 @@ export function OperatorPage() {
       });
       setStatus("Running against the granted input snapshot…");
       const snapshot = await prepareWorkspaceScriptRun(workspace.current, definition.manifest);
+      if (artifactDraft) assertWorkspaceArtifactRunInputs(snapshot, artifactDraft);
       const execution = await runWorkspaceScriptInWorker(snapshot);
       if (
         startingAuthorityEpoch !== authorityEpoch.current ||
@@ -964,8 +1027,12 @@ export function OperatorPage() {
       ) {
         throw new Error("The source artifact or script changed during workspace execution.");
       }
+      if (artifactDraft) {
+        if (execution.outputs.length !== 1) throw new Error("Artifact workflow must produce exactly one declared output.");
+        await validateWorkspaceArtifactOutputContent(execution.outputs[0].mediaType, execution.outputs[0].content);
+      }
       record({
-        title: "Workspace script completed",
+        title: artifactDraft ? "Artifact workflow script completed" : "Workspace script completed",
         detail: `${snapshot.runId.slice(-12)} · ${execution.inputBytes} B snapshot input · ${execution.outputBytes} B transient output · no live OPFS mount`,
         tone: "accent",
         category: "script",
@@ -1149,7 +1216,10 @@ export function OperatorPage() {
     setRows(DEMO_ROWS);
     setProposal(null);
     setWorkspaceProposal(null);
-    setPlan(null);
+    clearAiPlans();
+    setPlanMode("spreadsheet-transform");
+    scriptRevision.current += 1;
+    setScript(DEFAULT_SCRIPT);
     setAgentTrace([]);
     setAgentBudget(null);
     setWorkspaceAttachment(null);
@@ -1197,7 +1267,7 @@ export function OperatorPage() {
       setArtifactWorkspacePath(persistedPath);
       setArtifactFile(file);
       setArtifactSheetChoice(snapshot.provenance.sheetName);
-      setPlan(null);
+      clearAiPlans();
       setAgentTrace([]);
       setAgentBudget(null);
       setSource("artifact");
@@ -1301,13 +1371,14 @@ export function OperatorPage() {
     }
     setArtifactFile(null);
     setLoadedGoogleTarget(null);
-    setPlan(null);
+    clearAiPlans();
     setAgentTrace([]);
     setAgentBudget(null);
     setWorkspaceAttachment(null);
     setSelectedWorkspaceArtifact(null);
     setWorkspaceArtifactPreview(null);
     refreshWorkspaceArtifacts();
+    setPlanMode("spreadsheet-transform");
     scriptRevision.current += 1;
     setScript(DEFAULT_SCRIPT);
   };
@@ -1692,7 +1763,7 @@ export function OperatorPage() {
         <a href={homeUrl} className="operator-brand"><span>WH</span><strong>WasmHatch</strong></a>
         <div className="operator-title">
           <small>Business operator / foundation slice</small>
-          <strong>Spreadsheet transformation</strong>
+          <strong>Business artifact operation</strong>
         </div>
         <div className="operator-status"><i /> {status}</div>
         <a href={`${homeUrl}?view=workspace`} className="operator-legacy"><ArrowLeft size={14} /> Legacy coding workspace</a>
@@ -1866,12 +1937,18 @@ export function OperatorPage() {
 
           <div className="operator-task">
             <div className="operator-task-label"><Sparkles size={14} /><span>Task intent</span><small>AI may propose; only you can run and write</small></div>
-            <textarea value={task} onChange={(event) => { planningAbort.current?.abort(); taskRevision.current += 1; setTask(event.target.value); setPlan(null); invalidateProposal("task intent edited"); }} aria-label="Business task" disabled={committing} />
+            <textarea value={task} onChange={(event) => { planningAbort.current?.abort(); taskRevision.current += 1; setTask(event.target.value); clearAiPlans(); invalidateProposal("task intent edited"); }} aria-label="Business task" disabled={committing} />
+            <div className="operator-plan-mode" role="group" aria-label="AI plan output mode">
+              <button className={planMode === "spreadsheet-transform" ? "active" : ""} aria-pressed={planMode === "spreadsheet-transform"} onClick={() => changePlanMode("spreadsheet-transform")} disabled={planning || committing}><span>Table transform</span><small>typed cells</small></button>
+              <button className={planMode === "artifact-output" ? "active" : ""} aria-pressed={planMode === "artifact-output"} onClick={() => changePlanMode("artifact-output")} disabled={planning || committing}><span>Artifact output</span><small>one reviewed file</small></button>
+            </div>
             <div className="operator-planner-actions">
-              <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerApiKey.trim() || !task.trim()))}>
-                {planning ? <Square size={12} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
+              <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerApiKey.trim() || !task.trim() || planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath)))}>
+                {planning ? <Square size={12} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : planMode === "artifact-output" ? "Draft artifact with AI" : workspaceAttachment || source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
               </button>
-              <span>{workspaceAttachment
+              <span>{planMode === "artifact-output" && !workspaceAttachment && !(source === "artifact" && artifactWorkspacePath)
+                ? "Attach a workspace file or import a local table. The model may inspect only those identity-bound inputs before proposing one output file."
+                : workspaceAttachment
                 ? `Grants identity-bound ${workspaceAttachment.path}${source === "artifact" && artifactWorkspacePath !== workspaceAttachment.path ? " plus the active table" : ""}. Only tool-requested bounded content is sent; live OPFS and credentials stay excluded.`
                 : source === "artifact" && artifactWorkspacePath
                   ? "Grants one identity-bound snapshot path. Only tool-requested bounded rows are sent to OpenAI; credentials and live OPFS stay excluded."
@@ -1892,13 +1969,25 @@ export function OperatorPage() {
             </div>
           )}
 
+          {artifactWorkflowDraft && (
+            <div className="operator-plan artifact-workflow-plan" aria-label="AI artifact workflow plan">
+              <div><FileText size={15} /><strong>Staged artifact workflow</strong><small>{artifactWorkflowDraft.plan.model}</small></div>
+              <h3>{artifactWorkflowDraft.plan.summary}</h3>
+              <p><b>Expected effect</b>{artifactWorkflowDraft.plan.expectedEffect}</p>
+              <dl><div><dt>Output</dt><dd>{artifactWorkflowDraft.plan.outputPath}</dd></div><div><dt>Type</dt><dd>{artifactWorkflowDraft.plan.outputMediaType}</dd></div><div><dt>Inputs</dt><dd>{artifactWorkflowDraft.inputs.length} exact hashes</dd></div></dl>
+              {!!artifactWorkflowDraft.plan.assumptions.length && <p><b>Verify assumptions</b>{artifactWorkflowDraft.plan.assumptions.join(" · ")}</p>}
+              {!!artifactWorkflowDraft.plan.warnings.length && <p className="warning"><b>Warnings</b>{artifactWorkflowDraft.plan.warnings.join(" · ")}</p>}
+              <footer>{artifactWorkflowDraft.plan.script !== script ? "Script edited after the AI plan. The current source will be saved, snapshotted, and shown as a file diff before any output write." : `${agentBudget?.modelRequests ?? 0} model requests · ${agentBudget?.toolCalls ?? 0} checkpointed tools · ${agentBudget?.egressBytes ?? 0} B tool egress. Source is staged below; it has not run.`}</footer>
+            </div>
+          )}
+
           <div className="operator-script">
-            <div className="operator-task-label"><span>Sandbox script</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
-            <textarea value={script} onChange={(event) => { scriptRevision.current += 1; setScript(event.target.value); setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" disabled={committing} />
+            <div className="operator-task-label"><span>{planMode === "artifact-output" ? "Artifact workflow script" : "Sandbox script"}</span><small>QuickJS · Wasm worker · no fetch or DOM</small></div>
+            <textarea value={script} onChange={(event) => { scriptRevision.current += 1; setScript(event.target.value); if (planMode === "spreadsheet-transform") setPlan(null); invalidateProposal("sandbox script edited"); }} spellCheck={false} aria-label="Sandbox transformation script" placeholder={planMode === "artifact-output" ? "Draft an identity-bound artifact workflow with AI." : undefined} disabled={committing} />
             <div className="operator-script-actions">
-              <button onClick={() => void runScript()} disabled={committing || connectingGoogle || revokingGoogle || (source === "google" && !loadedGoogleTarget)}><Play size={14} /> Run in Wasm sandbox</button>
-              {artifact && artifactWorkspacePath && <button className="workspace-output" onClick={() => void runWorkspaceOutput()} disabled={committing || runningWorkspaceScript}><UploadCloud size={14} /> {runningWorkspaceScript ? "Running snapshot…" : "Save & stage workspace output"}</button>}
-              <span>JSON transform or manifest-bound snapshot VFS · 750 ms · 32 MB</span>
+              {planMode === "spreadsheet-transform" && <button onClick={() => void runScript()} disabled={committing || connectingGoogle || revokingGoogle || (source === "google" && !loadedGoogleTarget)}><Play size={14} /> Run in Wasm sandbox</button>}
+              {(artifactWorkflowDraft || artifact && artifactWorkspacePath) && <button className="workspace-output" onClick={() => void runWorkspaceOutput()} disabled={committing || runningWorkspaceScript || !script.trim()}><UploadCloud size={14} /> {runningWorkspaceScript ? "Running snapshot…" : artifactWorkflowDraft ? "Run & stage artifact diff" : "Save & stage workspace output"}</button>}
+              <span>{artifactWorkflowDraft ? `${artifactWorkflowDraft.inputs.length} exact inputs · 1 transient output · 750 ms · 32 MB` : "JSON transform or manifest-bound snapshot VFS · 750 ms · 32 MB"}</span>
             </div>
           </div>
           {error && <p className="operator-error" role="alert">{error}</p>}

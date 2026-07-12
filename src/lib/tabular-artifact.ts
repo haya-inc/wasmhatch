@@ -173,6 +173,12 @@ function parseCsv(bytes: Uint8Array) {
   return { rows: validateSpreadsheetRows(rows), formulaCells };
 }
 
+export function validateCsvTextArtifact(content: string) {
+  if (typeof content !== "string") throw new TabularArtifactSafetyError("CSV output must be text.");
+  const parsed = parseCsv(new TextEncoder().encode(content));
+  return { rows: parsed.rows, formulaCells: parsed.formulaCells };
+}
+
 function normalizeZipPath(input: string) {
   const path = input.replaceAll("\\", "/").replace(/^\/+/, "");
   const parts = path.split("/");

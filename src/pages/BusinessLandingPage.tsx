@@ -123,7 +123,7 @@ export function BusinessLandingPage() {
           <article className="fit-primary"><span>01</span><h3>Artifact worker</h3><p>Turns untrusted CSV/XLSX bytes into bounded values and provenance</p><small>Value-only · no network</small></article>
           <article><span>02</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
           <article><span>03</span><h3>Agent checkpoints</h3><p>Previews locally, then lists, searches, and reads only identity-bound attachments</p><small>Visible egress · hard budgets</small></article>
-          <article><span>04</span><h3>Portable workspace</h3><p>Keeps artifacts in isolated OPFS and mounts only copied inputs inside QuickJS</p><small>Verified ZIP · no live mount</small></article>
+          <article><span>04</span><h3>Artifact workflow</h3><p>Derives one typed output manifest on the host and mounts only copied inputs inside QuickJS</p><small>Markdown · CSV · JSON · text</small></article>
           <article><span>05</span><h3>Effect review</h3><p>Cell mutations or file diffs bind the reviewed base and payload</p><small>Exact approval</small></article>
           <article><span>06</span><h3>Run journal</h3><p>Joins policy, tools, approvals, conflicts, receipts, and pilot timing</p><small>Credential fields excluded</small></article>
         </div>
@@ -158,8 +158,8 @@ export function BusinessLandingPage() {
           <div><span>00:00</span><p>Imported <strong>pipeline.xlsx / Forecast</strong> in a codec Worker</p></div>
           <div><span>00:02</span><p>Stored a SHA-256-bound normalized snapshot in OPFS</p></div>
           <div><span>00:03</span><p>Previewed locally, attached one exact hash, then returned a bounded row window</p></div>
-          <div><span>00:04</span><p>Stopped at an inspectable script proposal; nothing executed</p></div>
-          <div><span>00:05</span><p>Ran <strong>QuickJS Wasm</strong> against an ephemeral snapshot VFS</p></div>
+          <div><span>00:04</span><p>Staged one typed output path and inspectable script; nothing executed</p></div>
+          <div><span>00:05</span><p>Ran <strong>QuickJS Wasm</strong> against exact input snapshots and one ephemeral output</p></div>
           <div className="log-accent"><span>00:06</span><p>Staged an exact file diff; OPFS output still unchanged</p></div>
           <div><span>00:08</span><p>Rechecked manifest, source, input, and base after approval</p></div>
           <div><span>00:09</span><p>Exported a structured run journal with proposal and commit timing</p></div>

@@ -1,5 +1,5 @@
 export const CONNECTOR_MANIFEST_SCHEMA_VERSION = 1 as const;
-export const CONNECTOR_CORE_VERSION = "0.24.0";
+export const CONNECTOR_CORE_VERSION = "0.25.0";
 
 export type ConnectorEffect = "read" | "compute" | "prepare" | "commit";
 export type ConnectorRetry = "never" | "idempotent";

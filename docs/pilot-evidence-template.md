@@ -35,6 +35,8 @@ data, or exported run journals to this public repository.
 - Task to first committed effect:
 - Result: committed / rejected / conflict / uncertain / failed / abandoned
 - Proposal type: spreadsheet cells / workspace file / other
+- AI plan mode: table transform / artifact output / not used
+- Artifact output path and media type, if any:
 - Changed cells or files:
 - Portable workspace exported: yes / no / not applicable
 - Clear/restore exercised: committed / rejected / conflict / uncertain / not exercised

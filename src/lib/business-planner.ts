@@ -9,6 +9,7 @@ export interface SpreadsheetPlanRequest {
 }
 
 export interface SpreadsheetPlan {
+  kind: "spreadsheet-transform";
   summary: string;
   expectedEffect: string;
   script: string;
@@ -128,6 +129,7 @@ export function parseSpreadsheetPlanArguments(
   if (byteLength(script) > MAX_SCRIPT_BYTES) throw new Error("Planner script exceeds the sandbox source limit.");
 
   return {
+    kind: "spreadsheet-transform",
     summary: requireText(plan.summary, "Plan summary", 1_000),
     expectedEffect: requireText(plan.expected_effect, "Expected effect", 1_000),
     script,

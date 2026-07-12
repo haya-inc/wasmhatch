@@ -1,6 +1,6 @@
 # Checkpointed Workspace Agent Loop
 
-- Contract status: foreground implementation, identity-bound grants in WasmHatch 0.24.0
+- Contract status: identity-bound grants and typed artifact plans in WasmHatch 0.25.0
 - Model transport: OpenAI Responses API with `store: false`
 - Initial authority: task text plus an exact list of granted workspace paths
 - Durable effect authority: none; the loop may only stage a transformation plan
@@ -33,10 +33,11 @@ and [tools guide](https://developers.openai.com/api/docs/guides/tools).
    implied by the active workspace.
 5. The model uses one strict function tool per response. The host validates the
    call, executes a bounded read, records the egress, and returns the result.
-6. The model must inspect granted content before it may call
-   `propose_spreadsheet_transform`.
-7. A valid proposal fills the existing reviewable script plan. No script runs and
-   no local or external write occurs.
+6. The model must inspect granted content before it may call the selected final
+   tool: `propose_spreadsheet_transform` or `propose_workspace_artifact`.
+7. A valid proposal fills the existing reviewable script plan. Artifact mode
+   also shows one output path/type and host-derived input count. No script runs
+   and no local or external write occurs.
 8. The user may edit the script, run it in the QuickJS Wasm Worker, then review a
    cell effect or workspace-file effect through the existing approval boundary.
 
@@ -53,10 +54,12 @@ a separately granted connector tool and is not implied by this workspace slice.
 | `search_workspace_text` | Literal case-insensitive search in one granted file | at most 20 line previews |
 | `read_tabular_rows` | 1–200 rows from a granted `wasmhatch.tabular-snapshot.v1` file | row window, dimensions, source hash |
 | `propose_spreadsheet_transform` | Stage one synchronous JSON transformation | summary, expected effect, script, assumptions, warnings |
+| `propose_workspace_artifact` | Stage one synchronous single-output workflow | summary, expected effect, output path/type, script, assumptions, warnings |
 
 All tool schemas use strict mode, require every declared property, and reject
 unknown properties. `parallel_tool_calls` is false and `tool_choice` is
-`required`, so each response contains exactly one checkpoint the host can
+`required`; only the selected final-plan tool is exposed for that run, so each
+response contains exactly one checkpoint the host can
 validate and audit. Repeated call IDs, repeated identical calls, unknown tools,
 invalid JSON, ungranted paths, protected credential paths, missing files,
 unsupported tabular schemas, changed attachment identities, and oversized

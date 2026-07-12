@@ -84,6 +84,11 @@ security fixes.
 - Workspace data remains untrusted when returned as a tool result. It cannot
   expand host policy, run the proposed script, or authorize its output. Planning,
   sandbox execution, and durable effect approval are separate checkpoints.
+- Artifact-workflow plans name one output path/type and synchronous script but
+  cannot provide a manifest or resource grants. The host derives exact mounts
+  and limits, rechecks planned input hashes before QuickJS execution, validates
+  JSON/CSV/text output, and stages one immutable file diff. Generated `.js`
+  output remains inert under `outputs/` and is never executed automatically.
 - The Operator run journal stores bounded structured metadata, not source rows,
   file contents, generated script source, model messages, or provider bodies.
   Credential-named evidence keys are rejected and common key/token shapes are

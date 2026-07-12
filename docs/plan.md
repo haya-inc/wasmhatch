@@ -80,6 +80,11 @@ require a separately deployed server adapter.
   previews bounded text locally, and creates one explicit SHA-256-bound AI
   attachment. Agent tools reject identity drift before model egress. See
   [Operator Artifact Browser](operator-artifact-browser.md).
+- A typed workspace artifact plan for one Markdown, CSV, JSON, text, or inert
+  JavaScript output. The host derives script/manifest paths, virtual mounts,
+  limits, and the sole output grant; QuickJS produces only a transient file
+  before exact diff approval. See
+  [Workspace Artifact Workflows](workspace-artifact-workflows.md).
 - A checkpointed OpenAI Responses tool loop for imported workspace artifacts:
   exact path grants, bounded list/read/literal-search/tabular-window tools,
   visible model egress, cancellation, cumulative request/token/tool/egress
@@ -718,8 +723,9 @@ entering model or script input.
   layer. `atomic` requires a connector's provider-native conditional write,
   Google Sheets uses `recheck`, and `none` is blocked by default.
 - Implement the bounded multi-step business tool registry and checkpointed loop —
-  workspace list/read/search/tabular-plan slice complete; connector reads,
-  script execution, and effect preparation remain separate tools to integrate.
+  workspace list/read/search plus table-transform and typed-artifact planning
+  are complete. Script execution and effect preparation remain deliberately
+  separate foreground checkpoints; granted connector reads remain to integrate.
 - Display model egress, script source, tool calls, policy decisions, approvals,
   conflicts, and receipts together — shared foreground run journal and explicit
   JSON export complete for the Operator; durable cross-session storage remains.
@@ -749,6 +755,11 @@ not automatically retried.
 - Stage create and patch behind filesystem proposals — complete for declared
   script outputs with one proposal per file. Add rename and delete only after
   their conflict and recovery semantics are proven.
+- Generate one typed Markdown/CSV/JSON/text/inert-JavaScript artifact from exact
+  planned inputs — complete with host-derived manifest authority, pre-execution
+  input-hash checks, QuickJS snapshot VFS, structured output validation, and one
+  independently approved file diff. See
+  [Workspace Artifact Workflows](workspace-artifact-workflows.md).
 - Add source hashes, stale-proposal rejection, undo, archive export, and
   recovery diagnostics — exact archive export, stale restore/clear rejection,
   verified replacement, rollback, and uncertain recovery diagnostics are
@@ -889,10 +900,10 @@ The coding-contributor metric is retired. Product evidence is:
 ## 11. Immediate next issues
 
 1. Continue the five pilot workflows and record evidence for architecture gates.
-2. Add granted connector reads and sandbox execution to the checkpointed planner
-   loop without letting model output authorize an effect.
-3. Generalize the spreadsheet-only AI plan into a typed artifact/workflow plan
-   that can propose Markdown, CSV, JSON, or script outputs without weakening the
-   attachment, egress, sandbox, or effect checkpoints.
+2. Add a granted Google Sheets read tool to the checkpointed planner without
+   exposing the broker credential or granting connector writes.
+3. Materialize a connector-read result as an identity-bound workspace snapshot
+   so the typed artifact workflow can consume it through the same sandbox and
+   file-effect checkpoints.
 4. Use exported run journals and pilot observations to choose the first
    post-P0 adapter spike.

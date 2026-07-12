@@ -14,6 +14,7 @@ export const WORKSPACE_SCRIPT_DEFAULT_LIMITS = Object.freeze({
 export type WorkspaceTextMediaType =
   | "application/json"
   | "text/csv"
+  | "text/javascript"
   | "text/markdown"
   | "text/plain";
 
@@ -56,6 +57,7 @@ const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const MEDIA_TYPES = new Set<WorkspaceTextMediaType>([
   "application/json",
   "text/csv",
+  "text/javascript",
   "text/markdown",
   "text/plain"
 ]);
@@ -129,8 +131,8 @@ function validateInput(value: unknown, index: number): WorkspaceScriptInputGrant
   assertRecord(value, label);
   assertExactKeys(value, ["workspacePath", "mountPath", "mediaType", "maxBytes"], label);
   const workspacePath = requireWorkspacePath(value.workspacePath, `${label} workspace path`);
-  if (!/^(?:inputs|work|outputs)\//.test(workspacePath)) {
-    throw new Error(`${label} must read from inputs/, work/, or outputs/.`);
+  if (!/^(?:inputs|work|outputs|scripts|workflows)\//.test(workspacePath)) {
+    throw new Error(`${label} must read from a portable Operator artifact root.`);
   }
   return {
     workspacePath,
