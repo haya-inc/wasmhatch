@@ -71,6 +71,11 @@ require a separately deployed server adapter.
   source, every input, and output base before an approved write. Each output is
   an independent proposal; multi-file atomicity is not claimed. See
   [Workspace Scripts](workspace-scripts.md).
+- A checkpointed OpenAI Responses tool loop for imported workspace artifacts:
+  exact path grants, bounded list/read/literal-search/tabular-window tools,
+  visible model egress, cancellation, cumulative request/token/tool/egress
+  budgets, and a final inert script proposal. See
+  [Workspace Agent Loop](workspace-agent-loop.md).
 - Content-addressed, deeply frozen spreadsheet proposals that bind connector
   version, target, base snapshot, typed mutations, summary, and policy decision.
 - A strict typed mutation bundle from which preview, summary, commit values, and
@@ -701,12 +706,16 @@ entering model or script input.
   always create a new proposal and approval — complete at the effect protocol
   layer. `atomic` requires a connector's provider-native conditional write,
   Google Sheets uses `recheck`, and `none` is blocked by default.
-- Implement the bounded multi-step business tool registry and checkpointed loop.
+- Implement the bounded multi-step business tool registry and checkpointed loop —
+  workspace list/read/search/tabular-plan slice complete; connector reads,
+  script execution, and effect preparation remain separate tools to integrate.
 - Display model egress, script source, tool calls, policy decisions, approvals,
-  conflicts, and receipts together.
+  conflicts, and receipts together — per-tab workspace planning trace complete;
+  unified cross-connector run journal remains.
 - Add cancellation, request budgets, explicit retry classes, and `uncertain`
-  outcomes to the new loop — terminal spreadsheet `uncertain` outcome complete;
-  loop-wide budgets and cancellation remain.
+  outcomes to the new loop — workspace planning cancellation and budgets plus
+  terminal spreadsheet/file `uncertain` outcomes complete; unified connector
+  retry policy remains.
 
 Exit condition: the agent completes the spreadsheet workflow from a natural
 language task while every capability remains independently enforceable, stale
@@ -860,6 +869,7 @@ The coding-contributor metric is retired. Product evidence is:
 ## 11. Immediate next issues
 
 1. Continue the five pilot workflows and record evidence for architecture gates.
-2. Add bounded workspace list/read/search tools to the checkpointed planner loop.
-3. Implement the checkpointed approval loop and policy decision envelope.
+2. Add granted connector reads and sandbox execution to the checkpointed planner
+   loop without letting model output authorize an effect.
+3. Implement the shared policy decision envelope and run journal.
 4. Add workspace export, restore, and recovery tests to the operator slice.

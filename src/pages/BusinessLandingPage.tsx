@@ -122,7 +122,7 @@ export function BusinessLandingPage() {
         <div className="fit-list" aria-label="WasmHatch architecture layers">
           <article className="fit-primary"><span>01</span><h3>Artifact worker</h3><p>Turns untrusted CSV/XLSX bytes into bounded values and provenance</p><small>Value-only · no network</small></article>
           <article><span>02</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
-          <article><span>03</span><h3>Agent planner</h3><p>Selects tools and prepares bounded operations</p><small>No raw tokens</small></article>
+          <article><span>03</span><h3>Agent checkpoints</h3><p>Lists, searches, and reads only exact workspace grants before staging a plan</p><small>Visible egress · hard budgets</small></article>
           <article><span>04</span><h3>Snapshot VFS</h3><p>Mounts exact copied inputs and transient declared outputs inside QuickJS</p><small>No live OPFS or network</small></article>
           <article><span>05</span><h3>Effect review</h3><p>Cell mutations or file diffs bind the reviewed base and payload</p><small>Exact approval</small></article>
           <article><span>06</span><h3>Recheck + receipt</h3><p>Revalidates every dependency before commit and records the result</p><small>Conflict-aware</small></article>
@@ -157,7 +157,8 @@ export function BusinessLandingPage() {
         <div className="proof-log">
           <div><span>00:00</span><p>Imported <strong>pipeline.xlsx / Forecast</strong> in a codec Worker</p></div>
           <div><span>00:02</span><p>Stored a SHA-256-bound normalized snapshot in OPFS</p></div>
-          <div><span>00:04</span><p>Saved an inspectable script and versioned input/output manifest</p></div>
+          <div><span>00:03</span><p>Granted the planner one exact path and returned a bounded row window</p></div>
+          <div><span>00:04</span><p>Stopped at an inspectable script proposal; nothing executed</p></div>
           <div><span>00:05</span><p>Ran <strong>QuickJS Wasm</strong> against an ephemeral snapshot VFS</p></div>
           <div className="log-accent"><span>00:06</span><p>Staged an exact file diff; OPFS output still unchanged</p></div>
           <div><span>00:08</span><p>Rechecked manifest, source, input, and base after approval</p></div>
@@ -170,7 +171,7 @@ export function BusinessLandingPage() {
         <div className="trust-lines">
           <div><span>Local files</span><strong>Worker codec → value snapshot</strong><em>01</em></div>
           <div><span>Credentials</span><strong>Short-lived GIS → host broker</strong><em>02</em></div>
-          <div><span>Model access</span><strong>Typed, bounded tool results</strong><em>03</em></div>
+          <div><span>Model access</span><strong>Exact grants · visible tool egress</strong><em>03</em></div>
           <div><span>Scripts</span><strong>Snapshot VFS · no live host access</strong><em>04</em></div>
           <div><span>Writes</span><strong>Cell or file diff approval first</strong><em>05</em></div>
           <div><span>Autonomy</span><strong>Foreground session in alpha</strong><em>06</em></div>

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createHash } from "node:crypto";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { exportTabularArtifact } from "../src/lib/tabular-artifact";
 
@@ -105,6 +106,95 @@ test("lets the user choose a different visible XLSX worksheet", async ({ page })
 
   await expect(page.getByRole("cell", { name: "Second sheet" })).toBeVisible();
   await expect(page.locator(".artifact-provenance")).toContainText("multi--Second--");
+});
+
+test("lets AI inspect one exact workspace snapshot through checkpointed bounded tools", async ({ page }) => {
+  const csv = Buffer.from("Owner,Region\r\nAya,west\r\nKen,east\r\n", "utf8");
+  const sourceHash = createHash("sha256").update(csv).digest("hex");
+  const workspacePath = `inputs/agent-pipeline--CSV--${sourceHash.slice(0, 12)}.json`;
+  const requestBodies: Record<string, unknown>[] = [];
+  let modelRequest = 0;
+  await page.route("https://api.openai.com/v1/responses", async (route) => {
+    requestBodies.push(route.request().postDataJSON() as Record<string, unknown>);
+    modelRequest += 1;
+    const calls = [
+      { id: "resp_list", callId: "call_list", name: "list_workspace_files", args: {} },
+      { id: "resp_rows", callId: "call_rows", name: "read_tabular_rows", args: { path: workspacePath, start_row: 1, row_count: 3 } },
+      {
+        id: "resp_plan",
+        callId: "call_plan",
+        name: "propose_spreadsheet_transform",
+        args: {
+          summary: "Normalize region labels from the granted snapshot.",
+          expected_effect: "Data rows receive uppercase regions; the header and owner column remain unchanged.",
+          script: "(rows) => rows.map((row, index) => index === 0 ? row : [row[0], String(row[1]).toUpperCase()])",
+          assumptions: ["Row 1 is the header."],
+          warnings: []
+        }
+      }
+    ];
+    const call = calls[modelRequest - 1];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: call.id,
+        output: [
+          { id: `rs_${call.id}`, type: "reasoning", summary: [] },
+          {
+            id: `fc_${call.id}`,
+            type: "function_call",
+            call_id: call.callId,
+            name: call.name,
+            arguments: JSON.stringify(call.args),
+            status: "completed"
+          }
+        ],
+        usage: { input_tokens: 100, output_tokens: 25 }
+      })
+    });
+  });
+
+  await page.goto("/?view=operator");
+  await page.getByLabel("Import CSV or XLSX").setInputFiles({
+    name: "agent-pipeline.csv",
+    mimeType: "text/csv",
+    buffer: csv
+  });
+  await page.getByLabel("OpenAI session API key").fill("sk-workspace-e2e");
+  await page.getByRole("button", { name: "Inspect workspace with AI" }).click();
+
+  await expect(page.getByRole("heading", { name: "Normalize region labels from the granted snapshot." })).toBeVisible();
+  await expect(page.getByText("AI tool: list_workspace_files", { exact: true })).toBeVisible();
+  await expect(page.getByText("AI tool: read_tabular_rows", { exact: true })).toBeVisible();
+  await expect(page.getByText("Checkpointed workspace plan staged", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("AI transformation plan")).toContainText("3 model requests · 3 checkpointed tools");
+  await expect(page.getByLabel("Workspace file diff")).toHaveCount(0);
+
+  expect(requestBodies).toHaveLength(3);
+  expect(requestBodies[0]).toMatchObject({ store: false, parallel_tool_calls: false, tool_choice: "required" });
+  expect(JSON.stringify(requestBodies[0])).not.toContain("sk-workspace-e2e");
+  expect(JSON.stringify(requestBodies[1].input)).toContain("wasmhatch.workspace-list.v1");
+  expect(JSON.stringify(requestBodies[2].input)).toContain("wasmhatch.tabular-window.v1");
+  expect(JSON.stringify(requestBodies[2].input)).toContain("west");
+
+  const durableFiles = await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const workspace = await root.getDirectoryHandle("wasmhatch-workspace");
+    const names: string[] = [];
+    const walk = async (directory: FileSystemDirectoryHandle, prefix = "") => {
+      for await (const [name, handle] of (directory as FileSystemDirectoryHandle & {
+        entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+      }).entries()) {
+        const path = prefix ? `${prefix}/${name}` : name;
+        if (handle.kind === "file") names.push(path);
+        else await walk(handle as FileSystemDirectoryHandle, path);
+      }
+    };
+    await walk(workspace);
+    return names.sort();
+  });
+  expect(durableFiles).toEqual([workspacePath]);
 });
 
 test("runs a saved manifest against the granted snapshot and writes only after file-diff approval", async ({ page }) => {

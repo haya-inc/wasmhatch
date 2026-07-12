@@ -70,4 +70,14 @@ security fixes.
 - Workspace file commit currently provides a `recheck` precondition, not an
   atomic compare-and-swap guarantee across browser tabs. Multi-file output is
   one proposal per file and is not described as a transaction.
+- The checkpointed workspace planner grants only explicitly named paths. Model
+  calls cannot enumerate or read other OPFS content, and protected credential
+  paths remain denied even if included in a malformed grant or tool call.
+- Workspace planning uses strict single function calls with `store: false`.
+  Every list/read/search/tabular result sent to the model records path, source
+  hash, and byte count. Missing provider usage, repeated calls, malformed output,
+  or request/token/tool/egress budget exhaustion stops before further reads.
+- Workspace data remains untrusted when returned as a tool result. It cannot
+  expand host policy, run the proposed script, or authorize its output. Planning,
+  sandbox execution, and durable effect approval are separate checkpoints.
 - Browser command execution is not yet enabled.

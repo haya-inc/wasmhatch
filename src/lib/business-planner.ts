@@ -32,7 +32,7 @@ const MAX_CONTEXT_BYTES = 128 * 1024;
 const MAX_SCRIPT_BYTES = 24 * 1024;
 const MAX_LIST_ITEMS = 8;
 
-const PLAN_TOOL = {
+export const SPREADSHEET_PLAN_TOOL = {
   type: "function",
   name: "propose_spreadsheet_transform",
   description: "Propose one synchronous, deterministic JavaScript transformation for the supplied spreadsheet rows. This only stages code for human review; it does not execute or write data.",
@@ -116,26 +116,10 @@ async function parseJson(response: Response) {
   }
 }
 
-function parsePlan(body: unknown, model: string, inputRows: number, inputCells: number): SpreadsheetPlan {
-  if (!body || typeof body !== "object") throw new Error("OpenAI returned an invalid planning response.");
-  const record = body as Record<string, unknown>;
-  const responseId = requireText(record.id, "OpenAI response ID", 256);
-  if (!Array.isArray(record.output)) throw new Error("OpenAI returned no planning output.");
-  const toolCall = record.output.find((item) => (
-    item && typeof item === "object"
-    && (item as Record<string, unknown>).type === "function_call"
-    && (item as Record<string, unknown>).name === PLAN_TOOL.name
-  )) as Record<string, unknown> | undefined;
-  if (!toolCall || typeof toolCall.arguments !== "string") {
-    throw new Error("OpenAI did not return a spreadsheet transformation plan.");
-  }
-
-  let args: unknown;
-  try {
-    args = JSON.parse(toolCall.arguments);
-  } catch {
-    throw new Error("OpenAI returned invalid plan arguments.");
-  }
+export function parseSpreadsheetPlanArguments(
+  args: unknown,
+  metadata: { model: string; responseId: string; inputRows: number; inputCells: number }
+): SpreadsheetPlan {
   if (!args || typeof args !== "object" || Array.isArray(args)) {
     throw new Error("OpenAI returned an invalid spreadsheet plan.");
   }
@@ -149,11 +133,34 @@ function parsePlan(body: unknown, model: string, inputRows: number, inputCells: 
     script,
     assumptions: requireStringList(plan.assumptions, "Plan assumptions"),
     warnings: requireStringList(plan.warnings, "Plan warnings"),
-    model,
-    responseId,
-    inputRows,
-    inputCells
+    model: requireText(metadata.model, "Planner model", 128),
+    responseId: requireText(metadata.responseId, "OpenAI response ID", 256),
+    inputRows: metadata.inputRows,
+    inputCells: metadata.inputCells
   };
+}
+
+function parsePlan(body: unknown, model: string, inputRows: number, inputCells: number): SpreadsheetPlan {
+  if (!body || typeof body !== "object") throw new Error("OpenAI returned an invalid planning response.");
+  const record = body as Record<string, unknown>;
+  const responseId = requireText(record.id, "OpenAI response ID", 256);
+  if (!Array.isArray(record.output)) throw new Error("OpenAI returned no planning output.");
+  const toolCall = record.output.find((item) => (
+    item && typeof item === "object"
+    && (item as Record<string, unknown>).type === "function_call"
+    && (item as Record<string, unknown>).name === SPREADSHEET_PLAN_TOOL.name
+  )) as Record<string, unknown> | undefined;
+  if (!toolCall || typeof toolCall.arguments !== "string") {
+    throw new Error("OpenAI did not return a spreadsheet transformation plan.");
+  }
+
+  let args: unknown;
+  try {
+    args = JSON.parse(toolCall.arguments);
+  } catch {
+    throw new Error("OpenAI returned invalid plan arguments.");
+  }
+  return parseSpreadsheetPlanArguments(args, { model, responseId, inputRows, inputCells });
 }
 
 export class OpenAIPlanner implements BusinessPlanner {
@@ -182,8 +189,8 @@ export class OpenAIPlanner implements BusinessPlanner {
         store: false,
         max_output_tokens: 2_500,
         parallel_tool_calls: false,
-        tool_choice: { type: "function", name: PLAN_TOOL.name },
-        tools: [PLAN_TOOL],
+        tool_choice: { type: "function", name: SPREADSHEET_PLAN_TOOL.name },
+        tools: [SPREADSHEET_PLAN_TOOL],
         reasoning: { effort: "low" },
         input: [
           {

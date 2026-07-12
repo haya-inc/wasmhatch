@@ -51,6 +51,8 @@ describe("public sharing metadata", () => {
     expect(plan).toContain("formula/macro/external-link handling — complete");
     expect(plan).toContain("Workspace file proposals that show a unified diff");
     expect(readFileSync("docs/workspace-scripts.md", "utf8")).toContain("each output is reviewed and committed as its own proposal");
+    expect(plan).toContain("checkpointed OpenAI Responses tool loop");
+    expect(readFileSync("docs/workspace-agent-loop.md", "utf8")).toContain("Provider usage is required in every response");
     expect(viteConfig).toContain('"worker-src \'self\'"');
     expect(viteConfig).toContain("'wasm-unsafe-eval'");
     expect(viteConfig).toContain("https://sheets.googleapis.com");

@@ -38,6 +38,9 @@ The foundation slice now ships:
   OAuth credentials, connector handles, or ambient network access;
 - immutable workspace-file proposals that recheck the manifest, source, every
   input, and output base before an approved diff is written;
+- a checkpointed OpenAI workspace loop that lists, searches, and reads only an
+  exact artifact grant, records model egress, enforces request/token/tool budgets,
+  and stops at a reviewable script proposal;
 - typed cell-mutation bundles that generate preview, summary, commit payload,
   and inverse receipt metadata from one immutable source;
 - explicit rejection of structural changes and ungranted formula writes;
@@ -53,7 +56,8 @@ guide](docs/connector-authoring.md), [tabular mutation
 contract](docs/tabular-mutations.md), [Google OAuth deployment
 guide](docs/google-oauth.md), [CSV/XLSX artifact
 boundary](docs/tabular-artifacts.md), [workspace script and file-effect
-contract](docs/workspace-scripts.md), and [business-agent
+contract](docs/workspace-scripts.md), [checkpointed workspace agent
+loop](docs/workspace-agent-loop.md), and [business-agent
 landscape](docs/landscape.md).
 
 ## Legacy coding workspace
@@ -166,6 +170,8 @@ expose file deletion.
 | Manifest-bound workspace scripts | Available for imported tabular snapshots |
 | Snapshot virtual filesystem | Available; exact inputs and ephemeral outputs only |
 | Workspace file-diff approval | Available; manifest/source/input/base recheck before write |
+| Checkpointed workspace AI tools | Available for one exact imported artifact grant |
+| Model-egress and agent budgets | Available for list/read/search/tabular planning loop |
 | OPFS workspace with localStorage fallback | Available |
 | Public GitHub repository import | Available, text files up to documented limits |
 | Zip import and export | Available |
@@ -228,6 +234,10 @@ Local-first does not mean secret or offline.
 - Workspace output remains transient until its exact unified diff is approved.
   Commit rechecks the manifest, source, every input, and output base; conflicts
   write nothing, while ambiguous writes require reconciliation.
+- The workspace planner begins with task text and exact grant counts rather than
+  the whole artifact. Every tool result sent to OpenAI records its path, source
+  hash, and byte count. Six-request, six-tool, token, request-byte, and egress
+  limits stop before further workspace reads when exceeded.
 - ZIP metadata is checked before inflation for unsafe paths, duplicate normalized
   paths, excessive file counts, and more than 20 MB of accepted expanded content.
 - Paths are normalized and traversal outside the workspace is rejected.

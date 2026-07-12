@@ -9,6 +9,7 @@ import {
   Play,
   RefreshCw,
   ShieldCheck,
+  Square,
   Sparkles,
   Table2,
   UploadCloud
@@ -61,6 +62,11 @@ import {
   workspaceFileEffectDiff,
   type WorkspaceFileEffectProposal
 } from "../lib/workspace-file-effect";
+import {
+  OpenAIWorkspaceAgent,
+  type WorkspaceAgentBudget,
+  type WorkspaceAgentTraceEvent
+} from "../lib/workspace-agent";
 
 const DEMO_ROWS: SpreadsheetRows = [
   ["Owner", "Region", "Amount", "Stage"],
@@ -140,6 +146,8 @@ export function OperatorPage() {
   const [plannerApiKey, setPlannerApiKey] = useState("");
   const [plannerModel, setPlannerModel] = useState(DEFAULT_PLANNER_MODEL);
   const [planning, setPlanning] = useState(false);
+  const [agentTrace, setAgentTrace] = useState<WorkspaceAgentTraceEvent[]>([]);
+  const [agentBudget, setAgentBudget] = useState<WorkspaceAgentBudget | null>(null);
   const [committing, setCommitting] = useState(false);
   const [status, setStatus] = useState("Ready");
   const [error, setError] = useState("");
@@ -164,6 +172,8 @@ export function OperatorPage() {
   const artifactInput = useRef<HTMLInputElement>(null);
   const authorityEpoch = useRef(0);
   const scriptRevision = useRef(0);
+  const taskRevision = useRef(0);
+  const planningAbort = useRef<AbortController | null>(null);
   const [googleAuthStatus, setGoogleAuthStatus] = useState(() => googleOAuth.current.status());
   const [audit, setAudit] = useState<AuditEntry[]>([
     { time: "00:00", title: "Local demo loaded", detail: "4 rows · no external request", tone: "muted" }
@@ -255,31 +265,93 @@ export function OperatorPage() {
   };
 
   const draftWithAI = async () => {
+    const startingAuthorityEpoch = authorityEpoch.current;
+    const startingTaskRevision = taskRevision.current;
+    const controller = new AbortController();
+    planningAbort.current?.abort();
+    planningAbort.current = controller;
     setPlanning(true);
     setStatus("Drafting a bounded AI plan…");
     setError("");
+    setAgentTrace([]);
+    setAgentBudget(null);
     invalidateProposal("AI plan requested");
     try {
-      const planner = new OpenAIPlanner(plannerApiKey);
-      const nextPlan = await planner.planSpreadsheetTransform({ task, rows, model: plannerModel });
+      let nextPlan: SpreadsheetPlan;
+      let usedWorkspaceTools = false;
+      if (source === "artifact" && artifactWorkspacePath) {
+        usedWorkspaceTools = true;
+        setStatus("AI is inspecting the exact workspace grant…");
+        const agent = new OpenAIWorkspaceAgent(plannerApiKey, workspace.current);
+        const result = await agent.plan({
+          task,
+          model: plannerModel,
+          grant: {
+            readablePaths: [artifactWorkspacePath],
+            tabularPaths: [artifactWorkspacePath]
+          },
+          inputRows: rows.length,
+          inputCells: rows.reduce((total, row) => total + row.length, 0),
+          signal: controller.signal,
+          onTrace: (event, budget) => {
+            setAgentTrace((current) => [...current, event]);
+            setAgentBudget(budget);
+            record({
+              title: event.status === "denied" ? `AI tool denied: ${event.tool}` : `AI tool: ${event.tool}`,
+              detail: `${event.summary}${event.path ? ` · ${event.path}` : ""}${event.sourceSha256 ? ` · ${event.sourceSha256.slice(-12)}` : ""} · ${event.bytesToModel} B to model`,
+              tone: event.status === "denied" ? "muted" : "accent"
+            });
+          }
+        });
+        nextPlan = result.plan;
+        setAgentTrace([...result.trace]);
+        setAgentBudget(result.budget);
+        record({
+          title: "Checkpointed workspace plan staged",
+          detail: `${result.budget.modelRequests} model requests · ${result.budget.toolCalls} tool calls · ${result.budget.egressBytes} B tool egress · no script execution or write`,
+          tone: "accent"
+        });
+      } else {
+        const planner = new OpenAIPlanner(plannerApiKey);
+        nextPlan = await planner.planSpreadsheetTransform({ task, rows, model: plannerModel }, controller.signal);
+      }
+      if (
+        startingAuthorityEpoch !== authorityEpoch.current ||
+        startingTaskRevision !== taskRevision.current
+      ) {
+        throw new Error("The task or granted source changed during AI planning. Start a new plan against the current state.");
+      }
       setPlan(nextPlan);
       scriptRevision.current += 1;
       setScript(nextPlan.script);
       setStatus("AI plan staged for review");
       record({
         title: "AI plan staged",
-        detail: `${nextPlan.model} · ${nextPlan.inputRows} rows / ${nextPlan.inputCells} cells sent · no credential or write`,
+        detail: usedWorkspaceTools
+          ? `${nextPlan.model} · checkpointed workspace egress recorded above · no credential, execution, or write`
+          : `${nextPlan.model} · ${nextPlan.inputRows} rows / ${nextPlan.inputCells} cells sent · no credential or write`,
         tone: "accent"
       });
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "AI planning failed.";
+      const aborted = caught instanceof Error && caught.name === "AbortError";
+      const message = aborted ? "AI planning was cancelled before a proposal was staged." : caught instanceof Error ? caught.message : "AI planning failed.";
       setPlan(null);
-      setError(message);
-      setStatus("AI plan blocked");
-      record({ title: "AI plan blocked", detail: message, tone: "muted" });
+      if (aborted && startingAuthorityEpoch !== authorityEpoch.current) {
+        record({ title: "AI planning cancelled", detail: "A newer source replaced the granted planning context.", tone: "muted" });
+        return;
+      }
+      setError(aborted ? "" : message);
+      setStatus(aborted ? "AI planning cancelled" : "AI plan blocked");
+      record({ title: aborted ? "AI planning cancelled" : "AI plan blocked", detail: message, tone: "muted" });
     } finally {
+      if (planningAbort.current === controller) planningAbort.current = null;
       setPlanning(false);
     }
+  };
+
+  const cancelPlanning = () => {
+    planningAbort.current?.abort();
+    setStatus("Cancelling AI planning…");
   };
 
   const connectGoogle = async () => {
@@ -312,6 +384,7 @@ export function OperatorPage() {
 
   const revokeGoogle = async () => {
     if (connectingGoogle || revokingGoogle) return;
+    planningAbort.current?.abort();
     setRevokingGoogle(true);
     setError("");
     setStatus("Revoking Google access…");
@@ -342,6 +415,7 @@ export function OperatorPage() {
 
   const loadGoogleSheet = async () => {
     if (connectingGoogle || revokingGoogle) return;
+    planningAbort.current?.abort();
     const startingAuthorityEpoch = authorityEpoch.current;
     setStatus("Reading Google Sheets…");
     setError("");
@@ -613,11 +687,14 @@ export function OperatorPage() {
   };
 
   const resetDemo = () => {
+    planningAbort.current?.abort();
     authorityEpoch.current += 1;
     setRows(DEMO_ROWS);
     setProposal(null);
     setWorkspaceProposal(null);
     setPlan(null);
+    setAgentTrace([]);
+    setAgentBudget(null);
     setArtifact(null);
     setArtifactWorkspacePath(null);
     setArtifactFile(null);
@@ -630,6 +707,7 @@ export function OperatorPage() {
   };
 
   const importLocalArtifact = async (file: File, sheetName?: string) => {
+    planningAbort.current?.abort();
     const importEpoch = authorityEpoch.current + 1;
     authorityEpoch.current = importEpoch;
     setImportingArtifact(true);
@@ -655,6 +733,8 @@ export function OperatorPage() {
       setArtifactFile(file);
       setArtifactSheetChoice(snapshot.provenance.sheetName);
       setPlan(null);
+      setAgentTrace([]);
+      setAgentBudget(null);
       setSource("artifact");
       setStatus(`Loaded ${snapshot.provenance.rows} rows from ${snapshot.provenance.sheetName}`);
       record({
@@ -747,12 +827,12 @@ export function OperatorPage() {
             {googleAuthStatus.connected && <Check size={14} />}
           </div>
           <div className="connector-row static planner-connector">
-            <Bot size={16} /><span><strong>OpenAI planner</strong><small>Responses API · optional</small></span>
+            <Bot size={16} /><span><strong>OpenAI planner</strong><small>Responses API · bounded tools</small></span>
           </div>
           <div className="connector-form planner-credentials">
-            <label>Session API key<input type="password" value={plannerApiKey} onChange={(event) => setPlannerApiKey(event.target.value)} autoComplete="off" placeholder="Memory only" aria-label="OpenAI session API key" disabled={committing} /></label>
+            <label>Session API key<input type="password" value={plannerApiKey} onChange={(event) => setPlannerApiKey(event.target.value)} autoComplete="off" placeholder="Memory only" aria-label="OpenAI session API key" disabled={committing || planning} /></label>
             <label>Planning model
-              <select value={plannerModel} onChange={(event) => setPlannerModel(event.target.value)} aria-label="Planning model" disabled={committing}>
+              <select value={plannerModel} onChange={(event) => setPlannerModel(event.target.value)} aria-label="Planning model" disabled={committing || planning}>
                 <option value="gpt-5.6-luna">GPT-5.6 Luna · efficient</option>
                 <option value="gpt-5.6-terra">GPT-5.6 Terra · balanced</option>
                 <option value="gpt-5.6-sol">GPT-5.6 Sol · highest capability</option>
@@ -815,12 +895,14 @@ export function OperatorPage() {
 
           <div className="operator-task">
             <div className="operator-task-label"><Sparkles size={14} /><span>Task intent</span><small>AI may propose; only you can run and write</small></div>
-            <textarea value={task} onChange={(event) => { setTask(event.target.value); setPlan(null); invalidateProposal("task intent edited"); }} aria-label="Business task" disabled={committing} />
+            <textarea value={task} onChange={(event) => { planningAbort.current?.abort(); taskRevision.current += 1; setTask(event.target.value); setPlan(null); invalidateProposal("task intent edited"); }} aria-label="Business task" disabled={committing} />
             <div className="operator-planner-actions">
-              <button onClick={() => void draftWithAI()} disabled={committing || !plannerApiKey.trim() || !task.trim() || planning}>
-                {planning ? <RefreshCw size={14} /> : <KeyRound size={14} />}{planning ? "Drafting…" : "Draft with AI"}
+              <button onClick={() => planning ? cancelPlanning() : void draftWithAI()} disabled={committing || (!planning && (!plannerApiKey.trim() || !task.trim()))}>
+                {planning ? <Square size={12} /> : <KeyRound size={14} />}{planning ? "Cancel AI run" : source === "artifact" && artifactWorkspacePath ? "Inspect workspace with AI" : "Draft with AI"}
               </button>
-              <span>Explicitly sends this task and {rows.length} visible rows to OpenAI. Sheets and API credentials are excluded.</span>
+              <span>{source === "artifact" && artifactWorkspacePath
+                ? "Grants one exact snapshot path. Only tool-requested bounded rows are sent to OpenAI; credentials and live OPFS stay excluded."
+                : `Explicitly sends this task and ${rows.length} visible rows to OpenAI. Sheets and API credentials are excluded.`}</span>
             </div>
           </div>
 
@@ -831,7 +913,9 @@ export function OperatorPage() {
               <p><b>Expected effect</b>{plan.expectedEffect}</p>
               {!!plan.assumptions.length && <p><b>Verify assumptions</b>{plan.assumptions.join(" · ")}</p>}
               {!!plan.warnings.length && <p className="warning"><b>Warnings</b>{plan.warnings.join(" · ")}</p>}
-              <footer>Script copied below for inspection. It has not run and no write has occurred.</footer>
+              <footer>{agentBudget && agentTrace.length
+                ? `${agentBudget.modelRequests} model requests · ${agentBudget.toolCalls} checkpointed tools · ${agentBudget.egressBytes} B tool egress. Script copied below; it has not run and no write has occurred.`
+                : "Script copied below for inspection. It has not run and no write has occurred."}</footer>
             </div>
           )}
 
