@@ -49,6 +49,9 @@ require a separately deployed server adapter.
 - A mobile-first Operator entry state that keeps the current source, guided
   action, and working table ahead of optional connector configuration; source
   settings remain explicitly expandable with their current authority visible.
+- A `start=upload` public entry that expands the local source boundary, marks
+  CSV/XLSX as the next action, and returns to the working surface after a
+  successful Worker-isolated import without triggering a file chooser on load.
 - A local spreadsheet demo with editable tabular data.
 - A Worker-isolated CSV/XLSX artifact adapter with pre-inflation ZIP bounds,
   strict UTF-8/XML parsing, visible-sheet selection, formula/macro/external-link

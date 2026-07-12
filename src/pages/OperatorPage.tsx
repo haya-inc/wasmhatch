@@ -253,11 +253,12 @@ export function OperatorPage() {
   const [localDemoOutcome, setLocalDemoOutcome] = useState<"committed" | "rejected" | null>(null);
   const [pilotReportDelivery, setPilotReportDelivery] = useState<"copied" | "downloaded" | null>(null);
   const [pilotReportDownload, setPilotReportDownload] = useState<string | null>(null);
-  const [mobileSourcesOpen, setMobileSourcesOpen] = useState(false);
+  const [mobileSourcesOpen, setMobileSourcesOpen] = useState(initialDemo.startUpload);
+  const [uploadPromptVisible, setUploadPromptVisible] = useState(initialDemo.startUpload);
   const [agentTrace, setAgentTrace] = useState<WorkspaceAgentTraceEvent[]>([]);
   const [agentBudget, setAgentBudget] = useState<WorkspaceAgentBudget | null>(null);
   const [committing, setCommitting] = useState(false);
-  const [status, setStatus] = useState("Ready");
+  const [status, setStatus] = useState(initialDemo.startUpload ? "Choose a CSV or XLSX file" : "Ready");
   const [error, setError] = useState("");
   const [source, setSource] = useState<"demo" | "artifact" | "google">("demo");
   const [artifact, setArtifact] = useState<TabularArtifactProvenance | null>(null);
@@ -876,6 +877,7 @@ export function OperatorPage() {
     setArtifactFile(null);
     setArtifactSheetChoice("");
     setSource("demo");
+    setUploadPromptVisible(false);
     setShowLocalDemoGuide(true);
     setLocalDemoOutcome(null);
     setPilotReportDelivery(null);
@@ -921,6 +923,7 @@ export function OperatorPage() {
       setArtifactSheetChoice("");
       setSource("google");
       setMobileSourcesOpen(false);
+      setUploadPromptVisible(false);
       setLoadedGoogleTarget({
         spreadsheetId: snapshot.spreadsheetId,
         spreadsheetIdSha256: await hashWorkspaceContent(snapshot.spreadsheetId),
@@ -1344,6 +1347,7 @@ export function OperatorPage() {
     setPilotReportDelivery(null);
     setPilotReportDownload(null);
     setMobileSourcesOpen(false);
+    setUploadPromptVisible(false);
     setLoadedGoogleTarget(null);
     setStatus(`${nextDemo.label} ready`);
     setError("");
@@ -1388,6 +1392,7 @@ export function OperatorPage() {
       setAgentBudget(null);
       setSource("artifact");
       setMobileSourcesOpen(false);
+      setUploadPromptVisible(false);
       setStatus(`Loaded ${snapshot.provenance.rows} rows from ${snapshot.provenance.sheetName}`);
       record({
         title: "Local tabular artifact imported",
@@ -1884,6 +1889,15 @@ export function OperatorPage() {
 
   const googleArtifactReadReady = source === "google" && Boolean(loadedGoogleTarget) && googleAuthStatus.connected;
   const localDemoFinished = localDemoOutcome !== null;
+  const currentSourceLabel = uploadPromptVisible
+    ? "CSV / XLSX not selected"
+    : source === "demo"
+      ? demo.label
+      : source === "artifact"
+        ? artifact?.sourceName ?? "CSV / XLSX"
+        : loadedGoogleTarget
+          ? `Google Sheets · ${loadedGoogleTarget.range}`
+          : "Google Sheets";
 
   const copyGuidedDemoPilotReport = async () => {
     try {
@@ -1954,23 +1968,24 @@ export function OperatorPage() {
             type="button"
             aria-expanded={mobileSourcesOpen}
             aria-controls="operator-source-settings"
-            aria-label={`Current source: ${source === "demo" ? demo.label : source === "artifact" ? artifact?.sourceName ?? "CSV / XLSX" : loadedGoogleTarget ? `Google Sheets ${loadedGoogleTarget.range}` : "Google Sheets"}. ${mobileSourcesOpen ? "Hide" : "Change"} source settings`}
+            aria-label={`Current source: ${currentSourceLabel}. ${mobileSourcesOpen ? "Hide" : "Change"} source settings`}
             onClick={() => setMobileSourcesOpen((open) => !open)}
           >
             {source === "google" ? <Table2 size={16} /> : source === "artifact" ? <UploadCloud size={16} /> : <Database size={16} />}
-            <span><small>Current source</small><strong>{source === "demo" ? demo.label : source === "artifact" ? artifact?.sourceName ?? "CSV / XLSX" : loadedGoogleTarget ? `Google Sheets · ${loadedGoogleTarget.range}` : "Google Sheets"}</strong></span>
+            <span><small>Current source</small><strong>{currentSourceLabel}</strong></span>
             <em>{mobileSourcesOpen ? "Hide" : "Change"}</em>
           </button>
           <div id="operator-source-settings" className="operator-source-content">
           <div className="operator-panel-heading"><span>Sources</span><small>bounded authority</small></div>
-          <button className={source === "demo" && demoId === "normalization" ? "connector-row active" : "connector-row"} onClick={() => resetDemo("normalization")} disabled={committing}>
-            <Database size={16} /><span><strong>Local demo</strong><small>Normalize 4 synthetic rows · no network</small></span>{source === "demo" && demoId === "normalization" && <Check size={14} />}
+          {uploadPromptVisible && <div className="operator-source-prompt" role="status"><UploadCloud size={15} /><span><strong>Choose your local table</strong><small>CSV or XLSX · parsed in a Worker · no account or server upload</small></span></div>}
+          <button className={source === "demo" && demoId === "normalization" && !uploadPromptVisible ? "connector-row active" : "connector-row"} onClick={() => resetDemo("normalization")} disabled={committing}>
+            <Database size={16} /><span><strong>Local demo</strong><small>Normalize 4 synthetic rows · no network</small></span>{source === "demo" && demoId === "normalization" && !uploadPromptVisible && <Check size={14} />}
           </button>
-          <button className={source === "demo" && demoId === "reconciliation" ? "connector-row active" : "connector-row"} onClick={() => resetDemo("reconciliation")} disabled={committing}>
-            <Table2 size={16} /><span><strong>Reconciliation sample</strong><small>ERP vs payout · no network</small></span>{source === "demo" && demoId === "reconciliation" && <Check size={14} />}
+          <button className={source === "demo" && demoId === "reconciliation" && !uploadPromptVisible ? "connector-row active" : "connector-row"} onClick={() => resetDemo("reconciliation")} disabled={committing}>
+            <Table2 size={16} /><span><strong>Reconciliation sample</strong><small>ERP vs payout · no network</small></span>{source === "demo" && demoId === "reconciliation" && !uploadPromptVisible && <Check size={14} />}
           </button>
-          <button className={source === "artifact" ? "connector-row active" : "connector-row"} onClick={() => artifactInput.current?.click()} disabled={committing || importingArtifact}>
-            <UploadCloud size={16} /><span><strong>{importingArtifact ? "Validating file…" : artifact?.sourceName ?? "CSV / XLSX"}</strong><small>{artifact ? `${artifact.sheetName} · ${artifact.rows}×${artifact.columns}` : "Worker-isolated value import"}</small></span>{source === "artifact" && <Check size={14} />}
+          <button className={source === "artifact" ? "connector-row active" : uploadPromptVisible ? "connector-row suggested" : "connector-row"} onClick={() => artifactInput.current?.click()} disabled={committing || importingArtifact}>
+            <UploadCloud size={16} /><span><strong>{importingArtifact ? "Validating file…" : artifact?.sourceName ?? "CSV / XLSX"}</strong><small>{artifact ? `${artifact.sheetName} · ${artifact.rows}×${artifact.columns}` : "Worker-isolated value import"}</small></span>{source === "artifact" ? <Check size={14} /> : uploadPromptVisible ? <em>Start here</em> : null}
           </button>
           <input ref={artifactInput} className="operator-file-input" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Import CSV or XLSX" onChange={(event) => {
             const file = event.target.files?.[0];

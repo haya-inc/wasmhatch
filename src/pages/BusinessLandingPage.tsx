@@ -18,7 +18,8 @@ const workflows = [
     scope: "Sales operations",
     title: "Normalize a weekly pipeline",
     description: "Grant one exact range, materialize a credential-free snapshot, then sandbox and review the resulting cells or report.",
-    demo: "local"
+    entry: "demo=local",
+    action: "Open demo"
   },
   {
     number: "02",
@@ -26,7 +27,8 @@ const workflows = [
     scope: "Back-office reconciliation",
     title: "Review reconciliation exceptions",
     description: "Compare synthetic ERP and payout values locally, derive only variance and status, then approve the seven exact output cells.",
-    demo: "reconciliation"
+    entry: "demo=reconciliation",
+    action: "Open demo"
   },
   {
     number: "03",
@@ -34,7 +36,8 @@ const workflows = [
     scope: "Ad-hoc analysis",
     title: "Turn raw exports into a report",
     description: "Save the generated script and manifest, run against an exact snapshot, then approve the output file diff.",
-    demo: null
+    entry: "start=upload",
+    action: "Choose file"
   }
 ];
 
@@ -146,7 +149,7 @@ export function BusinessLandingPage() {
               <span className="example-number">{workflow.number}</span>
               <div className="example-repo"><code>{workflow.source}</code><small>{workflow.scope}</small></div>
               <div className="example-copy"><h3>{workflow.title}</h3><p>{workflow.description}</p></div>
-              <div className="example-actions"><a href={workflow.demo ? `${operatorUrl}&demo=${workflow.demo}` : operatorUrl}>Open demo <ArrowRight size={17} /></a></div>
+              <div className="example-actions"><a href={`${operatorUrl}&${workflow.entry}`}>{workflow.action} <ArrowRight size={17} /></a></div>
             </article>
           ))}
         </div>

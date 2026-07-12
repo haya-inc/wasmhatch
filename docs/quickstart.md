@@ -36,6 +36,9 @@ network request and contains no real invoice or customer data.
 
 ## Try a local workbook
 
+Open the [real-file entry](https://haya-inc.github.io/wasmhatch/?view=operator&start=upload)
+to start with the local source picker instead of a synthetic demo.
+
 1. Select **CSV / XLSX** and choose a bounded workbook.
 2. Review the detected sheet, dimensions, source hash, formula count, external
    link count, and warnings.

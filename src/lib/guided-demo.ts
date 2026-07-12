@@ -83,11 +83,13 @@ export function guidedDemoDefinition(id: GuidedDemoId) {
 }
 
 export function resolveGuidedDemo(search: string) {
-  const value = new URLSearchParams(search).get("demo");
+  const parameters = new URLSearchParams(search);
+  const value = parameters.get("demo");
   const id: GuidedDemoId = value === "reconciliation" ? "reconciliation" : "normalization";
   return deepFreeze({
     id,
     showGuide: value === "local" || value === "normalization" || value === "reconciliation",
+    startUpload: parameters.get("start") === "upload",
     definition: DEFINITIONS[id]
   });
 }

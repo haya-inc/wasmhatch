@@ -10,6 +10,29 @@ test("links the public project page to current newcomer work", async ({ page }) 
   await contribute.scrollIntoViewIfNeeded();
   await expect(contribute).toBeVisible();
   await expect(contribute).toHaveAttribute("href", "https://github.com/haya-inc/wasmhatch/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22");
+  await expect(page.getByRole("link", { name: "Choose file" })).toHaveAttribute("href", "/?view=operator&start=upload");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test("opens a real-file entry state and returns to work after local import", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?view=operator&start=upload");
+
+  const sourceToggle = page.getByRole("button", { name: /Current source: CSV \/ XLSX not selected/ });
+  await expect(sourceToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("status").filter({ hasText: "Choose your local table" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Local demo Normalize 4 synthetic rows/ })).not.toHaveClass(/active/);
+  await expect(page.getByRole("button", { name: /CSV \/ XLSX.*Start here/ })).toBeVisible();
+
+  await page.getByLabel("Import CSV or XLSX").setInputFiles({
+    name: "pilot.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Name,Amount\nWidget,42\n")
+  });
+
+  await expect(page.getByRole("cell", { name: "Widget" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Current source: pilot.csv/ })).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByText("Choose your local table")).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 

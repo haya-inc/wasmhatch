@@ -8,6 +8,8 @@
 
 [Try invoice reconciliation](https://haya-inc.github.io/wasmhatch/?view=operator&demo=reconciliation) — compare synthetic ERP and payout values, then review seven derived cells.
 
+[Start with your CSV/XLSX](https://haya-inc.github.io/wasmhatch/?view=operator&start=upload) — opens the local, Worker-isolated import path directly.
+
 WasmHatch is an open-source, browser-native AI operator for general business
 work. It gives an AI typed access to spreadsheets and future business APIs,
 runs generated data transformations inside a resource-limited Wasm sandbox,

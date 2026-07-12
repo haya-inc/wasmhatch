@@ -3,10 +3,11 @@ import { guidedDemoDefinition, resolveGuidedDemo } from "./guided-demo";
 
 describe("guided demo definitions", () => {
   it("resolves the default and reconciliation deep links without enabling unrelated queries", () => {
-    expect(resolveGuidedDemo("?view=operator")).toMatchObject({ id: "normalization", showGuide: false });
-    expect(resolveGuidedDemo("?view=operator&demo=local")).toMatchObject({ id: "normalization", showGuide: true });
-    expect(resolveGuidedDemo("?view=operator&demo=reconciliation")).toMatchObject({ id: "reconciliation", showGuide: true });
-    expect(resolveGuidedDemo("?view=operator&demo=unknown")).toMatchObject({ id: "normalization", showGuide: false });
+    expect(resolveGuidedDemo("?view=operator")).toMatchObject({ id: "normalization", showGuide: false, startUpload: false });
+    expect(resolveGuidedDemo("?view=operator&demo=local")).toMatchObject({ id: "normalization", showGuide: true, startUpload: false });
+    expect(resolveGuidedDemo("?view=operator&demo=reconciliation")).toMatchObject({ id: "reconciliation", showGuide: true, startUpload: false });
+    expect(resolveGuidedDemo("?view=operator&demo=unknown")).toMatchObject({ id: "normalization", showGuide: false, startUpload: false });
+    expect(resolveGuidedDemo("?view=operator&start=upload")).toMatchObject({ id: "normalization", showGuide: false, startUpload: true });
   });
 
   it("publishes frozen bounded synthetic workflows", () => {
