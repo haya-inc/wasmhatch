@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="WasmHatch privacy policy: a client-side AI workspace with no WasmHatch server, no analytics, memory-only credentials, and user-approved writes."
+    />
+    <link rel="canonical" href="https://wasmhatch.com/privacy.html" />
+    <link rel="icon" href="./mark.svg" type="image/svg+xml" />
+    <title>WasmHatch Privacy Policy</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+        max-width: 44rem;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.6;
+        color: #1a1c1a;
+        background: #ffffff;
+      }
+      h1 {
+        font-size: 1.75rem;
+        line-height: 1.25;
+        margin: 0 0 0.25rem;
+      }
+      h2 {
+        font-size: 1.2rem;
+        margin: 2.25rem 0 0.5rem;
+      }
+      p,
+      ul {
+        margin: 0.75rem 0;
+      }
+      li {
+        margin: 0.35rem 0;
+      }
+      a {
+        color: #0b57d0;
+      }
+      .meta {
+        color: #55605a;
+        font-size: 0.9rem;
+        margin-bottom: 1.75rem;
+      }
+      .summary {
+        border: 1px solid #c9d2cc;
+        border-radius: 8px;
+        padding: 0.25rem 1.25rem;
+        background: #f4f7f5;
+      }
+      footer {
+        margin-top: 3rem;
+        padding-top: 1rem;
+        border-top: 1px solid #c9d2cc;
+        color: #55605a;
+        font-size: 0.9rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          color: #e6e9e6;
+          background: #0a0b0a;
+        }
+        a {
+          color: #8ab4f8;
+        }
+        .meta,
+        footer {
+          color: #a3ada6;
+        }
+        .summary {
+          border-color: #38403a;
+          background: #141614;
+        }
+        footer {
+          border-top-color: #38403a;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>WasmHatch Privacy Policy</h1>
+      <p class="meta">Effective date: July 12, 2026</p>
+    </header>
+
+    <main>
+      <section class="summary" aria-label="Summary">
+        <p><strong>In short:</strong></p>
+        <ul>
+          <li>WasmHatch runs entirely in your browser. There is no WasmHatch server, no account, and no analytics.</li>
+          <li>Your files, workspace, and conversation history stay on your device unless you take an action that sends them somewhere.</li>
+          <li>Data leaves your browser only on your action: to the AI model provider you configure, directly to Google APIs under scopes you grant, or directly to Slack with a token you supply.</li>
+          <li>Access tokens and API keys are held in the memory of the open tab only — never stored, never sent to us.</li>
+          <li>Every external write is shown to you as an exact preview and happens only after you approve it.</li>
+        </ul>
+      </section>
+
+      <section id="what-wasmhatch-is">
+        <h2>What WasmHatch is</h2>
+        <p>
+          WasmHatch (<a href="https://wasmhatch.com">https://wasmhatch.com</a>)
+          is an open-source, client-side AI workspace. You describe work in
+          natural language, the app plans it with an AI model you choose, and
+          it shows you the exact result — a file diff, cell changes, or an
+          event's full details — before anything durable is written. The
+          application is a static web page: all application logic runs in your
+          browser, and WasmHatch operates no backend server of its own.
+        </p>
+      </section>
+
+      <section id="data-in-browser">
+        <h2>Data that stays in your browser</h2>
+        <p>
+          The following data is stored only in your browser's own storage
+          (Origin Private File System and localStorage) or in the memory of the
+          open tab, on your device:
+        </p>
+        <ul>
+          <li>Files you import or create (CSV, XLSX, Markdown, JSON, text, scripts) and workspace snapshots.</li>
+          <li>Your conversation history and run journal.</li>
+          <li>API keys, OAuth access tokens, and other credentials you provide — these are held in tab memory only, are never written to disk, and disappear when the tab is closed.</li>
+        </ul>
+        <p>
+          WasmHatch never uploads this data to a WasmHatch server, because none
+          exists. Content is transmitted elsewhere only in the specific,
+          user-initiated cases described in the next section.
+        </p>
+      </section>
+
+      <section id="data-that-leaves">
+        <h2>Data that leaves your browser — only when you act</h2>
+        <p>
+          Each of the following transmissions happens directly from your
+          browser to the named third party, is initiated by your action, and is
+          governed by that provider's own terms and privacy policy:
+        </p>
+        <ul>
+          <li>
+            <strong>AI model providers.</strong> When you run an AI request
+            using your own API key (for example OpenAI or Anthropic), the task
+            text and the specific content you attach or approve for reading are
+            sent to that provider. The app records this egress in a visible
+            ledger. If you use Chrome's built-in on-device model instead, your
+            content stays on the device.
+          </li>
+          <li>
+            <strong>Google APIs.</strong> When you connect a Google service,
+            your browser obtains a short-lived access token through Google
+            Identity Services. The token is held in tab memory only and
+            attaches solely to requests your browser makes directly to
+            <code>googleapis.com</code> under the scopes you granted. See
+            <a href="#google-user-data">Google user data</a> below.
+          </li>
+          <li>
+            <strong>Slack.</strong> If you connect Slack with a token you
+            supply, requests go directly from your browser to Slack's API using
+            that token, and any message or update is shown for your approval
+            before it is sent.
+          </li>
+        </ul>
+        <p>
+          A credential-broker layer inside the app keeps token and key text out
+          of AI-model requests, generated scripts, and logs. Every external
+          write — a spreadsheet edit, a document, a calendar event, a message —
+          requires you to approve an explicit preview first.
+        </p>
+        <p>
+          Like any website, the static application files are delivered by a
+          hosting provider, which may keep standard access logs (such as IP
+          address and user agent) to operate the service. WasmHatch adds no
+          analytics, tracking pixels, or telemetry of its own, and none of your
+          workspace content is sent to the host.
+        </p>
+      </section>
+
+      <section id="what-we-never-do">
+        <h2>What WasmHatch never does</h2>
+        <ul>
+          <li>No WasmHatch server storage: we cannot store your data because no WasmHatch server exists.</li>
+          <li>No analytics, tracking, or advertising of any kind.</li>
+          <li>No persistence of OAuth tokens or API keys — they live only in the memory of the open tab.</li>
+          <li>No sale of data, and no sharing of your data with anyone beyond the direct, user-initiated calls listed above.</li>
+          <li>No writes to any external system without your explicit approval of the exact change.</li>
+        </ul>
+      </section>
+
+      <section id="google-user-data">
+        <h2>Google user data and Limited Use</h2>
+        <p>
+          When you grant Google scopes, WasmHatch <strong>accesses</strong>
+          only the specific resources you point it at — a spreadsheet,
+          document, or presentation you select or reference, or your calendar
+          events — and <strong>uses</strong> that data solely to provide the
+          feature you asked for in that session: displaying it, transforming it
+          with your chosen AI model when you attach it, and preparing changes
+          you review. WasmHatch <strong>stores</strong> Google user data only
+          in your browser's local storage on your device, and
+          <strong>shares</strong> it with no one; the only transmission of
+          Google user data to a third party is when you explicitly attach
+          content to a request to your own AI model provider, and that egress
+          is recorded in the visible ledger. WasmHatch does not use Google user
+          data for advertising and does not use it to train AI models.
+        </p>
+        <p>
+          WasmHatch's use and transfer to any other app of information received
+          from Google APIs will adhere to the
+          <a href="https://developers.google.com/terms/api-services-user-data-policy">Google
+          API Services User Data Policy</a>, including the Limited Use
+          requirements.
+        </p>
+      </section>
+
+      <section id="data-deletion">
+        <h2>Deleting your data and revoking access</h2>
+        <ul>
+          <li>
+            <strong>Local data:</strong> use the app's storage management to
+            clear the workspace, or clear this site's data in your browser
+            settings. Because everything is stored locally, this removes it
+            completely — there is no server copy to request deletion of.
+          </li>
+          <li>
+            <strong>Google access:</strong> use <em>Revoke Google access</em>
+            in the app, or remove WasmHatch at
+            <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.
+            Access tokens are never persisted, so closing the tab also ends the
+            session.
+          </li>
+          <li>
+            <strong>Other credentials:</strong> AI provider keys and Slack
+            tokens are memory-only; close the tab to discard them, and revoke
+            them at the issuing provider if desired.
+          </li>
+        </ul>
+      </section>
+
+      <section id="changes">
+        <h2>Changes to this policy</h2>
+        <p>
+          If this policy changes, the new version will be published at this URL
+          with an updated effective date, and the change will be visible in the
+          project's public
+          <a href="https://github.com/haya-inc/wasmhatch">source repository history</a>.
+        </p>
+      </section>
+
+      <section id="contact">
+        <h2>Contact</h2>
+        <p>
+          Questions about this policy or about how WasmHatch handles data:
+        </p>
+        <ul>
+          <li>Open an issue at <a href="https://github.com/haya-inc/wasmhatch/issues">github.com/haya-inc/wasmhatch/issues</a></li>
+          <li>Email <a href="mailto:support@wasmhatch.com">support@wasmhatch.com</a></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        WasmHatch is open source (Apache-2.0).
+        <a href="https://wasmhatch.com">Home</a> ·
+        <a href="https://github.com/haya-inc/wasmhatch">Source</a>
+      </p>
+    </footer>
+  </body>
+</html>
