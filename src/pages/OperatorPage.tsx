@@ -253,6 +253,7 @@ export function OperatorPage() {
   const [localDemoCompleted, setLocalDemoCompleted] = useState(false);
   const [pilotReportDelivery, setPilotReportDelivery] = useState<"copied" | "downloaded" | null>(null);
   const [pilotReportDownload, setPilotReportDownload] = useState<string | null>(null);
+  const [mobileSourcesOpen, setMobileSourcesOpen] = useState(false);
   const [agentTrace, setAgentTrace] = useState<WorkspaceAgentTraceEvent[]>([]);
   const [agentBudget, setAgentBudget] = useState<WorkspaceAgentBudget | null>(null);
   const [committing, setCommitting] = useState(false);
@@ -919,6 +920,7 @@ export function OperatorPage() {
       setArtifactFile(null);
       setArtifactSheetChoice("");
       setSource("google");
+      setMobileSourcesOpen(false);
       setLoadedGoogleTarget({
         spreadsheetId: snapshot.spreadsheetId,
         spreadsheetIdSha256: await hashWorkspaceContent(snapshot.spreadsheetId),
@@ -1340,6 +1342,7 @@ export function OperatorPage() {
     setLocalDemoCompleted(false);
     setPilotReportDelivery(null);
     setPilotReportDownload(null);
+    setMobileSourcesOpen(false);
     setLoadedGoogleTarget(null);
     setStatus(`${nextDemo.label} ready`);
     setError("");
@@ -1383,6 +1386,7 @@ export function OperatorPage() {
       setAgentTrace([]);
       setAgentBudget(null);
       setSource("artifact");
+      setMobileSourcesOpen(false);
       setStatus(`Loaded ${snapshot.provenance.rows} rows from ${snapshot.provenance.sheetName}`);
       record({
         title: "Local tabular artifact imported",
@@ -1942,7 +1946,20 @@ export function OperatorPage() {
       </header>
 
       <div className="operator-layout">
-        <aside className="operator-connectors" aria-label="Sources and connectors">
+        <aside className={mobileSourcesOpen ? "operator-connectors mobile-open" : "operator-connectors"} aria-label="Sources and connectors">
+          <button
+            className="operator-mobile-source-toggle"
+            type="button"
+            aria-expanded={mobileSourcesOpen}
+            aria-controls="operator-source-settings"
+            aria-label={`Current source: ${source === "demo" ? demo.label : source === "artifact" ? artifact?.sourceName ?? "CSV / XLSX" : loadedGoogleTarget ? `Google Sheets ${loadedGoogleTarget.range}` : "Google Sheets"}. ${mobileSourcesOpen ? "Hide" : "Change"} source settings`}
+            onClick={() => setMobileSourcesOpen((open) => !open)}
+          >
+            {source === "google" ? <Table2 size={16} /> : source === "artifact" ? <UploadCloud size={16} /> : <Database size={16} />}
+            <span><small>Current source</small><strong>{source === "demo" ? demo.label : source === "artifact" ? artifact?.sourceName ?? "CSV / XLSX" : loadedGoogleTarget ? `Google Sheets · ${loadedGoogleTarget.range}` : "Google Sheets"}</strong></span>
+            <em>{mobileSourcesOpen ? "Hide" : "Change"}</em>
+          </button>
+          <div id="operator-source-settings" className="operator-source-content">
           <div className="operator-panel-heading"><span>Sources</span><small>bounded authority</small></div>
           <button className={source === "demo" && demoId === "normalization" ? "connector-row active" : "connector-row"} onClick={() => resetDemo("normalization")} disabled={committing}>
             <Database size={16} /><span><strong>Local demo</strong><small>Normalize 4 synthetic rows · no network</small></span>{source === "demo" && demoId === "normalization" && <Check size={14} />}
@@ -2102,6 +2119,7 @@ export function OperatorPage() {
           <div className="operator-scope">
             <ShieldCheck size={16} />
             <div><strong>Current boundary</strong><p>Foreground GIS token model. Expiry requires a new user gesture; no refresh token, scheduling, or unattended write.</p></div>
+          </div>
           </div>
         </aside>
 

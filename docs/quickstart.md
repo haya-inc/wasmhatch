@@ -15,7 +15,9 @@ Open the [guided local demo](https://haya-inc.github.io/wasmhatch/?view=operator
 
 No account, API key, OAuth client, upload, or server is involved. The guide is a
 product walkthrough, not an authorization shortcut: script execution and effect
-approval remain separate actions.
+approval remain separate actions. On a narrow screen, the current source remains
+visible while connector and credential settings stay collapsed behind
+**Change** until needed.
 
 ## Invoice reconciliation sample
 

@@ -46,6 +46,9 @@ require a separately deployed server adapter.
 - A second deterministic invoice-reconciliation sample that derives seven
   variance/status cells from synthetic ERP and payout values, then uses the same
   sandbox, immutable proposal, approval, and source-free pilot-report path.
+- A mobile-first Operator entry state that keeps the current source, guided
+  action, and working table ahead of optional connector configuration; source
+  settings remain explicitly expandable with their current authority visible.
 - A local spreadsheet demo with editable tabular data.
 - A Worker-isolated CSV/XLSX artifact adapter with pre-inflation ZIP bounds,
   strict UTF-8/XML parsing, visible-sheet selection, formula/macro/external-link

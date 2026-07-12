@@ -127,12 +127,22 @@ test("keeps the guided local demo usable at 390 pixels", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?view=operator&demo=local");
 
+  const sourceToggle = page.getByRole("button", { name: /Current source: 60-second local demo/ });
   const guide = page.getByRole("region", { name: "60-second local demo" });
+  await expect(sourceToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByLabel("OpenAI session API key")).toBeHidden();
   await expect(guide).toBeVisible();
   const action = guide.getByRole("button", { name: "Run bounded transform" });
   await expect(action).toBeVisible();
   expect((await action.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  expect((await guide.boundingBox())?.y).toBeLessThan(180);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+
+  await sourceToggle.click();
+  await expect(sourceToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByLabel("OpenAI session API key")).toBeVisible();
+  await page.getByRole("button", { name: /Local demo Normalize 4 synthetic rows/ }).click();
+  await expect(sourceToggle).toHaveAttribute("aria-expanded", "false");
 });
 
 test("downloads the source-free pilot report when the clipboard API hangs", async ({ page }) => {
