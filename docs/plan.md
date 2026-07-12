@@ -792,8 +792,9 @@ not automatically retried.
   verified replacement, rollback, and uncertain recovery diagnostics are
   complete. Approved local table effects now persist as verified,
   content-addressed `work/` snapshots and survive portable export/restore while
-  leaving `inputs/` unchanged; user-invoked undo of earlier committed file
-  effects remains.
+  leaving `inputs/` unchanged. The most recent local table effect now supports
+  receipt-bound, separately reviewed undo/redo in the active session; durable
+  cross-session history and general workspace-file effect undo remain.
 - Persist generated scripts and manifests as inspectable workspace files —
   complete for imported tabular workflows. Fixtures, general reports, and audit
   exports remain.

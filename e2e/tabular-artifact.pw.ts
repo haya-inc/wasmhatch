@@ -71,6 +71,42 @@ test("imports a CSV as a persisted value snapshot, transforms it, and exports a 
   expect(Buffer.concat(chunks).toString("utf8")).toContain("'=2+2");
   await expect(page.getByText("Value-only artifact exported", { exact: true })).toBeVisible();
   await expect(page.getByText(/1 CSV formula prefixes neutralized/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Review undo" }).click();
+  await expect(page.getByText("Undo approval required", { exact: true })).toBeVisible();
+  await expect(page.getByText("Local undo proposal prepared", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Approve and apply undo locally" }).click();
+  await expect(page.getByText("Local undo committed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Approved undo persisted to a verified work/ snapshot", { exact: true })).toBeVisible();
+  await expect(page.locator(".operator-table tr").nth(1).locator("td").nth(0)).toHaveText(" aya ");
+  await expect(page.locator(".operator-table tr").nth(1).locator("td").nth(1)).toHaveText("10");
+  await expect(page.getByRole("button", { name: "Review redo" })).toBeVisible();
+
+  const reversedSnapshots = await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const workspace = await root.getDirectoryHandle("wasmhatch-operator-workspace-v1");
+    const work = await workspace.getDirectoryHandle("work");
+    const snapshots: { name: string; rows: unknown[][] }[] = [];
+    for await (const [name, handle] of (work as FileSystemDirectoryHandle & {
+      entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+    }).entries()) {
+      if (handle.kind !== "file" || !name.endsWith(".json")) continue;
+      const file = await (handle as FileSystemFileHandle).getFile();
+      const value = JSON.parse(await file.text()) as { rows: unknown[][] };
+      snapshots.push({ name, rows: value.rows });
+    }
+    return snapshots;
+  });
+  expect(reversedSnapshots).toHaveLength(2);
+  expect(reversedSnapshots.map((snapshot) => snapshot.rows[1])).toEqual(expect.arrayContaining([
+    ["aya", 10, "=2+2"],
+    [" aya ", "10", "=2+2"]
+  ]));
+  reversedSnapshots.forEach((snapshot) => expect(snapshot.name).toMatch(/^pipeline--CSV--[a-f0-9]{64}\.json$/));
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("button", { name: "Review redo" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
 test("blocks a disguised XLSX before it reaches working data", async ({ page }) => {
@@ -84,6 +120,45 @@ test("blocks a disguised XLSX before it reaches working data", async ({ page }) 
   await expect(page.getByRole("alert")).toContainText("not a valid ZIP-based workbook");
   await expect(page.getByLabel("Review and audit").getByText("Local artifact import blocked", { exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "aya tanaka" })).toBeVisible();
+});
+
+test("blocks local undo when the durable committed snapshot drifts", async ({ page }) => {
+  await page.goto("/?view=operator");
+  await page.getByLabel("Import CSV or XLSX").setInputFiles({
+    name: "reversal.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Owner,Amount\r\n aya ,10\r\n", "utf8")
+  });
+  await page.getByRole("textbox", { name: "Sandbox transformation script" }).fill(
+    "(rows) => rows.map((row, index) => index === 0 ? row : [String(row[0]).trim(), Number(row[1])])"
+  );
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+  await page.getByRole("button", { name: "Approve and apply locally" }).click();
+  await expect(page.getByRole("button", { name: "Review undo" })).toBeVisible();
+
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const workspace = await root.getDirectoryHandle("wasmhatch-operator-workspace-v1");
+    const work = await workspace.getDirectoryHandle("work");
+    for await (const [name, handle] of (work as FileSystemDirectoryHandle & {
+      entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+    }).entries()) {
+      if (handle.kind !== "file" || !name.endsWith(".json")) continue;
+      const fileHandle = handle as FileSystemFileHandle;
+      const value = JSON.parse(await (await fileHandle.getFile()).text()) as { rows: unknown[][] };
+      value.rows[1][0] = "tampered after commit";
+      const writable = await fileHandle.createWritable();
+      await writable.write(`${JSON.stringify(value, null, 2)}\n`);
+      await writable.close();
+      return;
+    }
+    throw new Error("Committed work snapshot was not found.");
+  });
+
+  await page.getByRole("button", { name: "Review undo" }).click();
+  await expect(page.getByRole("alert")).toContainText("durable working snapshot changed");
+  await expect(page.getByLabel("Review and audit").getByText("Local undo blocked", { exact: true })).toBeVisible();
+  await expect(page.getByText("Undo approval required", { exact: true })).toHaveCount(0);
 });
 
 test("imports a value-only XLSX in the browser worker without executing formula-looking text", async ({ page }) => {

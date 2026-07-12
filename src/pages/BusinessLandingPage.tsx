@@ -182,7 +182,7 @@ export function BusinessLandingPage() {
           <article><span>02</span><h3>Connector broker</h3><p>GIS session token plus manifest-bound operations and resources</p><small>Expiry requires user gesture</small></article>
           <article><span>03</span><h3>Agent checkpoints</h3><p>Reads only identity-bound files or one host-bound Sheets range, then records bounded model egress</p><small>No token or provider ID</small></article>
           <article><span>04</span><h3>Artifact workflow</h3><p>Derives one typed output manifest on the host and mounts only copied inputs inside QuickJS</p><small>Markdown · CSV · JSON · text</small></article>
-          <article><span>05</span><h3>Effect review</h3><p>Cell mutations or file diffs bind the reviewed base and payload</p><small>Exact approval</small></article>
+          <article><span>05</span><h3>Effect review</h3><p>Cell mutations, file diffs, and local undo bind the reviewed base and payload</p><small>Exact approval · receipt-bound undo</small></article>
           <article><span>06</span><h3>Run journal</h3><p>Joins policy, tools, approvals, conflicts, receipts, and pilot timing</p><small>Credential fields excluded</small></article>
         </div>
       </section>

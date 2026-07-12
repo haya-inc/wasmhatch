@@ -94,6 +94,15 @@ an inverse bundle with before/after values swapped. This is recovery metadata,
 not permission to undo. Applying an inverse is a new durable effect: read the
 current source, prepare a new proposal, review it, and approve it independently.
 
+The Operator implements that contract for the most recent committed local
+CSV/XLSX table effect in the active session. It accepts a receipt only when its
+proposal, connector, target, mutation count, inverse bundle, and commit time are
+consistent. The whole current table must still equal the committed result, and
+the durable content-addressed `work/` file must match its active bytes. The host
+then creates a new `recheck` proposal from the inverse; neither the receipt nor
+the Undo button grants write authority. Committing an undo creates another
+receipt, so the same process can stage a reviewed redo.
+
 Uncertain writes do not produce inverse metadata as proof of rollback. The
 target must be reconciled first because the provider may already have applied
 the original request.

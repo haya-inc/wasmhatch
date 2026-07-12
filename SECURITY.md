@@ -101,6 +101,11 @@ security fixes.
 - Run journal exports are neither signed nor tamper-evident. They link policy,
   proposal, source, run, and receipt identities for inspection but do not grant
   authority, prove business correctness, or replace provider-native audit logs.
+- Local table undo/redo does not directly restore an old file. The host verifies
+  the current rows, content-addressed path, durable bytes, committed proposal,
+  receipt identity, and inverse mutations, then stages a new effect. It still
+  requires exact cell review, current-source recheck, explicit approval, and a
+  verified `work/` write. The receipt chain is session-only at present.
 - The guided public pilot report is derived from aggregate counts and timings
   only. It excludes source contents, task text, resource identities, and run ID;
   the user must still inspect the copied Markdown before posting it publicly.

@@ -61,6 +61,14 @@ export interface PrepareSpreadsheetEffectInput {
   expiresAt?: string | null;
 }
 
+export interface PrepareSpreadsheetReversalInput {
+  committedProposal: SpreadsheetEffectProposal;
+  receipt: SpreadsheetCommitReceipt;
+  currentValues: SpreadsheetRows;
+  policyDecisionId: string;
+  expiresAt?: string | null;
+}
+
 export interface SpreadsheetApproval {
   readonly interruptId: string;
   readonly proposalId: string;
@@ -266,6 +274,89 @@ export async function prepareSpreadsheetEffect(
   };
   const proposalId = `${PROPOSAL_PREFIX}${await sha256(proposalIdentity(proposalWithoutId))}`;
   return deepFreeze({ ...proposalWithoutId, proposalId });
+}
+
+/**
+ * Turns a proven commit receipt into a new reviewable proposal. A reversal is
+ * never an instruction to write immediately: it receives a new proposal ID,
+ * policy decision, current-source recheck, and foreground approval.
+ */
+export async function prepareSpreadsheetReversalEffect(
+  input: PrepareSpreadsheetReversalInput
+): Promise<SpreadsheetEffectProposal> {
+  const committedValues = await verifySpreadsheetEffect(input.committedProposal);
+  const currentValues = cloneRows(input.currentValues);
+  const { committedProposal, receipt } = input;
+
+  assertExactKeys(receipt, [
+    "receiptId", "proposalId", "connector", "target", "baseVersion",
+    "preconditionStrength", "providerResult", "mutations", "committedAt"
+  ], "Spreadsheet commit receipt");
+  assertExactKeys(receipt.connector, ["id", "version"], "Spreadsheet commit receipt connector");
+  assertExactKeys(receipt.target, ["spreadsheetId", "range"], "Spreadsheet commit receipt target");
+  assertExactKeys(receipt.baseVersion, ["kind", "value"], "Spreadsheet commit receipt base version");
+  assertExactKeys(receipt.providerResult, ["updatedRange", "updatedRows", "updatedColumns", "updatedCells"], "Spreadsheet commit provider result");
+  assertExactKeys(receipt.mutations, ["count", "inverse"], "Spreadsheet commit receipt mutations");
+  if (
+    receipt.receiptId !== `receipt:${committedProposal.proposalId}` ||
+    receipt.proposalId !== committedProposal.proposalId ||
+    receipt.connector.id !== committedProposal.connector.id ||
+    receipt.connector.version !== committedProposal.connector.version ||
+    receipt.target.spreadsheetId !== committedProposal.target.spreadsheetId ||
+    receipt.target.range !== committedProposal.target.range ||
+    receipt.preconditionStrength !== committedProposal.baseVersion.strength ||
+    canonicalJson(receipt.baseVersion) !== canonicalJson({
+      kind: committedProposal.baseVersion.kind,
+      value: committedProposal.baseVersion.value
+    }) ||
+    receipt.mutations.count !== committedProposal.mutations.mutations.length
+  ) {
+    throw new Error("Spreadsheet reversal receipt does not match the committed proposal.");
+  }
+  if (!Number.isFinite(Date.parse(receipt.committedAt))) {
+    throw new Error("Spreadsheet reversal receipt has an invalid commit time.");
+  }
+  requireText(receipt.providerResult.updatedRange, "Spreadsheet commit updated range");
+  for (const [label, value] of Object.entries({
+    rows: receipt.providerResult.updatedRows,
+    columns: receipt.providerResult.updatedColumns,
+    cells: receipt.providerResult.updatedCells
+  })) {
+    if (!Number.isInteger(value) || value < 0) {
+      throw new Error(`Spreadsheet commit updated ${label} must be a non-negative integer.`);
+    }
+  }
+
+  const expectedInverse = invertSpreadsheetMutationBundle(
+    committedProposal.baseValues,
+    committedProposal.mutations,
+    committedProposal.target.inputMode
+  );
+  if (canonicalJson(receipt.mutations.inverse) !== canonicalJson(expectedInverse)) {
+    throw new Error("Spreadsheet reversal receipt contains a different inverse mutation bundle.");
+  }
+  if (canonicalJson(currentValues) !== canonicalJson(committedValues)) {
+    throw new Error("The current spreadsheet no longer matches the committed result; prepare a new operation instead of reversing it.");
+  }
+
+  const revertedValues = applySpreadsheetMutationBundle(
+    currentValues,
+    receipt.mutations.inverse,
+    committedProposal.target.inputMode
+  );
+  if (canonicalJson(revertedValues) !== canonicalJson(committedProposal.baseValues)) {
+    throw new Error("Spreadsheet reversal did not reconstruct the committed base snapshot.");
+  }
+
+  return prepareSpreadsheetEffect({
+    connector: committedProposal.connector,
+    target: committedProposal.target,
+    baseValues: currentValues,
+    values: revertedValues,
+    preconditionStrength: "recheck",
+    policyDecisionId: input.policyDecisionId,
+    expiresAt: input.expiresAt
+  });
 }
 
 export async function verifySpreadsheetEffect(proposal: SpreadsheetEffectProposal): Promise<SpreadsheetRows> {

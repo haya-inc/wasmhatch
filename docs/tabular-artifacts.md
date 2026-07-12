@@ -107,6 +107,15 @@ failure is not reported as committed. The original `inputs/` artifact remains
 available for provenance and comparison, while the active artifact pointer moves
 to the verified working snapshot.
 
+The most recent approved local table effect can be reversed during the active
+session. WasmHatch does not mutate the pointer or copy an older file directly.
+It verifies that the active rows, content-addressed path, durable bytes, original
+proposal, and commit receipt still agree; derives the exact inverse mutation
+bundle from that receipt; and stages a new proposal. Undo and redo each require
+their own cell preview, current-source recheck, explicit approval, receipt, and
+new verified `work/` snapshot. A reload currently discards the in-memory receipt
+chain, so cross-session history and general workspace-file undo are not claimed.
+
 ## Dependency decision
 
 WasmHatch evaluated [SheetJS Community Edition](https://docs.sheetjs.com/) and

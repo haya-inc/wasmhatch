@@ -10,6 +10,7 @@ import {
   Paperclip,
   Play,
   RefreshCw,
+  RotateCcw,
   ShieldCheck,
   Square,
   Sparkles,
@@ -39,6 +40,8 @@ import {
   SpreadsheetEffectExecutor,
   decideSpreadsheetEffect,
   prepareSpreadsheetEffect,
+  prepareSpreadsheetReversalEffect,
+  type SpreadsheetCommitReceipt,
   type SpreadsheetEffectProposal
 } from "../lib/spreadsheet-effect";
 import { applySpreadsheetMutationBundle } from "../lib/spreadsheet-mutation";
@@ -155,6 +158,13 @@ interface AuditEntry {
   evidence?: Record<string, RunJournalEvidenceValue>;
 }
 
+interface ReversibleLocalSpreadsheetEffect {
+  readonly proposal: SpreadsheetEffectProposal;
+  readonly receipt: SpreadsheetCommitReceipt;
+  readonly committedWorkspacePath: string;
+  readonly lastAction: "forward" | "undo" | "redo";
+}
+
 function auditEntryFromJournalEvent(event: RunJournalEvent): AuditEntry {
   const totalSeconds = Math.floor(event.elapsedMs / 1_000);
   const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
@@ -248,6 +258,9 @@ export function OperatorPage() {
   const demo = guidedDemoDefinition(demoId);
   const [rows, setRows] = useState<SpreadsheetRows>(() => initialDemo.definition.rows.map((row) => [...row]));
   const [proposal, setProposal] = useState<SpreadsheetEffectProposal | null>(null);
+  const [reversalProposalKind, setReversalProposalKind] = useState<"undo" | "redo" | null>(null);
+  const [lastLocalEffect, setLastLocalEffect] = useState<ReversibleLocalSpreadsheetEffect | null>(null);
+  const [localReversalBusy, setLocalReversalBusy] = useState(false);
   const [workspaceProposal, setWorkspaceProposal] = useState<WorkspaceFileEffectProposal | null>(null);
   const [task, setTask] = useState(initialDemo.definition.task);
   const [script, setScript] = useState(initialDemo.definition.script);
@@ -449,6 +462,7 @@ export function OperatorPage() {
         evidence: { proposal_id: proposal.proposalId, reason }
       });
       setProposal(null);
+      setReversalProposalKind(null);
     }
     if (workspaceProposal) {
       record({
@@ -611,6 +625,7 @@ export function OperatorPage() {
         policyDecisionId: policyDecision.decisionId
       });
       setProposal(nextProposal);
+      setReversalProposalKind(null);
       setStatus(`${nextProposal.summary.changedCells} cell changes ready for review`);
       record({
         title: "Typed mutation proposal prepared",
@@ -631,6 +646,93 @@ export function OperatorPage() {
       setError(message);
       setStatus("Transform failed");
       record({ title: "Sandbox transform blocked", detail: message, tone: "muted", category: "script", outcome: "failed" });
+    }
+  };
+
+  const stageLocalSpreadsheetReversal = async () => {
+    if (!lastLocalEffect || proposal || workspaceProposal || committing || localReversalBusy) return;
+    if (!ensureJournalCapacity(3)) return;
+    const startingAuthorityEpoch = authorityEpoch.current;
+    setLocalReversalBusy(true);
+    setError("");
+    const action = lastLocalEffect.lastAction === "undo" ? "redo" : "undo";
+    try {
+      if (source !== "artifact" || !artifact || !artifactWorkspacePath) {
+        throw new Error("The reversible local artifact is no longer the active source.");
+      }
+      if (artifactWorkspacePath !== lastLocalEffect.committedWorkspacePath) {
+        throw new Error("The active workspace snapshot changed after the recorded local effect.");
+      }
+
+      const currentSnapshot = { provenance: artifact, rows: rows.map((row) => [...row]) };
+      const currentContent = normalizedArtifactJson(currentSnapshot);
+      const currentSha256 = await hashWorkspaceContent(currentContent);
+      const expectedPath = normalizedWorkingArtifactPath(currentSnapshot, currentSha256);
+      if (expectedPath !== artifactWorkspacePath) {
+        throw new Error("The active table identity no longer matches its content-addressed workspace path.");
+      }
+      const durableContent = await workspace.current.readFile(artifactWorkspacePath);
+      if (startingAuthorityEpoch !== authorityEpoch.current) {
+        throw new Error("The active source changed while the local reversal was being prepared.");
+      }
+      if (durableContent !== currentContent) {
+        throw new Error("The durable working snapshot changed after the recorded local effect.");
+      }
+      parseNormalizedArtifactJson(durableContent);
+
+      const policyDecision = createPolicyDecisionEnvelope({
+        policyId: EXPLICIT_APPROVAL_POLICY,
+        capability: "spreadsheet.cells.update",
+        resource: `${LOCAL_SPREADSHEET_MANIFEST.id}:artifact:${artifact.sourceSha256}:${currentSha256}`,
+        decision: "stage",
+        actor: "host-policy",
+        reason: `Allow a ${action} proposal derived from one exact commit receipt; a fresh review and current-source check remain required.`
+      });
+      record({
+        title: `Policy allowed local ${action} staging`,
+        detail: `${policyDecision.decisionId.slice(-12)} · receipt ${lastLocalEffect.receipt.receiptId.slice(-12)} · commit authority not granted`,
+        tone: "accent",
+        category: "policy",
+        outcome: "allowed",
+        evidence: {
+          decision_id: policyDecision.decisionId,
+          capability: policyDecision.capability,
+          decision: policyDecision.decision,
+          reverses_receipt_id: lastLocalEffect.receipt.receiptId
+        }
+      });
+      const nextProposal = await prepareSpreadsheetReversalEffect({
+        committedProposal: lastLocalEffect.proposal,
+        receipt: lastLocalEffect.receipt,
+        currentValues: rows,
+        policyDecisionId: policyDecision.decisionId
+      });
+      setProposal(nextProposal);
+      setReversalProposalKind(action);
+      clearAiPlans();
+      clearPublicPilotReport();
+      setStatus(`${nextProposal.summary.changedCells} cell ${action} ready for review`);
+      record({
+        title: `Local ${action} proposal prepared`,
+        detail: `${nextProposal.proposalId.slice(-12)} · ${nextProposal.summary.changedCells} inverse cells · source and receipt verified`,
+        tone: "accent",
+        category: "proposal",
+        outcome: "prepared",
+        evidence: {
+          proposal_id: nextProposal.proposalId,
+          policy_decision_id: policyDecision.decisionId,
+          reverses_receipt_id: lastLocalEffect.receipt.receiptId,
+          changed_cells: nextProposal.summary.changedCells,
+          precondition_strength: nextProposal.baseVersion.strength
+        }
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : `Local ${action} could not be staged.`;
+      setError(message);
+      setStatus(`Local ${action} blocked`);
+      record({ title: `Local ${action} blocked`, detail: message, tone: "muted", category: "proposal", outcome: "failed" });
+    } finally {
+      setLocalReversalBusy(false);
     }
   };
 
@@ -890,6 +992,7 @@ export function OperatorPage() {
     const fallbackDemo = guidedDemoDefinition("normalization");
     setDemoId(fallbackDemo.id);
     setRows(fallbackDemo.rows.map((row) => [...row]));
+    setLastLocalEffect(null);
     taskRevision.current += 1;
     setTask(fallbackDemo.task);
     scriptRevision.current += 1;
@@ -922,7 +1025,8 @@ export function OperatorPage() {
     if (connectingGoogle || revokingGoogle) return;
     if (!ensureJournalCapacity(3)) return;
     planningAbort.current?.abort();
-    const startingAuthorityEpoch = authorityEpoch.current;
+    const startingAuthorityEpoch = authorityEpoch.current + 1;
+    authorityEpoch.current = startingAuthorityEpoch;
     setStatus("Reading Google Sheets…");
     setError("");
     try {
@@ -937,6 +1041,7 @@ export function OperatorPage() {
       }
       invalidateProposal("source range replaced by a fresh read");
       setRows(snapshot.values);
+      setLastLocalEffect(null);
       clearAiPlans();
       setArtifact(null);
       setArtifactWorkspacePath(null);
@@ -986,6 +1091,7 @@ export function OperatorPage() {
     setError("");
     try {
       const isGoogle = proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id;
+      const approvedReversalKind = reversalProposalKind;
       let persistedWorkingPath: string | null = null;
       setStatus(isGoogle ? "Rechecking source before the approved write…" : "Validating the approved local effect…");
       const connector: SpreadsheetConnector = isGoogle
@@ -1032,15 +1138,28 @@ export function OperatorPage() {
           setArtifactWorkspacePath(persistedWorkingPath);
           refreshWorkspaceArtifacts();
         }
+        if (!isGoogle && source === "artifact" && persistedWorkingPath) {
+          setLastLocalEffect({
+            proposal,
+            receipt: outcome.receipt,
+            committedWorkspacePath: persistedWorkingPath,
+            lastAction: approvedReversalKind ?? "forward"
+          });
+        }
         setProposal(null);
+        setReversalProposalKind(null);
         clearAiPlans();
         setStatus(isGoogle
           ? `Updated ${outcome.receipt.providerResult.updatedCells} cells in ${outcome.receipt.providerResult.updatedRange}`
-          : persistedWorkingPath ? "Approved changes persisted to a verified work/ snapshot" : "Approved changes applied to the local demo");
+          : persistedWorkingPath
+            ? approvedReversalKind
+              ? `Approved ${approvedReversalKind} persisted to a verified work/ snapshot`
+              : "Approved changes persisted to a verified work/ snapshot"
+            : "Approved changes applied to the local demo");
         if (source === "demo") setLocalDemoOutcome("committed");
         setPilotReportWorkflow(currentPublicPilotWorkflow());
         record({
-          title: isGoogle ? "Google Sheets effect committed" : "Local effect committed",
+          title: isGoogle ? "Google Sheets effect committed" : approvedReversalKind ? `Local ${approvedReversalKind} committed` : "Local effect committed",
           detail: `${outcome.receipt.receiptId.slice(-12)} · ${proposal.summary.changedCells} cells · ${outcome.receipt.preconditionStrength}${persistedWorkingPath ? ` · ${persistedWorkingPath}` : ""}`,
           tone: "accent",
           category: "effect",
@@ -1051,13 +1170,15 @@ export function OperatorPage() {
             connector_id: outcome.receipt.connector.id,
             changed_cells: proposal.summary.changedCells,
             precondition_strength: outcome.receipt.preconditionStrength,
-            workspace_path: persistedWorkingPath
+            workspace_path: persistedWorkingPath,
+            reversal_kind: approvedReversalKind
           }
         });
       } else if (outcome.status === "conflict") {
         if (outcome.observedValues) setRows(outcome.observedValues);
         else setLoadedGoogleTarget(null);
         setProposal(null);
+        setReversalProposalKind(null);
         clearAiPlans();
         setStatus("Write blocked by source conflict");
         setError("The source changed after this proposal was prepared. Review the latest values and prepare a new proposal.");
@@ -1071,6 +1192,7 @@ export function OperatorPage() {
         });
       } else if (outcome.status === "uncertain") {
         setProposal(null);
+        setReversalProposalKind(null);
         setLoadedGoogleTarget(null);
         setStatus("Write outcome uncertain — reconciliation required");
         setError(outcome.reason);
@@ -1080,7 +1202,10 @@ export function OperatorPage() {
           googleOAuth.current.clear();
           setGoogleAuthStatus(googleOAuth.current.status());
         }
-        if (!outcome.retryable) setProposal(null);
+        if (!outcome.retryable) {
+          setProposal(null);
+          setReversalProposalKind(null);
+        }
         setStatus(outcome.retryable ? "Source recheck failed — safe to retry" : "Approved write blocked");
         setError(outcome.reason);
         record({ title: "Approved effect blocked", detail: `${outcome.code} · ${outcome.reason}`, tone: "muted", category: "effect", outcome: "failed", evidence: { proposal_id: proposal.proposalId, code: outcome.code, retryable: outcome.retryable } });
@@ -1110,6 +1235,7 @@ export function OperatorPage() {
         evidence: { proposal_id: proposal.proposalId, actor: rejection.actor, decision: rejection.decision }
       });
       setProposal(null);
+      setReversalProposalKind(null);
       setStatus("Write proposal rejected; no mutation occurred");
       if (source === "demo") setLocalDemoOutcome("rejected");
       setPilotReportWorkflow(currentPublicPilotWorkflow());
@@ -1370,6 +1496,8 @@ export function OperatorPage() {
     setDemoId(nextDemo.id);
     setRows(nextDemo.rows.map((row) => [...row]));
     setProposal(null);
+    setReversalProposalKind(null);
+    setLastLocalEffect(null);
     setWorkspaceProposal(null);
     clearAiPlans();
     setPlanMode("spreadsheet-transform");
@@ -1425,6 +1553,7 @@ export function OperatorPage() {
         persistenceWarning = " · OPFS persistence failed; export before closing this tab";
       }
       setRows(snapshot.rows.map((row) => [...row]));
+      setLastLocalEffect(null);
       setArtifact(snapshot.provenance);
       setArtifactWorkspacePath(persistedPath);
       setArtifactFile(file);
@@ -1517,6 +1646,8 @@ export function OperatorPage() {
 
   const adoptRestoredWorkspace = (bundle: OperatorWorkspaceBundle) => {
     clearPublicPilotReport();
+    setLastLocalEffect(null);
+    setReversalProposalKind(null);
     const fallbackDemo = guidedDemoDefinition("normalization");
     const activePath = bundle.manifest.activeArtifactPath;
     if (activePath) {
@@ -1933,6 +2064,14 @@ export function OperatorPage() {
   const realWorkflowPilotReady = pilotReportWorkflow === "local-csv"
     || pilotReportWorkflow === "local-xlsx"
     || pilotReportWorkflow === "google-sheets";
+  const localReversalAvailable = Boolean(
+    lastLocalEffect &&
+    source === "artifact" &&
+    artifactWorkspacePath === lastLocalEffect.committedWorkspacePath &&
+    !proposal &&
+    !workspaceProposal
+  );
+  const nextLocalReversalKind = lastLocalEffect?.lastAction === "undo" ? "redo" : "undo";
   const currentSourceLabel = uploadPromptVisible
     ? "CSV / XLSX not selected"
     : source === "demo"
@@ -2291,6 +2430,13 @@ export function OperatorPage() {
 
         <aside className="operator-review" aria-label="Review and audit">
           <div className="operator-panel-heading"><span>Write review</span><small>{workspaceProposal ? "1 file" : `${changes.length} changes`}</small></div>
+          {localReversalAvailable && (
+            <div className="local-effect-reversal" role="region" aria-label="Reverse last local spreadsheet effect">
+              <RotateCcw size={16} />
+              <div><strong>{nextLocalReversalKind === "undo" ? "Last local write can be undone" : "Last undo can be redone"}</strong><p>The durable snapshot and commit receipt will be rechecked. This stages an exact inverse cell diff; it does not write immediately.</p></div>
+              <button onClick={() => void stageLocalSpreadsheetReversal()} disabled={committing || localReversalBusy}>{localReversalBusy ? "Checking…" : `Review ${nextLocalReversalKind}`}</button>
+            </div>
+          )}
           {workspaceProposal ? (
             <div className="change-review workspace-file-review">
               <div className="change-summary"><UploadCloud size={18} /><div><strong>Workspace file approval required</strong><p>The sandbox wrote only to a transient mount. Approve this exact diff to save {workspaceProposal.target.workspacePath}.</p></div></div>
@@ -2308,7 +2454,7 @@ export function OperatorPage() {
             </div>
           ) : proposal ? (
             <div className="change-review">
-              <div className="change-summary"><UploadCloud size={18} /><div><strong>Explicit approval required</strong><p>{changes.length} cell changes will be written to {proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? proposal.target.range : source === "artifact" ? "the imported working snapshot" : "the local demo"}.</p></div></div>
+              <div className="change-summary"><UploadCloud size={18} /><div><strong>{reversalProposalKind ? `${reversalProposalKind[0].toUpperCase()}${reversalProposalKind.slice(1)} approval required` : "Explicit approval required"}</strong><p>{changes.length} cell changes will be written to {proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? proposal.target.range : source === "artifact" ? "the imported working snapshot" : "the local demo"}.</p></div></div>
               <div className="proposal-identity" role="group" aria-label="Immutable proposal identity">
                 <span><b>Proposal</b><code>{proposal.proposalId.slice(-12)}</code></span>
                 <span><b>Source check</b><code>{proposal.baseVersion.strength}</code></span>
@@ -2327,7 +2473,7 @@ export function OperatorPage() {
                 {changes.length > 24 && <p>+ {changes.length - 24} more changes</p>}
               </div>
               <button className="approve-write" onClick={() => void approveWrite()} disabled={committing || connectingGoogle || revokingGoogle || !changes.length}>
-                <Check size={15} /> {committing ? "Validating source…" : `Approve and ${proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? "write range" : "apply locally"}`}
+                <Check size={15} /> {committing ? "Validating source…" : `Approve and ${proposal.connector.id === GOOGLE_SHEETS_MANIFEST.id ? "write range" : reversalProposalKind ? `apply ${reversalProposalKind} locally` : "apply locally"}`}
               </button>
               <button className="reject-write" onClick={() => void rejectWrite()} disabled={committing}>Reject proposal</button>
             </div>

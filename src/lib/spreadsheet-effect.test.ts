@@ -10,6 +10,7 @@ import {
   SpreadsheetEffectExecutor,
   decideSpreadsheetEffect,
   prepareSpreadsheetEffect,
+  prepareSpreadsheetReversalEffect,
   verifySpreadsheetEffect,
   type SpreadsheetEffectProposal
 } from "./spreadsheet-effect";
@@ -140,6 +141,66 @@ describe("spreadsheet effect proposals", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(UnsupportedTabularEffectError);
     }
+  });
+});
+
+describe("spreadsheet effect reversals", () => {
+  it("creates a new reviewable proposal from the exact commit receipt", async () => {
+    const committedProposal = await prepare();
+    const outcome = await new SpreadsheetEffectExecutor(() => new Date("2026-07-12T00:00:00.000Z")).execute(
+      committedProposal,
+      decideSpreadsheetEffect(committedProposal, "approve", "foreground-user"),
+      connector()
+    );
+    expect(outcome.status).toBe("committed");
+    if (outcome.status !== "committed") return;
+
+    const reversal = await prepareSpreadsheetReversalEffect({
+      committedProposal,
+      receipt: outcome.receipt,
+      currentValues: DESIRED,
+      policyDecisionId: "reviewed-reversal-v1"
+    });
+
+    expect(reversal.proposalId).not.toBe(committedProposal.proposalId);
+    expect(reversal.baseValues).toEqual(DESIRED);
+    expect(reversal.mutations.mutations).toEqual(outcome.receipt.mutations.inverse.mutations);
+    await expect(verifySpreadsheetEffect(reversal)).resolves.toEqual(BASE);
+  });
+
+  it("fails closed when current values or inverse receipt identity drift", async () => {
+    const committedProposal = await prepare();
+    const outcome = await new SpreadsheetEffectExecutor().execute(
+      committedProposal,
+      decideSpreadsheetEffect(committedProposal, "approve", "foreground-user"),
+      connector()
+    );
+    expect(outcome.status).toBe("committed");
+    if (outcome.status !== "committed") return;
+
+    await expect(prepareSpreadsheetReversalEffect({
+      committedProposal,
+      receipt: outcome.receipt,
+      currentValues: [["Owner", "Amount"], ["Someone else", 5]],
+      policyDecisionId: "reviewed-reversal-v1"
+    })).rejects.toThrow("no longer matches the committed result");
+
+    await expect(prepareSpreadsheetReversalEffect({
+      committedProposal,
+      receipt: {
+        ...outcome.receipt,
+        mutations: { ...outcome.receipt.mutations, count: outcome.receipt.mutations.count + 1 }
+      },
+      currentValues: DESIRED,
+      policyDecisionId: "reviewed-reversal-v1"
+    })).rejects.toThrow("does not match the committed proposal");
+
+    await expect(prepareSpreadsheetReversalEffect({
+      committedProposal,
+      receipt: { ...outcome.receipt, hiddenAuthority: "never" } as typeof outcome.receipt,
+      currentValues: DESIRED,
+      policyDecisionId: "reviewed-reversal-v1"
+    })).rejects.toThrow("missing or unsupported fields");
   });
 });
 

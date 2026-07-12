@@ -68,6 +68,9 @@ The foundation slice now ships:
   reconciliation, both using the production sandbox and effect-review protocol;
 - typed cell-mutation bundles that generate preview, summary, commit payload,
   and inverse receipt metadata from one immutable source;
+- receipt-bound undo/redo for the most recent approved local table effect in
+  the active session, staged as a new exact cell proposal with another review,
+  source recheck, approval, and verified `work/` snapshot;
 - explicit rejection of structural changes and ungranted formula writes;
 - cell-level write previews with explicit approve/reject controls; and
 - a per-tab structured audit trail for reads, scripts, and writes.
@@ -185,7 +188,7 @@ retained legacy route. The Business Operator rows are the canonical product.
 | Capability | Status |
 | --- | --- |
 | Business-operator runtime | React UI; QuickJS Wasm script Worker; CSV/XLSX codec Worker |
-| CSV/XLSX artifact boundary | Available, value-only with immutable input provenance, verified approved `work/` snapshots, and safe export |
+| CSV/XLSX artifact boundary | Available, value-only with immutable input provenance, verified approved `work/` snapshots, reviewed session undo/redo, and safe export |
 | Manifest-bound workspace scripts | Available for imported tabular snapshots |
 | Snapshot virtual filesystem | Available; exact inputs and ephemeral outputs only |
 | Workspace file-diff approval | Available; manifest/source/input/base recheck before write |
