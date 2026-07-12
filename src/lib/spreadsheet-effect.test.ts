@@ -13,6 +13,10 @@ import {
   verifySpreadsheetEffect,
   type SpreadsheetEffectProposal
 } from "./spreadsheet-effect";
+import {
+  UnsupportedTabularEffectError,
+  applySpreadsheetMutationBundle
+} from "./spreadsheet-mutation";
 
 const BASE: SpreadsheetRows = [["Owner", "Amount"], [" Aya ", 4]];
 const DESIRED: SpreadsheetRows = [["Owner", "Amount"], ["Aya", 5]];
@@ -52,11 +56,14 @@ describe("spreadsheet effect proposals", () => {
     expect(first.proposalId).toMatch(/^effect_[0-9a-f]{64}$/);
     expect(second.proposalId).toBe(first.proposalId);
     expect(first.baseVersion.value).toMatch(/^sha256:[0-9a-f]{64}$/);
-    expect(first.summary).toEqual({ changedCells: 2, rows: 2, columns: 2 });
+    expect(first.schemaVersion).toBe(2);
+    expect(first.operation).toBe("spreadsheet.cells.update");
+    expect(first.summary).toEqual({ changedCells: 2, formulaCells: 0, rows: 2, columns: 2 });
     expect(Object.isFrozen(first)).toBe(true);
-    expect(Object.isFrozen(first.values)).toBe(true);
-    expect(Object.isFrozen(first.values[1])).toBe(true);
-    await expect(verifySpreadsheetEffect(first)).resolves.toBeUndefined();
+    expect(Object.isFrozen(first.mutations)).toBe(true);
+    expect(Object.isFrozen(first.mutations.mutations)).toBe(true);
+    expect("values" in first).toBe(false);
+    await expect(verifySpreadsheetEffect(first)).resolves.toEqual(DESIRED);
   });
 
   it("copies caller-owned rows before freezing them", async () => {
@@ -68,14 +75,19 @@ describe("spreadsheet effect proposals", () => {
     desired[1][0] = "changed outside";
 
     expect(proposal.baseValues[1][0]).toBe(" Aya ");
-    expect(proposal.values[1][0]).toBe("Aya");
+    expect(proposal.mutations.mutations[0]).toMatchObject({ before: " Aya ", after: "Aya" });
   });
 
   it("rejects reconstructed content that reuses another proposal ID", async () => {
     const proposal = await prepare();
     const tampered = {
       ...proposal,
-      values: [["Owner", "Amount"], ["Mallory", 999]]
+      mutations: {
+        ...proposal.mutations,
+        mutations: proposal.mutations.mutations.map((mutation, index) => index === 0
+          ? { ...mutation, after: "Mallory" }
+          : mutation)
+      }
     } as SpreadsheetEffectProposal;
     const adapter = connector();
     const executor = new SpreadsheetEffectExecutor();
@@ -113,6 +125,22 @@ describe("spreadsheet effect proposals", () => {
     expect(adapter.read).not.toHaveBeenCalled();
     expect(adapter.write).not.toHaveBeenCalled();
   });
+
+  it("classifies and rejects structural or formula effects before proposal creation", async () => {
+    await expect(prepare({ values: [["Owner", "Amount"]] }))
+      .rejects.toMatchObject({ code: "structural_change" });
+    await expect(prepare({
+      target: { spreadsheetId: "sheet-1", range: "Ops!A1:B2", inputMode: "USER_ENTERED" },
+      values: [["Owner", "Amount"], ["Aya", "=1+1"]]
+    })).rejects.toMatchObject({ code: "formula_write_requires_capability" });
+
+    try {
+      await prepare({ values: [["Owner", "Amount"]] });
+      throw new Error("Expected unsupported effect.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(UnsupportedTabularEffectError);
+    }
+  });
 });
 
 describe("SpreadsheetEffectExecutor", () => {
@@ -131,11 +159,19 @@ describe("SpreadsheetEffectExecutor", () => {
         receiptId: `receipt:${proposal.proposalId}`,
         baseVersion: { kind: "snapshot-hash", value: proposal.baseVersion.value },
         preconditionStrength: "recheck",
+        mutations: { count: 2 },
         committedAt: "2026-07-12T00:00:00.000Z"
       }
     });
     expect(adapter.read).toHaveBeenCalledWith(proposal.target, undefined);
-    expect(adapter.write).toHaveBeenCalledWith({ ...proposal.target, values: proposal.values }, undefined);
+    expect(adapter.write).toHaveBeenCalledWith({ ...proposal.target, values: DESIRED }, undefined);
+    if (outcome.status === "committed") {
+      expect(applySpreadsheetMutationBundle(
+        DESIRED,
+        outcome.receipt.mutations.inverse,
+        proposal.target.inputMode
+      )).toEqual(BASE);
+    }
 
     const duplicate = await executor.execute(proposal, approval, adapter);
     expect(duplicate).toMatchObject({ status: "failed", code: "proposal_already_consumed" });
@@ -283,7 +319,7 @@ describe("SpreadsheetEffectExecutor", () => {
     expect(adapter.read).not.toHaveBeenCalled();
     expect(adapter.write).not.toHaveBeenCalled();
     expect(adapter.writeConditional).toHaveBeenCalledWith(
-      { ...proposal.target, values: proposal.values },
+      { ...proposal.target, values: DESIRED },
       { kind: "revision", value: "revision-7" },
       undefined
     );

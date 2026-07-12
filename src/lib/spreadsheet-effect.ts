@@ -2,20 +2,28 @@ import {
   SpreadsheetConflictError,
   SpreadsheetWriteRejectedError,
   SpreadsheetWriteUncertainError,
-  diffSpreadsheetRows,
   validateSpreadsheetRows,
   type SpreadsheetConnector,
   type SpreadsheetRows,
   type SpreadsheetVersion,
   type SpreadsheetWriteResult
 } from "./spreadsheet";
+import {
+  UnsupportedTabularEffectError,
+  applySpreadsheetMutationBundle,
+  countFormulaMutations,
+  createSpreadsheetMutationBundle,
+  invertSpreadsheetMutationBundle,
+  type SpreadsheetInputMode,
+  type SpreadsheetMutationBundle
+} from "./spreadsheet-mutation";
 
 export type PreconditionStrength = "atomic" | "recheck" | "none";
 
 export interface SpreadsheetEffectProposal {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly proposalId: string;
-  readonly operation: "spreadsheet.values.update";
+  readonly operation: "spreadsheet.cells.update";
   readonly connector: {
     readonly id: string;
     readonly version: string;
@@ -31,9 +39,10 @@ export interface SpreadsheetEffectProposal {
     readonly strength: PreconditionStrength;
   };
   readonly baseValues: SpreadsheetRows;
-  readonly values: SpreadsheetRows;
+  readonly mutations: SpreadsheetMutationBundle;
   readonly summary: {
     readonly changedCells: number;
+    readonly formulaCells: number;
     readonly rows: number;
     readonly columns: number;
   };
@@ -68,6 +77,10 @@ export interface SpreadsheetCommitReceipt {
   readonly baseVersion: SpreadsheetVersion;
   readonly preconditionStrength: PreconditionStrength;
   readonly providerResult: SpreadsheetWriteResult;
+  readonly mutations: {
+    readonly count: number;
+    readonly inverse: SpreadsheetMutationBundle;
+  };
   readonly committedAt: string;
 }
 
@@ -160,7 +173,7 @@ function proposalIdentity(proposal: Omit<SpreadsheetEffectProposal, "proposalId"
     target: proposal.target,
     baseVersion: proposal.baseVersion,
     baseValues: proposal.baseValues,
-    values: proposal.values,
+    mutations: proposal.mutations,
     summary: proposal.summary,
     policyDecisionId: proposal.policyDecisionId,
     expiresAt: proposal.expiresAt
@@ -190,6 +203,13 @@ function validatePreconditionStrength(value: unknown): PreconditionStrength {
   return value;
 }
 
+function validateInputMode(value: unknown): SpreadsheetInputMode {
+  if (value !== "RAW" && value !== "USER_ENTERED") {
+    throw new Error("Spreadsheet proposal input mode is unsupported.");
+  }
+  return value;
+}
+
 function validateProviderVersion(value: unknown): SpreadsheetVersion {
   assertExactKeys(value, ["kind", "value"], "Spreadsheet provider version");
   const version = value as SpreadsheetVersion;
@@ -204,8 +224,17 @@ export async function prepareSpreadsheetEffect(
 ): Promise<SpreadsheetEffectProposal> {
   const baseValues = cloneRows(input.baseValues);
   const values = cloneRows(input.values);
-  const changedCells = diffSpreadsheetRows(baseValues, values).length;
+  const inputMode = validateInputMode(input.target.inputMode ?? "RAW");
+  const mutations = createSpreadsheetMutationBundle(baseValues, values, inputMode);
+  const changedCells = mutations.mutations.length;
   if (changedCells === 0) throw new Error("The transform produced no spreadsheet changes.");
+  const formulaCells = countFormulaMutations(mutations);
+  if (formulaCells > 0) {
+    throw new UnsupportedTabularEffectError(
+      "formula_write_requires_capability",
+      "Formula writes require a separate high-risk capability and cannot use the ordinary cell-update proposal."
+    );
+  }
 
   const size = dimensions(values);
   const preconditionStrength = validatePreconditionStrength(input.preconditionStrength);
@@ -217,8 +246,8 @@ export async function prepareSpreadsheetEffect(
     throw new Error("Provider versions are accepted only for atomic spreadsheet proposals.");
   }
   const proposalWithoutId: Omit<SpreadsheetEffectProposal, "proposalId"> = {
-    schemaVersion: 1,
-    operation: "spreadsheet.values.update",
+    schemaVersion: 2,
+    operation: "spreadsheet.cells.update",
     connector: {
       id: requireText(input.connector.id, "Connector ID"),
       version: requireText(input.connector.version, "Connector version")
@@ -226,12 +255,12 @@ export async function prepareSpreadsheetEffect(
     target: {
       spreadsheetId: requireText(input.target.spreadsheetId, "Spreadsheet ID"),
       range: requireText(input.target.range, "Spreadsheet range"),
-      inputMode: input.target.inputMode ?? "USER_ENTERED"
+      inputMode
     },
     baseVersion,
     baseValues,
-    values,
-    summary: { changedCells, ...size },
+    mutations,
+    summary: { changedCells, formulaCells, ...size },
     policyDecisionId: requireText(input.policyDecisionId, "Policy decision ID", POLICY_ID_MAX_LENGTH),
     expiresAt: validateExpiry(input.expiresAt ?? null)
   };
@@ -239,16 +268,16 @@ export async function prepareSpreadsheetEffect(
   return deepFreeze({ ...proposalWithoutId, proposalId });
 }
 
-export async function verifySpreadsheetEffect(proposal: SpreadsheetEffectProposal) {
+export async function verifySpreadsheetEffect(proposal: SpreadsheetEffectProposal): Promise<SpreadsheetRows> {
   assertExactKeys(proposal, [
     "schemaVersion", "proposalId", "operation", "connector", "target", "baseVersion",
-    "baseValues", "values", "summary", "policyDecisionId", "expiresAt"
+    "baseValues", "mutations", "summary", "policyDecisionId", "expiresAt"
   ], "Spreadsheet proposal");
   assertExactKeys(proposal.connector, ["id", "version"], "Spreadsheet proposal connector");
   assertExactKeys(proposal.target, ["spreadsheetId", "range", "inputMode"], "Spreadsheet proposal target");
   assertExactKeys(proposal.baseVersion, ["kind", "value", "strength"], "Spreadsheet proposal base version");
-  assertExactKeys(proposal.summary, ["changedCells", "rows", "columns"], "Spreadsheet proposal summary");
-  if (proposal.schemaVersion !== 1 || proposal.operation !== "spreadsheet.values.update") {
+  assertExactKeys(proposal.summary, ["changedCells", "formulaCells", "rows", "columns"], "Spreadsheet proposal summary");
+  if (proposal.schemaVersion !== 2 || proposal.operation !== "spreadsheet.cells.update") {
     throw new Error("Unsupported spreadsheet proposal schema or operation.");
   }
   if (!/^effect_[0-9a-f]{64}$/.test(proposal.proposalId)) throw new Error("Spreadsheet proposal ID is malformed.");
@@ -257,25 +286,31 @@ export async function verifySpreadsheetEffect(proposal: SpreadsheetEffectProposa
   requireText(proposal.target.spreadsheetId, "Spreadsheet ID");
   requireText(proposal.target.range, "Spreadsheet range");
   requireText(proposal.policyDecisionId, "Policy decision ID", POLICY_ID_MAX_LENGTH);
-  if (proposal.target.inputMode !== "RAW" && proposal.target.inputMode !== "USER_ENTERED") {
-    throw new Error("Spreadsheet proposal input mode is unsupported.");
-  }
+  const inputMode = validateInputMode(proposal.target.inputMode);
   const strength = validatePreconditionStrength(proposal.baseVersion.strength);
   const baseValues = cloneRows(proposal.baseValues);
-  const values = cloneRows(proposal.values);
+  const values = applySpreadsheetMutationBundle(baseValues, proposal.mutations, inputMode);
   const expectedBaseVersion = await hashRows(baseValues);
   if (strength === "atomic") {
     validateProviderVersion({ kind: proposal.baseVersion.kind, value: proposal.baseVersion.value });
   } else if (proposal.baseVersion.kind !== "snapshot-hash" || proposal.baseVersion.value !== expectedBaseVersion) {
     throw new Error("Spreadsheet proposal base snapshot does not match its version.");
   }
-  const expectedSummary = { changedCells: diffSpreadsheetRows(baseValues, values).length, ...dimensions(values) };
+  const expectedSummary = {
+    changedCells: proposal.mutations.mutations.length,
+    formulaCells: countFormulaMutations(proposal.mutations),
+    ...dimensions(values)
+  };
   if (canonicalJson(proposal.summary) !== canonicalJson(expectedSummary) || expectedSummary.changedCells === 0) {
-    throw new Error("Spreadsheet proposal summary does not match its values.");
+    throw new Error("Spreadsheet proposal summary does not match its mutations.");
+  }
+  if (expectedSummary.formulaCells > 0) {
+    throw new Error("Spreadsheet proposal contains formula mutations without the required capability.");
   }
   validateExpiry(proposal.expiresAt);
   const expectedId = `${PROPOSAL_PREFIX}${await sha256(proposalIdentity(proposal))}`;
   if (proposal.proposalId !== expectedId) throw new Error("Spreadsheet proposal identity does not match its content.");
+  return values;
 }
 
 export function decideSpreadsheetEffect(
@@ -358,8 +393,9 @@ export class SpreadsheetEffectExecutor {
     connector: SpreadsheetConnector,
     signal?: AbortSignal
   ): Promise<SpreadsheetEffectOutcome> {
+    let committedValues: SpreadsheetRows;
     try {
-      await verifySpreadsheetEffect(proposal);
+      committedValues = await verifySpreadsheetEffect(proposal);
     } catch (error) {
       return failed(proposal.proposalId, "proposal", "invalid_proposal", error instanceof Error ? error.message : "Invalid spreadsheet proposal.");
     }
@@ -428,7 +464,7 @@ export class SpreadsheetEffectExecutor {
     }
 
     try {
-      const request = { ...proposal.target, values: proposal.values };
+      const request = { ...proposal.target, values: committedValues };
       const providerResult = proposal.baseVersion.strength === "atomic"
         ? await connector.writeConditional!(request, committedBaseVersion, signal)
         : await connector.write(request, signal);
@@ -443,6 +479,14 @@ export class SpreadsheetEffectExecutor {
           baseVersion: committedBaseVersion,
           preconditionStrength: proposal.baseVersion.strength,
           providerResult,
+          mutations: {
+            count: proposal.mutations.mutations.length,
+            inverse: invertSpreadsheetMutationBundle(
+              proposal.baseValues,
+              proposal.mutations,
+              proposal.target.inputMode
+            )
+          },
           committedAt: this.now().toISOString()
         })
       };

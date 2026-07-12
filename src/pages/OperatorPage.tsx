@@ -19,7 +19,6 @@ import {
   type SpreadsheetPlan
 } from "../lib/business-planner";
 import {
-  diffSpreadsheetRows,
   GoogleSheetsConnector,
   LocalSpreadsheetConnector,
   spreadsheetRowsFromBusinessValue,
@@ -38,6 +37,7 @@ import {
   prepareSpreadsheetEffect,
   type SpreadsheetEffectProposal
 } from "../lib/spreadsheet-effect";
+import { applySpreadsheetMutationBundle } from "../lib/spreadsheet-mutation";
 
 const DEMO_ROWS: SpreadsheetRows = [
   ["Owner", "Region", "Amount", "Stage"],
@@ -118,7 +118,7 @@ export function OperatorPage() {
   ]);
 
   const changes = useMemo(
-    () => proposal ? diffSpreadsheetRows(proposal.baseValues, proposal.values) : [],
+    () => proposal ? proposal.mutations.mutations : [],
     [proposal]
   );
 
@@ -149,7 +149,7 @@ export function OperatorPage() {
       const nextProposal = await prepareSpreadsheetEffect({
         connector: source === "google" ? GOOGLE_SHEETS_MANIFEST : LOCAL_SPREADSHEET_MANIFEST,
         target: source === "google"
-          ? { ...loadedGoogleTarget!, inputMode: "USER_ENTERED" }
+          ? { ...loadedGoogleTarget!, inputMode: "RAW" }
           : { spreadsheetId: "local-demo", range: "Demo!A1", inputMode: "RAW" },
         baseValues: rows,
         values: nextRows,
@@ -159,8 +159,8 @@ export function OperatorPage() {
       setProposal(nextProposal);
       setStatus(`${nextProposal.summary.changedCells} cell changes ready for review`);
       record({
-        title: "Immutable write proposal prepared",
-        detail: `${nextProposal.proposalId.slice(-12)} · ${result.inputBytes} B in · ${result.outputBytes} B out · recheck required`,
+        title: "Typed mutation proposal prepared",
+        detail: `${nextProposal.proposalId.slice(-12)} · ${nextProposal.mutations.mutations.length} bound mutations · ${result.inputBytes} B in · ${result.outputBytes} B out · recheck required`,
         tone: "accent"
       });
     } catch (caught) {
@@ -251,7 +251,11 @@ export function OperatorPage() {
       const outcome = await effectExecutor.current.execute(proposal, approval, connector);
 
       if (outcome.status === "committed") {
-        setRows(proposal.values.map((row) => [...row]));
+        setRows(applySpreadsheetMutationBundle(
+          proposal.baseValues,
+          proposal.mutations,
+          proposal.target.inputMode
+        ));
         setProposal(null);
         setPlan(null);
         setStatus(isGoogle
@@ -444,6 +448,7 @@ export function OperatorPage() {
                 <span><b>Proposal</b><code>{proposal.proposalId.slice(-12)}</code></span>
                 <span><b>Source check</b><code>{proposal.baseVersion.strength}</code></span>
                 <span><b>Snapshot</b><code>{proposal.baseVersion.value.slice(-12)}</code></span>
+                <span><b>Payload</b><code>{proposal.mutations.mutations.length} typed cells</code></span>
               </div>
               <div className="change-list">
                 {changes.slice(0, 24).map((change) => (

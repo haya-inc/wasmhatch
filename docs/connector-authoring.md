@@ -3,9 +3,9 @@
 > Versioned, testable business operations without credential-bearing connector
 > code.
 
-- Contract status: experimental public API in WasmHatch 0.16.0
+- Contract status: experimental public API introduced in WasmHatch 0.16.0
 - Manifest schema: 1
-- Current core compatibility: `>=0.16.0 <1.0.0`
+- Current core: `0.17.0`; bundled connector compatibility: `>=0.16.0 <1.0.0`
 - Source: [`src/lib/connector.ts`](../src/lib/connector.ts)
 
 ## Why this contract exists

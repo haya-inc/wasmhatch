@@ -58,8 +58,14 @@ require a separately deployed server adapter.
 - Synchronous JSON-to-JSON transformation scripts with CPU, memory, source,
   input, and output limits.
 - Content-addressed, deeply frozen spreadsheet proposals that bind connector
-  version, target, base snapshot, resulting values, summary, and policy decision.
+  version, target, base snapshot, typed mutations, summary, and policy decision.
+- A strict typed mutation bundle from which preview, summary, commit values, and
+  inverse receipt metadata are generated rather than stored independently.
+- Structural table changes fail as an explicit unsupported effect. Formula
+  writes under `USER_ENTERED` are classified separately and blocked until a
+  dedicated high-risk capability exists.
 - A cell-level write preview with exact proposal approval/rejection controls.
+  See [Tabular Mutations](tabular-mutations.md).
 - A source-range `recheck` immediately before local or Google Sheets commit;
   stale proposals become visible conflicts and never write.
 - A provider-native conditional-write contract for `atomic` ETag, revision, or
@@ -580,10 +586,11 @@ entering model or script input.
   the shared effect protocol — spreadsheet effect slice complete; generalization
   to files and future connectors remains.
 - Stage transformed spreadsheet writes behind immutable proposal IDs that bind
-  target, values, base version, connector version, and policy decision —
+  target, typed mutations, base version, connector version, and policy decision —
   complete.
 - Represent spreadsheet changes as typed mutations from which preview and commit
-  payload are both generated.
+  payload are both generated — complete. Summary and inverse receipt metadata
+  use the same bundle; structural and formula effects fail closed separately.
 - Report precondition strength as `atomic`, `recheck`, or `none`; conflicts
   always create a new proposal and approval — complete at the effect protocol
   layer. `atomic` requires a connector's provider-native conditional write,
@@ -742,12 +749,11 @@ The coding-contributor metric is retired. Product evidence is:
 
 ## 11. Immediate next issues
 
-1. Define typed tabular mutations so preview and commit use one source.
-2. Add Google Identity Services OAuth with narrow Sheets scopes through the
+1. Add Google Identity Services OAuth with narrow Sheets scopes through the
    now-stable credential-broker contract.
-3. Add CSV/XLSX import and export through workspace artifacts.
-4. Continue the five pilot workflows and record evidence for architecture gates.
-5. Define the script input/output manifest and ephemeral virtual mount contract.
-6. Implement the checkpointed approval loop and policy decision envelope.
-7. Move the smallest OPFS workspace slice into the operator with export and
+2. Add CSV/XLSX import and export through workspace artifacts.
+3. Continue the five pilot workflows and record evidence for architecture gates.
+4. Define the script input/output manifest and ephemeral virtual mount contract.
+5. Implement the checkpointed approval loop and policy decision envelope.
+6. Move the smallest OPFS workspace slice into the operator with export and
     recovery tests.

@@ -88,7 +88,7 @@ function requireText(value: string, label: string, maxLength: number) {
   return normalized;
 }
 
-function validateCell(value: unknown): SpreadsheetCell {
+export function validateSpreadsheetCell(value: unknown): SpreadsheetCell {
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number" && Number.isFinite(value)) return value;
   throw new Error("Spreadsheet values must contain only strings, finite numbers, booleans, or null.");
@@ -100,7 +100,7 @@ export function validateSpreadsheetRows(value: unknown): SpreadsheetRows {
   return value.map((row) => {
     if (!Array.isArray(row)) throw new Error("Each spreadsheet row must be an array.");
     if (row.length > MAX_COLUMNS) throw new Error(`Spreadsheet data exceeds ${MAX_COLUMNS} columns.`);
-    return row.map(validateCell);
+    return row.map(validateSpreadsheetCell);
   });
 }
 
@@ -213,8 +213,9 @@ export class GoogleSheetsConnector implements SpreadsheetConnector {
 
   async write(request: SpreadsheetWrite, signal?: AbortSignal): Promise<SpreadsheetWriteResult> {
     const values = validateSpreadsheetRows(request.values);
+    const providerValues = values.map((row) => row.map((cell) => cell === null ? "" : cell));
     const endpoint = new URL(this.endpoint(request));
-    endpoint.searchParams.set("valueInputOption", request.inputMode ?? "USER_ENTERED");
+    endpoint.searchParams.set("valueInputOption", request.inputMode ?? "RAW");
     let response: Response;
     try {
       response = await this.transport.request({
@@ -223,7 +224,7 @@ export class GoogleSheetsConnector implements SpreadsheetConnector {
         method: "PUT",
         headers: { "content-type": "application/json" },
         signal,
-        body: JSON.stringify({ range: request.range.trim(), majorDimension: "ROWS", values })
+        body: JSON.stringify({ range: request.range.trim(), majorDimension: "ROWS", values: providerValues })
       });
     } catch {
       throw new SpreadsheetWriteUncertainError();

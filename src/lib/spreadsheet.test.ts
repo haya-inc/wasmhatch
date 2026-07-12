@@ -70,6 +70,24 @@ describe("GoogleSheetsConnector", () => {
     });
   });
 
+  it("uses exact RAW writes by default and translates conceptual nulls into provider clears", async () => {
+    const handler = vi.fn().mockResolvedValue(new Response(JSON.stringify({ updatedCells: 1 }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    }));
+    const connector = googleConnector({ "write-range": handler });
+
+    await connector.write({
+      spreadsheetId: "sheet-id",
+      range: "Ops!A1:B2",
+      values: [["Owner", "Amount"], ["Aya", null]]
+    });
+
+    const [request] = handler.mock.calls[0];
+    expect(request.url).toContain("valueInputOption=RAW");
+    expect(JSON.parse(request.body).values).toEqual([["Owner", "Amount"], ["Aya", ""]]);
+  });
+
   it("returns actionable authorization errors without response details", async () => {
     const connector = googleConnector({
       "read-range": async () => new Response("sensitive detail", { status: 403 })

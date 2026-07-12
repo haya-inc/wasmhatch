@@ -26,15 +26,19 @@ The foundation slice now ships:
 - QuickJS compiled to Wasm and executed in a Web Worker;
 - CPU, memory, source, input, and output limits;
 - spreadsheet-shaped JSON transformations with no `fetch`, DOM, or host access;
+- typed cell-mutation bundles that generate preview, summary, commit payload,
+  and inverse receipt metadata from one immutable source;
+- explicit rejection of structural changes and ungranted formula writes;
 - cell-level write previews with explicit approve/reject controls; and
 - a per-tab audit trail for reads, scripts, and writes.
 
 The current operator uses memory-only development credentials for Google Sheets
-and optional AI planning. Google OAuth, typed tabular mutations, CSV/XLSX, and
-the multi-step business tool loop are the next milestones.
+and optional AI planning. Google OAuth, CSV/XLSX, and the multi-step business
+tool loop are the next milestones.
 
 See the current [product plan](docs/plan.md), [connector authoring
-guide](docs/connector-authoring.md), and [business-agent
+guide](docs/connector-authoring.md), [tabular mutation
+contract](docs/tabular-mutations.md), and [business-agent
 landscape](docs/landscape.md).
 
 ## Legacy coding workspace

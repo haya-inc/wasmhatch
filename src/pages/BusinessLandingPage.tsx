@@ -88,7 +88,7 @@ export function BusinessLandingPage() {
               <small>AGENT ACTIVITY</small>
               <p><Check size={14} /> Read 4 rows</p>
               <p><Check size={14} /> Ran local script</p>
-              <p className="agent-current"><Sparkles size={14} /> 8 cells ready</p>
+              <p className="agent-current"><Sparkles size={14} /> 12 cells ready</p>
               <button>Review write <ArrowRight size={14} /></button>
             </div>
           </div>
@@ -123,7 +123,7 @@ export function BusinessLandingPage() {
           <article className="fit-primary"><span>01</span><h3>Connector broker</h3><p>Manifest-bound operations, resources, origins, and response limits</p><small>No raw credential in connector code</small></article>
           <article><span>02</span><h3>Agent planner</h3><p>Selects tools and prepares bounded operations</p><small>No raw tokens</small></article>
           <article><span>03</span><h3>Wasm script worker</h3><p>Transforms JSON and tabular data under CPU and memory limits</p><small>No fetch or DOM</small></article>
-          <article><span>04</span><h3>Write review</h3><p>Shows exact cells and destinations before mutation</p><small>Human in loop</small></article>
+          <article><span>04</span><h3>Write review</h3><p>One typed mutation bundle drives preview and commit</p><small>Human in loop</small></article>
           <article><span>05</span><h3>Audit trail</h3><p>Records model egress, tool calls, scripts, and approvals</p><small>Inspectable</small></article>
         </div>
       </section>
@@ -158,7 +158,7 @@ export function BusinessLandingPage() {
           <div><span>00:02</span><p>Returned 4 rows to the task context</p></div>
           <div><span>00:04</span><p>Ran transformation in <strong>QuickJS Wasm</strong></p></div>
           <div><span>00:05</span><p>Sandbox had no network, token, or DOM access</p></div>
-          <div className="log-accent"><span>00:06</span><p>Staged 8 changed cells for approval</p></div>
+          <div className="log-accent"><span>00:06</span><p>Staged 12 typed cell changes for approval</p></div>
           <div><span>00:08</span><p>No external write occurred without approval</p></div>
         </div>
       </section>

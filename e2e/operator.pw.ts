@@ -10,8 +10,9 @@ test("runs a spreadsheet transform in Wasm and requires write approval", async (
   await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
 
   await expect(page.getByText("Explicit approval required")).toBeVisible();
-  await expect(page.getByText("Immutable write proposal prepared")).toBeVisible();
+  await expect(page.getByText("Typed mutation proposal prepared")).toBeVisible();
   await expect(page.getByRole("group", { name: "Immutable proposal identity" })).toContainText("recheck");
+  await expect(page.getByRole("group", { name: "Immutable proposal identity" })).toContainText("12 typed cells");
   await expect(page.getByText("Aya Tanaka", { exact: true })).toBeVisible();
   await expect(page.getByText("WEST", { exact: true })).toBeVisible();
 
@@ -20,6 +21,16 @@ test("runs a spreadsheet transform in Wasm and requires write approval", async (
   await expect(page.getByText("No pending write")).toBeVisible();
   await expect(page.getByRole("cell", { name: "Aya Tanaka" })).toBeVisible();
   await expect(page.getByText("Local effect committed")).toBeVisible();
+});
+
+test("rejects structural script output before creating a write proposal", async ({ page }) => {
+  await page.goto("/?view=operator");
+  await page.getByRole("textbox", { name: "Sandbox transformation script" }).fill("(rows) => rows.slice(0, 1)");
+  await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("row insertion or deletion is not supported");
+  await expect(page.getByText("No pending write")).toBeVisible();
+  await expect(page.getByText("Sandbox transform blocked")).toBeVisible();
 });
 
 test("stages an AI plan before the Wasm transform and write review", async ({ page }) => {

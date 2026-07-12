@@ -740,12 +740,33 @@ Prove:
 Represent cell updates as typed mutations and generate the preview from them,
 not from two unrelated table snapshots.
 
+Status on 2026-07-12: implemented in
+[`spreadsheet-mutation.ts`](../src/lib/spreadsheet-mutation.ts) and proposal
+schema 2. The effect stores a base snapshot and an ordered, deeply frozen cell
+mutation bundle, but no second completed table. Strict validation rejects
+unknown fields, duplicate or unordered coordinates, out-of-shape cells, stale
+before-values, forged formula kinds, and more than 100,000 mutations. Preview,
+summary, and connector values all derive from that bundle.
+
+The current `spreadsheet.cells.update` operation requires an unchanged table
+shape because Google Sheets `values.update` cannot faithfully express every
+row/column insertion, deletion, or trailing-cell clear. Those changes return a
+typed `structural_change` error instead of a misleading preview. Values beginning
+with `=` under `USER_ENTERED` become `cell.set-formula` mutations and are blocked
+without a future dedicated high-risk capability. A successful commit receipt
+contains an inverse bundle as metadata; it does not silently execute undo.
+
 Prove:
 
 - mutation payload, preview, summary, and commit request cannot diverge;
 - formula and structural changes are classified separately;
 - accepted mutations generate a receipt and inverse metadata;
 - a future Grist or Univer adapter can translate the same mutations.
+
+Result: all four properties are covered by unit and browser-flow tests. The kill
+condition is now any connector that cannot deterministically translate the same
+accepted bundle into its provider request; such a connector must define a new
+typed operation rather than reinterpret `spreadsheet.cells.update`.
 
 ## 15. Recommended sequence after research review
 
