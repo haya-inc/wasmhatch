@@ -38,6 +38,17 @@ describe("public sharing metadata", () => {
     expect(png.byteLength).toBeGreaterThan(20_000);
   });
 
+  it("keeps the social preview reproducible and aligned with general work", () => {
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
+    const renderer = readFileSync("scripts/render-social-preview.mjs", "utf8");
+
+    expect(packageJson.scripts?.["render:social"]).toBe("node scripts/render-social-preview.mjs");
+    expect(renderer).toContain("<span>Describe</span><span>the work.</span>");
+    expect(renderer).toContain("<em>Review the result.</em>");
+    expect(renderer).toContain("Compare these records and show only the exceptions.");
+    expect(renderer).not.toContain("FROM ISSUE TO PATCH");
+  });
+
   it("keeps public runtime claims aligned with the shipped architecture", () => {
     const readme = readFileSync("README.md", "utf8");
     const plan = readFileSync("docs/plan.md", "utf8");
