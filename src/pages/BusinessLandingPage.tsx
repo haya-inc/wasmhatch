@@ -53,6 +53,12 @@ const starterIssues = [
     scope: "Safety invariant · unit + browser",
     title: "Fail closed on guided count drift",
     description: "Validate bundled sample mutation counts before review while leaving real CSV/XLSX and Google workflows unchanged."
+  },
+  {
+    number: 15,
+    scope: "Accessibility · source state",
+    title: "Expose the selected Operator source",
+    description: "Keep assistive-technology state aligned with the visible demo, local file, and Google Sheets source selection."
   }
 ] as const;
 
@@ -182,11 +188,11 @@ export function BusinessLandingPage() {
       </section>
 
       <section className="contribute-section" id="contribute" aria-labelledby="contribute-title">
-        <div className="section-label">Two scoped starter issues</div>
+        <div className="section-label">Three scoped starter issues</div>
         <div className="contribute-heading">
           <h2 id="contribute-title">Improve one visible boundary.</h2>
           <div>
-            <p>Both tasks use bundled synthetic data and have explicit acceptance criteria. Read the issue, check current comments, then claim it before editing.</p>
+            <p>All three tasks use bundled synthetic data and have explicit acceptance criteria. Read the issue, check current comments, then claim it before editing.</p>
             <a href={contributorGuideUrl}>Read the contributor guide <ArrowRight size={16} /></a>
           </div>
         </div>
