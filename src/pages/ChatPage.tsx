@@ -467,7 +467,13 @@ export function ChatPage() {
       const url = URL.createObjectURL(new Blob([copy.buffer], { type: "application/zip" }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = `wasmhatch-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      const now = new Date();
+      const stamp = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0")
+      ].join("-");
+      link.download = `wasmhatch-backup-${stamp}.zip`;
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (error) {
