@@ -666,6 +666,19 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .home-step span { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 50%; background: var(--brand-tint); color: var(--brand); font-weight: 700; font-size: 14px; }
 .home-step h3 { margin: 12px 0 6px; font-size: 16.5px; }
 .home-step p { margin: 0; color: var(--muted-soft); font-size: 14px; line-height: 1.6; }
+.home-setup { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.home-setup-card { display: grid; gap: 14px; align-content: start; padding: 22px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--card); }
+.home-setup-card h3 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-soft); }
+.home-setup-card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; color: var(--muted-soft); font-size: 14px; line-height: 1.55; }
+.home-setup-card li { display: flex; gap: 9px; }
+.home-setup-card li svg { flex-shrink: 0; margin-top: 3px; color: #cdc6ba; }
+.home-setup-us { border-color: #f2ddcd; background: var(--brand-tint); }
+.home-setup-us .home-setup-big { margin: 0; font-size: clamp(26px, 3vw, 34px); font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.home-setup-us > p { margin: 0; color: #5d5346; font-size: 14px; line-height: 1.6; }
+.home-setup-us li { color: #5d5346; }
+.home-setup-us li svg { color: var(--good); }
+.home-setup-note { margin: 16px 0 0; padding: 16px 20px; border: 1px dashed var(--line-soft); border-radius: 14px; background: var(--card); color: var(--muted-soft); font-size: 14px; line-height: 1.65; }
+.home-setup-note strong { color: var(--text); }
 .home-trust { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 .home-trust article { display: grid; gap: 8px; align-content: start; padding: 22px; border-radius: 16px; background: var(--brand-tint); }
 .home-trust svg { color: var(--brand); }

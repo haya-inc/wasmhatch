@@ -4,9 +4,11 @@ import {
   FileSpreadsheet,
   FileText,
   FolderOpen,
+  HardDrive,
   LayoutDashboard,
   Lock,
   MessageCircle,
+  Minus,
   RotateCcw,
   Sparkles,
   Zap
@@ -53,6 +55,7 @@ export function BusinessLandingPage() {
           WasmHatch
         </a>
         <nav aria-label="Primary navigation">
+          <a href="#setup">No setup</a>
           <a href="#can-do">What it can do</a>
           <a href="#how">How it works</a>
           <a href="#trust">Privacy</a>
@@ -100,6 +103,45 @@ export function BusinessLandingPage() {
             </div>
             <footer><MessageCircle size={15} /> Ask for anything…</footer>
           </div>
+        </section>
+
+        <section className="home-section" id="setup" aria-labelledby="setup-title">
+          <h2 id="setup-title">There is no setup.</h2>
+          <p className="home-sub">
+            What it takes to get started, honestly compared. This part is why WasmHatch exists.
+          </p>
+          <div className="home-setup">
+            <div className="home-setup-card">
+              <h3>Starting with a typical AI tool</h3>
+              <ul>
+                <li><Minus size={15} aria-hidden="true" /> Install an app or extension</li>
+                <li><Minus size={15} aria-hidden="true" /> Create an account and verify your email</li>
+                <li><Minus size={15} aria-hidden="true" /> Keep a computer running for it</li>
+                <li><Minus size={15} aria-hidden="true" /> Edit config files to hook up your tools</li>
+              </ul>
+            </div>
+            <div className="home-setup-card home-setup-us">
+              <h3>Starting with WasmHatch</h3>
+              <p className="home-setup-big">Open the link.</p>
+              <p>That&rsquo;s the whole setup — it&rsquo;s a web page.</p>
+              <ul>
+                <li>
+                  <Check size={15} aria-hidden="true" />
+                  In Chrome you can even skip the API key: the free built-in AI covers lighter tasks.
+                </li>
+                <li>
+                  <Check size={15} aria-hidden="true" />
+                  For heavier work, paste your own Claude or OpenAI key — it stays in your browser
+                  and goes only to that provider.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <p className="home-setup-note">
+            <strong>Why is it this fast? There&rsquo;s no account.</strong> No signup, no email
+            confirmation, no password — so you&rsquo;re working in seconds; and because no server
+            registers you, there&rsquo;s no account of yours here that could ever leak.
+          </p>
         </section>
 
         <section className="home-section" id="can-do" aria-labelledby="can-do-title">
@@ -159,7 +201,20 @@ export function BusinessLandingPage() {
             <article>
               <Lock size={20} aria-hidden="true" />
               <h3>Private by design</h3>
-              <p>It runs in your browser tab. Your files stay on your device, and your keys never leave this tab or get stored anywhere.</p>
+              <p>
+                Everything happens in your browser tab. Your files stay here — there&rsquo;s no
+                WasmHatch server they could be uploaded to. What you ask the AI goes only to the
+                model provider you choose, and Chrome&rsquo;s built-in AI keeps even that on your device.
+              </p>
+            </article>
+            <article>
+              <HardDrive size={20} aria-hidden="true" />
+              <h3>Yours to keep</h3>
+              <p>
+                Your work lives in this browser, under your control: pin it so the browser keeps
+                it safe, and download a full backup anytime. No account needed for your data to
+                stay yours.
+              </p>
             </article>
           </div>
         </section>
