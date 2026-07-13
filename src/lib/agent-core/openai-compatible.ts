@@ -4,8 +4,8 @@
  * One adapter covers every provider that speaks the Chat Completions wire
  * format: OpenAI, OpenRouter, Google Gemini's OpenAI-compatible endpoint,
  * Ollama, and LM Studio — the base URL is the only difference. The API key
- * stays in memory, is sent only as the Authorization header, and never
- * appears in errors or logs.
+ * stays in memory, is sent only as the Authorization header (omitted entirely
+ * for a keyless local server like Ollama), and never appears in errors or logs.
  */
 
 import { readSseStream } from "./sse";
@@ -136,7 +136,8 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
           method: "POST",
           headers: {
             "content-type": "application/json",
-            authorization: `Bearer ${options.apiKey}`
+            // A keyless local server (Ollama) gets no Authorization header at all.
+            ...(options.apiKey ? { authorization: `Bearer ${options.apiKey}` } : {})
           },
           signal,
           body

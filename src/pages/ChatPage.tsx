@@ -353,12 +353,12 @@ export function ChatPage() {
 
   const runCloud = useCallback(async (task: string, signal: AbortSignal) => {
     if (provider === "builtin") return;
+    const def = getCloudProvider(provider);
     const key = apiKey.trim();
-    if (!key) {
+    if (!def.keyless && !key) {
       notice("Add your API key first — it stays in this tab's memory and is sent only to the selected provider.", "error");
       return;
     }
-    const def = getCloudProvider(provider);
     const providerImpl = def.adapter === "anthropic"
       ? createAnthropicProvider({ apiKey: key })
       : createOpenAiCompatibleProvider({
@@ -714,24 +714,28 @@ export function ChatPage() {
             </label>
             {providerDef && (
               <>
-                <label className="chat-field">
-                  <span>API key</span>
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={apiKey}
-                    placeholder={providerDef.keyPlaceholder}
-                    onChange={(event) => setApiKey(event.target.value)}
-                  />
-                </label>
-                <label className="chat-remember">
-                  <input
-                    type="checkbox"
-                    checked={rememberKey}
-                    onChange={(event) => setRememberKey(event.target.checked)}
-                  />
-                  <span>Remember on this device</span>
-                </label>
+                {!providerDef.keyless && (
+                  <>
+                    <label className="chat-field">
+                      <span>API key</span>
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        value={apiKey}
+                        placeholder={providerDef.keyPlaceholder}
+                        onChange={(event) => setApiKey(event.target.value)}
+                      />
+                    </label>
+                    <label className="chat-remember">
+                      <input
+                        type="checkbox"
+                        checked={rememberKey}
+                        onChange={(event) => setRememberKey(event.target.checked)}
+                      />
+                      <span>Remember on this device</span>
+                    </label>
+                  </>
+                )}
                 <label className="chat-field">
                   <span>Model</span>
                   <select
@@ -758,12 +762,19 @@ export function ChatPage() {
                     />
                   </label>
                 )}
-                <p className="chat-hint">
-                  Your key goes only to {providerDef.host} — nowhere else.
-                  {rememberKey
-                    ? " It's saved in this browser until you untick the box."
-                    : " Right now it's kept just for this tab and gone when the tab closes."}
-                </p>
+                {providerDef.keyless ? (
+                  <p className="chat-hint">
+                    No key needed — this talks to Ollama on your own computer. Start Ollama with this site
+                    allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list).
+                  </p>
+                ) : (
+                  <p className="chat-hint">
+                    Your key goes only to {providerDef.host} — nowhere else.
+                    {rememberKey
+                      ? " It's saved in this browser until you untick the box."
+                      : " Right now it's kept just for this tab and gone when the tab closes."}
+                  </p>
+                )}
               </>
             )}
             {provider === "builtin" && builtinAvailability !== "available" && (

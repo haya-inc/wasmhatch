@@ -20,8 +20,14 @@ describe("cloud provider registry", () => {
     }
   });
 
-  it("offers exactly the three key types Anthropic, OpenAI, and OpenRouter", () => {
-    expect(CLOUD_PROVIDER_IDS).toEqual(["anthropic", "openai", "openrouter"]);
+  it("offers Anthropic, OpenAI, OpenRouter, and keyless Ollama", () => {
+    expect(CLOUD_PROVIDER_IDS).toEqual(["anthropic", "openai", "openrouter", "ollama"]);
+  });
+
+  it("marks only Ollama keyless", () => {
+    for (const provider of CLOUD_PROVIDERS) {
+      expect(Boolean(provider.keyless), provider.id).toBe(provider.id === "ollama");
+    }
   });
 
   it("only lets the OpenAI direct provider use the completion-tokens param", () => {
@@ -32,9 +38,11 @@ describe("cloud provider registry", () => {
     }
   });
 
-  it("pins every connect-src to an exact https origin, never a wildcard or http", () => {
+  it("pins every connect-src to an exact https origin, or a loopback http origin", () => {
+    // http is allowed only for loopback (Ollama runs on plain http at localhost).
     for (const origin of PROVIDER_CONNECT_SRCS) {
-      expect(origin).toMatch(/^https:\/\/[a-z0-9.-]+$/);
+      const ok = /^https:\/\/[a-z0-9.-]+$/.test(origin) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      expect(ok, origin).toBe(true);
     }
   });
 

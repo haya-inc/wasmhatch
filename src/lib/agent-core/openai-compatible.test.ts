@@ -148,6 +148,16 @@ describe("createOpenAiCompatibleProvider", () => {
     expect(events.at(-1)?.type).toBe("message-end");
   });
 
+  it("omits the Authorization header entirely when there is no key (keyless local server)", async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(happyStream));
+    const keyless = createOpenAiCompatibleProvider({ apiKey: "", baseUrl: "http://localhost:11434/v1", id: "ollama", fetchImpl });
+    await collect(keyless);
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("http://localhost:11434/v1/chat/completions");
+    const headers = init.headers as Record<string, string>;
+    expect("authorization" in headers).toBe(false);
+  });
+
   it("maps a 401 to a key error without echoing the key", async () => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 401 }));
     await expect(collect(provider(fetchImpl))).rejects.toThrow(/rejected the API key/);

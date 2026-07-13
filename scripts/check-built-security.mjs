@@ -30,6 +30,7 @@ const requiredConnectSrc = [
   "https://api.openai.com",
   "https://api.anthropic.com",
   "https://openrouter.ai",
+  "http://localhost:11434",
   "https://api.github.com",
   "https://raw.githubusercontent.com",
   "https://sheets.googleapis.com",
@@ -44,8 +45,18 @@ for (const origin of requiredConnectSrc) {
   if (!connectSrc.split(/\s+/).includes(origin)) throw new Error(`Built CSP connect-src is missing: ${origin}`);
 }
 
-for (const forbidden of ["'unsafe-inline'", "'unsafe-eval'", " ws:", " http:"]) {
+for (const forbidden of ["'unsafe-inline'", "'unsafe-eval'", " ws:"]) {
   if (policy.includes(forbidden)) throw new Error(`Built CSP contains forbidden source: ${forbidden}`);
+}
+
+// http: is forbidden as a network scheme, with one audited exception: loopback
+// (localhost / 127.0.0.1), which browsers treat as trustworthy and where local
+// runtimes like Ollama serve. Any other http:// source fails the build.
+for (const src of policy.match(/http:\/\/[^\s;'"]+/g) ?? []) {
+  const host = src.slice("http://".length).split(/[:/]/)[0];
+  if (host !== "localhost" && host !== "127.0.0.1") {
+    throw new Error(`Built CSP contains a non-loopback http source: ${src}`);
+  }
 }
 
 for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
