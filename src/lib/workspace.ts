@@ -337,6 +337,43 @@ export function formatBytes(bytes: number): string {
   return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${unit}`;
 }
 
+export interface SampleSeedOutcome {
+  mode: "fresh" | "merged";
+  written: string[];
+  skipped: string[];
+}
+
+/**
+ * Seed sample files without endangering existing work. An empty workspace is
+ * replaced wholesale so the samples become the clean baseline; a workspace
+ * that already holds files only gains the sample paths that do not exist yet,
+ * and every existing file — including one sharing a sample's path — is left
+ * untouched, working tree and baseline alike.
+ */
+export async function seedSampleFiles(
+  store: WorkspaceStore,
+  samples: readonly WorkspaceFile[]
+): Promise<SampleSeedOutcome> {
+  const existing = await store.listFiles();
+  if (existing.length === 0) {
+    await store.replaceAll([...samples]);
+    return { mode: "fresh", written: samples.map((file) => normalizeWorkspacePath(file.path)), skipped: [] };
+  }
+  const existingPaths = new Set(existing);
+  const written: string[] = [];
+  const skipped: string[] = [];
+  for (const sample of samples) {
+    const path = normalizeWorkspacePath(sample.path);
+    if (existingPaths.has(path)) {
+      skipped.push(path);
+      continue;
+    }
+    await store.writeFile(path, sample.content);
+    written.push(path);
+  }
+  return { mode: "merged", written, skipped };
+}
+
 export const sampleWorkspace: WorkspaceFile[] = [
   {
     path: "README.md",

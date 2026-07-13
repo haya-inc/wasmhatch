@@ -18,13 +18,15 @@ import { parseMarkdown, type MarkdownInline } from "../lib/markdown";
 import { GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
 import { createZipArchive } from "../lib/archive";
 import { loadChatSettings, saveChatSettings, type ChatProviderKind } from "../lib/chat-settings";
+import { CLOUD_PROVIDERS, getCloudProvider, type ChatProviderId } from "../lib/chat-providers";
+import { FIRST_RUN_CSV_SAMPLE, FIRST_RUN_SAMPLE_FILES } from "../lib/first-run-csv-sample";
 import { isProtectedAgentPath } from "../lib/secrets";
 import {
   createWorkspaceStore,
   formatBytes,
   inspectBrowserStorage,
   requestPersistentStorage,
-  sampleWorkspace,
+  seedSampleFiles,
   type BrowserStorageStatus
 } from "../lib/workspace";
 import { ArtifactPanel } from "./ArtifactPanel";
@@ -66,10 +68,8 @@ function systemPrompt(policy: WritePolicy): string {
 const GOOGLE_DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const GOOGLE_CLIENT_ID: string = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "";
 
-const DEFAULT_MODELS: Record<Exclude<ProviderKind, "builtin">, string> = {
-  anthropic: "claude-sonnet-5",
-  openai: "gpt-5.2"
-};
+// UI-only sentinel: "Custom" reveals a free-text model ID field.
+const CUSTOM_MODEL = "__custom__";
 
 const BUILTIN_LANGUAGE_OPTIONS = {
   expectedInputs: [{ type: "text" as const, languages: ["en", "ja"] }],
@@ -162,7 +162,7 @@ export function ChatPage() {
   const restoredCloud = initialSettings.provider === "builtin" ? null : initialSettings.provider;
   const [provider, setProvider] = useState<ProviderKind>(initialSettings.provider);
   const [apiKey, setApiKey] = useState(restoredCloud ? initialSettings.keys[restoredCloud] ?? "" : "");
-  const [model, setModel] = useState(restoredCloud ? initialSettings.models[restoredCloud] ?? DEFAULT_MODELS[restoredCloud] : "");
+  const [model, setModel] = useState(restoredCloud ? initialSettings.models[restoredCloud] ?? getCloudProvider(restoredCloud).defaultModel : "");
   const [rememberKey, setRememberKey] = useState(initialSettings.rememberKey);
   const keysRef = useRef(initialSettings.keys);
   const modelsRef = useRef(initialSettings.models);
@@ -352,22 +352,24 @@ export function ChatPage() {
   }, [pushItem]);
 
   const runCloud = useCallback(async (task: string, signal: AbortSignal) => {
+    if (provider === "builtin") return;
     const key = apiKey.trim();
     if (!key) {
       notice("Add your API key first — it stays in this tab's memory and is sent only to the selected provider.", "error");
       return;
     }
-    const providerImpl = provider === "anthropic"
+    const def = getCloudProvider(provider);
+    const providerImpl = def.adapter === "anthropic"
       ? createAnthropicProvider({ apiKey: key })
       : createOpenAiCompatibleProvider({
         apiKey: key,
-        baseUrl: "https://api.openai.com/v1",
-        id: "openai",
-        maxTokensParam: "max_completion_tokens"
+        baseUrl: def.baseUrl,
+        id: def.id,
+        maxTokensParam: def.maxTokensParam
       });
     const result = await runAgentLoop({
       provider: providerImpl,
-      model: model.trim() || DEFAULT_MODELS[provider === "anthropic" ? "anthropic" : "openai"],
+      model: model.trim() || def.defaultModel,
       system: systemPrompt(writeModeRef.current),
       messages: transcriptMessages.current.length ? transcriptMessages.current : undefined,
       task,
@@ -468,10 +470,30 @@ export function ChatPage() {
     abortController.current?.abort();
   }, []);
 
+  const switchProvider = useCallback((next: ChatProviderId) => {
+    setProvider(next);
+    if (next === "builtin") {
+      setApiKey("");
+      setModel("");
+    } else {
+      setApiKey(keysRef.current[next] ?? "");
+      setModel(modelsRef.current[next] ?? getCloudProvider(next).defaultModel);
+    }
+    // A different provider means a different model and wire format: start the transcript fresh.
+    transcriptMessages.current = [];
+  }, []);
+
   const loadSamples = useCallback(async () => {
-    await workspace.current.replaceAll(sampleWorkspace);
+    const outcome = await seedSampleFiles(workspace.current, FIRST_RUN_SAMPLE_FILES);
     await refreshFiles();
-    notice("Sample files loaded into the workspace.");
+    if (outcome.mode === "fresh") {
+      notice("A messy sample spreadsheet is ready — ask for a cleanup and watch every change land.");
+    } else if (outcome.written.length) {
+      notice("Sample spreadsheet added next to your files — nothing of yours was touched.");
+    } else {
+      notice("The sample spreadsheet is already in your files.");
+    }
+    setInput((current) => (current.trim() ? current : FIRST_RUN_CSV_SAMPLE.task));
   }, [notice, refreshFiles]);
 
   const openFile = useCallback(async (path: string) => {
@@ -525,6 +547,9 @@ export function ChatPage() {
   }, [backupBusy, notice]);
 
   const activePermission = permissionQueue[0];
+  const providerDef = provider === "builtin" ? null : getCloudProvider(provider);
+  const modelChoices = providerDef?.models ?? [];
+  const curatedModel = modelChoices.some((choice) => choice.value === model);
 
   return (
     <div className="fresh chat-shell">
@@ -545,7 +570,7 @@ export function ChatPage() {
                   Prefer to approve things first? Switch to Careful in the sidebar.
                 </p>
                 <button className="button" type="button" onClick={() => { void loadSamples(); }}>
-                  Add sample files
+                  Add a sample spreadsheet
                 </button>
               </div>
             )}
@@ -677,27 +702,17 @@ export function ChatPage() {
               <span>Provider</span>
               <select
                 value={provider}
-                onChange={(event) => {
-                  const next = event.target.value as ProviderKind;
-                  setProvider(next);
-                  if (next === "builtin") {
-                    setApiKey("");
-                    setModel("");
-                  } else {
-                    setApiKey(keysRef.current[next] ?? "");
-                    setModel(modelsRef.current[next] ?? DEFAULT_MODELS[next]);
-                  }
-                  transcriptMessages.current = [];
-                }}
+                onChange={(event) => switchProvider(event.target.value as ChatProviderId)}
               >
                 <option value="builtin">
                   Built into Chrome — free, no key{builtinAvailability === "available" ? "" : ` (${builtinAvailability})`}
                 </option>
-                <option value="anthropic">Claude (your API key)</option>
-                <option value="openai">OpenAI (your API key)</option>
+                {CLOUD_PROVIDERS.map((entry) => (
+                  <option key={entry.id} value={entry.id}>{entry.label}</option>
+                ))}
               </select>
             </label>
-            {provider !== "builtin" && (
+            {providerDef && (
               <>
                 <label className="chat-field">
                   <span>API key</span>
@@ -705,7 +720,7 @@ export function ChatPage() {
                     type="password"
                     autoComplete="off"
                     value={apiKey}
-                    placeholder={provider === "anthropic" ? "sk-ant-…" : "sk-…"}
+                    placeholder={providerDef.keyPlaceholder}
                     onChange={(event) => setApiKey(event.target.value)}
                   />
                 </label>
@@ -719,15 +734,32 @@ export function ChatPage() {
                 </label>
                 <label className="chat-field">
                   <span>Model</span>
-                  <input
-                    type="text"
-                    value={model}
-                    placeholder={DEFAULT_MODELS[provider]}
-                    onChange={(event) => setModel(event.target.value)}
-                  />
+                  <select
+                    value={curatedModel ? model : CUSTOM_MODEL}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setModel(next === CUSTOM_MODEL ? "" : next);
+                    }}
+                  >
+                    {modelChoices.map((choice) => (
+                      <option key={choice.value} value={choice.value}>{choice.label}</option>
+                    ))}
+                    <option value={CUSTOM_MODEL}>Custom model ID…</option>
+                  </select>
                 </label>
+                {!curatedModel && (
+                  <label className="chat-field">
+                    <span>Custom model ID</span>
+                    <input
+                      type="text"
+                      value={model}
+                      placeholder={providerDef.defaultModel}
+                      onChange={(event) => setModel(event.target.value)}
+                    />
+                  </label>
+                )}
                 <p className="chat-hint">
-                  Your key goes only to {provider === "anthropic" ? "api.anthropic.com" : "api.openai.com"} — nowhere else.
+                  Your key goes only to {providerDef.host} — nowhere else.
                   {rememberKey
                     ? " It's saved in this browser until you untick the box."
                     : " Right now it's kept just for this tab and gone when the tab closes."}

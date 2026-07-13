@@ -89,7 +89,7 @@ describe("chat settings persistence", () => {
     session.setItem("wasmhatch-chat-settings-v1", "{not json");
     local.setItem(
       "wasmhatch-chat-settings-v1",
-      JSON.stringify({ provider: "mystery", models: { anthropic: 7, gemini: "x" }, keys: null, rememberKey: "yes" })
+      JSON.stringify({ provider: "mystery", models: { anthropic: 7, phantom_provider: "x" }, keys: null, rememberKey: "yes" })
     );
 
     expect(loadChatSettings({ session, local })).toEqual({
@@ -104,5 +104,18 @@ describe("chat settings persistence", () => {
     const stores = { session: new BrokenStore(), local: new BrokenStore() };
     expect(() => saveChatSettings(snapshot(), stores)).not.toThrow();
     expect(loadChatSettings(stores)).toEqual({ provider: "builtin", models: {}, keys: {}, rememberKey: false });
+  });
+
+  it("round-trips OpenRouter, the third key type beyond the original two", () => {
+    const session = new FakeStore();
+    const local = new FakeStore();
+    const openrouter: ChatSettingsSnapshot = {
+      provider: "openrouter",
+      models: { openrouter: "anthropic/claude-sonnet-5" },
+      keys: { openrouter: "sk-or-test" },
+      rememberKey: true
+    };
+    saveChatSettings(openrouter, { session, local });
+    expect(loadChatSettings({ session, local })).toEqual(openrouter);
   });
 });

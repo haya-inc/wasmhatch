@@ -14,12 +14,34 @@ const requiredDirectives = [
   "form-action 'none'",
   "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client",
   "style-src 'self' https://accounts.google.com/gsi/style",
-  "connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://accounts.google.com/gsi/",
   "worker-src 'self'"
 ];
 
 for (const directive of requiredDirectives) {
   if (!policy.includes(directive)) throw new Error(`Built CSP is missing: ${directive}`);
+}
+
+// connect-src is order-independent, so check each allowed origin individually.
+// This list is the security bar itself — kept explicit here on purpose. It must
+// stay in sync with vite.config.ts (LLM providers from src/lib/chat-providers.ts
+// plus the non-LLM connector origins); a drift makes the build fail here.
+const requiredConnectSrc = [
+  "'self'",
+  "https://api.openai.com",
+  "https://api.anthropic.com",
+  "https://openrouter.ai",
+  "https://api.github.com",
+  "https://raw.githubusercontent.com",
+  "https://sheets.googleapis.com",
+  "https://www.googleapis.com",
+  "https://docs.googleapis.com",
+  "https://accounts.google.com/gsi/"
+];
+
+const connectSrc = policy.match(/connect-src ([^;]+)/)?.[1] ?? "";
+if (!connectSrc) throw new Error("Built CSP is missing its connect-src directive.");
+for (const origin of requiredConnectSrc) {
+  if (!connectSrc.split(/\s+/).includes(origin)) throw new Error(`Built CSP connect-src is missing: ${origin}`);
 }
 
 for (const forbidden of ["'unsafe-inline'", "'unsafe-eval'", " ws:", " http:"]) {

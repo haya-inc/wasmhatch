@@ -6,6 +6,7 @@ import {
   measureWorkspaceUsage,
   normalizeWorkspacePath,
   requestPersistentStorage,
+  seedSampleFiles,
   type WorkspaceStore
 } from "./workspace";
 
@@ -194,6 +195,52 @@ describe("workspace replacement", () => {
     await expect(store.listBaselineFiles()).resolves.toEqual(["old.ts"]);
     await expect(store.readFile("old.ts")).resolves.toBe("original");
     await expect(store.readBaselineFile("old.ts")).resolves.toBe("original");
+  });
+});
+
+describe("seedSampleFiles", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubLocalStorageWorkspace() {
+    const values = new Map<string, string>();
+    vi.stubGlobal("navigator", {});
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key)
+    });
+    return createWorkspaceStore();
+  }
+
+  it("replaces an empty workspace so the samples become the clean baseline", async () => {
+    const store = stubLocalStorageWorkspace();
+
+    const outcome = await seedSampleFiles(store, [{ path: "sample.csv", content: "a,b\n" }]);
+
+    expect(outcome).toEqual({ mode: "fresh", written: ["sample.csv"], skipped: [] });
+    await expect(store.listFiles()).resolves.toEqual(["sample.csv"]);
+    await expect(store.listBaselineFiles()).resolves.toEqual(["sample.csv"]);
+  });
+
+  it("adds samples beside existing work without deleting or overwriting anything", async () => {
+    const store = stubLocalStorageWorkspace();
+    await store.replaceAll([
+      { path: "notes.md", content: "mine" },
+      { path: "sample.csv", content: "user version" }
+    ]);
+
+    const outcome = await seedSampleFiles(store, [
+      { path: "sample.csv", content: "sample version" },
+      { path: "extra.csv", content: "x\n" }
+    ]);
+
+    expect(outcome).toEqual({ mode: "merged", written: ["extra.csv"], skipped: ["sample.csv"] });
+    await expect(store.readFile("sample.csv")).resolves.toBe("user version");
+    await expect(store.readFile("notes.md")).resolves.toBe("mine");
+    await expect(store.listFiles()).resolves.toEqual(["extra.csv", "notes.md", "sample.csv"]);
+    // The baseline is the user's revert target; merging samples must not move it.
+    await expect(store.listBaselineFiles()).resolves.toEqual(["notes.md", "sample.csv"]);
+    await expect(store.readBaselineFile("sample.csv")).resolves.toBe("user version");
   });
 });
 

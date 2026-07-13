@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { PROVIDER_CONNECT_SRCS } from "./src/lib/chat-providers";
 
 export default defineConfig(({ command, mode }) => ({
   base: mode === "github-pages" ? "/wasmhatch/" : "/",
@@ -11,6 +12,9 @@ export default defineConfig(({ command, mode }) => ({
         handler() {
           const developmentConnect = command === "serve" ? " ws://localhost:* ws://127.0.0.1:*" : "";
           const googleIdentityBase = "https://accounts.google.com/gsi/";
+          // LLM provider origins come from the audited registry; these are the non-LLM
+          // connector origins (GitHub import, Google Drive/Docs/Sheets REST).
+          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com";
           const stylePolicy = command === "serve"
             ? "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style"
             : "style-src 'self' https://accounts.google.com/gsi/style";
@@ -24,7 +28,7 @@ export default defineConfig(({ command, mode }) => ({
             stylePolicy,
             "img-src 'self' data:",
             "font-src 'self'",
-            `connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com ${googleIdentityBase}${developmentConnect}`,
+            `connect-src 'self' ${PROVIDER_CONNECT_SRCS.join(" ")} ${connectorOrigins} ${googleIdentityBase}${developmentConnect}`,
             "worker-src 'self'",
             "manifest-src 'self'"
           ].join("; ");

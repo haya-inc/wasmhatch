@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateCsvTextArtifact } from "./tabular-artifact";
-import { FIRST_RUN_CSV_SAMPLE } from "./first-run-csv-sample";
+import { FIRST_RUN_CSV_SAMPLE, FIRST_RUN_SAMPLE_FILES } from "./first-run-csv-sample";
 
 describe("first-run CSV sample", () => {
   it("is a bounded, formula-free table for the real import worker path", () => {
@@ -16,5 +16,13 @@ describe("first-run CSV sample", () => {
     ]);
     expect(new TextEncoder().encode(FIRST_RUN_CSV_SAMPLE.content).byteLength).toBeLessThan(512);
     expect(Object.isFrozen(FIRST_RUN_CSV_SAMPLE)).toBe(true);
+  });
+
+  it("ships the chat surface exactly one spreadsheet, matching the hero copy", () => {
+    expect(FIRST_RUN_SAMPLE_FILES).toEqual([
+      { path: FIRST_RUN_CSV_SAMPLE.fileName, content: FIRST_RUN_CSV_SAMPLE.content }
+    ]);
+    expect(Object.isFrozen(FIRST_RUN_SAMPLE_FILES)).toBe(true);
+    expect(FIRST_RUN_SAMPLE_FILES.every((file) => Object.isFrozen(file))).toBe(true);
   });
 });

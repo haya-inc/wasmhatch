@@ -1,5 +1,7 @@
-export type ChatProviderKind = "builtin" | "anthropic" | "openai";
-export type CloudChatProvider = Exclude<ChatProviderKind, "builtin">;
+import { CLOUD_PROVIDER_IDS, isCloudProviderId, type ChatProviderId, type CloudProviderId } from "./chat-providers";
+
+export type ChatProviderKind = ChatProviderId;
+export type CloudChatProvider = CloudProviderId;
 
 export interface ChatSettingsSnapshot {
   provider: ChatProviderKind;
@@ -19,7 +21,7 @@ export interface ChatSettingsStores {
 }
 
 const STORAGE_KEY = "wasmhatch-chat-settings-v1";
-const CLOUD_PROVIDERS: readonly CloudChatProvider[] = ["anthropic", "openai"];
+const CLOUD_PROVIDERS: readonly CloudChatProvider[] = CLOUD_PROVIDER_IDS;
 
 function defaultStores(): ChatSettingsStores {
   try {
@@ -69,7 +71,7 @@ function parseSnapshot(raw: string | null): Partial<ChatSettingsSnapshot> | null
       models: pickStringMap(record.models),
       keys: pickStringMap(record.keys)
     };
-    if (record.provider === "builtin" || record.provider === "anthropic" || record.provider === "openai") {
+    if (record.provider === "builtin" || isCloudProviderId(record.provider)) {
       snapshot.provider = record.provider;
     }
     if (typeof record.rememberKey === "boolean") snapshot.rememberKey = record.rememberKey;
