@@ -3,18 +3,20 @@
  *
  * Deliberately small: the picker offers three key types — Anthropic and OpenAI
  * direct, plus OpenRouter as the one hub that fans out to every other model
- * (Gemini, Grok, DeepSeek, Llama, …) behind a single key. That keeps the UI to
- * one key field and one short dropdown instead of a provider zoo.
+ * (Gemini, Grok, DeepSeek, Llama, …) behind a single key — plus keyless Ollama
+ * for local models. That keeps the UI to one key field and one short dropdown
+ * instead of a provider zoo.
  *
  * Every provider speaks either the Anthropic Messages API or the
  * OpenAI-compatible Chat Completions API, and every origin was CORS-probed to
  * confirm a static browser page can call it directly. `connectSrc` is the single
  * source of truth for the CSP allowlist (see vite.config.ts and
  * scripts/check-built-security.mjs) — a provider is unreachable unless its origin
- * is in that audited list.
+ * is in that audited list. Ollama's origin is plain http on loopback, which the
+ * build check allows only for localhost/127.0.0.1.
  */
 
-export type CloudProviderId = "anthropic" | "openai" | "openrouter";
+export type CloudProviderId = "anthropic" | "openai" | "openrouter" | "ollama";
 
 export type ChatProviderId = "builtin" | CloudProviderId;
 
@@ -39,6 +41,8 @@ export interface CloudProviderDef {
   host: string;
   /** API-key input placeholder. */
   keyPlaceholder: string;
+  /** True for a local, keyless server (Ollama): no key field, no Authorization header. */
+  keyless?: boolean;
   models: ModelChoice[];
   defaultModel: string;
 }
@@ -94,6 +98,22 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
       { value: "deepseek/deepseek-chat", label: "DeepSeek V3" }
     ],
     defaultModel: "anthropic/claude-sonnet-5"
+  },
+  {
+    id: "ollama",
+    label: "Ollama — local models, no key",
+    adapter: "openai",
+    baseUrl: "http://localhost:11434/v1",
+    maxTokensParam: "max_tokens",
+    connectSrc: "http://localhost:11434",
+    host: "localhost:11434",
+    keyPlaceholder: "",
+    keyless: true,
+    models: [
+      { value: "llama3.2", label: "Llama 3.2 (local)" },
+      { value: "qwen2.5", label: "Qwen 2.5 (local)" }
+    ],
+    defaultModel: "llama3.2"
   }
 ];
 
