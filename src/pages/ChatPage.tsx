@@ -721,6 +721,7 @@ export function ChatPage() {
                       <input
                         type="password"
                         autoComplete="off"
+                        aria-describedby="chat-key-storage-hint"
                         value={apiKey}
                         placeholder={providerDef.keyPlaceholder}
                         onChange={(event) => setApiKey(event.target.value)}
@@ -730,6 +731,7 @@ export function ChatPage() {
                       <input
                         type="checkbox"
                         checked={rememberKey}
+                        aria-describedby="chat-key-storage-hint"
                         onChange={(event) => setRememberKey(event.target.checked)}
                       />
                       <span>Remember on this device</span>
@@ -768,7 +770,7 @@ export function ChatPage() {
                     allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list).
                   </p>
                 ) : (
-                  <p className="chat-hint">
+                  <p id="chat-key-storage-hint" className="chat-hint">
                     Your key goes only to {providerDef.host} — nowhere else.
                     {rememberKey
                       ? " It's saved in this browser until you untick the box."
