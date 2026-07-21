@@ -17,15 +17,21 @@ test("renders assistant markdown as structure without ever injecting HTML", asyn
     "",
     "<img src=x onerror=alert(1)>"
   ].join("\n");
-  await page.route("https://api.openai.com/v1/chat/completions", async (route) => {
-    const chunks = [
-      JSON.stringify({ choices: [{ delta: { content: reply } }] }),
-      JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }], usage: { prompt_tokens: 1, completion_tokens: 1 } })
+  let instructions = "";
+  await page.route("https://api.openai.com/v1/responses", async (route) => {
+    const body = route.request().postDataJSON() as { instructions?: string };
+    instructions = String(body.instructions ?? "");
+    const events = [
+      { type: "response.output_text.delta", output_index: 0, delta: reply },
+      {
+        type: "response.completed",
+        response: { status: "completed", output: [{ id: "msg_1", type: "message" }], usage: { input_tokens: 1, output_tokens: 1 } }
+      }
     ];
     await route.fulfill({
       status: 200,
       contentType: "text/event-stream",
-      body: chunks.map((chunk) => `data: ${chunk}\n\n`).join("") + "data: [DONE]\n\n"
+      body: events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join("")
     });
   });
 
@@ -55,4 +61,8 @@ test("renders assistant markdown as structure without ever injecting HTML", asyn
   await expect(bubble).not.toContainText("**bold**");
   await expect(bubble).toContainText("<img src=x onerror=alert(1)>");
   await expect(bubble.locator("img")).toHaveCount(0);
+
+  // The system prompt carries today's date so models can resolve "this Friday"
+  // without asking the user.
+  expect(instructions).toMatch(/Today is \w+, \d{4}-\d{2}-\d{2}/);
 });
