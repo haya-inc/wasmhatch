@@ -133,6 +133,15 @@ export interface GoogleRequestContext {
   signal?: AbortSignal;
 }
 
+/**
+ * Resolves the fetch implementation for an executor. The default MUST be bound
+ * to globalThis: a bare `fetch` reference called through a context object gets
+ * that object as `this`, and Chrome rejects it with "Illegal invocation".
+ */
+export function resolveFetch(fetchImpl?: typeof fetch): typeof fetch {
+  return fetchImpl ?? globalThis.fetch.bind(globalThis);
+}
+
 export async function googleFetch(
   context: GoogleRequestContext,
   url: string,
@@ -169,5 +178,14 @@ export function toToolFailure(error: unknown): AgentToolOutcome {
   if (error instanceof Error && error.name === "GoogleWorkspaceReferenceError") {
     return fail(error.message);
   }
-  return fail("Google request failed before completion. Check the connection and retry.");
+  // Credential-broker contract errors are written to be user-facing too.
+  if (error instanceof Error && error.name === "ConnectorContractError") {
+    return fail(error.message);
+  }
+  // Anything else is unexpected (a CSP block, a dropped connection, invalid
+  // JSON). Keep the advice but preserve the cause: these messages come from the
+  // platform, never contain the token, and turn a dead-end reply into a
+  // diagnosis. Bound the length so a hostile response can't flood the model.
+  const cause = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  return fail(`Google request failed before completion (${cause.slice(0, 160)}). Check the connection and retry.`);
 }

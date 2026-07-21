@@ -32,6 +32,7 @@ import {
   requireRange,
   requireTitle,
   requireValues,
+  resolveFetch,
   toToolFailure
 } from "./google-rest";
 
@@ -162,7 +163,7 @@ export function createGoogleConnectorExecutor(
   getToken: GoogleTokenAccessor,
   options: { fetchImpl?: typeof fetch } = {}
 ): AgentToolExecutor {
-  const fetchImpl = options.fetchImpl ?? fetch;
+  const fetchImpl = resolveFetch(options.fetchImpl);
 
   return async (name, args, { signal }) => {
     const context: GoogleRequestContext = { getToken, fetchImpl, signal };

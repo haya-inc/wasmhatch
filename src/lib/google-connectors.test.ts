@@ -125,6 +125,22 @@ describe("createGoogleConnectorExecutor", () => {
     });
   });
 
+  it("binds the default fetch so the browser never sees an illegal `this`", async () => {
+    const original = globalThis.fetch;
+    // Simulate Chrome's window.fetch, which rejects any `this` other than the global.
+    globalThis.fetch = function (this: unknown) {
+      if (this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(jsonResponse({ id: "slides-id-1234567890", name: "Deck", webViewLink: null }));
+    } as typeof fetch;
+    try {
+      const execute = createGoogleConnectorExecutor(async () => FAKE_TOKEN);
+      const outcome = await execute("create_google_slides", { title: "Deck" }, {});
+      expect(outcome.isError).toBeFalsy();
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
   it("sends the token only in the Authorization header and never leaks it", async () => {
     const { calls, execute } = recordingExecutor([
       jsonResponse({ id: "doc-id-1234567890", name: "n", webViewLink: null })

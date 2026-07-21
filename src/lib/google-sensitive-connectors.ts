@@ -38,6 +38,7 @@ import {
   requireTitle,
   requireValues,
   invalid,
+  resolveFetch,
   toToolFailure
 } from "./google-rest";
 import { parseWorkspaceReference } from "./google-workspace-url";
@@ -241,7 +242,7 @@ export function createGoogleSensitiveExecutor(
   getToken: GoogleTokenAccessor,
   options: GoogleSensitiveOptions = {}
 ): AgentToolExecutor {
-  const fetchImpl = options.fetchImpl ?? fetch;
+  const fetchImpl = resolveFetch(options.fetchImpl);
   const nextId = options.idFactory ?? defaultIdFactory;
 
   return async (name, args, { signal }) => {

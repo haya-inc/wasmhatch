@@ -190,6 +190,33 @@ describe("createGoogleSensitiveExecutor", () => {
     expectNoTokenLeak(outcome.content);
   });
 
+  it("binds the default fetch so the browser never sees an illegal `this`", async () => {
+    const original = globalThis.fetch;
+    // Simulate Chrome's window.fetch, which rejects any `this` other than the global.
+    globalThis.fetch = function (this: unknown) {
+      if (this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(jsonResponse({ range: "A1", values: [] }));
+    } as typeof fetch;
+    try {
+      const execute = createGoogleSensitiveExecutor(async () => FAKE_TOKEN);
+      const outcome = await execute("read_google_sheet", { url: SHEET_URL }, {});
+      expect(outcome.isError).toBeFalsy();
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it("preserves the underlying cause when the request throws before completion", async () => {
+    const fetchImpl = vi.fn(async () => { throw new TypeError("Failed to fetch"); });
+    const execute = createGoogleSensitiveExecutor(async () => FAKE_TOKEN, {
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    });
+    const outcome = await execute("read_google_sheet", { url: SHEET_URL }, {});
+    expect(outcome.isError).toBe(true);
+    expect(outcome.content).toContain("TypeError: Failed to fetch");
+    expectNoTokenLeak(outcome.content);
+  });
+
   it("maps a 403 insufficient-scope failure to a plain-language error", async () => {
     const { execute } = recordingExecutor([jsonResponse({ error: { message: "insufficient" } }, 403)]);
     const outcome = await execute("read_google_doc", { url: DOC_URL }, {});
