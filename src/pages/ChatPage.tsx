@@ -202,6 +202,15 @@ export function ChatPage() {
   }, [items, permissionQueue]);
 
   useEffect(() => {
+    if (!viewer) return;
+    const closeViewerOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setViewer(null);
+    };
+    window.addEventListener("keydown", closeViewerOnEscape);
+    return () => window.removeEventListener("keydown", closeViewerOnEscape);
+  }, [viewer]);
+
+  useEffect(() => {
     let cancelled = false;
     void inspectBrowserStorage().then((status) => {
       if (!cancelled) setStorageStatus(status);
