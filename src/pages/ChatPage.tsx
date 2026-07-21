@@ -175,6 +175,22 @@ export function ChatPage() {
   const [pinBusy, setPinBusy] = useState(false);
   const [pinNote, setPinNote] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const clipboardAvailable = typeof navigator !== "undefined" && !!navigator.clipboard;
+
+  const copyToClipboard = async () => {
+    if (!viewer || !clipboardAvailable) return;
+    await navigator.clipboard.writeText(viewer.content);
+    setCopied(true);
+    window.setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    setCopied(false);
+  }, [viewer]);
 
   const pushItem = useCallback((item: Omit<ChatItem, "id">) => {
     const id = nextId.current;
@@ -883,6 +899,7 @@ export function ChatPage() {
               <h2>{viewer.path}</h2>
               <pre className="chat-viewer">{viewer.content}</pre>
               <button className="button button-quiet" type="button" onClick={() => { void downloadFile(viewer.path, viewer.content); }}>Download</button>
+              <button className="button button-quiet" type="button" onClick={() => { void copyToClipboard(); }} disabled={!clipboardAvailable} title={clipboardAvailable ? undefined : "Clipboard API is not available in this browser."}>{copied ? "Copied" : "Copy"}</button>
               <button className="button button-quiet" type="button" onClick={() => setViewer(null)}>Close</button>
             </section>
           )}
