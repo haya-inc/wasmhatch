@@ -1,7 +1,9 @@
 # WasmHatch roadmap
 
-Direction (2026-07-12): WasmHatch is a **general AI agent that runs entirely
-in a browser tab** — no server, no Docker, no install, no signup. The single
+Direction (2026-07-13): WasmHatch is a **general AI agent that runs entirely
+in a browser tab** — no Docker, no install, and no signup for standalone or
+BYOK use. An optional hosted catalog publishes portable agents, while the OSS
+runtime and agent format remain useful without that service. The single
 differentiation point is the form factor. Features imitate the incumbent
 agents (ChatGPT + connectors, Claude + connectors + Artifacts) as closely as
 the platform allows; the commitment is **not losing inside an advertised
@@ -97,6 +99,23 @@ Exit — the five launch conditions, one uncut take, or no launch date:
 Exit: 8/8 weekly artifacts; first stranger-authored issue or PR; Sensitive
 verification cleared.
 
+## Parallel track — Portable agent distribution
+
+- [x] Versioned `wasmhatch.agent` ZIP contract with exact file hashes, bounded
+      extraction, protected credential paths, declared capabilities, and a
+      registry-neutral HTTPS loader (`src/lib/agent-package.ts`).
+- [ ] Add a plain-language publish preview that lists included files,
+      requested capabilities, compatibility, and sample prompts before any
+      upload.
+- [ ] Load a selected portable agent into the chat runtime without allowing
+      package instructions or scripts to access provider credentials.
+- [ ] Connect an optional official Registry adapter for publish, unpublish,
+      and immutable revision lookup; keep local file and arbitrary HTTPS
+      sources first-class.
+- [ ] Add a one-click public trial route using the visitor's existing BYOK
+      configuration, with an example-output fallback for visitors without a
+      provider key.
+
 ## Phase 3 — Traction-gated expansion
 
 - Restricted Drive scope + CASA assessment (~$500–1,000/yr) only when usage
@@ -120,9 +139,12 @@ verification cleared.
 
 - No silent `connect-src https:` relaxation; connector origins are a
   build-time audited allowlist.
-- No shared hosted relay; the only server code ever offered is a stateless
-  single-purpose template users deploy themselves.
-- No hidden analytics; measurement is GitHub-side metrics plus user reports.
+- No shared credential relay in the OSS runtime. The separate optional hosted
+  service may provide catalog APIs and, on a paid plan, an explicit managed
+  inference gateway; standalone BYOK traffic still goes directly from the
+  browser to the selected provider.
+- No hidden analytics in the OSS runtime. The hosted service may measure its
+  own publish and download events under a documented privacy policy.
 - No empty Discord; GitHub Discussions until there are real users.
 - Weekly named releases with human-readable notes; no silent version-bump
   streams.

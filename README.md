@@ -74,6 +74,11 @@ For the technically curious — this is where WasmHatch is unusual:
   diff; workspace changes revert in one click; an optional Careful mode asks
   before each write.
 
+Portable agents can be exported, content-verified, and loaded from any allowed
+HTTPS source. The optional hosted catalog is a distribution service, not a
+runtime dependency; local and BYOK use remain account-free. See the
+[portable agent contract](docs/portable-agents.md).
+
 Deeper reading: [product plan](docs/plan.md) ·
 [roadmap](ROADMAP.md) · [agent loop design](docs/agent-loop-design.md) ·
 [landscape](docs/landscape.md) · [privacy policy](public/privacy.html).
