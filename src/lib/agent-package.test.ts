@@ -1,8 +1,10 @@
 import { strToU8, unzipSync, zipSync } from "fflate";
 import { describe, expect, it, vi } from "vitest";
+import packageJson from "../../package.json";
 import {
   createPortableAgentPackage,
   fetchPortableAgentPackage,
+  PORTABLE_AGENT_CORE_VERSION,
   PORTABLE_AGENT_KIND,
   PORTABLE_AGENT_MEDIA_TYPE,
   readPortableAgentPackage,
@@ -26,6 +28,10 @@ const files = [
 ];
 
 describe("portable agent packages", () => {
+  it("keeps the default compatibility floor in step with the released core", () => {
+    expect(PORTABLE_AGENT_CORE_VERSION).toBe(packageJson.version);
+  });
+
   it("creates and reads a content-verified package", async () => {
     const created = await createPortableAgentPackage(draft, files);
     const restored = await readPortableAgentPackage(created.bytes);
