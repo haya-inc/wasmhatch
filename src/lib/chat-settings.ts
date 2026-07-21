@@ -8,6 +8,8 @@ export interface ChatSettingsSnapshot {
   models: Partial<Record<CloudChatProvider, string>>;
   keys: Partial<Record<CloudChatProvider, string>>;
   rememberKey: boolean;
+  /** Provider-native web search, where the provider supports it. On by default for incumbent parity. */
+  webSearch: boolean;
 }
 
 export interface KeyValueStore {
@@ -75,6 +77,7 @@ function parseSnapshot(raw: string | null): Partial<ChatSettingsSnapshot> | null
       snapshot.provider = record.provider;
     }
     if (typeof record.rememberKey === "boolean") snapshot.rememberKey = record.rememberKey;
+    if (typeof record.webSearch === "boolean") snapshot.webSearch = record.webSearch;
     return snapshot;
   } catch {
     return null;
@@ -90,7 +93,8 @@ export function loadChatSettings(stores: ChatSettingsStores = defaultStores()): 
     models: base.models ?? {},
     keys: base.keys ?? {},
     // Remembering is a device-level choice, so the persistent store decides it.
-    rememberKey: local?.rememberKey ?? base.rememberKey ?? false
+    rememberKey: local?.rememberKey ?? base.rememberKey ?? false,
+    webSearch: base.webSearch ?? true
   };
 }
 

@@ -136,3 +136,95 @@ describe("createAnthropicProvider", () => {
     await expect(collect(provider)).rejects.toThrow(/overloaded/);
   });
 });
+
+describe("web search server tool", () => {
+  const searchStream = sse([
+    { event: "message_start", data: { type: "message_start", message: { usage: { input_tokens: 30 } } } },
+    { event: "content_block_start", data: { type: "content_block_start", index: 0, content_block: { type: "server_tool_use", id: "srvtoolu_1", name: "web_search" } } },
+    { event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: "{\"query\":" } } },
+    { event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: "\"wasm news\"}" } } },
+    { event: "content_block_stop", data: { type: "content_block_stop", index: 0 } },
+    { event: "content_block_start", data: { type: "content_block_start", index: 1, content_block: { type: "web_search_tool_result", tool_use_id: "srvtoolu_1", content: [{ type: "web_search_result", url: "https://example.com/a", title: "A" }] } } },
+    { event: "content_block_stop", data: { type: "content_block_stop", index: 1 } },
+    { event: "content_block_start", data: { type: "content_block_start", index: 2, content_block: { type: "text" } } },
+    { event: "content_block_delta", data: { type: "content_block_delta", index: 2, delta: { type: "citations_delta", citation: { type: "web_search_result_location", url: "https://example.com/a", title: "A" } } } },
+    { event: "content_block_delta", data: { type: "content_block_delta", index: 2, delta: { type: "text_delta", text: "Answer." } } },
+    { event: "content_block_stop", data: { type: "content_block_stop", index: 2 } },
+    { event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "pause_turn" }, usage: { output_tokens: 9 } } },
+    { event: "message_stop", data: { type: "message_stop" } }
+  ]);
+
+  it("declares the server tool only when web search is on", async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(happyStream));
+    await collect(createAnthropicProvider({ apiKey: "sk-test", fetchImpl, webSearch: true }));
+    let body = JSON.parse((fetchImpl.mock.calls[0] as unknown[])[1] ? String(((fetchImpl.mock.calls[0] as unknown[])[1] as RequestInit).body) : "{}") as { tools: Array<Record<string, unknown>> };
+    expect(body.tools).toContainEqual({ type: "web_search_20250305", name: "web_search", max_uses: 5 });
+
+    fetchImpl.mockClear();
+    await collect(createAnthropicProvider({ apiKey: "sk-test", fetchImpl }));
+    body = JSON.parse(String(((fetchImpl.mock.calls[0] as unknown[])[1] as RequestInit).body)) as { tools: Array<Record<string, unknown>> };
+    expect(body.tools.some((tool) => tool.type === "web_search_20250305")).toBe(false);
+  });
+
+  it("streams server tool blocks, citations, and pause_turn onto the unified schema", async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(searchStream));
+    const provider = createAnthropicProvider({ apiKey: "sk-test", fetchImpl, webSearch: true });
+    const events = await collect(provider);
+    expect(events).toEqual([
+      {
+        type: "server-tool-call",
+        callId: "srvtoolu_1",
+        name: "web_search",
+        args: { query: "wasm news" },
+        block: { type: "server_tool_use", id: "srvtoolu_1", name: "web_search", input: { query: "wasm news" } }
+      },
+      {
+        type: "server-tool-result",
+        callId: "srvtoolu_1",
+        name: "web_search",
+        isError: false,
+        block: { type: "web_search_tool_result", tool_use_id: "srvtoolu_1", content: [{ type: "web_search_result", url: "https://example.com/a", title: "A" }] }
+      },
+      { type: "citation", url: "https://example.com/a", title: "A" },
+      { type: "text-delta", text: "Answer." },
+      { type: "message-end", stopReason: "pause-turn", usage: { inputTokens: 30, outputTokens: 9 } }
+    ]);
+  });
+
+  it("marks an object-shaped web_search_tool_result content as an error", async () => {
+    const errorStream = sse([
+      { event: "message_start", data: { type: "message_start", message: { usage: { input_tokens: 1 } } } },
+      { event: "content_block_start", data: { type: "content_block_start", index: 0, content_block: { type: "web_search_tool_result", tool_use_id: "srvtoolu_9", content: { type: "web_search_tool_result_error", error_code: "max_uses_exceeded" } } } },
+      { event: "content_block_stop", data: { type: "content_block_stop", index: 0 } },
+      { event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 1 } } },
+      { event: "message_stop", data: { type: "message_stop" } }
+    ]);
+    const fetchImpl = vi.fn(async () => streamResponse(errorStream));
+    const events = await collect(createAnthropicProvider({ apiKey: "sk-test", fetchImpl, webSearch: true }));
+    expect(events[0]).toMatchObject({ type: "server-tool-result", callId: "srvtoolu_9", isError: true });
+  });
+
+  it("replays anthropic provider_raw parts verbatim and drops foreign ones", async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(happyStream));
+    const provider = createAnthropicProvider({ apiKey: "sk-test", fetchImpl, webSearch: true });
+    const rawBlock = { type: "server_tool_use", id: "srvtoolu_1", name: "web_search", input: { query: "x" } };
+    await collect(provider, {
+      ...request,
+      messages: [
+        { role: "user", parts: [{ type: "text", text: "hi" }] },
+        {
+          role: "assistant",
+          parts: [
+            { type: "provider_raw", providerId: "anthropic", block: rawBlock },
+            { type: "provider_raw", providerId: "openrouter", block: { type: "alien" } },
+            { type: "text", text: "Answer." }
+          ]
+        }
+      ]
+    });
+    const body = JSON.parse(String(((fetchImpl.mock.calls[0] as unknown[])[1] as RequestInit).body)) as {
+      messages: Array<{ role: string; content: Array<Record<string, unknown>> }>;
+    };
+    expect(body.messages[1].content).toEqual([rawBlock, { type: "text", text: "Answer." }]);
+  });
+});

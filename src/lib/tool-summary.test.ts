@@ -19,6 +19,10 @@ describe("summarizeToolCall", () => {
     expect(summarizeToolCall("run_script", { script: "(input) => 1" })).toBe("Running a sandboxed script");
   });
 
+  it("summarizes web_search with its query", () => {
+    expect(summarizeToolCall("web_search", { query: "wasm news" })).toBe("Searching the web — wasm news");
+  });
+
   // Artifact tool
   it("summarizes create_artifact with title", () => {
     expect(summarizeToolCall("create_artifact", { title: "Q3 Report", html: "<h1>Q3</h1>" })).toBe(

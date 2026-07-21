@@ -176,3 +176,46 @@ describe("createOpenAiCompatibleProvider", () => {
     ]);
   });
 });
+
+describe("openrouter web plugin", () => {
+  it("adds the plugins array only when the web plugin is on", async () => {
+    const doneStream = chunkLine({ choices: [{ index: 0, delta: { content: "ok" }, finish_reason: "stop" }] }) + "data: [DONE]\n\n";
+    const fetchImpl = vi.fn(async () => streamResponse(doneStream));
+    const withPlugin = createOpenAiCompatibleProvider({
+      apiKey: "sk-or-test",
+      baseUrl: "https://openrouter.ai/api/v1",
+      id: "openrouter",
+      webPlugin: true,
+      fetchImpl
+    });
+    await collect(withPlugin as ReturnType<typeof provider>);
+    let body = JSON.parse(String(((fetchImpl.mock.calls[0] as unknown[])[1] as RequestInit).body)) as Record<string, unknown>;
+    expect(body.plugins).toEqual([{ id: "web" }]);
+
+    fetchImpl.mockClear();
+    await collect(provider(fetchImpl));
+    body = JSON.parse(String(((fetchImpl.mock.calls[0] as unknown[])[1] as RequestInit).body)) as Record<string, unknown>;
+    expect("plugins" in body).toBe(false);
+  });
+
+  it("maps url_citation annotations onto citation events", async () => {
+    const annotatedStream =
+      chunkLine({
+        choices: [{
+          index: 0,
+          delta: {
+            content: "Cited.",
+            annotations: [
+              { type: "url_citation", url_citation: { url: "https://example.com/a", title: "A" } },
+              { type: "url_citation", url_citation: { url: "https://example.com/b" } }
+            ]
+          },
+          finish_reason: "stop"
+        }]
+      }) + "data: [DONE]\n\n";
+    const fetchImpl = vi.fn(async () => streamResponse(annotatedStream));
+    const events = await collect(provider(fetchImpl));
+    expect(events).toContainEqual({ type: "citation", url: "https://example.com/a", title: "A" });
+    expect(events).toContainEqual({ type: "citation", url: "https://example.com/b", title: "https://example.com/b" });
+  });
+});

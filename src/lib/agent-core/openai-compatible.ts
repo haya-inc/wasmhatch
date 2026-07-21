@@ -28,6 +28,8 @@ export interface OpenAiCompatibleProviderOptions {
   id?: string;
   /** Newer OpenAI models require "max_completion_tokens"; most compatible servers use "max_tokens". */
   maxTokensParam?: "max_tokens" | "max_completion_tokens";
+  /** OpenRouter's server-side web plugin; searches run on OpenRouter's side and are billed by them. */
+  webPlugin?: boolean;
   fetchImpl?: typeof fetch;
 }
 
@@ -121,6 +123,7 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
         model: request.model,
         [maxTokensParam]: request.maxOutputTokens,
         ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
+        ...(options.webPlugin ? { plugins: [{ id: "web" }] } : {}),
         tools: request.tools.map((tool) => ({
           type: "function",
           function: { name: tool.name, description: tool.description, parameters: tool.inputSchema }
@@ -182,6 +185,21 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
         if (!delta) continue;
         if (typeof delta.content === "string" && delta.content) {
           yield { type: "text-delta", text: delta.content };
+        }
+        // OpenRouter's web plugin attaches url_citation annotations to deltas.
+        if (Array.isArray(delta.annotations)) {
+          for (const rawAnnotation of delta.annotations) {
+            if (!rawAnnotation || typeof rawAnnotation !== "object") continue;
+            const annotation = rawAnnotation as Record<string, unknown>;
+            const urlCitation = annotation.url_citation as Record<string, unknown> | undefined;
+            if (typeof urlCitation?.url === "string") {
+              yield {
+                type: "citation",
+                url: urlCitation.url,
+                title: typeof urlCitation.title === "string" && urlCitation.title ? urlCitation.title : urlCitation.url
+              };
+            }
+          }
         }
         if (Array.isArray(delta.tool_calls)) {
           for (const rawCall of delta.tool_calls) {

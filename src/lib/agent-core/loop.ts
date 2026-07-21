@@ -99,6 +99,9 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
 
     let turnText = "";
     const pendingCalls = new Map<number, PendingToolCall>();
+    // Streamed parts in wire order, so server-tool blocks (executed on the
+    // provider's side) replay in history exactly where they appeared.
+    const streamedParts: AgentMessage["parts"] = [];
     let stopReason: AgentStopReason = "other";
 
     try {
@@ -116,12 +119,31 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
       for await (const event of stream) {
         if (event.type === "text-delta") {
           turnText += event.text;
+          const last = streamedParts[streamedParts.length - 1];
+          if (last?.type === "text") last.text += event.text;
+          else streamedParts.push({ type: "text", text: event.text });
           emit({ type: "text-delta", turn: usage.turns, text: event.text });
         } else if (event.type === "tool-call-start") {
           pendingCalls.set(event.index, { callId: event.callId, name: event.name, argsJson: "" });
         } else if (event.type === "tool-call-args-delta") {
           const pending = pendingCalls.get(event.index);
           if (pending) pending.argsJson += event.argsJsonDelta;
+        } else if (event.type === "server-tool-call") {
+          streamedParts.push({ type: "provider_raw", providerId: request.provider.id, block: event.block });
+          emit({ type: "tool-call", turn: usage.turns, callId: event.callId, name: event.name, args: event.args });
+        } else if (event.type === "server-tool-result") {
+          streamedParts.push({ type: "provider_raw", providerId: request.provider.id, block: event.block });
+          emit({
+            type: "tool-result",
+            turn: usage.turns,
+            callId: event.callId,
+            name: event.name,
+            content: "",
+            isError: event.isError,
+            durationMs: 0
+          });
+        } else if (event.type === "citation") {
+          emit({ type: "citation", turn: usage.turns, url: event.url, title: event.title });
         } else if (event.type === "message-end") {
           stopReason = event.stopReason;
           if (event.usage) {
@@ -140,8 +162,7 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
       .sort(([left], [right]) => left - right)
       .map(([, call]) => call);
 
-    const assistantParts: AgentMessage["parts"] = [];
-    if (turnText) assistantParts.push({ type: "text", text: turnText });
+    const assistantParts: AgentMessage["parts"] = [...streamedParts];
     const parsedCalls: Array<{ call: PendingToolCall; args?: Record<string, unknown>; parseError?: string }> = [];
     for (const call of orderedCalls) {
       const parsed = parseToolArgs(call.argsJson);
@@ -156,6 +177,11 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
     if (assistantParts.length) messages.push({ role: "assistant", parts: assistantParts });
 
     if (!orderedCalls.length) {
+      if (stopReason === "pause-turn") {
+        // The provider paused a long server-tool turn; re-sending the
+        // transcript as-is resumes it. Budgets still bound the loop.
+        continue;
+      }
       finalText = turnText || finalText;
       emit({ type: "final", text: finalText });
       if (stopReason === "max-output-tokens") {

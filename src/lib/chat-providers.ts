@@ -43,6 +43,14 @@ export interface CloudProviderDef {
   keyPlaceholder: string;
   /** True for a local, keyless server (Ollama): no key field, no Authorization header. */
   keyless?: boolean;
+  /**
+   * How this provider's own API runs web search, when it can: Anthropic's
+   * server-side web_search tool or OpenRouter's web plugin. Searches execute on
+   * the provider's side and are billed by the provider alongside tokens — no
+   * extra key, no new CSP origin. Absent for providers whose chat endpoint
+   * cannot search (OpenAI Chat Completions, Ollama, Chrome built-in).
+   */
+  webSearch?: "server-tool" | "plugin";
   models: ModelChoice[];
   defaultModel: string;
 }
@@ -57,6 +65,7 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
     connectSrc: "https://api.anthropic.com",
     host: "api.anthropic.com",
     keyPlaceholder: "sk-ant-…",
+    webSearch: "server-tool",
     models: [
       { value: "claude-sonnet-5", label: "Claude Sonnet 5 — fast and capable (recommended)" },
       { value: "claude-opus-4-8", label: "Claude Opus 4.8 — most capable" },
@@ -89,6 +98,7 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
     connectSrc: "https://openrouter.ai",
     host: "openrouter.ai",
     keyPlaceholder: "sk-or-…",
+    webSearch: "plugin",
     models: [
       { value: "anthropic/claude-sonnet-5", label: "Claude Sonnet 5 (recommended)" },
       { value: "anthropic/claude-opus-4.8", label: "Claude Opus 4.8" },

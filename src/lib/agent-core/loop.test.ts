@@ -231,3 +231,60 @@ describe("runAgentLoop", () => {
     })).rejects.toThrow(/needs a task or a prior transcript/);
   });
 });
+
+describe("server-side web search", () => {
+  it("carries server tool blocks in order, forwards citations, and continues through pause_turn", async () => {
+    const requests: ProviderRequest[] = [];
+    const useBlock = { type: "server_tool_use", id: "srv_1", name: "web_search", input: { query: "x" } };
+    const resultBlock = { type: "web_search_tool_result", tool_use_id: "srv_1", content: [] };
+    const provider = scriptedProvider([
+      [
+        { type: "text-delta", text: "Searching. " },
+        { type: "server-tool-call", callId: "srv_1", name: "web_search", args: { query: "x" }, block: useBlock },
+        { type: "server-tool-result", callId: "srv_1", name: "web_search", isError: false, block: resultBlock },
+        { type: "message-end", stopReason: "pause-turn", usage: { inputTokens: 8, outputTokens: 2 } }
+      ],
+      [
+        { type: "text-delta", text: "Answer." },
+        { type: "citation", url: "https://example.com/a", title: "A" },
+        { type: "message-end", stopReason: "end-turn", usage: { inputTokens: 9, outputTokens: 3 } }
+      ]
+    ], (request) => requests.push(request));
+    const execute = vi.fn(async (): Promise<AgentToolOutcome> => ({ content: "never" }));
+    const events: AgentLoopEvent[] = [];
+    const result = await runAgentLoop({
+      provider,
+      model: "m",
+      system: "s",
+      task: "look this up",
+      tools: [lookupTool],
+      execute,
+      onEvent: (event) => events.push(event)
+    });
+
+    expect(result.status).toBe("completed");
+    expect(result.finalText).toBe("Answer.");
+    // Server tools never execute client-side.
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages).toEqual([
+      { role: "user", parts: [{ type: "text", text: "look this up" }] },
+      {
+        role: "assistant",
+        parts: [
+          { type: "text", text: "Searching. " },
+          { type: "provider_raw", providerId: "scripted", block: useBlock },
+          { type: "provider_raw", providerId: "scripted", block: resultBlock }
+        ]
+      },
+      { role: "assistant", parts: [{ type: "text", text: "Answer." }] }
+    ]);
+    // The pause_turn continuation resends the transcript including the raw blocks.
+    expect(requests).toHaveLength(2);
+    expect(requests[1].messages[1].parts.filter((part) => part.type === "provider_raw")).toHaveLength(2);
+    expect(events).toContainEqual({ type: "tool-call", turn: 1, callId: "srv_1", name: "web_search", args: { query: "x" } });
+    expect(events).toContainEqual({
+      type: "tool-result", turn: 1, callId: "srv_1", name: "web_search", content: "", isError: false, durationMs: 0
+    });
+    expect(events).toContainEqual({ type: "citation", turn: 2, url: "https://example.com/a", title: "A" });
+  });
+});

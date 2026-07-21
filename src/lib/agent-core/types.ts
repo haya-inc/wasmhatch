@@ -48,7 +48,19 @@ export interface AgentToolResultPart {
   isError: boolean;
 }
 
-export type AgentContentPart = AgentTextPart | AgentToolCallPart | AgentToolResultPart;
+/**
+ * A provider-owned content block carried through the transcript verbatim —
+ * e.g. Anthropic server-tool blocks (web search) that must round-trip in
+ * history exactly as received. Only the adapter whose id matches replays it;
+ * the loop and UI treat it as opaque data.
+ */
+export interface AgentProviderRawPart {
+  type: "provider_raw";
+  providerId: string;
+  block: Record<string, unknown>;
+}
+
+export type AgentContentPart = AgentTextPart | AgentToolCallPart | AgentToolResultPart | AgentProviderRawPart;
 
 export interface AgentMessage {
   role: "user" | "assistant" | "tool";
@@ -60,7 +72,7 @@ export interface AgentUsage {
   outputTokens: number;
 }
 
-export type AgentStopReason = "end-turn" | "tool-use" | "max-output-tokens" | "other";
+export type AgentStopReason = "end-turn" | "tool-use" | "max-output-tokens" | "pause-turn" | "other";
 
 /** Incremental events emitted by a provider adapter while streaming one assistant message. */
 export type ProviderStreamEvent =
@@ -68,6 +80,11 @@ export type ProviderStreamEvent =
   | { type: "tool-call-start"; index: number; callId: string; name: string }
   | { type: "tool-call-args-delta"; index: number; argsJsonDelta: string }
   | { type: "tool-call-end"; index: number }
+  /** A tool the provider executed on its own servers (e.g. web search) — no client execution. */
+  | { type: "server-tool-call"; callId: string; name: string; args: Record<string, unknown>; block: Record<string, unknown> }
+  | { type: "server-tool-result"; callId: string; name: string; isError: boolean; block: Record<string, unknown> }
+  /** A source the provider cited while generating text (e.g. a web search hit). */
+  | { type: "citation"; url: string; title: string }
   | { type: "message-end"; stopReason: AgentStopReason; usage?: AgentUsage };
 
 export interface ProviderRequest {
@@ -120,6 +137,7 @@ export type AgentLoopEvent =
   | { type: "text-delta"; turn: number; text: string }
   | { type: "tool-call"; turn: number; callId: string; name: string; args: Record<string, unknown> }
   | { type: "tool-result"; turn: number; callId: string; name: string; content: string; isError: boolean; durationMs: number }
+  | { type: "citation"; turn: number; url: string; title: string }
   | { type: "usage"; usage: AgentBudgetUsage; budget: AgentSoftBudget }
   | { type: "final"; text: string };
 

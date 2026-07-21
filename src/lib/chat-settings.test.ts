@@ -37,6 +37,7 @@ const snapshot = (overrides: Partial<ChatSettingsSnapshot> = {}): ChatSettingsSn
   models: { anthropic: "claude-sonnet-5" },
   keys: { anthropic: "sk-ant-test" },
   rememberKey: false,
+  webSearch: true,
   ...overrides
 });
 
@@ -46,9 +47,10 @@ describe("chat settings persistence", () => {
       provider: "builtin",
       models: {},
       keys: {},
-      rememberKey: false
+      rememberKey: false,
+      webSearch: true
     });
-    expect(loadChatSettings({})).toEqual({ provider: "builtin", models: {}, keys: {}, rememberKey: false });
+    expect(loadChatSettings({})).toEqual({ provider: "builtin", models: {}, keys: {}, rememberKey: false, webSearch: true });
   });
 
   it("keeps the key for the tab but out of the device store unless remembered", () => {
@@ -96,14 +98,26 @@ describe("chat settings persistence", () => {
       provider: "builtin",
       models: {},
       keys: {},
-      rememberKey: false
+      rememberKey: false,
+      webSearch: true
     });
   });
 
   it("never throws when the stores are unusable", () => {
     const stores = { session: new BrokenStore(), local: new BrokenStore() };
     expect(() => saveChatSettings(snapshot(), stores)).not.toThrow();
-    expect(loadChatSettings(stores)).toEqual({ provider: "builtin", models: {}, keys: {}, rememberKey: false });
+    expect(loadChatSettings(stores)).toEqual({ provider: "builtin", models: {}, keys: {}, rememberKey: false, webSearch: true });
+  });
+
+  it("round-trips the web-search preference and defaults legacy snapshots to on", () => {
+    const session = new FakeStore();
+    const local = new FakeStore();
+    saveChatSettings(snapshot({ webSearch: false }), { session, local });
+    expect(loadChatSettings({ session, local }).webSearch).toBe(false);
+
+    // A snapshot written before the field existed reads back as on.
+    local.setItem("wasmhatch-chat-settings-v1", JSON.stringify({ provider: "anthropic", models: {}, keys: {}, rememberKey: false }));
+    expect(loadChatSettings({ session: new FakeStore(), local }).webSearch).toBe(true);
   });
 
   it("round-trips OpenRouter, the third key type beyond the original two", () => {
@@ -113,7 +127,8 @@ describe("chat settings persistence", () => {
       provider: "openrouter",
       models: { openrouter: "anthropic/claude-sonnet-5" },
       keys: { openrouter: "sk-or-test" },
-      rememberKey: true
+      rememberKey: true,
+      webSearch: false
     };
     saveChatSettings(openrouter, { session, local });
     expect(loadChatSettings({ session, local })).toEqual(openrouter);

@@ -38,8 +38,10 @@ type ProviderKind = ChatProviderKind;
 
 interface ChatItem {
   id: number;
-  kind: "user" | "assistant" | "tool" | "notice" | "write";
+  kind: "user" | "assistant" | "tool" | "notice" | "write" | "sources";
   text: string;
+  /** Web sources the provider cited for the preceding answer. */
+  sources?: Array<{ url: string; title: string }>;
   tone?: "info" | "error";
   toolName?: string;
   toolState?: "running" | "done" | "error";
@@ -53,7 +55,7 @@ interface PendingPermission {
   resolve: (decision: PermissionDecision) => void;
 }
 
-function systemPrompt(policy: WritePolicy): string {
+function systemPrompt(policy: WritePolicy, webSearch: boolean): string {
   return [
     "You are WasmHatch, a general AI agent running entirely inside the user's browser tab.",
     "You work on files in the browser workspace with the provided tools.",
@@ -63,6 +65,9 @@ function systemPrompt(policy: WritePolicy): string {
       : "The user chose careful mode: each write_file call shows them the exact diff first, and a rejected write is a final decision, not an error to work around.",
     "Use create_artifact for polished deliverables (reports, dashboards, slide decks) as one self-contained HTML file.",
     "For data transforms over workspace files (filtering, aggregating, reshaping, math), prefer run_script over hand-computing rows; it runs in a no-network sandbox and output_path saves its result.",
+    webSearch
+      ? "When current information from the web would change the answer (recent events, prices, versions, anything time-sensitive), use web_search rather than answering from memory."
+      : "You cannot browse or search the web in this session; say so plainly when asked for current information.",
     "When Google tools are available, you can create Google Docs, Sheets, and Slides and edit the ones you created; you cannot browse the user's existing Drive.",
     "Never claim an effect happened unless the tool result confirms it.",
     "Be direct and concise."
@@ -162,6 +167,8 @@ export function ChatPage() {
   const [apiKey, setApiKey] = useState(restoredCloud ? initialSettings.keys[restoredCloud] ?? "" : "");
   const [model, setModel] = useState(restoredCloud ? initialSettings.models[restoredCloud] ?? getCloudProvider(restoredCloud).defaultModel : "");
   const [rememberKey, setRememberKey] = useState(initialSettings.rememberKey);
+  const [webSearch, setWebSearch] = useState(initialSettings.webSearch);
+  const citationsRef = useRef(new Map<string, string>());
   const keysRef = useRef(initialSettings.keys);
   const modelsRef = useRef(initialSettings.models);
   const [builtinAvailability, setBuiltinAvailability] = useState<string>("checking");
@@ -223,8 +230,8 @@ export function ChatPage() {
       if (chosenModel) modelsRef.current[provider] = chosenModel;
       else delete modelsRef.current[provider];
     }
-    saveChatSettings({ provider, models: modelsRef.current, keys: keysRef.current, rememberKey });
-  }, [provider, apiKey, model, rememberKey]);
+    saveChatSettings({ provider, models: modelsRef.current, keys: keysRef.current, rememberKey, webSearch });
+  }, [provider, apiKey, model, rememberKey, webSearch]);
 
   useEffect(() => {
     // Persist at rest, not per streaming delta; stored items never carry live flags.
@@ -361,8 +368,15 @@ export function ChatPage() {
           ? { ...item, toolState: event.isError ? "error" : "done" }
           : item
       )));
+    } else if (event.type === "citation") {
+      if (!citationsRef.current.has(event.url)) citationsRef.current.set(event.url, event.title);
     } else if (event.type === "final") {
       setItems((current) => current.map((item) => (item.streaming ? { ...item, streaming: false } : item)));
+      if (citationsRef.current.size) {
+        const sources = [...citationsRef.current.entries()].map(([url, title]) => ({ url, title }));
+        citationsRef.current = new Map();
+        pushItem({ kind: "sources", text: "Sources", sources });
+      }
     }
   }, [pushItem]);
 
@@ -374,18 +388,20 @@ export function ChatPage() {
       notice("Add your API key first — it stays in this tab's memory and is sent only to the selected provider.", "error");
       return;
     }
+    const searchActive = webSearch && def.webSearch !== undefined;
     const providerImpl = def.adapter === "anthropic"
-      ? createAnthropicProvider({ apiKey: key })
+      ? createAnthropicProvider({ apiKey: key, webSearch: searchActive && def.webSearch === "server-tool" })
       : createOpenAiCompatibleProvider({
         apiKey: key,
         baseUrl: def.baseUrl,
         id: def.id,
-        maxTokensParam: def.maxTokensParam
+        maxTokensParam: def.maxTokensParam,
+        webPlugin: searchActive && def.webSearch === "plugin"
       });
     const result = await runAgentLoop({
       provider: providerImpl,
       model: model.trim() || def.defaultModel,
-      system: systemPrompt(writeModeRef.current),
+      system: systemPrompt(writeModeRef.current, searchActive),
       messages: transcriptMessages.current.length ? transcriptMessages.current : undefined,
       task,
       tools,
@@ -398,7 +414,7 @@ export function ChatPage() {
     if (result.status === "budget-exhausted") {
       notice("The run paused at its soft budget. Send another message to continue from where it stopped.");
     }
-  }, [apiKey, execute, handleLoopEvent, model, notice, provider, tools]);
+  }, [apiKey, execute, handleLoopEvent, model, notice, provider, tools, webSearch]);
 
   const runBuiltin = useCallback(async (task: string, signal: AbortSignal) => {
     const api = (globalThis as typeof globalThis & { LanguageModel?: ChromeLanguageModelApi }).LanguageModel;
@@ -415,7 +431,7 @@ export function ChatPage() {
       const session = await api.create({
         ...BUILTIN_LANGUAGE_OPTIONS,
         signal,
-        initialPrompts: [{ role: "system", content: systemPrompt(writeModeRef.current) }]
+        initialPrompts: [{ role: "system", content: systemPrompt(writeModeRef.current, false) }]
       });
       return {
         prompt: (promptInput, options) => session.prompt(promptInput, {
@@ -465,6 +481,7 @@ export function ChatPage() {
     const task = input.trim();
     if (!task || running) return;
     setInput("");
+    citationsRef.current = new Map();
     pushItem({ kind: "user", text: task });
     setRunning(true);
     const controller = new AbortController();
@@ -678,6 +695,16 @@ export function ChatPage() {
                   </div>
                 );
               }
+              if (item.kind === "sources" && item.sources?.length) {
+                return (
+                  <div key={item.id} className="chat-sources">
+                    <span>Sources:</span>
+                    {item.sources.map((source, index) => (
+                      <a key={index} href={source.url} target="_blank" rel="noreferrer noopener">{source.title}</a>
+                    ))}
+                  </div>
+                );
+              }
               return (
                 <div key={item.id} className={item.tone === "error" ? "chat-notice chat-notice-error" : "chat-notice"}>
                   {item.text}
@@ -818,6 +845,22 @@ export function ChatPage() {
                       onChange={(event) => setModel(event.target.value)}
                     />
                   </label>
+                )}
+                {providerDef.webSearch && (
+                  <label className="chat-remember">
+                    <input
+                      type="checkbox"
+                      checked={webSearch}
+                      onChange={(event) => setWebSearch(event.target.checked)}
+                    />
+                    <span>Web search</span>
+                  </label>
+                )}
+                {providerDef.webSearch && webSearch && (
+                  <p className="chat-hint">
+                    The model can search the web through {providerDef.host}. Searches are billed by your
+                    provider alongside tokens; untick to turn this off.
+                  </p>
                 )}
                 {providerDef.keyless ? (
                   <p className="chat-hint">

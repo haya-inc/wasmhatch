@@ -21,15 +21,20 @@ import type {
 const DEFAULT_BASE_URL = "https://api.anthropic.com";
 const ANTHROPIC_VERSION = "2023-06-01";
 const RETRY_DELAYS_MS = [1_000, 2_000];
+// The basic web-search variant works across every model generation, which
+// matters when the model id is whatever the BYOK user typed in.
+const WEB_SEARCH_TOOL = Object.freeze({ type: "web_search_20250305", name: "web_search", max_uses: 5 });
 
 export interface AnthropicProviderOptions {
   apiKey: string;
   baseUrl?: string;
   fetchImpl?: typeof fetch;
+  /** Declares Anthropic's server-side web_search tool; searches run on Anthropic's side and are billed by them. */
+  webSearch?: boolean;
 }
 
 interface AnthropicContentBlock {
-  type: "text" | "tool_use" | "tool_result";
+  type: string;
   [key: string]: unknown;
 }
 
@@ -42,6 +47,9 @@ function toWireMessages(messages: readonly AgentMessage[]) {
         if (part.type === "text") content.push({ type: "text", text: part.text });
         else if (part.type === "tool_call") {
           content.push({ type: "tool_use", id: part.callId, name: part.name, input: part.args });
+        } else if (part.type === "provider_raw" && part.providerId === "anthropic") {
+          // Server-tool blocks (web search) must round-trip verbatim.
+          content.push(part.block as AnthropicContentBlock);
         }
       }
       if (content.length) wire.push({ role: "assistant", content });
@@ -73,7 +81,14 @@ function mapStopReason(value: unknown): AgentStopReason {
   if (value === "end_turn" || value === "stop_sequence") return "end-turn";
   if (value === "tool_use") return "tool-use";
   if (value === "max_tokens") return "max-output-tokens";
+  if (value === "pause_turn") return "pause-turn";
   return "other";
+}
+
+/** A web_search_tool_result whose content is an object (not a list) carries an error. */
+function isServerToolError(block: Record<string, unknown>) {
+  const content = block.content;
+  return Boolean(content) && typeof content === "object" && !Array.isArray(content);
 }
 
 async function requestError(response: Response) {
@@ -118,11 +133,14 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
         max_tokens: request.maxOutputTokens,
         system: request.system,
         ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-        tools: request.tools.map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          input_schema: tool.inputSchema
-        })),
+        tools: [
+          ...request.tools.map((tool) => ({
+            name: tool.name,
+            description: tool.description,
+            input_schema: tool.inputSchema
+          })),
+          ...(options.webSearch ? [WEB_SEARCH_TOOL] : [])
+        ],
         messages: toWireMessages(request.messages),
         stream: true
       });
@@ -150,6 +168,9 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
       if (!response.body) throw new Error("Anthropic returned no response stream.");
 
       const openToolBlocks = new Map<number, true>();
+      // Server tools (web search) stream their input like client tools, but the
+      // finished block is replayed verbatim in history instead of executed here.
+      const openServerBlocks = new Map<number, { callId: string; name: string; inputJson: string }>();
       let usage: AgentUsage = { inputTokens: 0, outputTokens: 0 };
       let stopReason: AgentStopReason = "other";
       let sawMessageStop = false;
@@ -179,6 +200,20 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
             if (!callId || !name) throw new Error("Anthropic started an invalid tool call.");
             openToolBlocks.set(index, true);
             yield { type: "tool-call-start", index, callId, name };
+          } else if (block?.type === "server_tool_use") {
+            const callId = typeof block.id === "string" ? block.id : "";
+            const name = typeof block.name === "string" ? block.name : "";
+            if (!callId || !name) throw new Error("Anthropic started an invalid server tool call.");
+            openServerBlocks.set(index, { callId, name, inputJson: "" });
+          } else if (typeof block?.type === "string" && block.type.endsWith("_tool_result")) {
+            const callId = typeof block.tool_use_id === "string" ? block.tool_use_id : "";
+            yield {
+              type: "server-tool-result",
+              callId,
+              name: block.type.replace(/_tool_result$/, ""),
+              isError: isServerToolError(block),
+              block
+            };
           }
         } else if (eventType === "content_block_delta") {
           const index = typeof payload.index === "number" ? payload.index : 0;
@@ -186,11 +221,38 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
           if (delta?.type === "text_delta" && typeof delta.text === "string") {
             yield { type: "text-delta", text: delta.text };
           } else if (delta?.type === "input_json_delta" && typeof delta.partial_json === "string") {
-            yield { type: "tool-call-args-delta", index, argsJsonDelta: delta.partial_json };
+            const serverBlock = openServerBlocks.get(index);
+            if (serverBlock) serverBlock.inputJson += delta.partial_json;
+            else yield { type: "tool-call-args-delta", index, argsJsonDelta: delta.partial_json };
+          } else if (delta?.type === "citations_delta") {
+            const citation = delta.citation as Record<string, unknown> | undefined;
+            if (typeof citation?.url === "string") {
+              yield {
+                type: "citation",
+                url: citation.url,
+                title: typeof citation.title === "string" && citation.title ? citation.title : citation.url
+              };
+            }
           }
         } else if (eventType === "content_block_stop") {
           const index = typeof payload.index === "number" ? payload.index : 0;
           if (openToolBlocks.delete(index)) yield { type: "tool-call-end", index };
+          const serverBlock = openServerBlocks.get(index);
+          if (serverBlock) {
+            openServerBlocks.delete(index);
+            let args: Record<string, unknown> = {};
+            try {
+              const parsed = JSON.parse(serverBlock.inputJson || "{}") as unknown;
+              if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) args = parsed as Record<string, unknown>;
+            } catch { /* An unparsable input still round-trips as {}; the result block is what matters. */ }
+            yield {
+              type: "server-tool-call",
+              callId: serverBlock.callId,
+              name: serverBlock.name,
+              args,
+              block: { type: "server_tool_use", id: serverBlock.callId, name: serverBlock.name, input: args }
+            };
+          }
         } else if (eventType === "message_delta") {
           const delta = payload.delta as Record<string, unknown> | undefined;
           if (delta && "stop_reason" in delta) stopReason = mapStopReason(delta.stop_reason);
