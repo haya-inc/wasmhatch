@@ -83,6 +83,13 @@ export type ProviderStreamEvent =
   /** A tool the provider executed on its own servers (e.g. web search) — no client execution. */
   | { type: "server-tool-call"; callId: string; name: string; args: Record<string, unknown>; block: Record<string, unknown> }
   | { type: "server-tool-result"; callId: string; name: string; isError: boolean; block: Record<string, unknown> }
+  /**
+   * A provider-owned block that must round-trip in history verbatim but needs
+   * no loop handling or UI (e.g. OpenAI Responses reasoning items, which the
+   * API requires alongside the function calls they precede). Stored as an
+   * AgentProviderRawPart at its wire position.
+   */
+  | { type: "provider-raw"; block: Record<string, unknown> }
   /** A source the provider cited while generating text (e.g. a web search hit). */
   | { type: "citation"; url: string; title: string }
   | { type: "message-end"; stopReason: AgentStopReason; usage?: AgentUsage };

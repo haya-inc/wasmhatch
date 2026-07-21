@@ -46,9 +46,13 @@ describe("cloud provider registry", () => {
     }
   });
 
-  it("routes only Anthropic through the anthropic adapter", () => {
+  it("routes each provider through its own wire format", () => {
+    // OpenAI direct uses the Responses API — the only endpoint where its
+    // reasoning models keep function tools available. Gateways and local
+    // servers speak OpenAI-compatible Chat Completions.
+    const expected = { anthropic: "anthropic", openai: "openai-responses", openrouter: "openai-compatible", ollama: "openai-compatible" };
     for (const provider of CLOUD_PROVIDERS) {
-      expect(provider.adapter, provider.id).toBe(provider.id === "anthropic" ? "anthropic" : "openai");
+      expect(provider.adapter, provider.id).toBe(expected[provider.id]);
     }
   });
 

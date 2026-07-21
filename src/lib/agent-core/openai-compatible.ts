@@ -2,8 +2,10 @@
  * OpenAI-compatible Chat Completions streaming adapter.
  *
  * One adapter covers every provider that speaks the Chat Completions wire
- * format: OpenAI, OpenRouter, Google Gemini's OpenAI-compatible endpoint,
- * Ollama, and LM Studio — the base URL is the only difference. The API key
+ * format: OpenRouter, Google Gemini's OpenAI-compatible endpoint, Ollama, and
+ * LM Studio — the base URL is the only difference. OpenAI direct uses the
+ * Responses adapter instead, where its reasoning models keep function tools
+ * available. The API key
  * stays in memory, is sent only as the Authorization header (omitted entirely
  * for a keyless local server like Ollama), and never appears in errors or logs.
  */

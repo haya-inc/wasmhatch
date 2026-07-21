@@ -288,3 +288,45 @@ describe("server-side web search", () => {
     expect(events).toContainEqual({ type: "citation", turn: 2, url: "https://example.com/a", title: "A" });
   });
 });
+
+describe("provider-raw blocks", () => {
+  it("stores them at their wire position, before the turn's tool calls, without UI events", async () => {
+    const reasoningBlock = { type: "reasoning", id: "rs_1", summary: [] };
+    const requests: ProviderRequest[] = [];
+    const provider = scriptedProvider([
+      [
+        { type: "provider-raw", block: reasoningBlock },
+        { type: "text-delta", text: "Checking." },
+        { type: "tool-call-start", index: 0, callId: "c1", name: "lookup" },
+        { type: "tool-call-args-delta", index: 0, argsJsonDelta: "{}" },
+        { type: "tool-call-end", index: 0 },
+        { type: "message-end", stopReason: "tool-use", usage: { inputTokens: 6, outputTokens: 2 } }
+      ],
+      finalTurn("Done.")
+    ], (request) => requests.push(request));
+    const events: AgentLoopEvent[] = [];
+    const result = await runAgentLoop({
+      provider,
+      model: "m",
+      system: "s",
+      task: "t",
+      tools: [lookupTool],
+      execute: async () => ({ content: "found" }),
+      onEvent: (event) => events.push(event)
+    });
+
+    expect(result.status).toBe("completed");
+    expect(result.messages[1]).toEqual({
+      role: "assistant",
+      parts: [
+        { type: "provider_raw", providerId: "scripted", block: reasoningBlock },
+        { type: "text", text: "Checking." },
+        { type: "tool_call", callId: "c1", name: "lookup", args: {} }
+      ]
+    });
+    // The tool-result continuation resends the transcript including the raw block.
+    expect(requests[1].messages[1].parts[0]).toEqual({ type: "provider_raw", providerId: "scripted", block: reasoningBlock });
+    // Raw blocks are history plumbing, never chat items.
+    expect(events.filter((event) => event.type === "tool-call")).toHaveLength(1);
+  });
+});

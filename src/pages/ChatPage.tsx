@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createAnthropicProvider } from "../lib/agent-core/anthropic";
 import { createOpenAiCompatibleProvider } from "../lib/agent-core/openai-compatible";
+import { createOpenAiResponsesProvider } from "../lib/agent-core/openai-responses";
 import { runAgentLoop } from "../lib/agent-core/loop";
 import type { AgentLoopEvent, AgentMessage } from "../lib/agent-core/types";
 import {
@@ -404,13 +405,15 @@ export function ChatPage() {
     const searchActive = webSearch && def.webSearch !== undefined;
     const providerImpl = def.adapter === "anthropic"
       ? createAnthropicProvider({ apiKey: key, webSearch: searchActive && def.webSearch === "server-tool" })
-      : createOpenAiCompatibleProvider({
-        apiKey: key,
-        baseUrl: def.baseUrl,
-        id: def.id,
-        maxTokensParam: def.maxTokensParam,
-        webPlugin: searchActive && def.webSearch === "plugin"
-      });
+      : def.adapter === "openai-responses"
+        ? createOpenAiResponsesProvider({ apiKey: key, baseUrl: def.baseUrl, id: def.id })
+        : createOpenAiCompatibleProvider({
+          apiKey: key,
+          baseUrl: def.baseUrl,
+          id: def.id,
+          maxTokensParam: def.maxTokensParam,
+          webPlugin: searchActive && def.webSearch === "plugin"
+        });
     const result = await runAgentLoop({
       provider: providerImpl,
       model: model.trim() || def.defaultModel,

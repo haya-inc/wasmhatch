@@ -7,9 +7,10 @@
  * for local models. That keeps the UI to one key field and one short dropdown
  * instead of a provider zoo.
  *
- * Every provider speaks either the Anthropic Messages API or the
- * OpenAI-compatible Chat Completions API, and every origin was CORS-probed to
- * confirm a static browser page can call it directly. `connectSrc` is the single
+ * Every provider speaks the Anthropic Messages API, the OpenAI Responses API
+ * (OpenAI direct, where its reasoning models keep function tools available),
+ * or the OpenAI-compatible Chat Completions API, and every origin was
+ * CORS-probed to confirm a static browser page can call it directly. `connectSrc` is the single
  * source of truth for the CSP allowlist (see vite.config.ts and
  * scripts/check-built-security.mjs) — a provider is unreachable unless its origin
  * is in that audited list. Ollama's origin is plain http on loopback, which the
@@ -30,10 +31,10 @@ export interface CloudProviderDef {
   /** Dropdown label, e.g. "Claude (your API key)". */
   label: string;
   /** Which agent-core adapter drives this provider. */
-  adapter: "anthropic" | "openai";
-  /** Base URL for the openai adapter; unused by the anthropic adapter. */
+  adapter: "anthropic" | "openai-responses" | "openai-compatible";
+  /** Base URL for the openai-* adapters; unused by the anthropic adapter. */
   baseUrl: string;
-  /** Newer OpenAI models need max_completion_tokens; most servers use max_tokens. */
+  /** Chat Completions param name; used by the openai-compatible adapter only. */
   maxTokensParam: "max_tokens" | "max_completion_tokens";
   /** Exact origin added to the CSP connect-src allowlist. Never a wildcard. */
   connectSrc: string;
@@ -47,8 +48,9 @@ export interface CloudProviderDef {
    * How this provider's own API runs web search, when it can: Anthropic's
    * server-side web_search tool or OpenRouter's web plugin. Searches execute on
    * the provider's side and are billed by the provider alongside tokens — no
-   * extra key, no new CSP origin. Absent for providers whose chat endpoint
-   * cannot search (OpenAI Chat Completions, Ollama, Chrome built-in).
+   * extra key, no new CSP origin. Absent where the endpoint cannot search
+   * (Ollama, Chrome built-in) or where it is not wired up yet (the Responses
+   * API's web_search for OpenAI direct).
    */
   webSearch?: "server-tool" | "plugin";
   models: ModelChoice[];
@@ -76,7 +78,7 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
   {
     id: "openai",
     label: "OpenAI (your API key)",
-    adapter: "openai",
+    adapter: "openai-responses",
     baseUrl: "https://api.openai.com/v1",
     maxTokensParam: "max_completion_tokens",
     connectSrc: "https://api.openai.com",
@@ -92,7 +94,7 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
   {
     id: "openrouter",
     label: "OpenRouter — one key, every model",
-    adapter: "openai",
+    adapter: "openai-compatible",
     baseUrl: "https://openrouter.ai/api/v1",
     maxTokensParam: "max_tokens",
     connectSrc: "https://openrouter.ai",
@@ -112,7 +114,7 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
   {
     id: "ollama",
     label: "Ollama — local models, no key",
-    adapter: "openai",
+    adapter: "openai-compatible",
     baseUrl: "http://localhost:11434/v1",
     maxTokensParam: "max_tokens",
     connectSrc: "http://localhost:11434",

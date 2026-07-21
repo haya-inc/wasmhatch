@@ -128,6 +128,8 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
         } else if (event.type === "tool-call-args-delta") {
           const pending = pendingCalls.get(event.index);
           if (pending) pending.argsJson += event.argsJsonDelta;
+        } else if (event.type === "provider-raw") {
+          streamedParts.push({ type: "provider_raw", providerId: request.provider.id, block: event.block });
         } else if (event.type === "server-tool-call") {
           streamedParts.push({ type: "provider_raw", providerId: request.provider.id, block: event.block });
           emit({ type: "tool-call", turn: usage.turns, callId: event.callId, name: event.name, args: event.args });
