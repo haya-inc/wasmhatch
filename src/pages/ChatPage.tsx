@@ -21,6 +21,7 @@ import { loadChatSettings, saveChatSettings, type ChatProviderKind } from "../li
 import { CLOUD_PROVIDERS, getCloudProvider, type ChatProviderId } from "../lib/chat-providers";
 import { FIRST_RUN_CSV_SAMPLE, FIRST_RUN_SAMPLE_FILES } from "../lib/first-run-csv-sample";
 import { isProtectedAgentPath } from "../lib/secrets";
+import { summarizeToolCall } from "../lib/tool-summary";
 import {
   createWorkspaceStore,
   formatBytes,
@@ -137,14 +138,6 @@ function storageSummary(status: BrowserStorageStatus): string {
       ? "Not pinned yet — the browser could clear saved work if this device runs low on space."
       : "This browser can't promise to keep data around, so a backup is the safest bet.";
   return status.originUsageBytes === null ? state : `${state} ${formatBytes(status.originUsageBytes)} used.`;
-}
-
-function summarizeToolCall(name: string, args: Record<string, unknown>): string {
-  const path = typeof args.path === "string" ? args.path : "";
-  if (name === "read_file" && path) return `Reading ${path}`;
-  if (name === "write_file" && path) return `Writing ${path}`;
-  if (name === "list_files") return "Listing workspace files";
-  return path ? `${name} ${path}` : name;
 }
 
 export function ChatPage() {
