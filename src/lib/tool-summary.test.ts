@@ -15,6 +15,10 @@ describe("summarizeToolCall", () => {
     expect(summarizeToolCall("list_files", {})).toBe("Listing workspace files");
   });
 
+  it("summarizes run_script", () => {
+    expect(summarizeToolCall("run_script", { script: "(input) => 1" })).toBe("Running a sandboxed script");
+  });
+
   // Artifact tool
   it("summarizes create_artifact with title", () => {
     expect(summarizeToolCall("create_artifact", { title: "Q3 Report", html: "<h1>Q3</h1>" })).toBe(

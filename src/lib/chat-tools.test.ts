@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import { executeBusinessScript, type BusinessValue } from "./business-script";
 import { SessionPermissionStore, type PermissionDecision, type WritePermissionRequest } from "./chat-permissions";
 import {
+  CHAT_READ_MAX_BYTES,
   CHAT_READ_MAX_LINES,
+  CHAT_SCRIPT_LIMITS,
   CHAT_WRITE_MAX_BYTES,
   createChatToolExecutor,
   type AppliedWrite,
@@ -52,15 +55,20 @@ function executorWith(options: {
   });
   const writes: string[] = [];
   const applied: AppliedWrite[] = [];
+  // The real QuickJS engine, run directly: the worker wrapper is a browser concern.
+  const runScript = vi.fn((source: string, input: BusinessValue) =>
+    executeBusinessScript(source, input, CHAT_SCRIPT_LIMITS)
+  );
   const execute = createChatToolExecutor({
     workspace,
     permissions,
     gate,
     policy: () => options.policy ?? "careful",
     onWrite: (path) => writes.push(path),
-    onAppliedWrite: (write) => applied.push(write)
+    onAppliedWrite: (write) => applied.push(write),
+    runScript
   });
-  return { workspace, permissions, gate, execute, writes, applied };
+  return { workspace, permissions, gate, execute, writes, applied, runScript };
 }
 
 describe("SessionPermissionStore", () => {
@@ -228,5 +236,120 @@ describe("autonomous write policy", () => {
     await execute("write_file", { path: "a.txt", content: "new\n" }, {});
     expect(applied).toHaveLength(1);
     expect(applied[0].policy).toBe("careful");
+  });
+});
+
+describe("run_script", () => {
+  it("computes over requested workspace files in the sandbox", async () => {
+    const { execute, runScript } = executorWith({
+      files: { "data.csv": "a,b\n1,2\n3,4\n" },
+      policy: "autonomous"
+    });
+    const outcome = await execute("run_script", {
+      script: `(input) => {
+        const rows = input.files[0].content.trim().split("\\n").slice(1);
+        return { sum: rows.reduce((total, row) => total + row.split(",").reduce((t, cell) => t + Number(cell), 0), 0) };
+      }`,
+      input_paths: ["data.csv"]
+    }, {});
+    expect(outcome.isError).toBeFalsy();
+    const payload = JSON.parse(outcome.content) as { result: { sum: number }; duration_ms: number };
+    expect(payload.result).toEqual({ sum: 10 });
+    expect(payload.duration_ms).toBeGreaterThan(0);
+    expect(runScript).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes args through as input.args", async () => {
+    const { execute } = executorWith({ policy: "autonomous" });
+    const outcome = await execute("run_script", {
+      script: "(input) => input.args.x * 2",
+      args: { x: 21 }
+    }, {});
+    expect(JSON.parse(outcome.content).result).toBe(42);
+  });
+
+  it("writes the result through the normal write pipeline when output_path is set", async () => {
+    const { execute, workspace, applied } = executorWith({ policy: "autonomous" });
+    const outcome = await execute("run_script", {
+      script: "(input) => ({ total: 3 })",
+      output_path: "outputs/result.json"
+    }, {});
+    expect(outcome.isError).toBeFalsy();
+    const payload = JSON.parse(outcome.content) as { written: string };
+    expect(payload.written).toBe("outputs/result.json");
+    expect(await workspace.readFile("outputs/result.json")).toBe("{\n  \"total\": 3\n}\n");
+    expect(applied).toHaveLength(1);
+    expect(applied[0].creates).toBe(true);
+  });
+
+  it("writes string results verbatim", async () => {
+    const { execute, workspace } = executorWith({ policy: "autonomous" });
+    await execute("run_script", {
+      script: "() => \"plain text\"",
+      output_path: "note.txt"
+    }, {});
+    expect(await workspace.readFile("note.txt")).toBe("plain text");
+  });
+
+  it("keeps careful mode in charge of script writes", async () => {
+    const { execute, workspace, gate } = executorWith({ policy: "careful", decision: "reject" });
+    const outcome = await execute("run_script", {
+      script: "() => \"blocked\"",
+      output_path: "blocked.txt"
+    }, {});
+    expect(outcome.isError).toBe(true);
+    expect(outcome.content).toContain("the write was not applied");
+    expect(gate).toHaveBeenCalledTimes(1);
+    await expect(workspace.readFile("blocked.txt")).rejects.toThrow();
+  });
+
+  it("refuses protected input and output paths before running anything", async () => {
+    const { execute, runScript } = executorWith({ files: { ".env": "SECRET=1" }, policy: "autonomous" });
+    expect((await execute("run_script", { script: "() => 1", input_paths: [".env"] }, {})).isError).toBe(true);
+    expect((await execute("run_script", { script: "() => 1", output_path: ".env" }, {})).isError).toBe(true);
+    expect(runScript).not.toHaveBeenCalled();
+  });
+
+  it("fails on missing input files", async () => {
+    const { execute } = executorWith({ policy: "autonomous" });
+    const outcome = await execute("run_script", { script: "() => 1", input_paths: ["missing.csv"] }, {});
+    expect(outcome.isError).toBe(true);
+    expect(outcome.content).toContain("File not found");
+  });
+
+  it("surfaces sandbox rejections for non-function scripts", async () => {
+    const { execute } = executorWith({ policy: "autonomous" });
+    const outcome = await execute("run_script", { script: "42" }, {});
+    expect(outcome.isError).toBe(true);
+    expect(outcome.content).toContain("must evaluate to a function");
+  });
+
+  it("stops runaway scripts at the CPU deadline", async () => {
+    const { execute } = executorWith({ policy: "autonomous" });
+    const outcome = await execute("run_script", { script: "() => { while (true) {} }" }, {});
+    expect(outcome.isError).toBe(true);
+    expect(outcome.content).toContain("execution time limit");
+  });
+
+  it("rejects outputs above the sandbox I/O cap", async () => {
+    const { execute } = executorWith({ policy: "autonomous" });
+    const outcome = await execute("run_script", { script: "() => \"x\".repeat(600000)" }, {});
+    expect(outcome.isError).toBe(true);
+    expect(outcome.content).toContain("output exceeds");
+  });
+
+  it("truncates large results for the model while keeping the full file write", async () => {
+    const { execute, workspace } = executorWith({ policy: "autonomous" });
+    const outcome = await execute("run_script", {
+      script: "() => \"y\".repeat(400000)",
+      output_path: "big.txt"
+    }, {});
+    expect(outcome.isError).toBeFalsy();
+    const payload = JSON.parse(outcome.content) as { result_preview: string; truncated: boolean; written: string };
+    expect(payload.truncated).toBe(true);
+    expect(payload.written).toBe("big.txt");
+    expect(payload.result_preview.length).toBeLessThan(400000);
+    expect(new TextEncoder().encode(payload.result_preview).byteLength).toBeLessThanOrEqual(CHAT_READ_MAX_BYTES);
+    expect((await workspace.readFile("big.txt")).length).toBe(400000);
   });
 });

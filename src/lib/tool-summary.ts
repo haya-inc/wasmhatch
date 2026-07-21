@@ -20,6 +20,7 @@ const RULES: ToolSummaryRule[] = [
   { name: "read_file", argKey: "path", format: (path) => `Reading ${path}` },
   { name: "write_file", argKey: "path", format: (path) => `Writing ${path}` },
   { name: "list_files", format: () => "Listing workspace files" },
+  { name: "run_script", format: () => "Running a sandboxed script" },
   { name: "create_artifact", argKey: "title", format: (title) => `Creating an HTML artifact — ${title}` },
   { name: "create_google_doc", argKey: "title", format: (title) => `Creating a Google Doc — ${title}` },
   { name: "create_google_sheet", argKey: "title", format: (title) => `Creating a Google Sheet — ${title}` },

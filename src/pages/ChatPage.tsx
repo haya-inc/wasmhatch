@@ -11,8 +11,10 @@ import {
   type BuiltinTool
 } from "../lib/builtin-ai-loop";
 import { ARTIFACT_TOOL, createArtifactExecutor, type HtmlArtifact } from "../lib/artifact";
+import { runBusinessScriptInWorker } from "../lib/browser-script-runner";
 import { SessionPermissionStore, type PermissionDecision, type WritePermissionRequest } from "../lib/chat-permissions";
-import { CHAT_TOOLS, createChatToolExecutor, type AppliedWrite, type WritePolicy } from "../lib/chat-tools";
+import { CHAT_SCRIPT_LIMITS, CHAT_TOOLS, createChatToolExecutor, type AppliedWrite, type WritePolicy } from "../lib/chat-tools";
+import { clearChatTranscript, loadChatTranscript, saveChatTranscript } from "../lib/chat-transcript-store";
 import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "../lib/google-connectors";
 import { parseMarkdown, type MarkdownInline } from "../lib/markdown";
 import { GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
@@ -60,6 +62,7 @@ function systemPrompt(policy: WritePolicy): string {
       ? "Act decisively: writes apply immediately, and every change stays visible to the user with its diff and a revert option. Do not ask permission for routine file work — do it."
       : "The user chose careful mode: each write_file call shows them the exact diff first, and a rejected write is a final decision, not an error to work around.",
     "Use create_artifact for polished deliverables (reports, dashboards, slide decks) as one self-contained HTML file.",
+    "For data transforms over workspace files (filtering, aggregating, reshaping, math), prefer run_script over hand-computing rows; it runs in a no-network sandbox and output_path saves its result.",
     "When Google tools are available, you can create Google Docs, Sheets, and Slides and edit the ones you created; you cannot browse the user's existing Drive.",
     "Never claim an effect happened unless the tool result confirms it.",
     "Be direct and concise."
@@ -143,15 +146,17 @@ function storageSummary(status: BrowserStorageStatus): string {
 export function ChatPage() {
   const workspace = useRef(createWorkspaceStore());
   const permissions = useRef(new SessionPermissionStore());
-  const transcriptMessages = useRef<AgentMessage[]>([]);
-  const nextId = useRef(1);
+  const [initialSettings] = useState(() => loadChatSettings());
+  // The thread survives reloads; a stored thread from another provider is left behind (different wire format).
+  const [restoredThread] = useState(() => loadChatTranscript<ChatItem, AgentMessage>(initialSettings.provider));
+  const transcriptMessages = useRef<AgentMessage[]>(restoredThread ? [...restoredThread.messages] : []);
+  const nextId = useRef(restoredThread?.nextId ?? 1);
   const abortController = useRef<AbortController | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  const [items, setItems] = useState<ChatItem[]>([]);
+  const [items, setItems] = useState<ChatItem[]>(restoredThread ? restoredThread.items : []);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
-  const [initialSettings] = useState(() => loadChatSettings());
   const restoredCloud = initialSettings.provider === "builtin" ? null : initialSettings.provider;
   const [provider, setProvider] = useState<ProviderKind>(initialSettings.provider);
   const [apiKey, setApiKey] = useState(restoredCloud ? initialSettings.keys[restoredCloud] ?? "" : "");
@@ -221,6 +226,21 @@ export function ChatPage() {
     saveChatSettings({ provider, models: modelsRef.current, keys: keysRef.current, rememberKey });
   }, [provider, apiKey, model, rememberKey]);
 
+  useEffect(() => {
+    // Persist at rest, not per streaming delta; stored items never carry live flags.
+    if (running) return;
+    saveChatTranscript({
+      provider,
+      nextId: nextId.current,
+      messages: transcriptMessages.current,
+      items: items.map((item) => ({
+        ...item,
+        streaming: false,
+        toolState: item.toolState === "running" ? "done" : item.toolState
+      }))
+    });
+  }, [items, provider, running]);
+
   const gate = useCallback((request: WritePermissionRequest) => {
     return new Promise<PermissionDecision>((resolve) => {
       setPermissionQueue((queue) => [...queue, { request, resolve }]);
@@ -243,7 +263,9 @@ export function ChatPage() {
           text: `${write.creates ? "Created" : "Updated"} ${write.path}`,
           write: { ...write, reverted: false }
         }]);
-      }
+      },
+      runScript: (source, scriptInput, options) =>
+        runBusinessScriptInWorker(source, scriptInput, { limits: CHAT_SCRIPT_LIMITS, signal: options.signal })
     });
     const artifactExecute = createArtifactExecutor(({ title, html }) => {
       artifactCounter.current += 1;
@@ -463,6 +485,14 @@ export function ChatPage() {
     abortController.current?.abort();
   }, []);
 
+  const startNewChat = useCallback(() => {
+    transcriptMessages.current = [];
+    setItems([]);
+    setArtifact(null);
+    setViewer(null);
+    clearChatTranscript();
+  }, []);
+
   const switchProvider = useCallback((next: ChatProviderId) => {
     setProvider(next);
     if (next === "builtin") {
@@ -576,6 +606,11 @@ export function ChatPage() {
       <header className="chat-header">
         <a className="chat-brand" href="./">WasmHatch</a>
         <span className="chat-tagline">Your AI assistant, right in this tab — fast, visible, and undoable.</span>
+        {items.length > 0 && (
+          <button className="button button-quiet chat-new" type="button" onClick={startNewChat} disabled={running}>
+            New chat
+          </button>
+        )}
       </header>
 
       <div className="chat-columns">
