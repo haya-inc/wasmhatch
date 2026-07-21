@@ -16,6 +16,8 @@ import { SessionPermissionStore, type PermissionDecision, type WritePermissionRe
 import { CHAT_SCRIPT_LIMITS, CHAT_TOOLS, createChatToolExecutor, type AppliedWrite, type WritePolicy } from "../lib/chat-tools";
 import { clearChatTranscript, loadChatTranscript, saveChatTranscript } from "../lib/chat-transcript-store";
 import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "../lib/google-connectors";
+import { GOOGLE_SENSITIVE_TOOLS, createGoogleSensitiveExecutor } from "../lib/google-sensitive-connectors";
+import { parseSensitiveScopesFlag, resolveGoogleScopes } from "../lib/google-scopes";
 import { parseMarkdown, type MarkdownInline } from "../lib/markdown";
 import { GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
 import { createZipArchive } from "../lib/archive";
@@ -74,8 +76,12 @@ function systemPrompt(policy: WritePolicy, webSearch: boolean): string {
   ].join(" ");
 }
 
-const GOOGLE_DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const GOOGLE_CLIENT_ID: string = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "";
+// Sensitive Google scopes (opening Sheets/Docs/Slides by URL or ID, and Calendar)
+// unlock only when a deployment opts in AFTER Google's Sensitive-scope verification
+// clears. Leave VITE_GOOGLE_SENSITIVE_SCOPES unset in production; the default keeps
+// the app on the non-sensitive drive.file scope with no unverified-app warning.
+const GOOGLE_SENSITIVE_ENABLED = parseSensitiveScopesFlag(import.meta.env.VITE_GOOGLE_SENSITIVE_SCOPES);
 
 // UI-only sentinel: "Custom" reveals a free-text model ID field.
 const CUSTOM_MODEL = "__custom__";
@@ -278,14 +284,18 @@ export function ChatPage() {
       artifactCounter.current += 1;
       setArtifact({ id: `artifact-${artifactCounter.current}`, title, html, createdIndex: artifactCounter.current });
     });
-    const googleExecute = createGoogleConnectorExecutor(async (signal) => {
+    const googleToken = async (signal?: AbortSignal) => {
       const provider = googleSession.current.credentialProvider();
       return provider.getToken(signal);
-    });
+    };
+    const googleExecute = createGoogleConnectorExecutor(googleToken);
+    const googleSensitiveExecute = createGoogleSensitiveExecutor(googleToken);
     const googleToolNames = new Set(GOOGLE_CONNECTOR_TOOLS.map((tool) => tool.name));
+    const googleSensitiveToolNames = new Set(GOOGLE_SENSITIVE_TOOLS.map((tool) => tool.name));
     const router: typeof workspaceExecute = (name, args, context) => {
       if (name === ARTIFACT_TOOL.name) return artifactExecute(name, args, context);
       if (googleToolNames.has(name)) return googleExecute(name, args, context);
+      if (googleSensitiveToolNames.has(name)) return googleSensitiveExecute(name, args, context);
       return workspaceExecute(name, args, context);
     };
     return router;
@@ -294,15 +304,18 @@ export function ChatPage() {
   const tools = useMemo(() => [
     ...CHAT_TOOLS,
     ARTIFACT_TOOL,
-    ...(googleStatus.connected ? GOOGLE_CONNECTOR_TOOLS : [])
+    ...(googleStatus.connected ? GOOGLE_CONNECTOR_TOOLS : []),
+    ...(googleStatus.connected && GOOGLE_SENSITIVE_ENABLED ? GOOGLE_SENSITIVE_TOOLS : [])
   ], [googleStatus.connected]);
 
   const connectGoogle = useCallback(async () => {
     if (!GOOGLE_CLIENT_ID || googleBusy) return;
     setGoogleBusy(true);
     try {
-      setGoogleStatus(await googleSession.current.authorize(GOOGLE_CLIENT_ID, [GOOGLE_DRIVE_FILE_SCOPE]));
-      notice("Google connected. The agent can now create Docs, Sheets, and Slides and edit the ones it creates.");
+      setGoogleStatus(await googleSession.current.authorize(GOOGLE_CLIENT_ID, resolveGoogleScopes(GOOGLE_SENSITIVE_ENABLED)));
+      notice(GOOGLE_SENSITIVE_ENABLED
+        ? "Google connected. The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events."
+        : "Google connected. The agent can now create Docs, Sheets, and Slides and edit the ones it creates.");
     } catch (error) {
       notice(error instanceof Error ? error.message : "Google authorization failed.", "error");
     } finally {
@@ -898,8 +911,9 @@ export function ChatPage() {
                   {googleBusy ? "Connecting…" : "Connect Google"}
                 </button>
                 <p className="chat-hint">
-                  Per-file access only (drive.file): the agent can create Docs, Sheets, and Slides and edit
-                  the ones it creates. It cannot browse your existing Drive. The token stays in this tab.
+                  {GOOGLE_SENSITIVE_ENABLED
+                    ? "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
+                    : "Per-file access only (drive.file): the agent can create Docs, Sheets, and Slides and edit the ones it creates. It cannot browse your existing Drive. The token stays in this tab."}
                 </p>
               </>
             )}

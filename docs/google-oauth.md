@@ -107,3 +107,23 @@ use **Switch Google account**, but the operator does not yet display an email
 address. Before organization policy grants or unattended execution, WasmHatch
 must add a separately reviewed identity display without sending identity data to
 the model or scripts.
+
+## Scope sets and the Sensitive-scope flag
+
+The chat surface resolves which scopes to request through
+[`src/lib/google-scopes.ts`](../src/lib/google-scopes.ts):
+
+- **Launch (default):** the non-sensitive `drive.file` scope only. No
+  unverified-app warning, no 100-user cap. The agent can create Docs, Sheets,
+  and Slides and edit the files it created.
+- **Sensitive (opt-in):** `drive.file` plus `spreadsheets`, `documents`,
+  `presentations`, and `calendar.events`. Enabled only when the build sets
+  `VITE_GOOGLE_SENSITIVE_SCOPES=true`, which unlocks the tools in
+  [`src/lib/google-sensitive-connectors.ts`](../src/lib/google-sensitive-connectors.ts)
+  for opening a Sheet/Doc/Slides file the user names by URL or ID and for
+  reading and creating Calendar events.
+
+Keep the flag unset in production until Google's Sensitive-scope verification
+clears; see [google-oauth-verification.md](google-oauth-verification.md). The
+production CSP already allowlists `slides.googleapis.com` and the Calendar host
+(`www.googleapis.com`) so the audit never depends on the runtime flag.

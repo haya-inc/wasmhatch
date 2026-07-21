@@ -179,10 +179,24 @@ round of reviewer questions.
 request **only the non-sensitive `drive.file` scope**. Requesting an
 unverified sensitive scope in production shows every user the unverified-app
 warning interstitial and — worse — counts against a **100-user lifetime cap**
-that a launch audience would burn through immediately. Keep the
-sensitive-scope request path behind a flag that ships only after approval;
-exercise sensitive scopes before that only with allow-listed test users on a
-Testing-status (or separate development) client.
+that a launch audience would burn through immediately. The sensitive-scope
+request path ships behind the build-time flag **`VITE_GOOGLE_SENSITIVE_SCOPES`**
+(see [`src/lib/google-scopes.ts`](../src/lib/google-scopes.ts)); leave it unset
+in production. Exercise sensitive scopes before approval only with allow-listed
+test users on a Testing-status (or separate development) client — build with
+`VITE_GOOGLE_SENSITIVE_SCOPES=true` for those runs.
+
+**Scope usage is now real (required for verification).** Google only verifies
+scopes its reviewers can watch the app use, so each requested sensitive scope is
+backed by a shipped agent tool
+([`src/lib/google-sensitive-connectors.ts`](../src/lib/google-sensitive-connectors.ts)):
+`spreadsheets` → `read_google_sheet` / `write_google_sheet` (open a Sheet by
+URL or ID); `documents` → `read_google_doc` / `append_google_doc`;
+`presentations` → `read_google_slides` / `add_google_slide` (over
+`slides.googleapis.com`); `calendar.events` → `list_calendar_events` /
+`create_calendar_event` (over `www.googleapis.com/calendar/v3`, no attendees and
+`sendUpdates=none` so a tool call never emails anyone). The demo video in
+Section 3 must exercise each of these with the flag build.
 
 ## 5. Quarterly re-verification
 

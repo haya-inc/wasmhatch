@@ -79,6 +79,11 @@ describe("public sharing metadata", () => {
     expect(viteConfig).toContain('"worker-src \'self\'"');
     expect(viteConfig).toContain("'wasm-unsafe-eval'");
     expect(viteConfig).toContain("https://sheets.googleapis.com");
+    // The Sensitive-scope connectors (Slides, Calendar) must be in the static CSP
+    // allowlist so the audit never depends on the runtime opt-in flag. Calendar is
+    // served from www.googleapis.com (already allowed); Slides needs its own host.
+    expect(viteConfig).toContain("https://slides.googleapis.com");
+    expect(viteConfig).toContain("https://docs.googleapis.com");
     expect(viteConfig).toContain("https://accounts.google.com/gsi/client");
     expect(viteConfig).toContain('"same-origin-allow-popups"');
   });

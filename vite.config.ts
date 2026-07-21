@@ -13,8 +13,11 @@ export default defineConfig(({ command, mode }) => ({
           const developmentConnect = command === "serve" ? " ws://localhost:* ws://127.0.0.1:*" : "";
           const googleIdentityBase = "https://accounts.google.com/gsi/";
           // LLM provider origins come from the audited registry; these are the non-LLM
-          // connector origins (GitHub import, Google Drive/Docs/Sheets REST).
-          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com";
+          // connector origins (GitHub import, Google Drive/Docs/Sheets/Slides REST, and
+          // Google Calendar, which is served from www.googleapis.com). Slides and Calendar
+          // are only reached when the deployment opts into Sensitive scopes, but the CSP
+          // stays static so the audit never depends on a runtime flag.
+          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://slides.googleapis.com";
           const stylePolicy = command === "serve"
             ? "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style"
             : "style-src 'self' https://accounts.google.com/gsi/style";
