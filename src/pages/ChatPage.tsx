@@ -546,6 +546,33 @@ export function ChatPage() {
     }
   }, [backupBusy, notice]);
 
+  const downloadFile = useCallback(async (path: string, content: string) => {
+    const ext = path.split(".").pop() ?? "";
+    const mimeMap: Record<string, string> = {
+      md: "text/markdown",
+      csv: "text/csv",
+      json: "application/json",
+      txt: "text/plain",
+      html: "text/html",
+      css: "text/css",
+      js: "text/javascript",
+      ts: "text/typescript",
+      tsx: "text/typescript",
+      py: "text/x-python",
+      sh: "text/x-shellscript",
+      yaml: "text/yaml",
+      yml: "text/yaml",
+    };
+    const mimeType = mimeMap[ext] ?? "text/plain";
+    const bytes = new TextEncoder().encode(content);
+    const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = path.split("/").pop() ?? path;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }, []);
+
   const activePermission = permissionQueue[0];
   const providerDef = provider === "builtin" ? null : getCloudProvider(provider);
   const modelChoices = providerDef?.models ?? [];
@@ -862,6 +889,7 @@ export function ChatPage() {
             <section className="chat-panel">
               <h2>{viewer.path}</h2>
               <pre className="chat-viewer">{viewer.content}</pre>
+              <button className="button button-quiet" type="button" onClick={() => { void downloadFile(viewer.path, viewer.content); }}>Download</button>
               <button className="button button-quiet" type="button" onClick={() => setViewer(null)}>Close</button>
             </section>
           )}
