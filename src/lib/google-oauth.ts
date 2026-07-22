@@ -71,6 +71,9 @@ const TOKEN_MAX_LENGTH = 16 * 1024;
 const EXPIRY_SAFETY_MS = 30_000;
 const LOAD_TIMEOUT_MS = 15_000;
 const AUTHORIZATION_TIMEOUT_MS = 120_000;
+// A silent re-grant shows no UI, so a hung attempt only delays the visible
+// reconnect fallback — keep the wait short.
+const SILENT_AUTHORIZATION_TIMEOUT_MS = 20_000;
 const REVOKE_TIMEOUT_MS = 15_000;
 
 let runtimePromise: Promise<GoogleIdentityOAuthRuntime> | null = null;
@@ -228,10 +231,21 @@ export class GoogleOAuthSession {
     return this.status();
   }
 
-  async authorize(clientIdValue: string, scopeValues: readonly string[] = [GOOGLE_SHEETS_SCOPE]) {
+  /**
+   * `options.silent` re-requests a token with `prompt: ""` — no popup, no
+   * user gesture — which Google honors while the account session still
+   * covers the scopes. Failure changes no session state; callers fall back
+   * to the visible connect flow.
+   */
+  async authorize(
+    clientIdValue: string,
+    scopeValues: readonly string[] = [GOOGLE_SHEETS_SCOPE],
+    options?: { silent?: boolean }
+  ) {
     if (this.#authorizing) throw new GoogleOAuthError("authorization_in_progress", "Google authorization is already in progress.");
     const clientId = requireClientId(clientIdValue);
     const scopes = requireScopes(scopeValues);
+    const silent = options?.silent === true;
     this.#authorizing = true;
     try {
       const runtime = await this.loadRuntime();
@@ -246,7 +260,7 @@ export class GoogleOAuthSession {
         };
         const timer = globalThis.setTimeout(() => {
           finish({ error: new GoogleOAuthError("authorization_timeout", "Google authorization did not complete in time.") });
-        }, AUTHORIZATION_TIMEOUT_MS);
+        }, silent ? SILENT_AUTHORIZATION_TIMEOUT_MS : AUTHORIZATION_TIMEOUT_MS);
         let client: GoogleTokenClient;
         try {
           client = runtime.initTokenClient({
@@ -293,7 +307,7 @@ export class GoogleOAuthSession {
             },
             error_callback: (error) => finish({ error: popupFailure(error.type) })
           });
-          client.requestAccessToken({ prompt: "select_account" });
+          client.requestAccessToken({ prompt: silent ? "" : "select_account" });
         } catch {
           finish({ error: new GoogleOAuthError("authorization_start_failed", "Google authorization could not be started.") });
         }

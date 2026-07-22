@@ -7,7 +7,7 @@ import { detectBuiltinAiToolLoopSupport } from "../lib/builtin-ai-loop";
 import type { HtmlArtifact } from "../lib/artifact";
 import { type PermissionDecision, type WritePermissionRequest } from "../lib/chat-permissions";
 import { type WritePolicy } from "../lib/chat-tools";
-import { GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
+import { GoogleOAuthReauthorizationRequiredError, GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
 import { parseSensitiveScopesFlag, resolveGoogleScopes } from "../lib/google-scopes";
 import { parseMarkdown, type MarkdownInline } from "../lib/markdown";
 import { createZipArchive } from "../lib/archive";
@@ -280,7 +280,22 @@ export function ChatPage() {
     google: {
       isConnected: () => googleStatusRef.current.connected,
       sensitiveEnabled: GOOGLE_SENSITIVE_ENABLED,
-      getToken: (signal) => googleSession.current.credentialProvider().getToken(signal)
+      // One silent re-grant hides ordinary token expiry from a running turn;
+      // if Google wants a gesture again, the visible reconnect flow remains.
+      getToken: async (signal) => {
+        const provider = googleSession.current.credentialProvider();
+        try {
+          return await provider.getToken(signal);
+        } catch (error) {
+          if (!GOOGLE_CLIENT_ID || !(error instanceof GoogleOAuthReauthorizationRequiredError)) throw error;
+          const renewed = await googleSession.current
+            .authorize(GOOGLE_CLIENT_ID, resolveGoogleScopes(GOOGLE_SENSITIVE_ENABLED), { silent: true })
+            .catch(() => null);
+          setGoogleStatus(googleSession.current.status());
+          if (!renewed?.connected) throw error;
+          return provider.getToken(signal);
+        }
+      }
     },
     slack: { getWebhookUrl: () => slackUrlRef.current, getToken: () => slackTokenRef.current },
     getBuiltinApi: () => (globalThis as typeof globalThis & { LanguageModel?: ChromeLanguageModelApi }).LanguageModel
@@ -471,6 +486,32 @@ export function ChatPage() {
     // A different provider means a different model and wire format: wire history resets.
     swarm.handleProviderSwitch();
   }, [swarm]);
+
+  // Renew the Google token a minute before it expires (silently, no UI). On
+  // success the new expiry reschedules this effect; on failure a second timer
+  // flips the panel to the expired state at the safety window, and the lazy
+  // per-call re-grant in the swarm deps remains as a backstop.
+  useEffect(() => {
+    if (!googleStatus.expiresAt || !GOOGLE_CLIENT_ID) return;
+    const expiresAtMs = new Date(googleStatus.expiresAt).getTime();
+    let flipTimer: ReturnType<typeof setTimeout> | undefined;
+    const renewTimer = setTimeout(() => {
+      void googleSession.current
+        .authorize(GOOGLE_CLIENT_ID, resolveGoogleScopes(GOOGLE_SENSITIVE_ENABLED), { silent: true })
+        .catch(() => null)
+        .then(() => {
+          setGoogleStatus(googleSession.current.status());
+          flipTimer = setTimeout(
+            () => setGoogleStatus(googleSession.current.status()),
+            Math.max(25, expiresAtMs - Date.now() - 30_000 + 25)
+          );
+        });
+    }, Math.max(1_000, expiresAtMs - Date.now() - 60_000));
+    return () => {
+      clearTimeout(renewTimer);
+      if (flipTimer !== undefined) clearTimeout(flipTimer);
+    };
+  }, [googleStatus.expiresAt]);
 
   const connectGoogle = useCallback(async () => {
     if (!GOOGLE_CLIENT_ID || googleBusy) return;

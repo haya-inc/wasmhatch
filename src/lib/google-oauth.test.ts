@@ -79,6 +79,45 @@ describe("GoogleOAuthSession", () => {
     await expect(session.credentialProvider().getToken()).resolves.toBe("secret-google-token");
   });
 
+  it("re-grants silently with an empty prompt and refreshed expiry", async () => {
+    let now = 0;
+    const fake = fakeRuntime();
+    const session = new GoogleOAuthSession(async () => fake.runtime, () => now);
+    await session.authorize(CLIENT_ID);
+    now = 3_600_000;
+
+    const status = await session.authorize(CLIENT_ID, [GOOGLE_SHEETS_SCOPE], { silent: true });
+
+    expect(fake.requestAccessToken).toHaveBeenNthCalledWith(1, { prompt: "select_account" });
+    expect(fake.requestAccessToken).toHaveBeenNthCalledWith(2, { prompt: "" });
+    expect(status.connected).toBe(true);
+    expect(status.expiresAt).toBe(new Date(3_600_000 + 3_600_000).toISOString());
+    await expect(session.credentialProvider().getToken()).resolves.toBe("secret-google-token");
+  });
+
+  it("leaves the expired state untouched when a silent re-grant fails", async () => {
+    let now = 0;
+    const good = fakeRuntime({ response: {
+      access_token: "short-token",
+      expires_in: 60,
+      scope: GOOGLE_SHEETS_SCOPE,
+      token_type: "Bearer"
+    } });
+    const failing = fakeRuntime({ popupError: { type: "interaction_required" } });
+    let runtime = good.runtime;
+    const session = new GoogleOAuthSession(async () => runtime, () => now);
+    await session.authorize(CLIENT_ID);
+    now = 60_000;
+    expect(session.status().state).toBe("expired");
+
+    runtime = failing.runtime;
+    await expect(session.authorize(CLIENT_ID, [GOOGLE_SHEETS_SCOPE], { silent: true }))
+      .rejects.toBeInstanceOf(GoogleOAuthError);
+    expect(failing.requestAccessToken).toHaveBeenCalledWith({ prompt: "" });
+    expect(session.status()).toEqual({ state: "expired", connected: false, expiresAt: null, scopes: [] });
+    await expect(session.credentialProvider().getToken()).rejects.toBeInstanceOf(GoogleOAuthReauthorizationRequiredError);
+  });
+
   it("expires credentials before provider expiry and requires a new user gesture", async () => {
     let now = 0;
     const fake = fakeRuntime({ response: {

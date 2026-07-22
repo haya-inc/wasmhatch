@@ -391,10 +391,28 @@ export function OperatorPage({ simple = false }: { simple?: boolean } = {}) {
 
   useEffect(() => {
     if (!googleAuthStatus.expiresAt) return;
-    const delay = Math.max(0, Date.parse(googleAuthStatus.expiresAt) - Date.now() - 30_000);
-    const timer = window.setTimeout(() => setGoogleAuthStatus(googleOAuth.current.status()), delay + 25);
-    return () => window.clearTimeout(timer);
-  }, [googleAuthStatus.expiresAt]);
+    // Try a silent re-grant a minute before expiry; success reschedules this
+    // effect with the new expiry, failure falls through to the second timer
+    // that flips the button to "Reconnect Google Sheets" at the safety window.
+    const expiresAtMs = Date.parse(googleAuthStatus.expiresAt);
+    let flipTimer: number | undefined;
+    const renewTimer = window.setTimeout(() => {
+      const renew = googleClientId
+        ? googleOAuth.current.authorize(googleClientId, [GOOGLE_SHEETS_SCOPE], { silent: true }).catch(() => null)
+        : Promise.resolve(null);
+      void renew.then(() => {
+        setGoogleAuthStatus(googleOAuth.current.status());
+        flipTimer = window.setTimeout(
+          () => setGoogleAuthStatus(googleOAuth.current.status()),
+          Math.max(25, expiresAtMs - Date.now() - 30_000 + 25)
+        );
+      });
+    }, Math.max(1_000, expiresAtMs - Date.now() - 60_000));
+    return () => {
+      window.clearTimeout(renewTimer);
+      if (flipTimer !== undefined) window.clearTimeout(flipTimer);
+    };
+  }, [googleAuthStatus.expiresAt, googleClientId]);
 
   useEffect(() => {
     let current = true;
