@@ -1,0 +1,30 @@
+name: OpenClaw promotion observation
+
+# wasmhatch evaluates embedding upstream OpenClaw browser-locally through
+# Clawsembly (https://github.com/haya-inc/clawsembly). This job observes
+# Clawsembly's fail-closed OpenClaw promotion decision on a schedule so the
+# team sees upstream readiness in CI without installing anything. Observe
+# mode never fails the workflow; switch to `mode: gate` only if a HOLD
+# should block.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 5 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  clawsembly-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - id: policy
+        uses: haya-inc/clawsembly/actions/promotion-policy@v0.1.0-alpha.6
+        with:
+          mode: observe
+      - run: |
+          echo "OpenClaw promotion decision: ${{ steps.policy.outputs.decision }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Candidate: ${{ steps.policy.outputs.candidate_version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Reasons: ${{ steps.policy.outputs.reasons }}" >> "$GITHUB_STEP_SUMMARY"
