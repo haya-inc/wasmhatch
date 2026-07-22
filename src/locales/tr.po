@@ -16,632 +16,632 @@ msgstr ""
 #. placeholder {0}: status.toolCount
 #: src/pages/ChatPage.tsx
 msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
-msgstr ""
+msgstr "{0, plural, one {bağlı · # araç} other {bağlı · # araç}}"
 
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
-msgstr ""
+msgstr "{0} dk"
 
 #. placeholder {0}: selected.runsLeft
 #. placeholder {1}: selectedSchedule.maxAutoRuns
 #: src/pages/ChatPage.tsx
 msgid "{0} of {1} auto runs left."
-msgstr ""
+msgstr "Otomatik çalıştırma hakkı: {0}/{1} kaldı."
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
-msgstr ""
+msgstr "{0} adlı civcivin çalışma alanı — her civciv kendi dosyalarını tutar."
 
 #: src/pages/ChatPage.tsx
 msgid "{minutes} min"
-msgstr ""
+msgstr "{minutes} dk"
 
 #: src/lib/pixel-office.ts
 msgid "{name} hit an error"
-msgstr ""
+msgstr "{name} bir hatayla karşılaştı"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is resting"
-msgstr ""
+msgstr "{name} dinleniyor"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is waiting for the next auto-work run"
-msgstr ""
+msgstr "{name} bir sonraki otomatik çalışmayı bekliyor"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is working"
-msgstr ""
+msgstr "{name} çalışıyor"
 
 #: src/pages/ChatPage.tsx
 msgid "{toolCount, plural, one {MCP server connected — # tool available to every hatchling.} other {MCP server connected — # tools available to every hatchling.}}"
-msgstr ""
+msgstr "{toolCount, plural, one {MCP sunucusu bağlandı — tüm civcivler # araç kullanabilir.} other {MCP sunucusu bağlandı — tüm civcivler # araç kullanabilir.}}"
 
 #: src/pages/ChatPage.tsx
 msgid "{used} used."
-msgstr ""
+msgstr "{used} kullanıldı."
 
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
-msgstr ""
+msgstr "Dağınık bir örnek e-tablo hazır — temizlemesini isteyin ve her değişikliğin anında uygulanışını izleyin."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
-msgstr ""
+msgstr "Erişim jetonu (isteğe bağlı)"
 
 #: src/pages/ChatPage.tsx
 msgid "Add"
-msgstr ""
+msgstr "Ekle"
 
 #: src/pages/ChatPage.tsx
 msgid "Add a sample spreadsheet"
-msgstr ""
+msgstr "Örnek e-tablo ekle"
 
 #: src/lib/tool-summary.ts
 msgid "Adding a ticket — {title}"
-msgstr ""
+msgstr "Görev ekleniyor — {title}"
 
 #: src/pages/ChatPage.tsx
 msgid "Allow once"
-msgstr ""
+msgstr "Bir kez izin ver"
 
 #: src/pages/ChatPage.tsx
 msgid "Always allow this file"
-msgstr ""
+msgstr "Bu dosyaya her zaman izin ver"
 
 #. placeholder {0}: swarm.grantedPaths(selectedId).join(", ")
 #: src/pages/ChatPage.tsx
 msgid "Always-allowed this session: {0}"
-msgstr ""
+msgstr "Bu oturumda her zaman izinli: {0}"
 
 #: src/pages/ChatPage.tsx
 msgid "API key"
-msgstr ""
+msgstr "API anahtarı"
 
 #: src/lib/tool-summary.ts
 msgid "Appending text to a Google Doc"
-msgstr ""
+msgstr "Google Dokümanlar belgesine metin ekleniyor"
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "Ask {0} for the outcome you need…"
-msgstr ""
+msgstr "İstediğiniz sonucu {0} adlı civcive anlatın…"
 
 #: src/pages/ChatPage.tsx
 msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
-msgstr ""
+msgstr "Kendi sözcüklerinizle isteyin — e-tabloları düzeltir, belgeler yazar ve raporları tam burada hazırlar. Her değişiklik olduğu anda gösterilir, geri almak tek tık. Önce onaylamayı mı tercih edersiniz? Kenar çubuğundan Dikkatli moda geçin."
 
 #: src/pages/ChatPage.tsx
 msgid "Assistant"
-msgstr ""
+msgstr "Asistan"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto — match this browser"
-msgstr ""
+msgstr "Otomatik — bu tarayıcıya uy"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto budget used up"
-msgstr ""
+msgstr "Otomatik çalıştırma hakkı bitti"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work in progress…"
-msgstr ""
+msgstr "Otomatik çalışma sürüyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work on"
-msgstr ""
+msgstr "Otomatik çalışma açık"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work waiting"
-msgstr ""
+msgstr "Otomatik çalışma beklemede"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work while this tab is open"
-msgstr ""
+msgstr "Bu sekme açıkken otomatik çalış"
 
 #: src/pages/ChatPage.tsx
 msgid "Autonomy"
-msgstr ""
+msgstr "Özerklik"
 
 #: src/pages/ChatPage.tsx
 msgid "Back up everything"
-msgstr ""
+msgstr "Her şeyi yedekle"
 
 #: src/pages/ChatPage.tsx
 msgid "Blocked"
-msgstr ""
+msgstr "Engellendi"
 
 #: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
-msgstr ""
+msgstr "Chrome'a yerleşik — ücretsiz, anahtar gerekmez"
 
 #: src/pages/ChatPage.tsx
 msgid "bytes. Nothing is written until you decide."
-msgstr ""
+msgstr "bayt. Siz karar verene kadar hiçbir şey yazılmaz."
 
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
-msgstr ""
+msgstr "Dikkatli — kaydetmeden önce sorar"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
-msgstr ""
+msgstr "Görev panosu kontrol ediliyor"
 
 #: src/pages/ChatPage.tsx
 msgid "Close"
-msgstr ""
+msgstr "Kapat"
 
 #: src/pages/ChatPage.tsx
 msgid "Connect"
-msgstr ""
+msgstr "Bağlan"
 
 #: src/pages/ChatPage.tsx
 msgid "Connect Google"
-msgstr ""
+msgstr "Google'ı bağla"
 
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
-msgstr ""
+msgstr "Bu oturum için bağlandı. Dokümanlar, E-Tablolar ve Slaytlar araçları etkin."
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
 msgid "Connected until {0}. Docs, Sheets, and Slides tools are active."
-msgstr ""
+msgstr "Şu saate kadar bağlı: {0}. Dokümanlar, E-Tablolar ve Slaytlar araçları etkin."
 
 #: src/pages/ChatPage.tsx
 msgid "Connecting…"
-msgstr ""
+msgstr "Bağlanıyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
-msgstr ""
+msgstr "Tüm civcivleri bilgisayarınızdaki bir MCP sunucusunun araçlarına bağlar (Streamable HTTP), ör. yerel bir proxy arkasındaki stdio sunucusu. Jetonlar bu sekmenin belleğinde kalır. Uzak sunucuların dağıtım sırasında izin listesine eklenmesi zorunludur — çalışma zamanında istisna tanınmaz."
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
 msgid "Create {0}"
-msgstr ""
+msgstr "{0} dosyasını oluştur"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
-msgstr ""
+msgstr "Google Dokümanlar belgesi oluşturuluyor — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Sheet — {title}"
-msgstr ""
+msgstr "Google E-Tablolar dosyası oluşturuluyor — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Slides deck — {title}"
-msgstr ""
+msgstr "Google Slaytlar sunusu oluşturuluyor — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating an HTML artifact — {title}"
-msgstr ""
+msgstr "HTML çıktısı oluşturuluyor — {title}"
 
 #: src/pages/ChatPage.tsx
 msgid "Custom model ID"
-msgstr ""
+msgstr "Özel model kimliği"
 
 #: src/pages/ChatPage.tsx
 msgid "Custom model ID…"
-msgstr ""
+msgstr "Özel model kimliği…"
 
 #: src/pages/ChatPage.tsx
 msgid "Delete"
-msgstr ""
+msgstr "Sil"
 
 #: src/pages/ChatPage.tsx
 msgid "Describe the outcome you need…"
-msgstr ""
+msgstr "İstediğiniz sonucu anlatın…"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
-msgstr ""
+msgstr "Bağlantıyı kes"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
-msgstr ""
+msgstr "Google bağlantısını kes"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
-msgstr ""
+msgstr "Yapılıyor"
 
 #: src/pages/ChatPage.tsx
 msgid "done"
-msgstr ""
+msgstr "tamamlandı"
 
 #: src/pages/ChatPage.tsx
 msgid "Done"
-msgstr ""
+msgstr "Tamamlandı"
 
 #: src/pages/ChatPage.tsx
 msgid "Done — this browser will keep your data safe."
-msgstr ""
+msgstr "Tamam — bu tarayıcı verilerinizi güvende tutacak."
 
 #: src/pages/ChatPage.tsx
 msgid "Download"
-msgstr ""
+msgstr "İndir"
 
 #: src/pages/ChatPage.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
-msgstr ""
+msgstr "Bu civcivin dosyalarını dilediğiniz yerde saklayabileceğiniz tek bir ZIP olarak indirir — önce bir dosya ekleyin."
 
 #: src/pages/ChatPage.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere."
-msgstr ""
+msgstr "Bu civcivin dosyalarını dilediğiniz yerde saklayabileceğiniz tek bir ZIP olarak indirir."
 
 #: src/pages/ChatPage.tsx
 msgid "Each run"
-msgstr ""
+msgstr "Her çalıştırmada"
 
 #: src/pages/ChatPage.tsx
 msgid "Every"
-msgstr ""
+msgstr "Her"
 
 #: src/pages/ChatPage.tsx
 msgid "failed"
-msgstr ""
+msgstr "başarısız"
 
 #: src/pages/ChatPage.tsx
 msgid "Fast — just does it (undo anytime)"
-msgstr ""
+msgstr "Hızlı — hemen yapar (istediğiniz an geri alın)"
 
 #: src/pages/ChatPage.tsx
 msgid "Google access revoked for this tab."
-msgstr ""
+msgstr "Bu sekme için Google erişimi iptal edildi."
 
 #: src/pages/ChatPage.tsx
 msgid "Google authorization failed."
-msgstr ""
+msgstr "Google yetkilendirmesi başarısız oldu."
 
 #: src/pages/ChatPage.tsx
 msgid "Google connected. The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events."
-msgstr ""
+msgstr "Google bağlandı. Asistan Dokümanlar, E-Tablolar ve Slaytlar oluşturabilir, bağlantıyla paylaştıklarınızı açabilir, Takvim etkinliklerini okuyup ekleyebilir."
 
 #: src/pages/ChatPage.tsx
 msgid "Google connected. The agent can now create Docs, Sheets, and Slides and edit the ones it creates."
-msgstr ""
+msgstr "Google bağlandı. Asistan artık Dokümanlar, E-Tablolar ve Slaytlar oluşturabilir ve kendi oluşturduklarını düzenleyebilir."
 
 #: src/pages/ChatPage.tsx
 msgid "Google revocation failed."
-msgstr ""
+msgstr "Google erişimi iptal edilemedi."
 
 #: src/pages/ChatPage.tsx
 msgid "Hatch a new one"
-msgstr ""
+msgstr "Yeni bir civciv çıkar"
 
 #: src/App.tsx
 msgid "Hatching workspace…"
-msgstr ""
+msgstr "Çalışma alanı yumurtadan çıkıyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Hatchlings"
-msgstr ""
+msgstr "Civcivler"
 
 #: src/pages/ChatPage.tsx
 msgid "Hide the team sidebar"
-msgstr ""
+msgstr "Ekip kenar çubuğunu gizle"
 
 #: src/pages/ChatPage.tsx
 msgid "Hide the tools sidebar"
-msgstr ""
+msgstr "Araçlar kenar çubuğunu gizle"
 
 #: src/pages/ChatPage.tsx
 msgid "It's saved in this browser until you untick the box."
-msgstr ""
+msgstr "Kutunun işaretini kaldırana kadar bu tarayıcıda saklanır."
 
 #: src/pages/ChatPage.tsx
 msgid "Keep my data safe"
-msgstr ""
+msgstr "Verilerimi güvende tut"
 
 #: src/pages/ChatPage.tsx
 msgid "Language"
-msgstr ""
+msgstr "Dil"
 
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
-msgstr ""
+msgstr "Çalışma alanı dosyaları listeleniyor"
 
 #: src/pages/ChatPage.tsx
 msgid "MCP connection failed."
-msgstr ""
+msgstr "MCP bağlantısı başarısız oldu."
 
 #: src/pages/ChatPage.tsx
 msgid "MCP servers"
-msgstr ""
+msgstr "MCP sunucuları"
 
 #: src/pages/ChatPage.tsx
 msgid "Message the agent"
-msgstr ""
+msgstr "Asistana mesaj gönder"
 
 #: src/pages/ChatPage.tsx
 msgid "Model"
-msgstr ""
+msgstr "Model"
 
 #: src/pages/ChatPage.tsx
 msgid "Name"
-msgstr ""
+msgstr "Ad"
 
 #: src/pages/ChatPage.tsx
 msgid "Needs attention"
-msgstr ""
+msgstr "Dikkat gerekiyor"
 
 #: src/pages/ChatPage.tsx
 msgid "New chat"
-msgstr ""
+msgstr "Yeni sohbet"
 
 #: src/pages/ChatPage.tsx
 msgid "New ticket title"
-msgstr ""
+msgstr "Yeni görev başlığı"
 
 #: src/pages/ChatPage.tsx
 msgid "Next auto run any moment"
-msgstr ""
+msgstr "Sonraki otomatik çalıştırma her an başlayabilir"
 
 #: src/pages/ChatPage.tsx
 msgid "Next auto run in ~{minutes} min"
-msgstr ""
+msgstr "Sonraki otomatik çalıştırmaya yaklaşık {minutes} dk"
 
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
-msgstr ""
+msgstr "Henüz civciv yok."
 
 #: src/pages/ChatPage.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
-msgstr ""
+msgstr "Anahtar gerekmez — bu, kendi bilgisayarınızdaki Ollama ile konuşur. Ollama'yı bu siteye izin vererek başlatın (OLLAMA_ORIGINS ayarlayın), ardından indirdiğiniz modeli seçin (ollama list)."
 
 #: src/pages/ChatPage.tsx
 msgid "Not configured for this deployment. Set VITE_GOOGLE_CLIENT_ID to enable Google Docs, Sheets, and Slides tools."
-msgstr ""
+msgstr "Bu dağıtım için yapılandırılmamış. Google Dokümanlar, E-Tablolar ve Slaytlar araçlarını etkinleştirmek için VITE_GOOGLE_CLIENT_ID ayarlayın."
 
 #: src/pages/ChatPage.tsx
 msgid "Not pinned yet — the browser could clear saved work if this device runs low on space."
-msgstr ""
+msgstr "Henüz sabitlenmedi — bu cihazda alan azalırsa tarayıcı kayıtlı çalışmaları silebilir."
 
 #: src/pages/ChatPage.tsx
 msgid "Nothing here yet. Add the samples or just ask for something — files it creates appear here."
-msgstr ""
+msgstr "Burada henüz bir şey yok. Örnekleri ekleyin ya da bir şey isteyin — oluşturduğu dosyalar burada görünür."
 
 #: src/pages/ChatPage.tsx
 msgid "off"
-msgstr ""
+msgstr "kapalı"
 
 #: src/pages/ChatPage.tsx
 msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
-msgstr ""
+msgstr "Cihaz üstü model durumu: {builtinAvailability}. Desteklenen bir masaüstünde Chrome 138+ görevleri hiçbir anahtar olmadan çalıştırabilir."
 
 #: src/App.tsx
 msgid "Opening operator…"
-msgstr ""
+msgstr "Operatör açılıyor…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
-msgstr ""
+msgstr "WasmHatch açılıyor…"
 
 #: src/App.tsx
 msgid "Opening your workspace…"
-msgstr ""
+msgstr "Çalışma alanınız açılıyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
-msgstr ""
+msgstr "Tüm otomatik çalışmayı duraklat"
 
 #: src/pages/ChatPage.tsx
 msgid "Per-file access only (drive.file): the agent can create Docs, Sheets, and Slides and edit the ones it creates. It cannot browse your existing Drive. The token stays in this tab."
-msgstr ""
+msgstr "Yalnızca dosya bazlı erişim (drive.file): asistan Dokümanlar, E-Tablolar ve Slaytlar oluşturabilir ve kendi oluşturduklarını düzenleyebilir. Mevcut Drive'ınıza göz atamaz. Jeton bu sekmede kalır."
 
 #: src/pages/ChatPage.tsx
 msgid "Pinning…"
-msgstr ""
+msgstr "Sabitleniyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
-msgstr ""
+msgstr "Hazırlanıyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Provider"
-msgstr ""
+msgstr "Sağlayıcı"
 
 #: src/pages/ChatPage.tsx
 msgid "Queue a piece of work…"
-msgstr ""
+msgstr "Sıraya bir iş ekleyin…"
 
 #: src/lib/tool-summary.ts
 msgid "Reading {path}"
-msgstr ""
+msgstr "{path} okunuyor"
 
 #: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
-msgstr ""
+msgstr "Google E-Tablolar dosyası okunuyor"
 
 #: src/pages/ChatPage.tsx
 msgid "Reject"
-msgstr ""
+msgstr "Reddet"
 
 #: src/pages/ChatPage.tsx
 msgid "Remember on this device"
-msgstr ""
+msgstr "Bu cihazda hatırla"
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "Remove {0}? Its files and conversation are deleted (the shared ticket board stays)."
-msgstr ""
+msgstr "{0} kaldırılsın mı? Dosyaları ve sohbeti silinir (ortak görev panosu kalır)."
 
 #: src/pages/ChatPage.tsx
 msgid "Remove this hatchling"
-msgstr ""
+msgstr "Bu civcivi kaldır"
 
 #: src/pages/ChatPage.tsx
 msgid "Reopen"
-msgstr ""
+msgstr "Yeniden aç"
 
 #: src/pages/ChatPage.tsx
 msgid "Reset budget"
-msgstr ""
+msgstr "Hakkı sıfırla"
 
 #: src/pages/ChatPage.tsx
 msgid "Resting"
-msgstr ""
+msgstr "Dinleniyor"
 
 #: src/pages/ChatPage.tsx
 msgid "Revert"
-msgstr ""
+msgstr "Geri al"
 
 #: src/pages/ChatPage.tsx
 msgid "reverted"
-msgstr ""
+msgstr "geri alındı"
 
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
-msgstr ""
+msgstr "Şu an yalnızca bu sekme için tutuluyor; sekme kapanınca silinir."
 
 #: src/pages/ChatPage.tsx
 msgid "running"
-msgstr ""
+msgstr "çalışıyor"
 
 #: src/lib/tool-summary.ts
 msgid "Running a sandboxed script"
-msgstr ""
+msgstr "Korumalı alanda bir betik çalıştırılıyor"
 
 #: src/pages/ChatPage.tsx
 msgid "Runs only while this tab is open, in Fast mode, with its own token budget — it stops itself after repeated failures."
-msgstr ""
+msgstr "Yalnızca bu sekme açıkken, Hızlı modda ve kendi jeton hakkıyla çalışır — art arda başarısız olursa kendini durdurur."
 
 #: src/pages/ChatPage.tsx
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
-msgstr ""
+msgstr "Örnek e-tablo dosyalarınızın yanına eklendi — sizin hiçbir dosyanıza dokunulmadı."
 
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
-msgstr ""
+msgstr "Web'de aranıyor — {query}"
 
 #: src/pages/ChatPage.tsx
 msgid "Send"
-msgstr ""
+msgstr "Gönder"
 
 #: src/pages/ChatPage.tsx
 msgid "Show the team sidebar"
-msgstr ""
+msgstr "Ekip kenar çubuğunu göster"
 
 #: src/pages/ChatPage.tsx
 msgid "Show the tools sidebar"
-msgstr ""
+msgstr "Araçlar kenar çubuğunu göster"
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
-msgstr ""
+msgstr "Kaynaklar:"
 
 #: src/pages/ChatPage.tsx
 msgid "Stop"
-msgstr ""
+msgstr "Durdur"
 
 #: src/pages/ChatPage.tsx
 msgid "Storage"
-msgstr ""
+msgstr "Depolama"
 
 #: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
-msgstr ""
+msgstr "Asistan Dokümanlar, E-Tablolar ve Slaytlar oluşturabilir, bağlantıyla paylaştıklarınızı açabilir, Takvim etkinliklerini okuyup ekleyebilir. Jeton bu sekmede kalır; her yazma işlemi uygulanmadan önce gösterilir."
 
 #: src/pages/ChatPage.tsx
 msgid "The backup could not be created."
-msgstr ""
+msgstr "Yedek oluşturulamadı."
 
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
-msgstr ""
+msgstr "Tarayıcı şimdilik izin vermedi. Uygulamayı biraz daha kullandığınızda genellikle kabul eder — o zamana kadar en güvenlisi bir yedek almak."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
 msgid "The model can search the web through {0}. Searches are billed by your provider alongside tokens; untick to turn this off."
-msgstr ""
+msgstr "Model {0} üzerinden web'de arama yapabilir. Aramalar, jetonlarla birlikte sağlayıcınız tarafından faturalandırılır; kapatmak için işareti kaldırın."
 
 #: src/pages/ChatPage.tsx
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
-msgstr ""
+msgstr "Cihaz üstü model bu dili henüz konuşamıyor ve İngilizce yanıt verecek; bulut sağlayıcılar sizin dilinizde yanıtlar."
 
 #: src/pages/ChatPage.tsx
 msgid "The sample spreadsheet is already in your files."
-msgstr ""
+msgstr "Örnek e-tablo zaten dosyalarınızda."
 
 #: src/pages/ChatPage.tsx
 msgid "The shared work queue is empty. Add tickets here or let hatchlings queue their own follow-ups."
-msgstr ""
+msgstr "Ortak iş sırası boş. Buraya görev ekleyin ya da civcivler kendi devam işlerini sıraya koysun."
 
 #: src/pages/ChatPage.tsx
 msgid "The ticket could not be created."
-msgstr ""
+msgstr "Görev oluşturulamadı."
 
 #: src/pages/ChatPage.tsx
 msgid "This browser can't promise to keep data around, so a backup is the safest bet."
-msgstr ""
+msgstr "Bu tarayıcı verileri saklamayı garanti edemiyor; en güvenlisi bir yedek almak."
 
 #: src/pages/ChatPage.tsx
 msgid "Tickets"
-msgstr ""
+msgstr "Görevler"
 
 #: src/pages/ChatPage.tsx
 msgid "To do"
-msgstr ""
+msgstr "Yapılacak"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
 msgid "Update {0}"
-msgstr ""
+msgstr "{0} dosyasını güncelle"
 
 #: src/lib/tool-summary.ts
 msgid "Updating a Google Sheet"
-msgstr ""
+msgstr "Google E-Tablolar dosyası güncelleniyor"
 
 #: src/lib/tool-summary.ts
 msgid "Updating ticket {id}"
-msgstr ""
+msgstr "{id} numaralı görev güncelleniyor"
 
 #: src/pages/ChatPage.tsx
 msgid "URL (this machine only)"
-msgstr ""
+msgstr "URL (yalnızca bu makine)"
 
 #: src/lib/tool-summary.ts
 msgid "Using {server} — {tool}"
-msgstr ""
+msgstr "{server} kullanılıyor — {tool}"
 
 #: src/pages/ChatPage.tsx
 msgid "view diff"
-msgstr ""
+msgstr "farkı gör"
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"
-msgstr ""
+msgstr "Web araması"
 
 #: src/pages/ChatPage.tsx
 msgid "What do you want to get done?"
-msgstr ""
+msgstr "Neyi halletmek istersiniz?"
 
 #: src/pages/ChatPage.tsx
 msgid "Working…"
-msgstr ""
+msgstr "Çalışıyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Write approval required"
-msgstr ""
+msgstr "Yazma onayı gerekli"
 
 #: src/lib/tool-summary.ts
 msgid "Writing {path}"
-msgstr ""
+msgstr "{path} yazılıyor"
 
 #: src/pages/ChatPage.tsx
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."
-msgstr ""
+msgstr "Yapay zekâ asistanınız, tam bu sekmede — hızlı, şeffaf ve geri alınabilir."
 
 #: src/pages/ChatPage.tsx
 msgid "Your data is pinned — this browser won't clear it on its own."
-msgstr ""
+msgstr "Verileriniz sabitlendi — bu tarayıcı onları kendi kendine silmez."
 
 #: src/pages/ChatPage.tsx
 msgid "Your files"
-msgstr ""
+msgstr "Dosyalarınız"
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
 msgid "Your key goes only to {0} — nowhere else."
-msgstr ""
+msgstr "Anahtarınız yalnızca {0} adresine gider — başka hiçbir yere değil."

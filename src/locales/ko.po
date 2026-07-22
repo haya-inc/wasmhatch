@@ -16,632 +16,632 @@ msgstr ""
 #. placeholder {0}: status.toolCount
 #: src/pages/ChatPage.tsx
 msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
-msgstr ""
+msgstr "{0, plural, other {연결됨 · 도구 #개}}"
 
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
-msgstr ""
+msgstr "{0}분"
 
 #. placeholder {0}: selected.runsLeft
 #. placeholder {1}: selectedSchedule.maxAutoRuns
 #: src/pages/ChatPage.tsx
 msgid "{0} of {1} auto runs left."
-msgstr ""
+msgstr "자동 실행 남은 횟수: {0}/{1}."
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
-msgstr ""
+msgstr "{0}의 작업 공간 — 해츨링마다 자기 파일을 따로 보관해요."
 
 #: src/pages/ChatPage.tsx
 msgid "{minutes} min"
-msgstr ""
+msgstr "{minutes}분"
 
 #: src/lib/pixel-office.ts
 msgid "{name} hit an error"
-msgstr ""
+msgstr "{name}이(가) 오류를 만났어요"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is resting"
-msgstr ""
+msgstr "{name}은(는) 쉬는 중이에요"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is waiting for the next auto-work run"
-msgstr ""
+msgstr "{name}은(는) 다음 자동 작업을 기다리고 있어요"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is working"
-msgstr ""
+msgstr "{name}은(는) 일하는 중이에요"
 
 #: src/pages/ChatPage.tsx
 msgid "{toolCount, plural, one {MCP server connected — # tool available to every hatchling.} other {MCP server connected — # tools available to every hatchling.}}"
-msgstr ""
+msgstr "{toolCount, plural, other {MCP 서버에 연결됨 — 모든 해츨링이 도구 #개를 사용할 수 있어요.}}"
 
 #: src/pages/ChatPage.tsx
 msgid "{used} used."
-msgstr ""
+msgstr "{used} 사용 중."
 
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
-msgstr ""
+msgstr "지저분한 샘플 스프레드시트가 준비됐어요 — 정리를 부탁하고 변경이 하나씩 반영되는 모습을 지켜보세요."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
-msgstr ""
+msgstr "액세스 토큰(선택)"
 
 #: src/pages/ChatPage.tsx
 msgid "Add"
-msgstr ""
+msgstr "추가"
 
 #: src/pages/ChatPage.tsx
 msgid "Add a sample spreadsheet"
-msgstr ""
+msgstr "샘플 스프레드시트 추가"
 
 #: src/lib/tool-summary.ts
 msgid "Adding a ticket — {title}"
-msgstr ""
+msgstr "티켓 추가 중 — {title}"
 
 #: src/pages/ChatPage.tsx
 msgid "Allow once"
-msgstr ""
+msgstr "이번만 허용"
 
 #: src/pages/ChatPage.tsx
 msgid "Always allow this file"
-msgstr ""
+msgstr "이 파일은 항상 허용"
 
 #. placeholder {0}: swarm.grantedPaths(selectedId).join(", ")
 #: src/pages/ChatPage.tsx
 msgid "Always-allowed this session: {0}"
-msgstr ""
+msgstr "이 세션에서 항상 허용됨: {0}"
 
 #: src/pages/ChatPage.tsx
 msgid "API key"
-msgstr ""
+msgstr "API 키"
 
 #: src/lib/tool-summary.ts
 msgid "Appending text to a Google Doc"
-msgstr ""
+msgstr "Google 문서에 텍스트 추가 중"
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "Ask {0} for the outcome you need…"
-msgstr ""
+msgstr "{0}에게 원하는 결과를 말해 보세요…"
 
 #: src/pages/ChatPage.tsx
 msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
-msgstr ""
+msgstr "평소 쓰는 말로 부탁해 보세요 — 스프레드시트 수정, 문서 작성, 보고서 만들기까지 바로 여기서 해결돼요. 모든 변경은 진행되는 대로 표시되고, 되돌리기는 클릭 한 번이면 돼요. 먼저 승인하고 싶다면 사이드바에서 '신중'으로 전환하세요."
 
 #: src/pages/ChatPage.tsx
 msgid "Assistant"
-msgstr ""
+msgstr "어시스턴트"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto — match this browser"
-msgstr ""
+msgstr "자동 — 브라우저에 맞추기"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto budget used up"
-msgstr ""
+msgstr "자동 실행 한도를 다 썼어요"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work in progress…"
-msgstr ""
+msgstr "자동 작업 진행 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work on"
-msgstr ""
+msgstr "자동 작업 켜짐"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work waiting"
-msgstr ""
+msgstr "자동 작업 대기 중"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work while this tab is open"
-msgstr ""
+msgstr "이 탭이 열려 있는 동안 자동으로 작업"
 
 #: src/pages/ChatPage.tsx
 msgid "Autonomy"
-msgstr ""
+msgstr "자율성"
 
 #: src/pages/ChatPage.tsx
 msgid "Back up everything"
-msgstr ""
+msgstr "모두 백업하기"
 
 #: src/pages/ChatPage.tsx
 msgid "Blocked"
-msgstr ""
+msgstr "차단됨"
 
 #: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
-msgstr ""
+msgstr "Chrome 내장 — 무료, 키 불필요"
 
 #: src/pages/ChatPage.tsx
 msgid "bytes. Nothing is written until you decide."
-msgstr ""
+msgstr "바이트. 결정하기 전에는 아무것도 기록되지 않아요."
 
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
-msgstr ""
+msgstr "신중 — 저장 전에 물어봐요"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
-msgstr ""
+msgstr "티켓 보드 확인 중"
 
 #: src/pages/ChatPage.tsx
 msgid "Close"
-msgstr ""
+msgstr "닫기"
 
 #: src/pages/ChatPage.tsx
 msgid "Connect"
-msgstr ""
+msgstr "연결"
 
 #: src/pages/ChatPage.tsx
 msgid "Connect Google"
-msgstr ""
+msgstr "Google 연결"
 
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
-msgstr ""
+msgstr "이 세션 동안 연결되어 있어요. 문서·스프레드시트·프레젠테이션 도구가 활성화됐어요."
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
 msgid "Connected until {0}. Docs, Sheets, and Slides tools are active."
-msgstr ""
+msgstr "{0}까지 연결되어 있어요. 문서·스프레드시트·프레젠테이션 도구가 활성화됐어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Connecting…"
-msgstr ""
+msgstr "연결하는 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
-msgstr ""
+msgstr "내 컴퓨터의 MCP 서버(Streamable HTTP)가 제공하는 도구에 모든 해츨링을 연결해요. 예: 로컬 프록시 뒤의 stdio 서버. 토큰은 이 탭의 메모리에만 남아요. 원격 서버는 배포 시 허용 목록 등록이 필수이며, 실행 중 예외는 허용되지 않아요."
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
 msgid "Create {0}"
-msgstr ""
+msgstr "{0} 만들기"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
-msgstr ""
+msgstr "Google 문서 만드는 중 — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Sheet — {title}"
-msgstr ""
+msgstr "Google 스프레드시트 만드는 중 — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Slides deck — {title}"
-msgstr ""
+msgstr "Google 프레젠테이션 만드는 중 — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating an HTML artifact — {title}"
-msgstr ""
+msgstr "HTML 결과물 만드는 중 — {title}"
 
 #: src/pages/ChatPage.tsx
 msgid "Custom model ID"
-msgstr ""
+msgstr "커스텀 모델 ID"
 
 #: src/pages/ChatPage.tsx
 msgid "Custom model ID…"
-msgstr ""
+msgstr "커스텀 모델 ID…"
 
 #: src/pages/ChatPage.tsx
 msgid "Delete"
-msgstr ""
+msgstr "삭제"
 
 #: src/pages/ChatPage.tsx
 msgid "Describe the outcome you need…"
-msgstr ""
+msgstr "원하는 결과를 적어 보세요…"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
-msgstr ""
+msgstr "연결 해제"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
-msgstr ""
+msgstr "Google 연결 해제"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
-msgstr ""
+msgstr "진행 중"
 
 #: src/pages/ChatPage.tsx
 msgid "done"
-msgstr ""
+msgstr "완료"
 
 #: src/pages/ChatPage.tsx
 msgid "Done"
-msgstr ""
+msgstr "완료"
 
 #: src/pages/ChatPage.tsx
 msgid "Done — this browser will keep your data safe."
-msgstr ""
+msgstr "완료 — 이 브라우저가 데이터를 안전하게 보관해요."
 
 #: src/pages/ChatPage.tsx
 msgid "Download"
-msgstr ""
+msgstr "다운로드"
 
 #: src/pages/ChatPage.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
-msgstr ""
+msgstr "이 해츨링의 파일을 ZIP 하나로 내려받아 어디든 보관할 수 있어요 — 먼저 파일을 추가하세요."
 
 #: src/pages/ChatPage.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere."
-msgstr ""
+msgstr "이 해츨링의 파일을 ZIP 하나로 내려받아 어디든 보관할 수 있어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Each run"
-msgstr ""
+msgstr "매번 실행할 지시"
 
 #: src/pages/ChatPage.tsx
 msgid "Every"
-msgstr ""
+msgstr "간격"
 
 #: src/pages/ChatPage.tsx
 msgid "failed"
-msgstr ""
+msgstr "실패"
 
 #: src/pages/ChatPage.tsx
 msgid "Fast — just does it (undo anytime)"
-msgstr ""
+msgstr "빠름 — 바로 실행해요(언제든 되돌릴 수 있어요)"
 
 #: src/pages/ChatPage.tsx
 msgid "Google access revoked for this tab."
-msgstr ""
+msgstr "이 탭의 Google 액세스를 해제했어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Google authorization failed."
-msgstr ""
+msgstr "Google 인증에 실패했어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Google connected. The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events."
-msgstr ""
+msgstr "Google에 연결됐어요. 에이전트가 문서·스프레드시트·프레젠테이션을 만들고, 링크로 공유한 파일을 열고, 캘린더 일정을 읽거나 추가할 수 있어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Google connected. The agent can now create Docs, Sheets, and Slides and edit the ones it creates."
-msgstr ""
+msgstr "Google에 연결됐어요. 에이전트가 이제 문서·스프레드시트·프레젠테이션을 만들고, 자신이 만든 것을 편집할 수 있어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Google revocation failed."
-msgstr ""
+msgstr "Google 액세스 해제에 실패했어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Hatch a new one"
-msgstr ""
+msgstr "새 해츨링 부화하기"
 
 #: src/App.tsx
 msgid "Hatching workspace…"
-msgstr ""
+msgstr "작업 공간을 부화하는 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Hatchlings"
-msgstr ""
+msgstr "해츨링"
 
 #: src/pages/ChatPage.tsx
 msgid "Hide the team sidebar"
-msgstr ""
+msgstr "팀 사이드바 숨기기"
 
 #: src/pages/ChatPage.tsx
 msgid "Hide the tools sidebar"
-msgstr ""
+msgstr "도구 사이드바 숨기기"
 
 #: src/pages/ChatPage.tsx
 msgid "It's saved in this browser until you untick the box."
-msgstr ""
+msgstr "체크를 해제할 때까지 이 브라우저에 저장돼요."
 
 #: src/pages/ChatPage.tsx
 msgid "Keep my data safe"
-msgstr ""
+msgstr "내 데이터 지키기"
 
 #: src/pages/ChatPage.tsx
 msgid "Language"
-msgstr ""
+msgstr "언어"
 
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
-msgstr ""
+msgstr "작업 공간 파일 목록 확인 중"
 
 #: src/pages/ChatPage.tsx
 msgid "MCP connection failed."
-msgstr ""
+msgstr "MCP 연결에 실패했어요."
 
 #: src/pages/ChatPage.tsx
 msgid "MCP servers"
-msgstr ""
+msgstr "MCP 서버"
 
 #: src/pages/ChatPage.tsx
 msgid "Message the agent"
-msgstr ""
+msgstr "에이전트에게 보낼 메시지"
 
 #: src/pages/ChatPage.tsx
 msgid "Model"
-msgstr ""
+msgstr "모델"
 
 #: src/pages/ChatPage.tsx
 msgid "Name"
-msgstr ""
+msgstr "이름"
 
 #: src/pages/ChatPage.tsx
 msgid "Needs attention"
-msgstr ""
+msgstr "확인 필요"
 
 #: src/pages/ChatPage.tsx
 msgid "New chat"
-msgstr ""
+msgstr "새 채팅"
 
 #: src/pages/ChatPage.tsx
 msgid "New ticket title"
-msgstr ""
+msgstr "새 티켓 제목"
 
 #: src/pages/ChatPage.tsx
 msgid "Next auto run any moment"
-msgstr ""
+msgstr "곧 다음 자동 실행이 시작돼요"
 
 #: src/pages/ChatPage.tsx
 msgid "Next auto run in ~{minutes} min"
-msgstr ""
+msgstr "다음 자동 실행까지 약 {minutes}분"
 
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
-msgstr ""
+msgstr "아직 해츨링이 없어요."
 
 #: src/pages/ChatPage.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
-msgstr ""
+msgstr "키가 필요 없어요 — 내 컴퓨터의 Ollama와 통신해요. 이 사이트를 허용한 상태로(OLLAMA_ORIGINS 설정) Ollama를 실행한 뒤, 받아 둔 모델(ollama list)을 선택하세요."
 
 #: src/pages/ChatPage.tsx
 msgid "Not configured for this deployment. Set VITE_GOOGLE_CLIENT_ID to enable Google Docs, Sheets, and Slides tools."
-msgstr ""
+msgstr "이 배포에서는 설정되어 있지 않아요. VITE_GOOGLE_CLIENT_ID를 설정하면 Google 문서·스프레드시트·프레젠테이션 도구를 사용할 수 있어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Not pinned yet — the browser could clear saved work if this device runs low on space."
-msgstr ""
+msgstr "아직 고정되지 않았어요 — 기기 저장 공간이 부족해지면 브라우저가 저장된 작업을 지울 수 있어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Nothing here yet. Add the samples or just ask for something — files it creates appear here."
-msgstr ""
+msgstr "아직 아무것도 없어요. 샘플을 추가하거나 무엇이든 부탁해 보세요 — 만들어진 파일이 여기에 나타나요."
 
 #: src/pages/ChatPage.tsx
 msgid "off"
-msgstr ""
+msgstr "미연결"
 
 #: src/pages/ChatPage.tsx
 msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
-msgstr ""
+msgstr "온디바이스 모델 상태: {builtinAvailability}. 지원되는 데스크톱의 Chrome 138+에서는 키 없이 작업을 실행할 수 있어요."
 
 #: src/App.tsx
 msgid "Opening operator…"
-msgstr ""
+msgstr "오퍼레이터를 여는 중…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
-msgstr ""
+msgstr "WasmHatch를 여는 중…"
 
 #: src/App.tsx
 msgid "Opening your workspace…"
-msgstr ""
+msgstr "작업 공간을 여는 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
-msgstr ""
+msgstr "자동 작업 모두 일시정지"
 
 #: src/pages/ChatPage.tsx
 msgid "Per-file access only (drive.file): the agent can create Docs, Sheets, and Slides and edit the ones it creates. It cannot browse your existing Drive. The token stays in this tab."
-msgstr ""
+msgstr "파일 단위 액세스만 허용돼요(drive.file): 에이전트는 문서·스프레드시트·프레젠테이션을 만들고, 자신이 만든 것만 편집할 수 있어요. 기존 드라이브를 둘러볼 수는 없어요. 토큰은 이 탭에만 남아요."
 
 #: src/pages/ChatPage.tsx
 msgid "Pinning…"
-msgstr ""
+msgstr "고정하는 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
-msgstr ""
+msgstr "준비 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Provider"
-msgstr ""
+msgstr "프로바이더"
 
 #: src/pages/ChatPage.tsx
 msgid "Queue a piece of work…"
-msgstr ""
+msgstr "할 일을 하나 등록하세요…"
 
 #: src/lib/tool-summary.ts
 msgid "Reading {path}"
-msgstr ""
+msgstr "{path} 읽는 중"
 
 #: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
-msgstr ""
+msgstr "Google 스프레드시트 읽는 중"
 
 #: src/pages/ChatPage.tsx
 msgid "Reject"
-msgstr ""
+msgstr "거부"
 
 #: src/pages/ChatPage.tsx
 msgid "Remember on this device"
-msgstr ""
+msgstr "이 기기에 기억하기"
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "Remove {0}? Its files and conversation are deleted (the shared ticket board stays)."
-msgstr ""
+msgstr "{0}을(를) 삭제할까요? 파일과 대화가 삭제돼요(공유 티켓 보드는 남아요)."
 
 #: src/pages/ChatPage.tsx
 msgid "Remove this hatchling"
-msgstr ""
+msgstr "이 해츨링 삭제"
 
 #: src/pages/ChatPage.tsx
 msgid "Reopen"
-msgstr ""
+msgstr "다시 열기"
 
 #: src/pages/ChatPage.tsx
 msgid "Reset budget"
-msgstr ""
+msgstr "한도 초기화"
 
 #: src/pages/ChatPage.tsx
 msgid "Resting"
-msgstr ""
+msgstr "휴식 중"
 
 #: src/pages/ChatPage.tsx
 msgid "Revert"
-msgstr ""
+msgstr "되돌리기"
 
 #: src/pages/ChatPage.tsx
 msgid "reverted"
-msgstr ""
+msgstr "되돌림"
 
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
-msgstr ""
+msgstr "지금은 이 탭에서만 유지되고, 탭을 닫으면 사라져요."
 
 #: src/pages/ChatPage.tsx
 msgid "running"
-msgstr ""
+msgstr "실행 중"
 
 #: src/lib/tool-summary.ts
 msgid "Running a sandboxed script"
-msgstr ""
+msgstr "샌드박스에서 스크립트 실행 중"
 
 #: src/pages/ChatPage.tsx
 msgid "Runs only while this tab is open, in Fast mode, with its own token budget — it stops itself after repeated failures."
-msgstr ""
+msgstr "이 탭이 열려 있는 동안에만, 빠름 모드로, 전용 토큰 한도 안에서 동작해요 — 실패가 반복되면 스스로 멈춰요."
 
 #: src/pages/ChatPage.tsx
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
-msgstr ""
+msgstr "샘플 스프레드시트를 내 파일 옆에 추가했어요 — 기존 파일은 건드리지 않았어요."
 
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
-msgstr ""
+msgstr "웹 검색 중 — {query}"
 
 #: src/pages/ChatPage.tsx
 msgid "Send"
-msgstr ""
+msgstr "보내기"
 
 #: src/pages/ChatPage.tsx
 msgid "Show the team sidebar"
-msgstr ""
+msgstr "팀 사이드바 표시"
 
 #: src/pages/ChatPage.tsx
 msgid "Show the tools sidebar"
-msgstr ""
+msgstr "도구 사이드바 표시"
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
-msgstr ""
+msgstr "출처:"
 
 #: src/pages/ChatPage.tsx
 msgid "Stop"
-msgstr ""
+msgstr "중지"
 
 #: src/pages/ChatPage.tsx
 msgid "Storage"
-msgstr ""
+msgstr "저장 공간"
 
 #: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
-msgstr ""
+msgstr "에이전트가 문서·스프레드시트·프레젠테이션을 만들고, 링크로 공유한 파일을 열고, 캘린더 일정을 읽거나 추가할 수 있어요. 토큰은 이 탭에만 남고, 모든 쓰기는 적용 전에 표시돼요."
 
 #: src/pages/ChatPage.tsx
 msgid "The backup could not be created."
-msgstr ""
+msgstr "백업을 만들지 못했어요."
 
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
-msgstr ""
+msgstr "브라우저가 아직은 안 된다고 했어요. 앱을 조금 더 쓰면 대개 허용해 줘요 — 그때까지는 백업이 가장 확실한 안전장치예요."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
 msgid "The model can search the web through {0}. Searches are billed by your provider alongside tokens; untick to turn this off."
-msgstr ""
+msgstr "모델은 {0}을(를) 통해 웹을 검색할 수 있어요. 검색 요금은 토큰과 함께 프로바이더에서 청구돼요. 끄려면 체크를 해제하세요."
 
 #: src/pages/ChatPage.tsx
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
-msgstr ""
+msgstr "온디바이스 모델은 아직 이 언어를 지원하지 않아 영어로 답해요. 클라우드 프로바이더는 이 언어로 답해 줘요."
 
 #: src/pages/ChatPage.tsx
 msgid "The sample spreadsheet is already in your files."
-msgstr ""
+msgstr "샘플 스프레드시트가 이미 파일에 있어요."
 
 #: src/pages/ChatPage.tsx
 msgid "The shared work queue is empty. Add tickets here or let hatchlings queue their own follow-ups."
-msgstr ""
+msgstr "공유 작업 큐가 비어 있어요. 여기서 티켓을 추가하거나, 해츨링이 스스로 후속 작업을 등록하게 해 보세요."
 
 #: src/pages/ChatPage.tsx
 msgid "The ticket could not be created."
-msgstr ""
+msgstr "티켓을 만들지 못했어요."
 
 #: src/pages/ChatPage.tsx
 msgid "This browser can't promise to keep data around, so a backup is the safest bet."
-msgstr ""
+msgstr "이 브라우저는 데이터 보존을 보장할 수 없으니, 백업이 가장 안전해요."
 
 #: src/pages/ChatPage.tsx
 msgid "Tickets"
-msgstr ""
+msgstr "티켓"
 
 #: src/pages/ChatPage.tsx
 msgid "To do"
-msgstr ""
+msgstr "할 일"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
 msgid "Update {0}"
-msgstr ""
+msgstr "{0} 업데이트"
 
 #: src/lib/tool-summary.ts
 msgid "Updating a Google Sheet"
-msgstr ""
+msgstr "Google 스프레드시트 업데이트 중"
 
 #: src/lib/tool-summary.ts
 msgid "Updating ticket {id}"
-msgstr ""
+msgstr "티켓 {id} 업데이트 중"
 
 #: src/pages/ChatPage.tsx
 msgid "URL (this machine only)"
-msgstr ""
+msgstr "URL(이 컴퓨터 전용)"
 
 #: src/lib/tool-summary.ts
 msgid "Using {server} — {tool}"
-msgstr ""
+msgstr "{server} 사용 중 — {tool}"
 
 #: src/pages/ChatPage.tsx
 msgid "view diff"
-msgstr ""
+msgstr "변경 내용 보기"
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"
-msgstr ""
+msgstr "웹 검색"
 
 #: src/pages/ChatPage.tsx
 msgid "What do you want to get done?"
-msgstr ""
+msgstr "무엇을 해결해 드릴까요?"
 
 #: src/pages/ChatPage.tsx
 msgid "Working…"
-msgstr ""
+msgstr "작업 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Write approval required"
-msgstr ""
+msgstr "쓰기 승인이 필요해요"
 
 #: src/lib/tool-summary.ts
 msgid "Writing {path}"
-msgstr ""
+msgstr "{path} 쓰는 중"
 
 #: src/pages/ChatPage.tsx
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."
-msgstr ""
+msgstr "이 탭에서 바로 쓰는 나의 AI 어시스턴트 — 빠르고, 눈에 보이고, 되돌릴 수 있어요."
 
 #: src/pages/ChatPage.tsx
 msgid "Your data is pinned — this browser won't clear it on its own."
-msgstr ""
+msgstr "데이터가 고정됐어요 — 브라우저가 임의로 지우지 않아요."
 
 #: src/pages/ChatPage.tsx
 msgid "Your files"
-msgstr ""
+msgstr "내 파일"
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
 msgid "Your key goes only to {0} — nowhere else."
-msgstr ""
+msgstr "키는 {0}에만 전송돼요 — 다른 곳으로는 가지 않아요."

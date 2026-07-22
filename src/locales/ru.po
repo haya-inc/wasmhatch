@@ -16,632 +16,632 @@ msgstr ""
 #. placeholder {0}: status.toolCount
 #: src/pages/ChatPage.tsx
 msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
-msgstr ""
+msgstr "{0, plural, one {подключено · # инструмент} few {подключено · # инструмента} many {подключено · # инструментов} other {подключено · # инструментов}}"
 
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
-msgstr ""
+msgstr "{0} мин"
 
 #. placeholder {0}: selected.runsLeft
 #. placeholder {1}: selectedSchedule.maxAutoRuns
 #: src/pages/ChatPage.tsx
 msgid "{0} of {1} auto runs left."
-msgstr ""
+msgstr "Осталось автозапусков: {0} из {1}."
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
-msgstr ""
+msgstr "Рабочее пространство {0} — у каждого птенца свои файлы."
 
 #: src/pages/ChatPage.tsx
 msgid "{minutes} min"
-msgstr ""
+msgstr "{minutes} мин"
 
 #: src/lib/pixel-office.ts
 msgid "{name} hit an error"
-msgstr ""
+msgstr "У {name} возникла ошибка"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is resting"
-msgstr ""
+msgstr "{name} отдыхает"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is waiting for the next auto-work run"
-msgstr ""
+msgstr "{name} ждёт следующего автозапуска"
 
 #: src/lib/pixel-office.ts
 msgid "{name} is working"
-msgstr ""
+msgstr "{name} работает"
 
 #: src/pages/ChatPage.tsx
 msgid "{toolCount, plural, one {MCP server connected — # tool available to every hatchling.} other {MCP server connected — # tools available to every hatchling.}}"
-msgstr ""
+msgstr "{toolCount, plural, one {Сервер MCP подключён — # инструмент доступен каждому птенцу.} few {Сервер MCP подключён — # инструмента доступны каждому птенцу.} many {Сервер MCP подключён — # инструментов доступны каждому птенцу.} other {Сервер MCP подключён — # инструментов доступны каждому птенцу.}}"
 
 #: src/pages/ChatPage.tsx
 msgid "{used} used."
-msgstr ""
+msgstr "Использовано: {used}."
 
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
-msgstr ""
+msgstr "Пример беспорядочной таблицы готов — попросите навести порядок и наблюдайте за каждым изменением."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
-msgstr ""
+msgstr "Токен доступа (необязательно)"
 
 #: src/pages/ChatPage.tsx
 msgid "Add"
-msgstr ""
+msgstr "Добавить"
 
 #: src/pages/ChatPage.tsx
 msgid "Add a sample spreadsheet"
-msgstr ""
+msgstr "Добавить пример таблицы"
 
 #: src/lib/tool-summary.ts
 msgid "Adding a ticket — {title}"
-msgstr ""
+msgstr "Добавление тикета — {title}"
 
 #: src/pages/ChatPage.tsx
 msgid "Allow once"
-msgstr ""
+msgstr "Разрешить один раз"
 
 #: src/pages/ChatPage.tsx
 msgid "Always allow this file"
-msgstr ""
+msgstr "Всегда разрешать этот файл"
 
 #. placeholder {0}: swarm.grantedPaths(selectedId).join(", ")
 #: src/pages/ChatPage.tsx
 msgid "Always-allowed this session: {0}"
-msgstr ""
+msgstr "Всегда разрешено в этом сеансе: {0}"
 
 #: src/pages/ChatPage.tsx
 msgid "API key"
-msgstr ""
+msgstr "Ключ API"
 
 #: src/lib/tool-summary.ts
 msgid "Appending text to a Google Doc"
-msgstr ""
+msgstr "Добавление текста в Google Документ"
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "Ask {0} for the outcome you need…"
-msgstr ""
+msgstr "Попросите {0} о нужном результате…"
 
 #: src/pages/ChatPage.tsx
 msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
-msgstr ""
+msgstr "Просто попросите своими словами — он исправляет таблицы, пишет документы и собирает отчёты прямо здесь. Каждое изменение видно сразу, а отмена — в один клик. Хотите сначала подтверждать? Включите режим «Осторожный» в боковой панели."
 
 #: src/pages/ChatPage.tsx
 msgid "Assistant"
-msgstr ""
+msgstr "Ассистент"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto — match this browser"
-msgstr ""
+msgstr "Авто — как в браузере"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto budget used up"
-msgstr ""
+msgstr "Лимит автозапусков исчерпан"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work in progress…"
-msgstr ""
+msgstr "Идёт автоматическая работа…"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work on"
-msgstr ""
+msgstr "Авторабота включена"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work waiting"
-msgstr ""
+msgstr "Авторабота в ожидании"
 
 #: src/pages/ChatPage.tsx
 msgid "Auto work while this tab is open"
-msgstr ""
+msgstr "Работать автоматически, пока открыта эта вкладка"
 
 #: src/pages/ChatPage.tsx
 msgid "Autonomy"
-msgstr ""
+msgstr "Автономность"
 
 #: src/pages/ChatPage.tsx
 msgid "Back up everything"
-msgstr ""
+msgstr "Сделать резервную копию всего"
 
 #: src/pages/ChatPage.tsx
 msgid "Blocked"
-msgstr ""
+msgstr "Заблокировано"
 
 #: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
-msgstr ""
+msgstr "Встроено в Chrome — бесплатно, без ключа"
 
 #: src/pages/ChatPage.tsx
 msgid "bytes. Nothing is written until you decide."
-msgstr ""
+msgstr "байт. Ничего не будет записано, пока вы не решите."
 
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
-msgstr ""
+msgstr "Осторожный — спрашивает перед сохранением"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
-msgstr ""
+msgstr "Проверка доски тикетов"
 
 #: src/pages/ChatPage.tsx
 msgid "Close"
-msgstr ""
+msgstr "Закрыть"
 
 #: src/pages/ChatPage.tsx
 msgid "Connect"
-msgstr ""
+msgstr "Подключить"
 
 #: src/pages/ChatPage.tsx
 msgid "Connect Google"
-msgstr ""
+msgstr "Подключить Google"
 
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
-msgstr ""
+msgstr "Подключено на этот сеанс. Инструменты Google Документов, Таблиц и Презентаций активны."
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
 msgid "Connected until {0}. Docs, Sheets, and Slides tools are active."
-msgstr ""
+msgstr "Подключено до {0}. Инструменты Google Документов, Таблиц и Презентаций активны."
 
 #: src/pages/ChatPage.tsx
 msgid "Connecting…"
-msgstr ""
+msgstr "Подключение…"
 
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
-msgstr ""
+msgstr "Подключает всех птенцов к инструментам MCP-сервера на вашем компьютере (Streamable HTTP), например stdio-сервера за локальным прокси. Токены остаются в памяти этой вкладки. Удалённые серверы должны быть внесены в список разрешённых при развёртывании — исключений во время работы не бывает."
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
 msgid "Create {0}"
-msgstr ""
+msgstr "Создать {0}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
-msgstr ""
+msgstr "Создание Google Документа — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Sheet — {title}"
-msgstr ""
+msgstr "Создание Google Таблицы — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Slides deck — {title}"
-msgstr ""
+msgstr "Создание Google Презентации — {title}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating an HTML artifact — {title}"
-msgstr ""
+msgstr "Создание HTML-страницы с результатом — {title}"
 
 #: src/pages/ChatPage.tsx
 msgid "Custom model ID"
-msgstr ""
+msgstr "Свой ID модели"
 
 #: src/pages/ChatPage.tsx
 msgid "Custom model ID…"
-msgstr ""
+msgstr "Свой ID модели…"
 
 #: src/pages/ChatPage.tsx
 msgid "Delete"
-msgstr ""
+msgstr "Удалить"
 
 #: src/pages/ChatPage.tsx
 msgid "Describe the outcome you need…"
-msgstr ""
+msgstr "Опишите нужный результат…"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
-msgstr ""
+msgstr "Отключить"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
-msgstr ""
+msgstr "Отключить Google"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
-msgstr ""
+msgstr "В работе"
 
 #: src/pages/ChatPage.tsx
 msgid "done"
-msgstr ""
+msgstr "готово"
 
 #: src/pages/ChatPage.tsx
 msgid "Done"
-msgstr ""
+msgstr "Готово"
 
 #: src/pages/ChatPage.tsx
 msgid "Done — this browser will keep your data safe."
-msgstr ""
+msgstr "Готово — этот браузер сохранит ваши данные."
 
 #: src/pages/ChatPage.tsx
 msgid "Download"
-msgstr ""
+msgstr "Скачать"
 
 #: src/pages/ChatPage.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
-msgstr ""
+msgstr "Скачивает файлы этого птенца одним ZIP-архивом, который можно хранить где угодно — сначала добавьте файл."
 
 #: src/pages/ChatPage.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere."
-msgstr ""
+msgstr "Скачивает файлы этого птенца одним ZIP-архивом, который можно хранить где угодно."
 
 #: src/pages/ChatPage.tsx
 msgid "Each run"
-msgstr ""
+msgstr "Каждый запуск"
 
 #: src/pages/ChatPage.tsx
 msgid "Every"
-msgstr ""
+msgstr "Каждые"
 
 #: src/pages/ChatPage.tsx
 msgid "failed"
-msgstr ""
+msgstr "ошибка"
 
 #: src/pages/ChatPage.tsx
 msgid "Fast — just does it (undo anytime)"
-msgstr ""
+msgstr "Быстрый — просто делает (отмена в любой момент)"
 
 #: src/pages/ChatPage.tsx
 msgid "Google access revoked for this tab."
-msgstr ""
+msgstr "Доступ Google для этой вкладки отозван."
 
 #: src/pages/ChatPage.tsx
 msgid "Google authorization failed."
-msgstr ""
+msgstr "Не удалось авторизоваться в Google."
 
 #: src/pages/ChatPage.tsx
 msgid "Google connected. The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events."
-msgstr ""
+msgstr "Google подключён. Агент может создавать Документы, Таблицы и Презентации, открывать файлы, которыми вы поделились по ссылке, а также читать и добавлять события Календаря."
 
 #: src/pages/ChatPage.tsx
 msgid "Google connected. The agent can now create Docs, Sheets, and Slides and edit the ones it creates."
-msgstr ""
+msgstr "Google подключён. Агент теперь может создавать Документы, Таблицы и Презентации и редактировать те, что создал сам."
 
 #: src/pages/ChatPage.tsx
 msgid "Google revocation failed."
-msgstr ""
+msgstr "Не удалось отозвать доступ Google."
 
 #: src/pages/ChatPage.tsx
 msgid "Hatch a new one"
-msgstr ""
+msgstr "Вылупить нового"
 
 #: src/App.tsx
 msgid "Hatching workspace…"
-msgstr ""
+msgstr "Рабочее пространство вылупляется…"
 
 #: src/pages/ChatPage.tsx
 msgid "Hatchlings"
-msgstr ""
+msgstr "Птенцы"
 
 #: src/pages/ChatPage.tsx
 msgid "Hide the team sidebar"
-msgstr ""
+msgstr "Скрыть панель команды"
 
 #: src/pages/ChatPage.tsx
 msgid "Hide the tools sidebar"
-msgstr ""
+msgstr "Скрыть панель инструментов"
 
 #: src/pages/ChatPage.tsx
 msgid "It's saved in this browser until you untick the box."
-msgstr ""
+msgstr "Хранится в этом браузере, пока вы не снимете галочку."
 
 #: src/pages/ChatPage.tsx
 msgid "Keep my data safe"
-msgstr ""
+msgstr "Защитить мои данные"
 
 #: src/pages/ChatPage.tsx
 msgid "Language"
-msgstr ""
+msgstr "Язык"
 
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
-msgstr ""
+msgstr "Просмотр файлов рабочего пространства"
 
 #: src/pages/ChatPage.tsx
 msgid "MCP connection failed."
-msgstr ""
+msgstr "Не удалось подключиться к MCP."
 
 #: src/pages/ChatPage.tsx
 msgid "MCP servers"
-msgstr ""
+msgstr "Серверы MCP"
 
 #: src/pages/ChatPage.tsx
 msgid "Message the agent"
-msgstr ""
+msgstr "Сообщение агенту"
 
 #: src/pages/ChatPage.tsx
 msgid "Model"
-msgstr ""
+msgstr "Модель"
 
 #: src/pages/ChatPage.tsx
 msgid "Name"
-msgstr ""
+msgstr "Имя"
 
 #: src/pages/ChatPage.tsx
 msgid "Needs attention"
-msgstr ""
+msgstr "Требует внимания"
 
 #: src/pages/ChatPage.tsx
 msgid "New chat"
-msgstr ""
+msgstr "Новый чат"
 
 #: src/pages/ChatPage.tsx
 msgid "New ticket title"
-msgstr ""
+msgstr "Название нового тикета"
 
 #: src/pages/ChatPage.tsx
 msgid "Next auto run any moment"
-msgstr ""
+msgstr "Следующий автозапуск с минуты на минуту"
 
 #: src/pages/ChatPage.tsx
 msgid "Next auto run in ~{minutes} min"
-msgstr ""
+msgstr "Следующий автозапуск через ~{minutes} мин"
 
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
-msgstr ""
+msgstr "Птенцов пока нет."
 
 #: src/pages/ChatPage.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
-msgstr ""
+msgstr "Ключ не нужен — приложение общается с Ollama на вашем компьютере. Запустите Ollama, разрешив этот сайт (задайте OLLAMA_ORIGINS), затем выберите загруженную модель (ollama list)."
 
 #: src/pages/ChatPage.tsx
 msgid "Not configured for this deployment. Set VITE_GOOGLE_CLIENT_ID to enable Google Docs, Sheets, and Slides tools."
-msgstr ""
+msgstr "Не настроено для этого развёртывания. Задайте VITE_GOOGLE_CLIENT_ID, чтобы включить инструменты Google Документов, Таблиц и Презентаций."
 
 #: src/pages/ChatPage.tsx
 msgid "Not pinned yet — the browser could clear saved work if this device runs low on space."
-msgstr ""
+msgstr "Данные ещё не закреплены — если на устройстве закончится место, браузер может удалить сохранённую работу."
 
 #: src/pages/ChatPage.tsx
 msgid "Nothing here yet. Add the samples or just ask for something — files it creates appear here."
-msgstr ""
+msgstr "Здесь пока пусто. Добавьте примеры или просто о чём-нибудь попросите — созданные файлы появятся здесь."
 
 #: src/pages/ChatPage.tsx
 msgid "off"
-msgstr ""
+msgstr "не подключено"
 
 #: src/pages/ChatPage.tsx
 msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
-msgstr ""
+msgstr "Состояние встроенной модели: {builtinAvailability}. Chrome 138+ на поддерживаемом компьютере выполняет задачи без ключа."
 
 #: src/App.tsx
 msgid "Opening operator…"
-msgstr ""
+msgstr "Открываем оператора…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
-msgstr ""
+msgstr "Открываем WasmHatch…"
 
 #: src/App.tsx
 msgid "Opening your workspace…"
-msgstr ""
+msgstr "Открываем ваше рабочее пространство…"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
-msgstr ""
+msgstr "Приостановить всю автоработу"
 
 #: src/pages/ChatPage.tsx
 msgid "Per-file access only (drive.file): the agent can create Docs, Sheets, and Slides and edit the ones it creates. It cannot browse your existing Drive. The token stays in this tab."
-msgstr ""
+msgstr "Доступ только к отдельным файлам (drive.file): агент может создавать Документы, Таблицы и Презентации и редактировать те, что создал сам. Просматривать ваш существующий Google Диск он не может. Токен остаётся в этой вкладке."
 
 #: src/pages/ChatPage.tsx
 msgid "Pinning…"
-msgstr ""
+msgstr "Закрепление…"
 
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
-msgstr ""
+msgstr "Подготовка…"
 
 #: src/pages/ChatPage.tsx
 msgid "Provider"
-msgstr ""
+msgstr "Провайдер"
 
 #: src/pages/ChatPage.tsx
 msgid "Queue a piece of work…"
-msgstr ""
+msgstr "Добавить задачу в очередь…"
 
 #: src/lib/tool-summary.ts
 msgid "Reading {path}"
-msgstr ""
+msgstr "Чтение {path}"
 
 #: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
-msgstr ""
+msgstr "Чтение Google Таблицы"
 
 #: src/pages/ChatPage.tsx
 msgid "Reject"
-msgstr ""
+msgstr "Отклонить"
 
 #: src/pages/ChatPage.tsx
 msgid "Remember on this device"
-msgstr ""
+msgstr "Запомнить на этом устройстве"
 
 #. placeholder {0}: selected.thread.name
 #: src/pages/ChatPage.tsx
 msgid "Remove {0}? Its files and conversation are deleted (the shared ticket board stays)."
-msgstr ""
+msgstr "Удалить {0}? Файлы и переписка будут удалены (общая доска тикетов останется)."
 
 #: src/pages/ChatPage.tsx
 msgid "Remove this hatchling"
-msgstr ""
+msgstr "Удалить этого птенца"
 
 #: src/pages/ChatPage.tsx
 msgid "Reopen"
-msgstr ""
+msgstr "Открыть заново"
 
 #: src/pages/ChatPage.tsx
 msgid "Reset budget"
-msgstr ""
+msgstr "Сбросить лимит"
 
 #: src/pages/ChatPage.tsx
 msgid "Resting"
-msgstr ""
+msgstr "Отдыхает"
 
 #: src/pages/ChatPage.tsx
 msgid "Revert"
-msgstr ""
+msgstr "Вернуть как было"
 
 #: src/pages/ChatPage.tsx
 msgid "reverted"
-msgstr ""
+msgstr "отменено"
 
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
-msgstr ""
+msgstr "Сейчас он хранится только для этой вкладки и исчезнет, когда вы её закроете."
 
 #: src/pages/ChatPage.tsx
 msgid "running"
-msgstr ""
+msgstr "выполняется"
 
 #: src/lib/tool-summary.ts
 msgid "Running a sandboxed script"
-msgstr ""
+msgstr "Выполнение скрипта в песочнице"
 
 #: src/pages/ChatPage.tsx
 msgid "Runs only while this tab is open, in Fast mode, with its own token budget — it stops itself after repeated failures."
-msgstr ""
+msgstr "Работает только пока открыта эта вкладка, в быстром режиме и в пределах собственного лимита токенов — после повторных сбоев останавливается сам."
 
 #: src/pages/ChatPage.tsx
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
-msgstr ""
+msgstr "Пример таблицы добавлен рядом с вашими файлами — ваши данные не тронуты."
 
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
-msgstr ""
+msgstr "Поиск в интернете — {query}"
 
 #: src/pages/ChatPage.tsx
 msgid "Send"
-msgstr ""
+msgstr "Отправить"
 
 #: src/pages/ChatPage.tsx
 msgid "Show the team sidebar"
-msgstr ""
+msgstr "Показать панель команды"
 
 #: src/pages/ChatPage.tsx
 msgid "Show the tools sidebar"
-msgstr ""
+msgstr "Показать панель инструментов"
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
-msgstr ""
+msgstr "Источники:"
 
 #: src/pages/ChatPage.tsx
 msgid "Stop"
-msgstr ""
+msgstr "Остановить"
 
 #: src/pages/ChatPage.tsx
 msgid "Storage"
-msgstr ""
+msgstr "Хранилище"
 
 #: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
-msgstr ""
+msgstr "Агент может создавать Документы, Таблицы и Презентации, открывать файлы, которыми вы поделились по ссылке, а также читать и добавлять события Календаря. Токен остаётся в этой вкладке; каждая запись показывается перед применением."
 
 #: src/pages/ChatPage.tsx
 msgid "The backup could not be created."
-msgstr ""
+msgstr "Не удалось создать резервную копию."
 
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
-msgstr ""
+msgstr "Браузер ответил «пока нет». Обычно он соглашается, когда вы немного больше поработаете с приложением — а до тех пор надёжнее всего резервная копия."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
 msgid "The model can search the web through {0}. Searches are billed by your provider alongside tokens; untick to turn this off."
-msgstr ""
+msgstr "Модель может искать в интернете через {0}. Поисковые запросы оплачиваются вашему провайдеру вместе с токенами; снимите галочку, чтобы отключить."
 
 #: src/pages/ChatPage.tsx
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
-msgstr ""
+msgstr "Встроенная модель пока не говорит на этом языке и будет отвечать по-английски; облачные провайдеры отвечают на вашем языке."
 
 #: src/pages/ChatPage.tsx
 msgid "The sample spreadsheet is already in your files."
-msgstr ""
+msgstr "Пример таблицы уже есть в ваших файлах."
 
 #: src/pages/ChatPage.tsx
 msgid "The shared work queue is empty. Add tickets here or let hatchlings queue their own follow-ups."
-msgstr ""
+msgstr "Общая очередь работы пуста. Добавляйте тикеты здесь или позвольте птенцам самим ставить в очередь свои задачи."
 
 #: src/pages/ChatPage.tsx
 msgid "The ticket could not be created."
-msgstr ""
+msgstr "Не удалось создать тикет."
 
 #: src/pages/ChatPage.tsx
 msgid "This browser can't promise to keep data around, so a backup is the safest bet."
-msgstr ""
+msgstr "Этот браузер не гарантирует сохранность данных, поэтому надёжнее всего резервная копия."
 
 #: src/pages/ChatPage.tsx
 msgid "Tickets"
-msgstr ""
+msgstr "Тикеты"
 
 #: src/pages/ChatPage.tsx
 msgid "To do"
-msgstr ""
+msgstr "К выполнению"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
 msgid "Update {0}"
-msgstr ""
+msgstr "Обновить {0}"
 
 #: src/lib/tool-summary.ts
 msgid "Updating a Google Sheet"
-msgstr ""
+msgstr "Обновление Google Таблицы"
 
 #: src/lib/tool-summary.ts
 msgid "Updating ticket {id}"
-msgstr ""
+msgstr "Обновление тикета {id}"
 
 #: src/pages/ChatPage.tsx
 msgid "URL (this machine only)"
-msgstr ""
+msgstr "URL (только этот компьютер)"
 
 #: src/lib/tool-summary.ts
 msgid "Using {server} — {tool}"
-msgstr ""
+msgstr "Использование {server} — {tool}"
 
 #: src/pages/ChatPage.tsx
 msgid "view diff"
-msgstr ""
+msgstr "показать изменения"
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"
-msgstr ""
+msgstr "Поиск в интернете"
 
 #: src/pages/ChatPage.tsx
 msgid "What do you want to get done?"
-msgstr ""
+msgstr "Что нужно сделать?"
 
 #: src/pages/ChatPage.tsx
 msgid "Working…"
-msgstr ""
+msgstr "Работаю…"
 
 #: src/pages/ChatPage.tsx
 msgid "Write approval required"
-msgstr ""
+msgstr "Нужно разрешение на запись"
 
 #: src/lib/tool-summary.ts
 msgid "Writing {path}"
-msgstr ""
+msgstr "Запись {path}"
 
 #: src/pages/ChatPage.tsx
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."
-msgstr ""
+msgstr "Ваш ИИ-ассистент прямо в этой вкладке — быстрый, прозрачный, с отменой в один клик."
 
 #: src/pages/ChatPage.tsx
 msgid "Your data is pinned — this browser won't clear it on its own."
-msgstr ""
+msgstr "Ваши данные закреплены — браузер не удалит их сам по себе."
 
 #: src/pages/ChatPage.tsx
 msgid "Your files"
-msgstr ""
+msgstr "Ваши файлы"
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
 msgid "Your key goes only to {0} — nowhere else."
-msgstr ""
+msgstr "Ваш ключ отправляется только на {0} — и больше никуда."
