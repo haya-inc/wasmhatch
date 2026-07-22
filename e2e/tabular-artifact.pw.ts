@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { exportTabularArtifact } from "../src/lib/tabular-artifact";
+import { forceCloudPlanner } from "./force-cloud-planner";
 
 test("imports a CSV as a persisted value snapshot, transforms it, and exports a safe artifact", async ({ page }) => {
   await page.goto("/?view=operator");
@@ -205,6 +206,7 @@ test("lets the user choose a different visible XLSX worksheet", async ({ page })
 });
 
 test("lets AI inspect one exact workspace snapshot through checkpointed bounded tools", async ({ page }) => {
+  await forceCloudPlanner(page);
   const csv = Buffer.from("Owner,Region\r\nAya,west\r\nKen,east\r\n", "utf8");
   const sourceHash = createHash("sha256").update(csv).digest("hex");
   const workspacePath = `inputs/agent-pipeline--CSV--${sourceHash.slice(0, 12)}.json`;
@@ -294,6 +296,7 @@ test("lets AI inspect one exact workspace snapshot through checkpointed bounded 
 });
 
 test("previews a workspace artifact locally and sends it only through an explicit identity-bound AI attachment", async ({ page }) => {
+  await forceCloudPlanner(page);
   const requestBodies: Record<string, unknown>[] = [];
   let modelRequest = 0;
   const briefPath = "work/weekly-brief.md";
@@ -374,6 +377,7 @@ test("previews a workspace artifact locally and sends it only through an explici
 });
 
 test("plans, sandboxes, reviews, and commits one typed Markdown artifact workflow", async ({ page }) => {
+  await forceCloudPlanner(page);
   const inputPath = "work/weekly-brief.md";
   const inputContent = "# Weekly brief\n\nWEST needs manual review.\n";
   const outputPath = "outputs/weekly-review.md";

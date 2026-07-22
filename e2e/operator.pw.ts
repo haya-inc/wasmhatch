@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { forceCloudPlanner } from "./force-cloud-planner";
 
 const GOOGLE_CLIENT_ID = "1234567890-wasmhatch.apps.googleusercontent.com";
 
@@ -29,6 +30,7 @@ test("presents a friendly consumer landing without technical jargon", async ({ p
 });
 
 test("keeps the general work surface calm until context or review is needed", async ({ page }) => {
+  await forceCloudPlanner(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?view=work");
 
@@ -323,6 +325,7 @@ test("runs a spreadsheet transform in Wasm and requires write approval", async (
 });
 
 test("completes the 60-second local demo without an account or API key", async ({ page }) => {
+  await forceCloudPlanner(page);
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -427,6 +430,7 @@ test("exports a source-free pilot report after the user safely rejects a proposa
 });
 
 test("keeps the guided local demo usable at 390 pixels", async ({ page }) => {
+  await forceCloudPlanner(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?view=operator&demo=local");
 
@@ -483,6 +487,7 @@ test("downloads the source-free pilot report when the clipboard API hangs", asyn
 });
 
 test("exports a credential-field-free structured run journal with pilot timing evidence", async ({ page }) => {
+  await forceCloudPlanner(page);
   await page.goto("/?view=operator");
   await page.getByLabel("OpenAI session API key").fill("sk-e2e-secret-never-record");
   await page.getByRole("button", { name: "Run in Wasm sandbox" }).click();
@@ -534,6 +539,7 @@ test("rejects structural script output before creating a write proposal", async 
 });
 
 test("stages an AI plan before the Wasm transform and write review", async ({ page }) => {
+  await forceCloudPlanner(page);
   let requestBody: Record<string, unknown> | undefined;
   let authorization = "";
   await page.route("https://api.openai.com/v1/responses", async (route) => {
@@ -590,6 +596,7 @@ test("keeps the GIS token out of the UI and revokes it on disconnect", async ({ 
 });
 
 test("materializes an exact Google Sheets grant and commits a reviewed artifact", async ({ page }) => {
+  await forceCloudPlanner(page);
   const spreadsheetId = "sheet-ai-provider-resource";
   const range = "Ops!A1:B3";
   const sourceRows = [["Owner", "Amount"], ["Aya", 1200], ["Ken", 900]];
