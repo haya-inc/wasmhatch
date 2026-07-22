@@ -63,8 +63,9 @@ vocabulary on screen.
       form-encoded body-token Web API client with guided internal-app
       manifest install; startup CORS probe with plain-language diagnostics;
       Cloudflare Worker relay template bundled as the documented fallback.
-- [ ] README "What it cannot do" section: full-Drive listing/search,
-      Calendar until verification clears, arbitrary web browsing, background
+- [x] README "What it cannot do" section: full-Drive listing/search,
+      Calendar until verification clears, arbitrary web browsing (provider
+      web search with cited sources is the documented exception), background
       runs, non-CORS MCP servers, admin-managed Workspace accounts.
 - [ ] The demo GIF: one uncut 30-second take — open URL, connect Google in
       3 clicks, real AI edits a real Sheet with the diff visible in the

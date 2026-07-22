@@ -29,6 +29,8 @@ approve things first? Switch on Careful mode.
   the interval you set, with a visible run budget and one-click pause.
 - Reach extra tools through an MCP server on your own machine (Streamable
   HTTP) — every hatchling shares them.
+- Search the web through your AI provider's own search tool (Claude and
+  OpenRouter keys), with sources listed under the answer.
 - Run with your own AI key (Claude, OpenAI, or OpenRouter), with Ollama on
   your own machine, or with Chrome's built-in on-device model — free, no
   key at all.
@@ -43,7 +45,9 @@ Honesty beats surprises. WasmHatch currently does **not**:
   created or that you hand it — broader access unlocks after Google's
   verification of our app completes);
 - manage your Calendar (same verification gate);
-- browse the open web;
+- open arbitrary web pages itself — web search runs inside your AI
+  provider (Claude or OpenRouter) and cites its sources; with other
+  providers the agent stays offline;
 - run anything with the tab closed — auto work is honest polling *while the
   tab is open*, not a background service;
 - reach remote MCP servers unless a deployment bakes them into its audited
