@@ -156,6 +156,42 @@ export async function publishToRegistry(
   return { publisherId: body.publisherId, agentId: body.agentId, latestSha256: body.latestSha256 };
 }
 
+/**
+ * Removes an agent from the registry's public surfaces (listing, pages,
+ * downloads). Only the publishing identity's token can do it; package bytes
+ * stay in the registry's audit storage.
+ */
+export async function unpublishFromRegistry(
+  baseUrl: string,
+  token: string,
+  publisherId: string,
+  agentId: string,
+  options: { fetchImpl?: typeof fetch; signal?: AbortSignal } = {}
+): Promise<void> {
+  if (!token.trim()) throw new Error("A registry publish token is required.");
+  const fetchImpl = options.fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init));
+  let response: Response;
+  try {
+    response = await fetchImpl(`${requireRegistryUrl(baseUrl)}/v1/agents/${publisherId}/${agentId}`, {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+      signal: options.signal
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new Error("The registry could not be reached. Check the network and the deployment's registry configuration.");
+  }
+  if (response.ok) return;
+  let message = `HTTP ${response.status}`;
+  try {
+    const body = await response.json() as { message?: unknown };
+    if (typeof body.message === "string" && body.message) message = body.message;
+  } catch {
+    /* keep the HTTP status */
+  }
+  throw new Error(`The registry declined the unpublish: ${message}`);
+}
+
 /** The immutable package URL for a published revision. */
 export function registryPackageUrl(baseUrl: string, result: RegistryPublishResult): string {
   const root = requireRegistryUrl(baseUrl);

@@ -88,10 +88,14 @@ The optional hosted registry is a deployment choice: set
 `VITE_REGISTRY_URL` (https, or localhost for development) and its origin
 joins the audited CSP `connect-src`. The sidebar then offers load-by-URL
 and token-gated publish, and `?agent=<package-url>` becomes a shareable
-try link that fetches, previews, and waits for consent. Every route the
-client uses is documented in the registry repository's `docs/api.md`;
-package bytes are immutable under their SHA-256. Without a configured
-registry, `.agent` files still travel by hand — download, send, import.
+try link that fetches, previews, and waits for consent. The registry's
+server-rendered public pages link back here through exactly that route
+(their "Try in WasmHatch" button), and `unpublishFromRegistry` removes
+an agent from the registry's public surfaces with the same token that
+published it. Every route the client uses is documented in the registry
+repository's `docs/api.md`; package bytes are immutable under their
+SHA-256. Without a configured registry, `.agent` files still travel by
+hand — download, send, import.
 
 ## What stays outside the package
 

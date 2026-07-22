@@ -167,10 +167,14 @@ scheduled-run features. Design record: `docs/hatchlings-design.md`.
 - [x] Connect an optional official Registry adapter for publish, unpublish,
       and immutable revision lookup; keep local file and arbitrary HTTPS
       sources first-class. Client side shipped behind `VITE_REGISTRY_URL`
-      (publish + load-by-URL + `?agent=` try links); the service lives in
-      the private `wasmhatch-registry` repo (publish/list/metadata/
-      immutable download, in-memory M0). Unpublish flows are M1 service
-      work.
+      (publish + load-by-URL + `?agent=` try links + an
+      `unpublishFromRegistry` client); the service lives in the private
+      `wasmhatch-registry` repo — M0 hardened (durable filesystem store,
+      multi-publisher tokens, OSS-contract CI pinning) and the M1 page
+      slice shipped (server-rendered public pages whose "Try in
+      WasmHatch" button lands on the `?agent=` route, plus owner-only
+      unpublish). Full loop verified live 2026-07-23: browser publish →
+      listing → try link → consented hatch.
 - [ ] Add a one-click public trial route using the visitor's existing BYOK
       configuration, with an example-output fallback for visitors without a
       provider key. Shipped so far: `?agent=<registry package URL>`

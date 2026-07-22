@@ -11,7 +11,8 @@ import {
   isRegistryPackageUrl,
   portableAgentId,
   publishToRegistry,
-  registryPackageUrl
+  registryPackageUrl,
+  unpublishFromRegistry
 } from "./portable-hatchling";
 import { mainHatchling, type HatchlingThread } from "./agent-threads";
 
@@ -114,6 +115,19 @@ describe("registry client", () => {
 
     await expect(publishToRegistry("https://registry.example", "secret-token", pkg, { fetchImpl: fetchImpl as typeof fetch }))
       .rejects.toThrow("Publisher authentication is required.");
+  });
+
+  it("unpublishes with the bearer token and surfaces declines", async () => {
+    const ok = vi.fn(async () => Response.json({ ok: true }, { status: 200 }));
+    await unpublishFromRegistry("https://registry.example/", "publish-token", "haya", "pip", { fetchImpl: ok as typeof fetch });
+    const [url, init] = ok.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://registry.example/v1/agents/haya/pip");
+    expect(init.method).toBe("DELETE");
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer publish-token");
+
+    const denied = vi.fn(async () => Response.json({ error: "forbidden", message: "Publishers may only unpublish their own agents." }, { status: 403 }));
+    await expect(unpublishFromRegistry("https://registry.example", "publish-token", "haya", "pip", { fetchImpl: denied as typeof fetch }))
+      .rejects.toThrow("their own agents");
   });
 
   it("recognizes package URLs on the configured registry origin only", () => {
