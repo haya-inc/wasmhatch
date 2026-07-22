@@ -159,10 +159,11 @@
             <a href="#google-user-data">Google user data</a> below.
           </li>
           <li>
-            <strong>Slack.</strong> If you connect Slack with a token you
-            supply, requests go directly from your browser to Slack's API using
-            that token, and every message or update the agent sends is shown to
-            you in the conversation as it happens.
+            <strong>Slack.</strong> If you connect Slack with an Incoming
+            Webhook URL or token you supply, requests go directly from your
+            browser to Slack, and every message the agent posts is shown to
+            you in the conversation as it happens. The webhook route is
+            one-way: nothing is read from Slack.
           </li>
         </ul>
         <p>
@@ -235,9 +236,9 @@
             session.
           </li>
           <li>
-            <strong>Other credentials:</strong> AI provider keys and Slack
-            tokens are memory-only; close the tab to discard them, and revoke
-            them at the issuing provider if desired.
+            <strong>Other credentials:</strong> AI provider keys, Slack webhook
+            URLs, and Slack tokens are memory-only; close the tab to discard
+            them, and revoke them at the issuing provider if desired.
           </li>
         </ul>
       </section>

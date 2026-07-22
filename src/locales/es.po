@@ -63,6 +63,10 @@ msgid "{used} used."
 msgstr "{used} en uso."
 
 #: src/pages/ChatPage.tsx
+msgid "60-second setup: create an Incoming Webhook in Slack (one channel, one URL) and paste it here. The agent gains exactly one ability — posting messages to that channel; it reads nothing from Slack. The URL stays in this tab's memory."
+msgstr "Configuración en 60 segundos: crea un Incoming Webhook en Slack (un canal, una URL) y pégala aquí. El agente gana exactamente una capacidad — publicar mensajes en ese canal; no lee nada de Slack. La URL se queda en la memoria de esta pestaña."
+
+#: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "Hay lista una hoja de cálculo de ejemplo desordenada — pide que la ordene y mira cómo se aplica cada cambio."
 
@@ -181,6 +185,10 @@ msgid "Connect Google"
 msgstr "Conectar Google"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect Slack"
+msgstr "Conectar Slack"
+
+#: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "Conectado durante esta sesión. Las herramientas de Documentos, Hojas de cálculo y Presentaciones están activas."
 
@@ -188,6 +196,10 @@ msgstr "Conectado durante esta sesión. Las herramientas de Documentos, Hojas de
 #: src/pages/ChatPage.tsx
 msgid "Connected until {0}. Docs, Sheets, and Slides tools are active."
 msgstr "Conectado hasta {0}. Las herramientas de Documentos, Hojas de cálculo y Presentaciones están activas."
+
+#: src/pages/ChatPage.tsx
+msgid "Connected. Every hatchling can post to the webhook's channel; each post appears in the transcript."
+msgstr "Conectado. Cada polluelo puede publicar en el canal del webhook; cada publicación aparece en la conversación."
 
 #: src/pages/ChatPage.tsx
 msgid "Connecting…"
@@ -241,6 +253,10 @@ msgstr "Desconectar"
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
 msgstr "Desconectar Google"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect Slack"
+msgstr "Desconectar Slack"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
@@ -325,6 +341,10 @@ msgstr "Ocultar la barra lateral del equipo"
 #: src/pages/ChatPage.tsx
 msgid "Hide the tools sidebar"
 msgstr "Ocultar la barra lateral de herramientas"
+
+#: src/pages/ChatPage.tsx
+msgid "Incoming Webhook URL"
+msgstr "URL del Incoming Webhook"
 
 #: src/pages/ChatPage.tsx
 msgid "It's saved in this browser until you untick the box."
@@ -434,6 +454,10 @@ msgstr "Acceso solo por archivo (drive.file): el agente puede crear Documentos, 
 msgid "Pinning…"
 msgstr "Protegiendo…"
 
+#: src/lib/tool-summary.ts
+msgid "Posting to Slack"
+msgstr "Publicando en Slack"
+
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
 msgstr "Preparando…"
@@ -528,6 +552,14 @@ msgid "Show the tools sidebar"
 msgstr "Mostrar la barra lateral de herramientas"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack connected. Every hatchling can now post to the webhook's channel."
+msgstr "Slack conectado. Ahora cada polluelo puede publicar en el canal del webhook."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack disconnected."
+msgstr "Slack desconectado."
+
+#: src/pages/ChatPage.tsx
 msgid "Sources:"
 msgstr "Fuentes:"
 
@@ -538,6 +570,10 @@ msgstr "Detener"
 #: src/pages/ChatPage.tsx
 msgid "Storage"
 msgstr "Almacenamiento"
+
+#: src/pages/ChatPage.tsx
+msgid "That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…"
+msgstr "Eso no parece una URL de Incoming Webhook de Slack — empieza por https://hooks.slack.com/services/…"
 
 #: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."

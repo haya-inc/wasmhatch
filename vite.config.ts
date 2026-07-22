@@ -45,8 +45,9 @@ export default defineConfig(({ command, mode }) => ({
           // connector origins (GitHub import, Google Drive/Docs/Sheets/Slides REST, and
           // Google Calendar, which is served from www.googleapis.com). Slides and Calendar
           // are only reached when the deployment opts into Sensitive scopes, but the CSP
-          // stays static so the audit never depends on a runtime flag.
-          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://slides.googleapis.com";
+          // stays static so the audit never depends on a runtime flag. hooks.slack.com is
+          // the Slack Incoming Webhook connector: one-way POSTs to a user-pasted webhook.
+          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://slides.googleapis.com https://hooks.slack.com";
           // MCP origins come from the same audited-registry pattern as model
           // providers: wildcard-port loopback for the user's own machine, plus
           // exact remote origins a deployment bakes in via VITE_EXTRA_MCP_SERVERS.

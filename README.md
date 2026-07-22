@@ -31,6 +31,8 @@ approve things first? Switch on Careful mode.
   HTTP) — every hatchling shares them.
 - Search the web through your AI provider's own search tool (Claude and
   OpenRouter keys), with sources listed under the answer.
+- Post updates to a Slack channel through an Incoming Webhook you paste in —
+  a 60-second, one-way setup; nothing is read from Slack.
 - Run with your own AI key (Claude, OpenAI, or OpenRouter), with Ollama on
   your own machine, or with Chrome's built-in on-device model — free, no
   key at all.

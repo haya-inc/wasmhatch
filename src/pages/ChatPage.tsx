@@ -15,6 +15,7 @@ import { loadChatSettings, saveChatSettings } from "../lib/chat-settings";
 import { CLOUD_PROVIDERS, getCloudProvider, type ChatProviderId } from "../lib/chat-providers";
 import { FIRST_RUN_CSV_SAMPLE, FIRST_RUN_SAMPLE_FILES } from "../lib/first-run-csv-sample";
 import { isProtectedAgentPath } from "../lib/secrets";
+import { isSlackWebhookUrl } from "../lib/slack-webhook";
 import { PROMPT_API_LANGUAGES } from "../lib/builtin-ai-language";
 import { activeLocale, localePreference, setLocalePreference } from "../lib/i18n";
 import { AUTO_LOCALE, UI_LOCALES } from "../lib/locales";
@@ -230,6 +231,11 @@ export function ChatPage() {
   const [mcpUrls, setMcpUrls] = useState<Record<string, string>>({});
   const [mcpTokens, setMcpTokens] = useState<Record<string, string>>({});
   const [mcpBusy, setMcpBusy] = useState<string | null>(null);
+  // Slack Incoming Webhook URL: a capability URL, so treated like a token —
+  // draft in the field, the connected value only in a ref, never persisted.
+  const [slackDraft, setSlackDraft] = useState("");
+  const [slackConnected, setSlackConnected] = useState(false);
+  const slackUrlRef = useRef("");
   // UI language. Changing it activates the catalog in place (no reload), and
   // this state update is what re-renders the page in the new language.
   const [langPref, setLangPref] = useState<string>(localePreference);
@@ -268,6 +274,7 @@ export function ChatPage() {
       sensitiveEnabled: GOOGLE_SENSITIVE_ENABLED,
       getToken: (signal) => googleSession.current.credentialProvider().getToken(signal)
     },
+    slack: { getWebhookUrl: () => slackUrlRef.current },
     getBuiltinApi: () => (globalThis as typeof globalThis & { LanguageModel?: ChromeLanguageModelApi }).LanguageModel
   }));
   useEffect(() => () => swarm.dispose(), [swarm]);
@@ -283,6 +290,24 @@ export function ChatPage() {
   const notice = useCallback((text: string, tone: "info" | "error" = "info") => {
     swarm.notice(swarm.selectedThreadId, text, tone);
   }, [swarm]);
+
+  const connectSlack = useCallback(() => {
+    const url = slackDraft.trim();
+    if (!isSlackWebhookUrl(url)) {
+      notice(t`That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…`, "error");
+      return;
+    }
+    slackUrlRef.current = url;
+    setSlackDraft("");
+    setSlackConnected(true);
+    notice(t`Slack connected. Every hatchling can now post to the webhook's channel.`);
+  }, [slackDraft, notice]);
+
+  const disconnectSlack = useCallback(() => {
+    slackUrlRef.current = "";
+    setSlackConnected(false);
+    notice(t`Slack disconnected.`);
+  }, [notice]);
 
   const refreshFiles = useCallback(async () => {
     try {
@@ -1182,6 +1207,44 @@ export function ChatPage() {
                 </p>
                 <button className="button button-quiet" type="button" disabled={googleBusy} onClick={() => { void disconnectGoogle(); }}>
                   <Trans>Disconnect Google</Trans>
+                </button>
+              </>
+            )}
+          </section>
+
+          <section className="chat-panel">
+            <h2>Slack</h2>
+            {!slackConnected && (
+              <>
+                <label className="chat-field">
+                  <span><Trans>Incoming Webhook URL</Trans></span>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={slackDraft}
+                    placeholder="https://hooks.slack.com/services/…"
+                    onChange={(event) => setSlackDraft(event.target.value)}
+                  />
+                </label>
+                <button className="button" type="button" onClick={connectSlack}>
+                  <Trans>Connect Slack</Trans>
+                </button>
+                <p className="chat-hint">
+                  <Trans>
+                    60-second setup: create an Incoming Webhook in Slack (one channel, one URL) and paste it
+                    here. The agent gains exactly one ability — posting messages to that channel; it reads
+                    nothing from Slack. The URL stays in this tab's memory.
+                  </Trans>
+                </p>
+              </>
+            )}
+            {slackConnected && (
+              <>
+                <p className="chat-hint">
+                  <Trans>Connected. Every hatchling can post to the webhook's channel; each post appears in the transcript.</Trans>
+                </p>
+                <button className="button button-quiet" type="button" onClick={disconnectSlack}>
+                  <Trans>Disconnect Slack</Trans>
                 </button>
               </>
             )}

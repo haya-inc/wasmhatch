@@ -63,6 +63,10 @@ msgid "{used} used."
 msgstr "Wykorzystano: {used}."
 
 #: src/pages/ChatPage.tsx
+msgid "60-second setup: create an Incoming Webhook in Slack (one channel, one URL) and paste it here. The agent gains exactly one ability — posting messages to that channel; it reads nothing from Slack. The URL stays in this tab's memory."
+msgstr "Konfiguracja w 60 sekund: utwórz w Slacku Incoming Webhook (jeden kanał, jeden URL) i wklej go tutaj. Agent zyskuje dokładnie jedną umiejętność — publikowanie wiadomości na tym kanale; niczego ze Slacka nie odczytuje. URL pozostaje w pamięci tej karty."
+
+#: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "Nieuporządkowany przykładowy arkusz jest gotowy — poproś o posprzątanie i obserwuj każdą zmianę na żywo."
 
@@ -181,6 +185,10 @@ msgid "Connect Google"
 msgstr "Połącz z Google"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect Slack"
+msgstr "Połącz Slacka"
+
+#: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "Połączono na czas tej sesji. Narzędzia Dokumentów, Arkuszy i Prezentacji Google są aktywne."
 
@@ -188,6 +196,10 @@ msgstr "Połączono na czas tej sesji. Narzędzia Dokumentów, Arkuszy i Prezent
 #: src/pages/ChatPage.tsx
 msgid "Connected until {0}. Docs, Sheets, and Slides tools are active."
 msgstr "Połączono do {0}. Narzędzia Dokumentów, Arkuszy i Prezentacji Google są aktywne."
+
+#: src/pages/ChatPage.tsx
+msgid "Connected. Every hatchling can post to the webhook's channel; each post appears in the transcript."
+msgstr "Połączono. Każdy pisklak może publikować na kanale webhooka; każdy wpis pojawia się w rozmowie."
 
 #: src/pages/ChatPage.tsx
 msgid "Connecting…"
@@ -241,6 +253,10 @@ msgstr "Rozłącz"
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
 msgstr "Rozłącz Google"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect Slack"
+msgstr "Odłącz Slacka"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
@@ -325,6 +341,10 @@ msgstr "Ukryj panel zespołu"
 #: src/pages/ChatPage.tsx
 msgid "Hide the tools sidebar"
 msgstr "Ukryj panel narzędzi"
+
+#: src/pages/ChatPage.tsx
+msgid "Incoming Webhook URL"
+msgstr "URL Incoming Webhooka"
 
 #: src/pages/ChatPage.tsx
 msgid "It's saved in this browser until you untick the box."
@@ -434,6 +454,10 @@ msgstr "Dostęp tylko do pojedynczych plików (drive.file): agent może tworzyć
 msgid "Pinning…"
 msgstr "Zabezpieczanie…"
 
+#: src/lib/tool-summary.ts
+msgid "Posting to Slack"
+msgstr "Publikowanie w Slacku"
+
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
 msgstr "Przygotowywanie…"
@@ -528,6 +552,14 @@ msgid "Show the tools sidebar"
 msgstr "Pokaż panel narzędzi"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack connected. Every hatchling can now post to the webhook's channel."
+msgstr "Slack połączony. Każdy pisklak może teraz publikować na kanale webhooka."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack disconnected."
+msgstr "Slack odłączony."
+
+#: src/pages/ChatPage.tsx
 msgid "Sources:"
 msgstr "Źródła:"
 
@@ -538,6 +570,10 @@ msgstr "Zatrzymaj"
 #: src/pages/ChatPage.tsx
 msgid "Storage"
 msgstr "Przechowywanie danych"
+
+#: src/pages/ChatPage.tsx
+msgid "That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…"
+msgstr "To nie wygląda na URL Incoming Webhooka Slacka — zaczyna się od https://hooks.slack.com/services/…"
 
 #: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
