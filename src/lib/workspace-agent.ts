@@ -20,13 +20,16 @@ import {
   type WorkspaceArtifactPlan
 } from "./workspace-artifact-plan";
 
+// Run-level values are visible soft budgets sized well above any reasonable
+// planning run — never product ceilings. Everything from maxFileBytes down is
+// a per-call safety bound that degrades a single read, not the run.
 export const WORKSPACE_AGENT_LIMITS = Object.freeze({
-  maxModelRequests: 6,
-  maxToolCalls: 6,
-  maxCumulativeRequestBytes: 500_000,
-  maxInputTokens: 120_000,
-  maxOutputTokens: 8_000,
-  maxEgressBytes: 256 * 1024,
+  maxModelRequests: 32,
+  maxToolCalls: 64,
+  maxCumulativeRequestBytes: 4_000_000,
+  maxInputTokens: 1_000_000,
+  maxOutputTokens: 65_536,
+  maxEgressBytes: 1024 * 1024,
   maxFileBytes: 512 * 1024,
   maxToolOutputBytes: 64 * 1024,
   maxReadBytes: 50 * 1024,
@@ -202,7 +205,7 @@ interface FunctionCall {
 interface ParsedResponse {
   id: string;
   output: InputItem[];
-  call: FunctionCall;
+  calls: FunctionCall[];
   inputTokens: number;
   outputTokens: number;
 }
@@ -281,17 +284,18 @@ function parseResponse(value: unknown): ParsedResponse {
     assertRecord(item, `OpenAI output item ${index + 1}`);
     return item;
   });
-  const calls = output.filter((item) => item.type === "function_call");
-  if (calls.length !== 1) throw new Error("OpenAI must return exactly one workspace tool call per turn.");
-  const call = calls[0];
-  const name = requireText(call.name, "Workspace tool name", 128) as WorkspaceAgentToolName;
-  if (!WORKSPACE_AGENT_TOOLS.some((tool) => tool.name === name)) throw new Error(`OpenAI requested an unknown workspace tool: ${name}`);
-  const callId = requireText(call.call_id, "Workspace tool call ID", 256);
+  const calls = output.filter((item) => item.type === "function_call").map((call) => {
+    const name = requireText(call.name, "Workspace tool name", 128) as WorkspaceAgentToolName;
+    if (!WORKSPACE_AGENT_TOOLS.some((tool) => tool.name === name)) throw new Error(`OpenAI requested an unknown workspace tool: ${name}`);
+    const callId = requireText(call.call_id, "Workspace tool call ID", 256);
+    return { callId, name, arguments: parseArguments(call.arguments) };
+  });
+  if (!calls.length) throw new Error("OpenAI returned no workspace tool call.");
   assertRecord(value.usage, "OpenAI workspace usage");
   return {
     id,
     output,
-    call: { callId, name, arguments: parseArguments(call.arguments) },
+    calls,
     inputTokens: requireInteger(value.usage.input_tokens, "OpenAI input tokens", 0, 10_000_000),
     outputTokens: requireInteger(value.usage.output_tokens, "OpenAI output tokens", 0, 10_000_000)
   };
@@ -579,7 +583,7 @@ export class OpenAIWorkspaceAgent {
         model,
         store: false,
         max_output_tokens: 3_000,
-        parallel_tool_calls: false,
+        parallel_tool_calls: true,
         tool_choice: "required",
         tools,
         reasoning: { effort: "low" },
@@ -610,123 +614,134 @@ export class OpenAIWorkspaceAgent {
       if (budget.outputTokens > WORKSPACE_AGENT_LIMITS.maxOutputTokens) {
         throw new Error(`Workspace agent stopped after reaching the ${WORKSPACE_AGENT_LIMITS.maxOutputTokens.toLocaleString()} output-token budget.`);
       }
-      if (seenCalls.has(parsed.call.callId)) throw new Error("OpenAI repeated a workspace tool call ID.");
-      seenCalls.add(parsed.call.callId);
-      const signature = `${parsed.call.name}:${JSON.stringify(parsed.call.arguments)}`;
-      if (seenSignatures.has(signature)) throw new Error(`OpenAI repeated the same workspace tool call: ${parsed.call.name}`);
-      seenSignatures.add(signature);
-      budget.toolCalls += 1;
-      if (budget.toolCalls > WORKSPACE_AGENT_LIMITS.maxToolCalls) {
-        throw new Error(`Workspace agent stopped after reaching the ${WORKSPACE_AGENT_LIMITS.maxToolCalls}-tool budget.`);
-      }
-
-      if (parsed.call.name === SPREADSHEET_PLAN_TOOL.name || parsed.call.name === WORKSPACE_ARTIFACT_PLAN_TOOL.name) {
-        const expectedFinalTool = artifactPlanning ? WORKSPACE_ARTIFACT_PLAN_TOOL.name : SPREADSHEET_PLAN_TOOL.name;
-        if (parsed.call.name !== expectedFinalTool) throw new Error(`Workspace agent returned the wrong plan type: ${parsed.call.name}`);
-        if (!trace.some((event) => (
-          event.status === "completed" && ["read_workspace_file", "search_workspace_text", "read_tabular_rows", "read_google_sheets_range"].includes(event.tool)
-        ))) {
-          throw new Error("Workspace agent must inspect granted file content before staging a plan.");
+      const planCalls = parsed.calls.filter((call) => (
+        call.name === SPREADSHEET_PLAN_TOOL.name || call.name === WORKSPACE_ARTIFACT_PLAN_TOOL.name
+      ));
+      if (planCalls.length > 1) throw new Error("OpenAI returned more than one workspace plan call in a single turn.");
+      // Reads run before a same-turn plan call so the trace shows every
+      // inspection and the plan can rely on it.
+      const orderedCalls = [...parsed.calls.filter((call) => !planCalls.includes(call)), ...planCalls];
+      const toolOutputs: InputItem[] = [];
+      for (const call of orderedCalls) {
+        if (seenCalls.has(call.callId)) throw new Error("OpenAI repeated a workspace tool call ID.");
+        seenCalls.add(call.callId);
+        const signature = `${call.name}:${JSON.stringify(call.arguments)}`;
+        if (seenSignatures.has(signature)) throw new Error(`OpenAI repeated the same workspace tool call: ${call.name}`);
+        seenSignatures.add(signature);
+        budget.toolCalls += 1;
+        if (budget.toolCalls > WORKSPACE_AGENT_LIMITS.maxToolCalls) {
+          throw new Error(`Workspace agent stopped after reaching the ${WORKSPACE_AGENT_LIMITS.maxToolCalls}-tool budget.`);
         }
-        const plan = artifactPlanning
-          ? parseWorkspaceArtifactPlanArguments(parsed.call.arguments, {
-              model,
-              responseId: parsed.id,
-              inputFiles: grant.readablePaths.length + materializedArtifacts.size
-            })
-          : parseSpreadsheetPlanArguments(parsed.call.arguments, {
-              model,
-              responseId: parsed.id,
-              inputRows: request.inputRows,
-              inputCells: request.inputCells
-            });
-        const event = deepFreeze({
-          sequence: trace.length + 1,
-          callId: parsed.call.callId,
-          tool: parsed.call.name,
-          status: "completed" as const,
-          summary: artifactPlanning
-            ? "Artifact workflow plan staged; no script execution or write"
-            : "Transformation plan staged; no script execution or write",
-          bytesToModel: 0
-        });
-        trace.push(event);
-        request.onTrace?.(event, snapshotBudget(budget));
-        return deepFreeze({
-          plan,
-          trace,
-          budget: snapshotBudget(budget),
-          grantedPaths: [...grant.readablePaths, ...materializedArtifacts.keys()],
-          materializedArtifacts: [...materializedArtifacts.values()]
-        });
-      }
 
-      let result: Awaited<ReturnType<typeof executeTool>>;
-      try {
-        if (parsed.call.name === READ_GOOGLE_SHEETS_RANGE_TOOL.name) {
-          assertExactKeys(parsed.call.arguments, [], "read_google_sheets_range arguments");
-          if (!request.googleSheetsRead || !googleSheetsRange) throw new Error("Google Sheets AI read is outside the exact grant.");
-          const supplied = await request.googleSheetsRead.materialize(request.signal);
-          const attachment = await verifyOperatorArtifactAttachment(this.workspace, supplied);
-          if (!/^inputs\/google-sheets-[a-f0-9]{12}\.json$/.test(attachment.path) || attachment.mediaType !== "application/json" || attachment.tabularSnapshot) {
-            throw new Error("Google Sheets AI read returned an invalid workspace snapshot attachment.");
+        if (call.name === SPREADSHEET_PLAN_TOOL.name || call.name === WORKSPACE_ARTIFACT_PLAN_TOOL.name) {
+          const expectedFinalTool = artifactPlanning ? WORKSPACE_ARTIFACT_PLAN_TOOL.name : SPREADSHEET_PLAN_TOOL.name;
+          if (call.name !== expectedFinalTool) throw new Error(`Workspace agent returned the wrong plan type: ${call.name}`);
+          if (!trace.some((event) => (
+            event.status === "completed" && ["read_workspace_file", "search_workspace_text", "read_tabular_rows", "read_google_sheets_range"].includes(event.tool)
+          ))) {
+            throw new Error("Workspace agent must inspect granted file content before staging a plan.");
           }
-          const file = await readGrantedFile(this.workspace, attachment.path, attachment.sha256);
-          if (file.bytes !== attachment.bytes) throw new Error("Google Sheets workspace snapshot byte identity changed after materialization.");
-          const snapshot = parseGoogleSheetsWorkspaceSnapshot(file.content);
-          if (snapshot.target.range !== googleSheetsRange) throw new Error("Google Sheets AI read returned a different range than the exact grant.");
-          if (grant.readablePaths.includes(attachment.path)) {
-            if (grant.expectedSha256[attachment.path] && grant.expectedSha256[attachment.path] !== attachment.sha256) {
-              throw new Error("Google Sheets AI read changed an already granted workspace snapshot.");
+          const plan = artifactPlanning
+            ? parseWorkspaceArtifactPlanArguments(call.arguments, {
+                model,
+                responseId: parsed.id,
+                inputFiles: grant.readablePaths.length + materializedArtifacts.size
+              })
+            : parseSpreadsheetPlanArguments(call.arguments, {
+                model,
+                responseId: parsed.id,
+                inputRows: request.inputRows,
+                inputCells: request.inputCells
+              });
+          const event = deepFreeze({
+            sequence: trace.length + 1,
+            callId: call.callId,
+            tool: call.name,
+            status: "completed" as const,
+            summary: artifactPlanning
+              ? "Artifact workflow plan staged; no script execution or write"
+              : "Transformation plan staged; no script execution or write",
+            bytesToModel: 0
+          });
+          trace.push(event);
+          request.onTrace?.(event, snapshotBudget(budget));
+          return deepFreeze({
+            plan,
+            trace,
+            budget: snapshotBudget(budget),
+            grantedPaths: [...grant.readablePaths, ...materializedArtifacts.keys()],
+            materializedArtifacts: [...materializedArtifacts.values()]
+          });
+        }
+
+        let result: Awaited<ReturnType<typeof executeTool>>;
+        try {
+          if (call.name === READ_GOOGLE_SHEETS_RANGE_TOOL.name) {
+            assertExactKeys(call.arguments, [], "read_google_sheets_range arguments");
+            if (!request.googleSheetsRead || !googleSheetsRange) throw new Error("Google Sheets AI read is outside the exact grant.");
+            const supplied = await request.googleSheetsRead.materialize(request.signal);
+            const attachment = await verifyOperatorArtifactAttachment(this.workspace, supplied);
+            if (!/^inputs\/google-sheets-[a-f0-9]{12}\.json$/.test(attachment.path) || attachment.mediaType !== "application/json" || attachment.tabularSnapshot) {
+              throw new Error("Google Sheets AI read returned an invalid workspace snapshot attachment.");
             }
+            const file = await readGrantedFile(this.workspace, attachment.path, attachment.sha256);
+            if (file.bytes !== attachment.bytes) throw new Error("Google Sheets workspace snapshot byte identity changed after materialization.");
+            const snapshot = parseGoogleSheetsWorkspaceSnapshot(file.content);
+            if (snapshot.target.range !== googleSheetsRange) throw new Error("Google Sheets AI read returned a different range than the exact grant.");
+            if (grant.readablePaths.includes(attachment.path)) {
+              if (grant.expectedSha256[attachment.path] && grant.expectedSha256[attachment.path] !== attachment.sha256) {
+                throw new Error("Google Sheets AI read changed an already granted workspace snapshot.");
+              }
+            } else {
+              if (materializedArtifacts.has(attachment.path)) throw new Error("Google Sheets AI read materialized a duplicate workspace snapshot.");
+              materializedArtifacts.set(attachment.path, attachment);
+            }
+            const serialized = serializeGoogleSheetsWindow(snapshot, attachment);
+            result = {
+              ...serialized,
+              summary: `${snapshot.target.range} snapshotted to ${attachment.path} (${snapshot.rows.length} rows)`,
+              path: attachment.path,
+              sha256: attachment.sha256
+            };
           } else {
-            if (materializedArtifacts.has(attachment.path)) throw new Error("Google Sheets AI read materialized a duplicate workspace snapshot.");
-            materializedArtifacts.set(attachment.path, attachment);
+            result = await executeTool(this.workspace, grant, call);
           }
-          const serialized = serializeGoogleSheetsWindow(snapshot, attachment);
-          result = {
-            ...serialized,
-            summary: `${snapshot.target.range} snapshotted to ${attachment.path} (${snapshot.rows.length} rows)`,
-            path: attachment.path,
-            sha256: attachment.sha256
-          };
-        } else {
-          result = await executeTool(this.workspace, grant, parsed.call);
+        } catch (error) {
+          const event = deepFreeze({
+            sequence: trace.length + 1,
+            callId: call.callId,
+            tool: call.name,
+            status: "denied" as const,
+            summary: error instanceof Error ? error.message : "Workspace tool denied",
+            bytesToModel: 0
+          });
+          trace.push(event);
+          request.onTrace?.(event, snapshotBudget(budget));
+          throw error;
         }
-      } catch (error) {
+        if (budget.egressBytes + result.bytes > WORKSPACE_AGENT_LIMITS.maxEgressBytes) {
+          throw new Error(`Workspace agent stopped before exceeding the ${WORKSPACE_AGENT_LIMITS.maxEgressBytes}-byte model-egress budget.`);
+        }
+        budget.egressBytes += result.bytes;
         const event = deepFreeze({
           sequence: trace.length + 1,
-          callId: parsed.call.callId,
-          tool: parsed.call.name,
-          status: "denied" as const,
-          summary: error instanceof Error ? error.message : "Workspace tool denied",
-          bytesToModel: 0
+          callId: call.callId,
+          tool: call.name,
+          status: "completed" as const,
+          summary: result.summary,
+          path: result.path,
+          sourceSha256: result.sha256,
+          bytesToModel: result.bytes
         });
         trace.push(event);
         request.onTrace?.(event, snapshotBudget(budget));
-        throw error;
+        toolOutputs.push({
+          type: "function_call_output",
+          call_id: call.callId,
+          output: result.output
+        });
       }
-      if (budget.egressBytes + result.bytes > WORKSPACE_AGENT_LIMITS.maxEgressBytes) {
-        throw new Error(`Workspace agent stopped before exceeding the ${WORKSPACE_AGENT_LIMITS.maxEgressBytes}-byte model-egress budget.`);
-      }
-      budget.egressBytes += result.bytes;
-      const event = deepFreeze({
-        sequence: trace.length + 1,
-        callId: parsed.call.callId,
-        tool: parsed.call.name,
-        status: "completed" as const,
-        summary: result.summary,
-        path: result.path,
-        sourceSha256: result.sha256,
-        bytesToModel: result.bytes
-      });
-      trace.push(event);
-      request.onTrace?.(event, snapshotBudget(budget));
-      input.push(...parsed.output, {
-        type: "function_call_output",
-        call_id: parsed.call.callId,
-        output: result.output
-      });
+      input.push(...parsed.output, ...toolOutputs);
     }
     throw new Error(`Workspace agent stopped after ${WORKSPACE_AGENT_LIMITS.maxModelRequests} model requests without a staged plan.`);
   }

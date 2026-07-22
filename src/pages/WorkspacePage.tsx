@@ -623,7 +623,7 @@ export function WorkspacePage() {
                   {agentBudget.compactedToolCalls > 0 && <p>{agentBudget.compactedToolCalls} earlier tool call(s) compacted.</p>}
                 </div>
               )}
-              <footer>Common credential paths stay local. First attachments appear above; repeated history counts toward 500 KB. Runs stop at 8 requests, 120K input tokens, or 8K output tokens.</footer>
+              <footer>Common credential paths stay local. First attachments appear above; repeated history counts toward the visible payload budget. Runs pause at the soft budgets shown above — generous by default, never a hidden cap.</footer>
             </section>
 
             {proposal && (

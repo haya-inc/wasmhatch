@@ -300,7 +300,7 @@ describe("runAnthropicAgent", () => {
     expect(events).toContainEqual(expect.objectContaining({ kind: "compaction", toolCalls: 1 }));
   });
 
-  it("stops before cumulative request bodies exceed 500 KB", async () => {
+  it("stops before cumulative request bodies exceed the request-byte budget", async () => {
     let toolCall = 0;
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(apiResponse([{
       type: "tool_use",
@@ -314,9 +314,9 @@ describe("runAnthropicAgent", () => {
     });
 
     await expect(runAnthropicAgent(agentOptions(workspace)))
-      .rejects.toThrow("Agent stopped before exceeding the 500,000-byte request budget.");
+      .rejects.toThrow("Agent stopped before exceeding the 2,000,000-byte request budget.");
     expect(fetchMock.mock.calls.length).toBeGreaterThan(2);
-    expect(fetchMock.mock.calls.length).toBeLessThan(8);
+    expect(fetchMock.mock.calls.length).toBeLessThan(32);
   });
 
   it("stops tool execution at the provider output-token budget", async () => {
@@ -325,12 +325,12 @@ describe("runAnthropicAgent", () => {
       id: "over-budget-read",
       name: "read_file",
       input: { path: "src/a.ts" }
-    }], { input_tokens: 100, output_tokens: 8_000 }));
+    }], { input_tokens: 100, output_tokens: 65_536 }));
     vi.stubGlobal("fetch", fetchMock);
     const workspace = createWorkspace();
 
     await expect(runAnthropicAgent(agentOptions(workspace)))
-      .rejects.toThrow("Agent stopped after reaching the 8,000 output-token budget.");
+      .rejects.toThrow("Agent stopped after reaching the 65,536 output-token budget.");
     expect(workspace.readFile).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledOnce();
   });
@@ -341,12 +341,12 @@ describe("runAnthropicAgent", () => {
       id: "over-budget-list",
       name: "list_files",
       input: {}
-    }], { input_tokens: 120_000, output_tokens: 10 }));
+    }], { input_tokens: 1_000_000, output_tokens: 10 }));
     vi.stubGlobal("fetch", fetchMock);
     const workspace = createWorkspace();
 
     await expect(runAnthropicAgent(agentOptions(workspace)))
-      .rejects.toThrow("Agent stopped after reaching the 120,000 input-token budget.");
+      .rejects.toThrow("Agent stopped after reaching the 1,000,000 input-token budget.");
     expect(workspace.listFiles).not.toHaveBeenCalled();
   });
 
@@ -365,12 +365,12 @@ describe("runAnthropicAgent", () => {
 
     expect(budgets.at(-1)).toEqual(expect.objectContaining({
       requests: 1,
-      requestLimit: 8,
-      requestByteLimit: 500_000,
+      requestLimit: 32,
+      requestByteLimit: 2_000_000,
       inputTokens: 321,
-      inputTokenLimit: 120_000,
+      inputTokenLimit: 1_000_000,
       outputTokens: 45,
-      outputTokenLimit: 8_000
+      outputTokenLimit: 65_536
     }));
     const requestBody = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body));
     expect(requestBody.max_tokens).toBe(2_048);
@@ -552,7 +552,7 @@ describe("runAnthropicAgent", () => {
       .rejects.toThrow("Anthropic rejected the API key (401). Check the key and try again.");
   });
 
-  it("stops a tool loop after eight turns", async () => {
+  it("stops a tool loop at the turn safety limit", async () => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(apiResponse([{
       type: "tool_use",
       id: "list-files",
@@ -562,8 +562,8 @@ describe("runAnthropicAgent", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(runAnthropicAgent(agentOptions(createWorkspace())))
-      .rejects.toThrow("Agent stopped after reaching the 8-turn safety limit.");
-    expect(fetchMock).toHaveBeenCalledTimes(8);
+      .rejects.toThrow("Agent stopped after reaching the 32-turn safety limit.");
+    expect(fetchMock).toHaveBeenCalledTimes(32);
   });
 
   it("rejects malformed API message content", async () => {

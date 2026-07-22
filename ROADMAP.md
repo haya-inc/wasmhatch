@@ -33,8 +33,11 @@ feature. Un-advertised capability gaps kill agents; documented limits do not.
       mode gates writes behind Allow / Always-allow / Reject. Proposal and
       manifest vocabulary disappears from UI strings. Approval is a mode,
       never the message.
-- [ ] Remove anti-parity ceilings (one-tool-per-turn, six-call caps, egress
-      caps) in favor of visible soft budgets.
+- [x] Remove anti-parity ceilings (one-tool-per-turn, six-call caps, egress
+      caps) in favor of visible soft budgets. The chat loop (`agent-core`)
+      always had resumable soft budgets; the legacy planner loops now allow
+      parallel tool calls and carry generous visible budgets instead of
+      6-call/8-turn/256 KB ceilings.
 - [ ] Custom domain + production OAuth client + Sensitive-scope verification
       submitted (lead time runs in parallel with development). Done so far:
       wasmhatch.com is live and the production OAuth client is provisioned;

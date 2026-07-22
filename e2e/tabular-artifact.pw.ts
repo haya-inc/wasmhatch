@@ -270,7 +270,7 @@ test("lets AI inspect one exact workspace snapshot through checkpointed bounded 
   await expect(page.getByLabel("Workspace file diff")).toHaveCount(0);
 
   expect(requestBodies).toHaveLength(3);
-  expect(requestBodies[0]).toMatchObject({ store: false, parallel_tool_calls: false, tool_choice: "required" });
+  expect(requestBodies[0]).toMatchObject({ store: false, parallel_tool_calls: true, tool_choice: "required" });
   expect(JSON.stringify(requestBodies[0])).not.toContain("sk-workspace-e2e");
   expect(JSON.stringify(requestBodies[1].input)).toContain("wasmhatch.workspace-list.v1");
   expect(JSON.stringify(requestBodies[2].input)).toContain("wasmhatch.tabular-window.v1");

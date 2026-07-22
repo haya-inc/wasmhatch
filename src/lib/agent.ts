@@ -58,16 +58,18 @@ interface MessageResponse {
   usage?: { inputTokens: number; outputTokens: number };
 }
 
-const MAX_AGENT_TURNS = 8;
+// Run-level budgets are visible soft budgets sized well above a normal run,
+// not product ceilings; the values below them are per-call safety bounds.
+const MAX_AGENT_TURNS = 32;
 const MAX_TASK_LENGTH = 10_000;
 const MAX_PATH_LENGTH = 1_024;
 const MAX_PROPOSAL_LENGTH = 1_000_000;
 const MAX_RATIONALE_LENGTH = 2_000;
 const MAX_READ_LINES = 200;
 const MAX_READ_BYTES = 50_000;
-const MAX_CUMULATIVE_REQUEST_BYTES = 500_000;
-const MAX_INPUT_TOKENS = 120_000;
-const MAX_OUTPUT_TOKENS = 8_000;
+const MAX_CUMULATIVE_REQUEST_BYTES = 2_000_000;
+const MAX_INPUT_TOKENS = 1_000_000;
+const MAX_OUTPUT_TOKENS = 65_536;
 const MAX_RESPONSE_TOKENS = 2_048;
 const MAX_CONTEXT_MESSAGES = 5;
 const MAX_COMPACTION_NOTES = 20;

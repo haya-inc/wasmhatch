@@ -54,6 +54,28 @@ function toolResponse(
   }), { status: 200, headers: { "content-type": "application/json" } });
 }
 
+function multiToolResponse(
+  id: string,
+  calls: { callId: string; name: string; args: Record<string, unknown> }[],
+  usage: { input_tokens: number; output_tokens: number } = { input_tokens: 120, output_tokens: 30 }
+) {
+  return new Response(JSON.stringify({
+    id,
+    output: [
+      { id: `rs_${id}`, type: "reasoning", summary: [] },
+      ...calls.map((call, index) => ({
+        id: `fc_${id}_${index}`,
+        type: "function_call",
+        call_id: call.callId,
+        name: call.name,
+        arguments: JSON.stringify(call.args),
+        status: "completed"
+      }))
+    ],
+    usage
+  }), { status: 200, headers: { "content-type": "application/json" } });
+}
+
 const PLAN = {
   summary: "Normalize region labels.",
   expected_effect: "Data rows receive uppercase regions; the header and owner values remain unchanged.",
@@ -104,13 +126,59 @@ describe("OpenAIWorkspaceAgent", () => {
 
     const bodies = fetcher.mock.calls.map(([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>);
     expect(bodies).toHaveLength(3);
-    expect(bodies[0]).toMatchObject({ store: false, parallel_tool_calls: false, tool_choice: "required" });
+    expect(bodies[0]).toMatchObject({ store: false, parallel_tool_calls: true, tool_choice: "required" });
     expect((bodies[0].tools as { strict: boolean }[]).every((tool) => tool.strict)).toBe(true);
     expect(JSON.stringify(bodies[0])).not.toContain("sk-secret");
     expect((fetcher.mock.calls[0][1]?.headers as Record<string, string>).authorization).toBe("Bearer sk-secret");
     expect(JSON.stringify(bodies[1].input)).toContain("rs_resp_list");
     expect(JSON.stringify(bodies[1].input)).toContain("function_call_output");
     expect(JSON.stringify(bodies[2].input)).toContain("wasmhatch.tabular-window.v1");
+  });
+
+  it("dispatches parallel tool calls from one turn and answers them all in the next request", async () => {
+    const { workspace } = createWorkspace();
+    const responses = [
+      multiToolResponse("resp_batch", [
+        { callId: "call_list", name: "list_workspace_files", args: {} },
+        { callId: "call_rows", name: "read_tabular_rows", args: { path: ARTIFACT_PATH, start_row: 1, row_count: 3 } }
+      ]),
+      toolResponse("resp_plan", "call_plan", "propose_spreadsheet_transform", PLAN)
+    ];
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => responses.shift()!);
+    const events: string[] = [];
+    const result = await new OpenAIWorkspaceAgent("sk-test", workspace, fetcher as typeof fetch).plan(request({
+      onTrace: (event: { tool: string }) => events.push(event.tool)
+    }));
+
+    expect(events).toEqual(["list_workspace_files", "read_tabular_rows", "propose_spreadsheet_transform"]);
+    expect(result.budget).toMatchObject({ modelRequests: 2, toolCalls: 3 });
+    const secondBody = JSON.parse(String(fetcher.mock.calls[1][1]?.body)) as { input: unknown[] };
+    const outputs = secondBody.input.filter((item) => (item as { type?: string }).type === "function_call_output");
+    expect(outputs.map((item) => (item as { call_id: string }).call_id)).toEqual(["call_list", "call_rows"]);
+  });
+
+  it("runs same-turn reads before accepting a plan call batched with them", async () => {
+    const { workspace } = createWorkspace();
+    const fetcher = vi.fn(async () => multiToolResponse("resp_all", [
+      { callId: "call_plan", name: "propose_spreadsheet_transform", args: PLAN },
+      { callId: "call_rows", name: "read_tabular_rows", args: { path: ARTIFACT_PATH, start_row: 1, row_count: 3 } }
+    ]));
+    const result = await new OpenAIWorkspaceAgent("sk-test", workspace, fetcher as typeof fetch).plan(request());
+
+    expect(result.trace.map((event) => event.tool)).toEqual(["read_tabular_rows", "propose_spreadsheet_transform"]);
+    expect(result.plan).toMatchObject({ summary: "Normalize region labels." });
+    expect(result.budget).toMatchObject({ modelRequests: 1, toolCalls: 2 });
+  });
+
+  it("rejects more than one plan call in a single turn", async () => {
+    const { workspace } = createWorkspace();
+    const fetcher = vi.fn(async () => multiToolResponse("resp_two_plans", [
+      { callId: "call_plan_1", name: "propose_spreadsheet_transform", args: PLAN },
+      { callId: "call_plan_2", name: "propose_spreadsheet_transform", args: { ...PLAN, summary: "Second plan." } }
+    ]));
+
+    await expect(new OpenAIWorkspaceAgent("sk-test", workspace, fetcher as typeof fetch).plan(request()))
+      .rejects.toThrow("more than one workspace plan call");
   });
 
   it("supports bounded literal search and line reads with visible egress accounting", async () => {
@@ -307,7 +375,7 @@ describe("OpenAIWorkspaceAgent", () => {
     ));
 
     await expect(new OpenAIWorkspaceAgent("sk-test", workspace, fetcher as typeof fetch).plan(request()))
-      .rejects.toThrow("120,000 input-token budget");
+      .rejects.toThrow(`${WORKSPACE_AGENT_LIMITS.maxInputTokens.toLocaleString()} input-token budget`);
     expect(readFile).not.toHaveBeenCalled();
   });
 
