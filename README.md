@@ -51,7 +51,8 @@ Honesty beats surprises. WasmHatch currently does **not**:
 - run anything with the tab closed — auto work is honest polling *while the
   tab is open*, not a background service;
 - reach remote MCP servers unless a deployment bakes them into its audited
-  allowlist — out of the box, MCP means servers on your own machine;
+  allowlist — out of the box, MCP means servers on your own machine (see
+  [which remote servers a browser can actually reach](docs/browser-mcp-servers.md));
 - work with admin-managed Google Workspace accounts that block new apps.
 
 ## Quick start

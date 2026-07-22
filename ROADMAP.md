@@ -123,8 +123,12 @@ scheduled-run features. Design record: `docs/hatchlings-design.md`.
 - [x] Browser MCP client, Streamable HTTP: loopback servers out of the box
       (any port), remote origins only via the build-time
       `VITE_EXTRA_MCP_SERVERS` allowlist feeding the same audited CSP as
-      model providers (`mcp-client.ts`, `mcp-servers.ts`). CORS diagnostics
-      and a curated reachable-server list remain Phase 2 artifacts.
+      model providers (`mcp-client.ts`, `mcp-servers.ts`). The curated
+      reachable-server list is measured and published
+      (`docs/browser-mcp-servers.md`, probed 2026-07-22: five keyless
+      servers work, eight token servers pass CORS preflight incl.
+      Authorization, five vendors block browsers). CORS diagnostics in-app
+      remain a Phase 2 artifact.
 - [x] Pixel office: dependency-free canvas, one chick per hatchling with
       mood glyphs, click-to-select, and an aria-label that says everything
       the pixels do (`pixel-office.ts`, `HatchlingOffice.tsx`).
