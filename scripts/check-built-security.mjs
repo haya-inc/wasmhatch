@@ -10,10 +10,11 @@ const requiredDirectives = [
   "default-src 'none'",
   "base-uri 'none'",
   "object-src 'none'",
-  "frame-src https://accounts.google.com/gsi/",
+  "frame-src https://accounts.google.com/gsi/ https://docs.google.com https://drive.google.com",
   "form-action 'none'",
-  "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client",
+  "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client https://apis.google.com",
   "style-src 'self' https://accounts.google.com/gsi/style",
+  "img-src 'self' data: https://*.googleusercontent.com https://ssl.gstatic.com",
   "worker-src 'self'"
 ];
 
@@ -38,6 +39,8 @@ const requiredConnectSrc = [
   "https://docs.googleapis.com",
   "https://hooks.slack.com",
   "https://slack.com",
+  "https://apis.google.com",
+  "https://content.googleapis.com",
   "https://accounts.google.com/gsi/",
   // MCP: any Streamable-HTTP server on the user's own machine, any port.
   // Loopback-only http is the same audited exception Ollama uses; remote MCP

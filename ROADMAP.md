@@ -49,12 +49,17 @@ vocabulary on screen.
 
 ## Phase 1 — Connectivity and artifacts (~6 → 12 weeks)
 
-- [ ] Google: drive.file + Picker as an agent tool (file handover is a
+- [x] Google: drive.file + Picker as an agent tool (file handover is a
       visible consent step in the conversation); create/read/write for
       Sheets, Docs, Slides via direct REST; silent token re-grant.
-      Shipped so far: the agent creates Docs, Sheets, and Slides and edits
-      the ones it created (`google-connectors.ts`); Picker handover and
-      silent re-grant remain.
+      All shipped: creates/edits Docs, Sheets, Slides
+      (`google-connectors.ts`); silent re-grant renews tokens a minute
+      before expiry with a visible-reconnect fallback; the
+      `open_google_file_picker` tool raises an in-conversation consent
+      card and opens Google's picker (`google-picker.ts`, needs the
+      deployment's `VITE_GOOGLE_API_KEY`, optional `VITE_GOOGLE_APP_ID`).
+      File handover only — folder handover stays off until the
+      `spikes/picker` folder-grant question has a recorded passing run.
 - [x] HTML artifact panel: sandboxed iframe (`srcdoc`, `allow-scripts`,
       never `allow-same-origin`) with an injected frame policy;
       self-contained single-file HTML renders beside the chat and downloads

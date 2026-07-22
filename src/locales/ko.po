@@ -18,6 +18,11 @@ msgstr ""
 msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
 msgstr "{0, plural, other {연결됨 · 도구 #개}}"
 
+#. placeholder {0}: files.length
+#: src/pages/ChatPage.tsx
+msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
+msgstr "{0, plural, other {Google 파일 #개를 에이전트에게 건넸습니다.}}"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -116,6 +121,10 @@ msgstr "{0}에게 원하는 결과를 말해 보세요…"
 msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
 msgstr "평소 쓰는 말로 부탁해 보세요 — 스프레드시트 수정, 문서 작성, 보고서 만들기까지 바로 여기서 해결돼요. 모든 변경은 진행되는 대로 표시되고, 되돌리기는 클릭 한 번이면 돼요. 먼저 승인하고 싶다면 사이드바에서 '신중'으로 전환하세요."
 
+#: src/lib/tool-summary.ts
+msgid "Asking for Google files"
+msgstr "Google 파일 요청 중"
+
 #: src/pages/ChatPage.tsx
 msgid "Assistant"
 msgstr "어시스턴트"
@@ -179,6 +188,10 @@ msgstr "Slack 채널 확인 중"
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
 msgstr "티켓 보드 확인 중"
+
+#: src/pages/ChatPage.tsx
+msgid "Choose files…"
+msgstr "파일 선택…"
 
 #: src/pages/ChatPage.tsx
 msgid "Close"
@@ -260,6 +273,10 @@ msgid "Custom model ID…"
 msgstr "커스텀 모델 ID…"
 
 #: src/pages/ChatPage.tsx
+msgid "Decline"
+msgstr "거절"
+
+#: src/pages/ChatPage.tsx
 msgid "Delete"
 msgstr "삭제"
 
@@ -328,6 +345,10 @@ msgid "Fast — just does it (undo anytime)"
 msgstr "빠름 — 바로 실행해요(언제든 되돌릴 수 있어요)"
 
 #: src/pages/ChatPage.tsx
+msgid "File handover cancelled — nothing was shared."
+msgstr "파일 전달이 취소되었습니다 — 아무것도 공유되지 않았습니다."
+
+#: src/pages/ChatPage.tsx
 msgid "Google access revoked for this tab."
 msgstr "이 탭의 Google 액세스를 해제했어요."
 
@@ -344,8 +365,24 @@ msgid "Google connected. The agent can now create Docs, Sheets, and Slides and e
 msgstr "Google에 연결됐어요. 에이전트가 이제 문서·스프레드시트·프레젠테이션을 만들고, 자신이 만든 것을 편집할 수 있어요."
 
 #: src/pages/ChatPage.tsx
+msgid "Google file handover requested"
+msgstr "Google 파일 전달 요청"
+
+#: src/pages/ChatPage.tsx
 msgid "Google revocation failed."
 msgstr "Google 액세스 해제에 실패했어요."
+
+#: src/pages/ChatPage.tsx
+msgid "Google's own picker opens next — only the files you choose there are shared."
+msgstr "다음으로 Google의 자체 선택기가 열립니다 — 거기서 선택한 파일만 공유됩니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Hand files to WasmHatch"
+msgstr "WasmHatch에 파일 건네기"
+
+#: src/pages/ChatPage.tsx
+msgid "Hand Google Drive files to the agent?"
+msgstr "Google Drive 파일을 에이전트에게 건넬까요?"
 
 #: src/pages/ChatPage.tsx
 msgid "Hatch a new one"
@@ -466,6 +503,10 @@ msgstr "WasmHatch를 여는 중…"
 #: src/App.tsx
 msgid "Opening your workspace…"
 msgstr "작업 공간을 여는 중…"
+
+#: src/pages/ChatPage.tsx
+msgid "Opening…"
+msgstr "여는 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -621,6 +662,10 @@ msgid "That does not look like a Slack Incoming Webhook URL — it starts with h
 msgstr "Slack Incoming Webhook URL이 아닌 것 같습니다 — https://hooks.slack.com/services/… 로 시작합니다"
 
 #: src/pages/ChatPage.tsx
+msgid "The agent asked for existing Google files it cannot see on its own."
+msgstr "에이전트가 스스로는 볼 수 없는 기존 Google 파일을 요청했습니다."
+
+#: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
 msgstr "에이전트가 문서·스프레드시트·프레젠테이션을 만들고, 링크로 공유한 파일을 열고, 캘린더 일정을 읽거나 추가할 수 있어요. 토큰은 이 탭에만 남고, 모든 쓰기는 적용 전에 표시돼요."
 
@@ -635,6 +680,10 @@ msgstr "브라우저가 아직은 안 된다고 했어요. 앱을 조금 더 쓰
 #: src/pages/ChatPage.tsx
 msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
 msgstr "브라우저에서 Slack으로 가는 직접 경로가 지금 차단된 것 같습니다. 배포 측에서 docs/slack.md에 설명된 릴레이를 포함하고 VITE_SLACK_PROXY_URL을 설정할 수 있습니다."
+
+#: src/pages/ChatPage.tsx
+msgid "The Google Picker could not be opened."
+msgstr "Google 선택기를 열 수 없습니다."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx

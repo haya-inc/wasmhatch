@@ -27,11 +27,15 @@ jobs:
       - run: npm test
       - run: npm run build:pages
         env:
-          # Forks set a repository *variable* (client IDs are public
-          # identifiers, not secrets) to enable Google tools on their
-          # deployment. Unset means the Google panel stays off — see
+          # Forks set repository *variables* (these are public identifiers,
+          # not secrets) to enable optional connectors on their deployment.
+          # Unset means the matching feature stays off — see
           # docs/fork-guide.md.
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_API_KEY: ${{ vars.VITE_GOOGLE_API_KEY }}
+          VITE_GOOGLE_APP_ID: ${{ vars.VITE_GOOGLE_APP_ID }}
+          VITE_EXTRA_MCP_SERVERS: ${{ vars.VITE_EXTRA_MCP_SERVERS }}
+          VITE_SLACK_PROXY_URL: ${{ vars.VITE_SLACK_PROXY_URL }}
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

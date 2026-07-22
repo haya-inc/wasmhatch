@@ -45,6 +45,11 @@ upstream app.
    for up to 100 test users you list yourself; public use without warning
    screens needs Google's verification of *your* client — see
    [google-oauth-verification.md](google-oauth-verification.md).
+4. Optional — Google file handover (`open_google_file_picker`): also set
+   `VITE_GOOGLE_API_KEY` (a browser API key restricted to the Google Picker
+   API and your origins; a public identifier, so a variable, not a secret)
+   and, recommended, `VITE_GOOGLE_APP_ID` (your Cloud project number).
+   Without them the picker tool simply stays off.
 
 Everything else works with no configuration: the key-free Chrome path,
 bring-your-own Claude/OpenAI keys, workspace, artifacts, and backups.

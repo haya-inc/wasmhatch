@@ -8,6 +8,13 @@ import type { HtmlArtifact } from "../lib/artifact";
 import { type PermissionDecision, type WritePermissionRequest } from "../lib/chat-permissions";
 import { type WritePolicy } from "../lib/chat-tools";
 import { GoogleOAuthReauthorizationRequiredError, GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
+import {
+  GOOGLE_PICKER_API_KEY,
+  GOOGLE_PICKER_APP_ID,
+  googlePickerConfigured,
+  openDriveFilePicker,
+  type PickedDriveFile
+} from "../lib/google-picker";
 import { parseSensitiveScopesFlag, resolveGoogleScopes } from "../lib/google-scopes";
 import { parseMarkdown, type MarkdownInline } from "../lib/markdown";
 import { createZipArchive } from "../lib/archive";
@@ -219,6 +226,9 @@ export function ChatPage() {
   const [writeMode, setWriteMode] = useState<WritePolicy>("autonomous");
   const [builtinAvailability, setBuiltinAvailability] = useState<string>("checking");
   const [permissionQueue, setPermissionQueue] = useState<PendingPermission[]>([]);
+  // Google Picker handover requests raised by the agent; resolved by a click.
+  const [pickQueue, setPickQueue] = useState<{ reason: string; resolve: (files: PickedDriveFile[] | null) => void }[]>([]);
+  const [pickerBusy, setPickerBusy] = useState(false);
   const [artifact, setArtifact] = useState<HtmlArtifact | null>(null);
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<string[]>([]);
@@ -295,7 +305,16 @@ export function ChatPage() {
           if (!renewed?.connected) throw error;
           return provider.getToken(signal);
         }
-      }
+      },
+      ...(googlePickerConfigured() ? {
+        requestFilePick: (reason: string, signal?: AbortSignal) => new Promise<PickedDriveFile[] | null>((resolve) => {
+          setPickQueue((queue) => [...queue, { reason, resolve }]);
+          signal?.addEventListener("abort", () => {
+            resolve(null);
+            setPickQueue((queue) => queue.filter((entry) => entry.resolve !== resolve));
+          }, { once: true });
+        })
+      } : {})
     },
     slack: { getWebhookUrl: () => slackUrlRef.current, getToken: () => slackTokenRef.current },
     getBuiltinApi: () => (globalThis as typeof globalThis & { LanguageModel?: ChromeLanguageModelApi }).LanguageModel
@@ -427,7 +446,7 @@ export function ChatPage() {
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [items.length, permissionQueue]);
+  }, [items.length, permissionQueue, pickQueue]);
 
   useEffect(() => {
     let cancelled = false;
@@ -691,6 +710,35 @@ export function ChatPage() {
 
   const selectedSchedule = selected?.thread.schedule;
 
+  const activePick = pickQueue[0];
+  const declinePick = () => {
+    activePick?.resolve(null);
+    setPickQueue((queue) => queue.slice(1));
+  };
+  const chooseFilesForPick = async () => {
+    if (!activePick || pickerBusy) return;
+    setPickerBusy(true);
+    try {
+      const token = await googleSession.current.credentialProvider().getToken();
+      const files = await openDriveFilePicker({
+        accessToken: token,
+        apiKey: GOOGLE_PICKER_API_KEY,
+        appId: GOOGLE_PICKER_APP_ID || undefined,
+        title: t`Hand files to WasmHatch`
+      });
+      activePick.resolve(files);
+      setPickQueue((queue) => queue.slice(1));
+      notice(files?.length
+        ? plural(files.length, { one: "Handed # Google file to the agent.", other: "Handed # Google files to the agent." })
+        : t`File handover cancelled — nothing was shared.`);
+    } catch (error) {
+      // Keep the card so the user can retry or decline explicitly.
+      notice(error instanceof Error ? error.message : t`The Google Picker could not be opened.`, "error");
+    } finally {
+      setPickerBusy(false);
+    }
+  };
+
   return (
     <div className="fresh chat-shell">
       <header className="chat-header">
@@ -840,6 +888,28 @@ export function ChatPage() {
                   </button>
                   <button className="button button-quiet" type="button" onClick={() => decidePermission("reject")}>
                     <Trans>Reject</Trans>
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {activePick && (
+              <section className="chat-permission" aria-label={t`Google file handover requested`}>
+                <h2><Trans>Hand Google Drive files to the agent?</Trans></h2>
+                <p className="chat-permission-meta">
+                  {activePick.reason
+                    ? activePick.reason
+                    : t`The agent asked for existing Google files it cannot see on its own.`}
+                </p>
+                <p className="chat-permission-meta">
+                  <Trans>Google's own picker opens next — only the files you choose there are shared.</Trans>
+                </p>
+                <div className="chat-permission-actions">
+                  <button className="button button-primary" type="button" disabled={pickerBusy} onClick={() => { void chooseFilesForPick(); }}>
+                    {pickerBusy ? t`Opening…` : t`Choose files…`}
+                  </button>
+                  <button className="button button-quiet" type="button" disabled={pickerBusy} onClick={declinePick}>
+                    <Trans>Decline</Trans>
                   </button>
                 </div>
               </section>

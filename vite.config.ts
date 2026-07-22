@@ -41,6 +41,14 @@ export default defineConfig(({ command, mode }) => ({
         handler() {
           const developmentConnect = command === "serve" ? " ws://localhost:* ws://127.0.0.1:*" : "";
           const googleIdentityBase = "https://accounts.google.com/gsi/";
+          // Google Picker (drive.file file handover): gapi loader script, the
+          // picker iframe, its XHRs, and file thumbnails/icons. Static like
+          // every other connector origin — the audit never depends on whether
+          // a deployment actually sets VITE_GOOGLE_API_KEY.
+          const pickerScriptOrigin = "https://apis.google.com";
+          const pickerFrameOrigins = "https://docs.google.com https://drive.google.com";
+          const pickerConnectOrigins = "https://apis.google.com https://content.googleapis.com";
+          const pickerImgOrigins = "https://*.googleusercontent.com https://ssl.gstatic.com";
           // LLM provider origins come from the audited registry; these are the non-LLM
           // connector origins (GitHub import, Google Drive/Docs/Sheets/Slides REST, and
           // Google Calendar, which is served from www.googleapis.com). Slides and Calendar
@@ -74,13 +82,13 @@ export default defineConfig(({ command, mode }) => ({
             "default-src 'none'",
             "base-uri 'none'",
             "object-src 'none'",
-            `frame-src ${googleIdentityBase}`,
+            `frame-src ${googleIdentityBase} ${pickerFrameOrigins}`,
             "form-action 'none'",
-            "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client",
+            `script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client ${pickerScriptOrigin}`,
             stylePolicy,
-            "img-src 'self' data:",
+            `img-src 'self' data: ${pickerImgOrigins}`,
             "font-src 'self'",
-            `connect-src 'self' ${PROVIDER_CONNECT_SRCS.join(" ")} ${connectorOrigins}${slackProxyOrigin} ${mcpOrigins} ${googleIdentityBase}${developmentConnect}`,
+            `connect-src 'self' ${PROVIDER_CONNECT_SRCS.join(" ")} ${connectorOrigins}${slackProxyOrigin} ${pickerConnectOrigins} ${mcpOrigins} ${googleIdentityBase}${developmentConnect}`,
             "worker-src 'self'",
             "manifest-src 'self'"
           ].join("; ");

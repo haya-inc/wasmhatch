@@ -18,6 +18,11 @@ msgstr ""
 msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
 msgstr "{0, plural, other {接続中 · # 個のツール}}"
 
+#. placeholder {0}: files.length
+#: src/pages/ChatPage.tsx
+msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
+msgstr "{0, plural, other {Googleファイル#件をエージェントに手渡しました。}}"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -116,6 +121,10 @@ msgstr "{0}にほしい成果を伝えましょう…"
 msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
 msgstr "普段の言葉で頼むだけ — スプレッドシートの修正も、文書の作成も、レポート作りもこの場で進みます。変更はすべてその場で表示され、元に戻すのもワンクリック。先に確認したい場合は、サイドバーで「慎重」に切り替えてください。"
 
+#: src/lib/tool-summary.ts
+msgid "Asking for Google files"
+msgstr "Googleファイルの手渡しを依頼中"
+
 #: src/pages/ChatPage.tsx
 msgid "Assistant"
 msgstr "アシスタント"
@@ -179,6 +188,10 @@ msgstr "Slackのチャンネルを確認中"
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
 msgstr "チケットボードを確認中"
+
+#: src/pages/ChatPage.tsx
+msgid "Choose files…"
+msgstr "ファイルを選ぶ…"
 
 #: src/pages/ChatPage.tsx
 msgid "Close"
@@ -260,6 +273,10 @@ msgid "Custom model ID…"
 msgstr "カスタムモデルID…"
 
 #: src/pages/ChatPage.tsx
+msgid "Decline"
+msgstr "断る"
+
+#: src/pages/ChatPage.tsx
 msgid "Delete"
 msgstr "削除"
 
@@ -328,6 +345,10 @@ msgid "Fast — just does it (undo anytime)"
 msgstr "おまかせ — すぐ実行(いつでも元に戻せます)"
 
 #: src/pages/ChatPage.tsx
+msgid "File handover cancelled — nothing was shared."
+msgstr "ファイルの手渡しをキャンセルしました — 何も共有されていません。"
+
+#: src/pages/ChatPage.tsx
 msgid "Google access revoked for this tab."
 msgstr "このタブのGoogleアクセスを取り消しました。"
 
@@ -344,8 +365,24 @@ msgid "Google connected. The agent can now create Docs, Sheets, and Slides and e
 msgstr "Googleに接続しました。エージェントはドキュメント・スプレッドシート・スライドを作成し、自分が作ったものを編集できます。"
 
 #: src/pages/ChatPage.tsx
+msgid "Google file handover requested"
+msgstr "Googleファイルの手渡しリクエスト"
+
+#: src/pages/ChatPage.tsx
 msgid "Google revocation failed."
 msgstr "Googleアクセスの取り消しに失敗しました。"
+
+#: src/pages/ChatPage.tsx
+msgid "Google's own picker opens next — only the files you choose there are shared."
+msgstr "次にGoogle自身のピッカーが開きます — そこで選んだファイルだけが共有されます。"
+
+#: src/pages/ChatPage.tsx
+msgid "Hand files to WasmHatch"
+msgstr "WasmHatchにファイルを手渡す"
+
+#: src/pages/ChatPage.tsx
+msgid "Hand Google Drive files to the agent?"
+msgstr "Googleドライブのファイルをエージェントに手渡しますか?"
 
 #: src/pages/ChatPage.tsx
 msgid "Hatch a new one"
@@ -466,6 +503,10 @@ msgstr "WasmHatchを開いています…"
 #: src/App.tsx
 msgid "Opening your workspace…"
 msgstr "ワークスペースを開いています…"
+
+#: src/pages/ChatPage.tsx
+msgid "Opening…"
+msgstr "開いています…"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -621,6 +662,10 @@ msgid "That does not look like a Slack Incoming Webhook URL — it starts with h
 msgstr "Slack Incoming WebhookのURLではないようです — https://hooks.slack.com/services/… で始まるURLです"
 
 #: src/pages/ChatPage.tsx
+msgid "The agent asked for existing Google files it cannot see on its own."
+msgstr "エージェントが、自分では見えない既存のGoogleファイルを求めています。"
+
+#: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
 msgstr "エージェントはドキュメント・スプレッドシート・スライドの作成、リンク共有されたファイルのオープン、カレンダー予定の読み取り・追加ができます。トークンはこのタブ内に留まり、書き込みはすべて適用前に表示されます。"
 
@@ -635,6 +680,10 @@ msgstr "ブラウザは「まだ」と答えました。もう少し使い込む
 #: src/pages/ChatPage.tsx
 msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
 msgstr "ブラウザからSlackへの直接ルートが現在ブロックされているようです。デプロイ側で docs/slack.md に記載のリレーを用意し、VITE_SLACK_PROXY_URL を設定すると回避できます。"
+
+#: src/pages/ChatPage.tsx
+msgid "The Google Picker could not be opened."
+msgstr "Googleピッカーを開けませんでした。"
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx

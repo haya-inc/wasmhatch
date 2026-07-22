@@ -18,6 +18,11 @@ msgstr ""
 msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
 msgstr "{0, plural, other {terhubung · # alat}}"
 
+#. placeholder {0}: files.length
+#: src/pages/ChatPage.tsx
+msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
+msgstr "{0, plural, other {# file Google diserahkan ke agen.}}"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -116,6 +121,10 @@ msgstr "Minta {0} mewujudkan hasil yang Anda butuhkan…"
 msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
 msgstr "Minta saja dengan kata-kata Anda sendiri — ia memperbaiki spreadsheet, menulis dokumen, dan menyusun laporan langsung di sini. Setiap perubahan ditampilkan saat terjadi, dan mengurungkannya cukup sekali klik. Ingin menyetujui dulu? Beralih ke mode Hati-hati di bilah samping."
 
+#: src/lib/tool-summary.ts
+msgid "Asking for Google files"
+msgstr "Meminta file Google"
+
 #: src/pages/ChatPage.tsx
 msgid "Assistant"
 msgstr "Asisten"
@@ -179,6 +188,10 @@ msgstr "Memeriksa channel Slack"
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
 msgstr "Memeriksa papan tiket"
+
+#: src/pages/ChatPage.tsx
+msgid "Choose files…"
+msgstr "Pilih file…"
 
 #: src/pages/ChatPage.tsx
 msgid "Close"
@@ -260,6 +273,10 @@ msgid "Custom model ID…"
 msgstr "ID model kustom…"
 
 #: src/pages/ChatPage.tsx
+msgid "Decline"
+msgstr "Tolak"
+
+#: src/pages/ChatPage.tsx
 msgid "Delete"
 msgstr "Hapus"
 
@@ -328,6 +345,10 @@ msgid "Fast — just does it (undo anytime)"
 msgstr "Cepat — langsung dikerjakan (bisa diurungkan kapan saja)"
 
 #: src/pages/ChatPage.tsx
+msgid "File handover cancelled — nothing was shared."
+msgstr "Penyerahan file dibatalkan — tidak ada yang dibagikan."
+
+#: src/pages/ChatPage.tsx
 msgid "Google access revoked for this tab."
 msgstr "Akses Google untuk tab ini telah dicabut."
 
@@ -344,8 +365,24 @@ msgid "Google connected. The agent can now create Docs, Sheets, and Slides and e
 msgstr "Google terhubung. Agen kini dapat membuat Dokumen, Spreadsheet, dan Slide serta mengedit yang dibuatnya sendiri."
 
 #: src/pages/ChatPage.tsx
+msgid "Google file handover requested"
+msgstr "Permintaan penyerahan file Google"
+
+#: src/pages/ChatPage.tsx
 msgid "Google revocation failed."
 msgstr "Pencabutan akses Google gagal."
+
+#: src/pages/ChatPage.tsx
+msgid "Google's own picker opens next — only the files you choose there are shared."
+msgstr "Selanjutnya pemilih milik Google terbuka — hanya file yang Anda pilih di sana yang dibagikan."
+
+#: src/pages/ChatPage.tsx
+msgid "Hand files to WasmHatch"
+msgstr "Serahkan file ke WasmHatch"
+
+#: src/pages/ChatPage.tsx
+msgid "Hand Google Drive files to the agent?"
+msgstr "Serahkan file Google Drive ke agen?"
 
 #: src/pages/ChatPage.tsx
 msgid "Hatch a new one"
@@ -466,6 +503,10 @@ msgstr "Membuka WasmHatch…"
 #: src/App.tsx
 msgid "Opening your workspace…"
 msgstr "Membuka ruang kerja Anda…"
+
+#: src/pages/ChatPage.tsx
+msgid "Opening…"
+msgstr "Membuka…"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -621,6 +662,10 @@ msgid "That does not look like a Slack Incoming Webhook URL — it starts with h
 msgstr "Itu tidak tampak seperti URL Incoming Webhook Slack — URL-nya diawali https://hooks.slack.com/services/…"
 
 #: src/pages/ChatPage.tsx
+msgid "The agent asked for existing Google files it cannot see on its own."
+msgstr "Agen meminta file Google yang sudah ada dan tidak bisa dilihatnya sendiri."
+
+#: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
 msgstr "Agen dapat membuat Dokumen, Spreadsheet, dan Slide, membuka file yang Anda bagikan lewat tautan, serta membaca atau menambahkan acara Kalender. Token tetap berada di tab ini; setiap penulisan ditampilkan sebelum diterapkan."
 
@@ -635,6 +680,10 @@ msgstr "Browser bilang belum bisa. Biasanya ia setuju setelah aplikasi ini dipak
 #: src/pages/ChatPage.tsx
 msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
 msgstr "Jalur langsung browser ke Slack tampaknya sedang terblokir. Deployment dapat menyertakan relay yang dijelaskan di docs/slack.md dan menyetel VITE_SLACK_PROXY_URL."
+
+#: src/pages/ChatPage.tsx
+msgid "The Google Picker could not be opened."
+msgstr "Pemilih Google tidak dapat dibuka."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx

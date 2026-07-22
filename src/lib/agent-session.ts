@@ -56,6 +56,7 @@ import {
 } from "./agent-scheduler";
 import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "./google-connectors";
 import { GOOGLE_SENSITIVE_TOOLS, createGoogleSensitiveExecutor } from "./google-sensitive-connectors";
+import { GOOGLE_PICKER_TOOL, createGooglePickerExecutor, type PickedDriveFile } from "./google-picker";
 import { SLACK_WEBHOOK_TOOLS, createSlackWebhookExecutor } from "./slack-webhook";
 import { SLACK_API_TOOLS, createSlackApiExecutor, slackProxyBaseUrl } from "./slack-tools";
 import { buildMcpToolset, McpConnection, type McpToolset } from "./mcp-client";
@@ -140,6 +141,8 @@ export interface SwarmDeps {
     isConnected: () => boolean;
     sensitiveEnabled: boolean;
     getToken: (signal?: AbortSignal) => Promise<string>;
+    /** Picker handover UI bridge; absent when the deployment has no picker key. */
+    requestFilePick?: (reason: string, signal?: AbortSignal) => Promise<PickedDriveFile[] | null>;
   };
   /** Slack credentials, read per call; "" while that route is not connected. */
   slack?: { getWebhookUrl: () => string; getToken?: () => string };
@@ -217,7 +220,7 @@ export function systemPrompt(
     webSearch
       ? "When current information from the web would change the answer (recent events, prices, versions, anything time-sensitive), use web_search rather than answering from memory."
       : "You cannot browse or search the web in this session; say so plainly when asked for current information.",
-    "When Google tools are available, you can create Google Docs, Sheets, and Slides and edit the ones you created; you cannot browse the user's existing Drive.",
+    "When Google tools are available, you can create Google Docs, Sheets, and Slides and edit the ones you created; you cannot browse the user's existing Drive. If open_google_file_picker is available, the user can hand you specific existing files through it.",
     ...(swarm?.scheduled
       ? ["This is a scheduled check-in with no user present: never ask questions, keep the final reply to a few short lines, and prefer ticket notes over long prose."]
       : []),
@@ -642,6 +645,7 @@ export class HatchlingSwarm {
       ARTIFACT_TOOL,
       ...TICKET_TOOLS,
       ...(this.deps.google.isConnected() ? GOOGLE_CONNECTOR_TOOLS : []),
+      ...(this.deps.google.isConnected() && this.deps.google.requestFilePick ? [GOOGLE_PICKER_TOOL] : []),
       ...(this.deps.google.isConnected() && this.deps.google.sensitiveEnabled ? GOOGLE_SENSITIVE_TOOLS : []),
       ...(this.deps.slack?.getWebhookUrl() ? SLACK_WEBHOOK_TOOLS : []),
       ...(this.deps.slack?.getToken?.() ? SLACK_API_TOOLS : []),
@@ -678,6 +682,9 @@ export class HatchlingSwarm {
     });
     const googleExecute = createGoogleConnectorExecutor(this.deps.google.getToken);
     const googleSensitiveExecute = createGoogleSensitiveExecutor(this.deps.google.getToken);
+    const pickerExecute = createGooglePickerExecutor(
+      (reason, signal) => this.deps.google.requestFilePick?.(reason, signal) ?? Promise.resolve(null)
+    );
     const slackExecute = createSlackWebhookExecutor(() => this.deps.slack?.getWebhookUrl() ?? "");
     const slackApiExecute = createSlackApiExecutor(
       () => this.deps.slack?.getToken?.() ?? "",
@@ -699,6 +706,7 @@ export class HatchlingSwarm {
       if (name === ARTIFACT_TOOL.name) return artifactExecute(name, args, context);
       if (ticketToolNames.has(name)) return ticketExecute(name, args, context);
       if (googleToolNames.has(name)) return googleExecute(name, args, context);
+      if (name === GOOGLE_PICKER_TOOL.name) return pickerExecute(name, args, context);
       if (googleSensitiveToolNames.has(name)) return googleSensitiveExecute(name, args, context);
       if (slackToolNames.has(name)) return slackExecute(name, args, context);
       if (slackApiToolNames.has(name)) return slackApiExecute(name, args, context);

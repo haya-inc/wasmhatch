@@ -18,6 +18,11 @@ msgstr ""
 msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
 msgstr "{0, plural, one {bağlı · # araç} other {bağlı · # araç}}"
 
+#. placeholder {0}: files.length
+#: src/pages/ChatPage.tsx
+msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
+msgstr "{0, plural, one {Asistana # Google dosyası verildi.} other {Asistana # Google dosyası verildi.}}"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -116,6 +121,10 @@ msgstr "İstediğiniz sonucu {0} adlı civcive anlatın…"
 msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
 msgstr "Kendi sözcüklerinizle isteyin — e-tabloları düzeltir, belgeler yazar ve raporları tam burada hazırlar. Her değişiklik olduğu anda gösterilir, geri almak tek tık. Önce onaylamayı mı tercih edersiniz? Kenar çubuğundan Dikkatli moda geçin."
 
+#: src/lib/tool-summary.ts
+msgid "Asking for Google files"
+msgstr "Google dosyaları isteniyor"
+
 #: src/pages/ChatPage.tsx
 msgid "Assistant"
 msgstr "Asistan"
@@ -179,6 +188,10 @@ msgstr "Slack kanalları kontrol ediliyor"
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
 msgstr "Görev panosu kontrol ediliyor"
+
+#: src/pages/ChatPage.tsx
+msgid "Choose files…"
+msgstr "Dosyaları seç…"
 
 #: src/pages/ChatPage.tsx
 msgid "Close"
@@ -260,6 +273,10 @@ msgid "Custom model ID…"
 msgstr "Özel model kimliği…"
 
 #: src/pages/ChatPage.tsx
+msgid "Decline"
+msgstr "Reddet"
+
+#: src/pages/ChatPage.tsx
 msgid "Delete"
 msgstr "Sil"
 
@@ -328,6 +345,10 @@ msgid "Fast — just does it (undo anytime)"
 msgstr "Hızlı — hemen yapar (istediğiniz an geri alın)"
 
 #: src/pages/ChatPage.tsx
+msgid "File handover cancelled — nothing was shared."
+msgstr "Dosya devri iptal edildi — hiçbir şey paylaşılmadı."
+
+#: src/pages/ChatPage.tsx
 msgid "Google access revoked for this tab."
 msgstr "Bu sekme için Google erişimi iptal edildi."
 
@@ -344,8 +365,24 @@ msgid "Google connected. The agent can now create Docs, Sheets, and Slides and e
 msgstr "Google bağlandı. Asistan artık Dokümanlar, E-Tablolar ve Slaytlar oluşturabilir ve kendi oluşturduklarını düzenleyebilir."
 
 #: src/pages/ChatPage.tsx
+msgid "Google file handover requested"
+msgstr "Google dosya devri istendi"
+
+#: src/pages/ChatPage.tsx
 msgid "Google revocation failed."
 msgstr "Google erişimi iptal edilemedi."
+
+#: src/pages/ChatPage.tsx
+msgid "Google's own picker opens next — only the files you choose there are shared."
+msgstr "Şimdi Google'ın kendi seçicisi açılır — yalnızca orada seçtiğiniz dosyalar paylaşılır."
+
+#: src/pages/ChatPage.tsx
+msgid "Hand files to WasmHatch"
+msgstr "WasmHatch'e dosya ver"
+
+#: src/pages/ChatPage.tsx
+msgid "Hand Google Drive files to the agent?"
+msgstr "Google Drive dosyaları asistana verilsin mi?"
 
 #: src/pages/ChatPage.tsx
 msgid "Hatch a new one"
@@ -466,6 +503,10 @@ msgstr "WasmHatch açılıyor…"
 #: src/App.tsx
 msgid "Opening your workspace…"
 msgstr "Çalışma alanınız açılıyor…"
+
+#: src/pages/ChatPage.tsx
+msgid "Opening…"
+msgstr "Açılıyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -621,6 +662,10 @@ msgid "That does not look like a Slack Incoming Webhook URL — it starts with h
 msgstr "Bu bir Slack Incoming Webhook URL'si gibi görünmüyor — https://hooks.slack.com/services/… ile başlar"
 
 #: src/pages/ChatPage.tsx
+msgid "The agent asked for existing Google files it cannot see on its own."
+msgstr "Asistan, kendi göremediği mevcut Google dosyalarını istedi."
+
+#: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
 msgstr "Asistan Dokümanlar, E-Tablolar ve Slaytlar oluşturabilir, bağlantıyla paylaştıklarınızı açabilir, Takvim etkinliklerini okuyup ekleyebilir. Jeton bu sekmede kalır; her yazma işlemi uygulanmadan önce gösterilir."
 
@@ -635,6 +680,10 @@ msgstr "Tarayıcı şimdilik izin vermedi. Uygulamayı biraz daha kullandığın
 #: src/pages/ChatPage.tsx
 msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
 msgstr "Tarayıcıdan Slack'e giden doğrudan yol şu anda engellenmiş görünüyor. Bir dağıtım, docs/slack.md içinde anlatılan aktarıcıyı paketleyip VITE_SLACK_PROXY_URL ayarlayabilir."
+
+#: src/pages/ChatPage.tsx
+msgid "The Google Picker could not be opened."
+msgstr "Google seçicisi açılamadı."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx

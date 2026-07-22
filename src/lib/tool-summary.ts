@@ -32,6 +32,7 @@ const RULES: ToolSummaryRule[] = [
   { name: "read_google_sheet_values", format: () => t`Reading a Google Sheet` },
   { name: "update_google_sheet_values", format: () => t`Updating a Google Sheet` },
   { name: "append_google_doc_text", format: () => t`Appending text to a Google Doc` },
+  { name: "open_google_file_picker", format: () => t`Asking for Google files` },
   { name: "post_slack_message", format: () => t`Posting to Slack` },
   { name: "list_slack_channels", format: () => t`Checking Slack channels` },
   { name: "send_slack_channel_message", argKey: "channel", format: (channel) => t`Posting to Slack — ${channel}` },
