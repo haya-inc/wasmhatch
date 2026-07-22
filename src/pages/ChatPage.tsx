@@ -22,6 +22,20 @@ import { loadChatSettings, saveChatSettings } from "../lib/chat-settings";
 import { CLOUD_PROVIDERS, getCloudProvider, type ChatProviderId } from "../lib/chat-providers";
 import { FIRST_RUN_CSV_SAMPLE, FIRST_RUN_SAMPLE_FILES } from "../lib/first-run-csv-sample";
 import { isProtectedAgentPath } from "../lib/secrets";
+import {
+  fetchPortableAgentPackage,
+  PORTABLE_AGENT_MEDIA_TYPE,
+  readPortableAgentPackage,
+  type PortableAgentPackage
+} from "../lib/agent-package";
+import {
+  isRegistryPackageUrl,
+  portableFileName,
+  publishToRegistry,
+  registryBaseUrl,
+  registryPackageUrl
+} from "../lib/portable-hatchling";
+import { summarizeRequestedCapabilities } from "../lib/hatchling-capabilities";
 import { isSlackWebhookUrl } from "../lib/slack-webhook";
 import { probeSlackConnectivity } from "../lib/slack-connect";
 import { slackProxyBaseUrl } from "../lib/slack-tools";
@@ -229,6 +243,12 @@ export function ChatPage() {
   // Google Picker handover requests raised by the agent; resolved by a click.
   const [pickQueue, setPickQueue] = useState<{ reason: string; resolve: (files: PickedDriveFile[] | null) => void }[]>([]);
   const [pickerBusy, setPickerBusy] = useState(false);
+  // Portable agent import/publish: nothing hatches or uploads until the
+  // user approves the preview card.
+  const [portablePreview, setPortablePreview] = useState<{ pkg: PortableAgentPackage; source: string; action: "hatch" | "publish" } | null>(null);
+  const [portableBusy, setPortableBusy] = useState(false);
+  const [registryToken, setRegistryToken] = useState("");
+  const [registryLoadUrl, setRegistryLoadUrl] = useState("");
   const [artifact, setArtifact] = useState<HtmlArtifact | null>(null);
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<string[]>([]);
@@ -381,6 +401,120 @@ export function ChatPage() {
     setSlackTeam(null);
     notice(t`Slack bot token disconnected.`);
   }, [notice]);
+
+  const previewPortableBytes = useCallback(async (bytes: Uint8Array, source: string) => {
+    try {
+      const pkg = await readPortableAgentPackage(bytes);
+      setPortablePreview({ pkg, source, action: "hatch" });
+    } catch (error) {
+      notice(error instanceof Error ? error.message : t`The agent package could not be read.`, "error");
+    }
+  }, [notice]);
+
+  const importPortableFile = useCallback(async (file: File) => {
+    await previewPortableBytes(new Uint8Array(await file.arrayBuffer()), file.name);
+  }, [previewPortableBytes]);
+
+  const loadPortableFromRegistry = useCallback(async () => {
+    const url = registryLoadUrl.trim();
+    const base = registryBaseUrl();
+    if (!isRegistryPackageUrl(url, base)) {
+      notice(t`That URL is not on this deployment's registry, so the browser cannot fetch it. Download the .agent file instead and import it here.`, "error");
+      return;
+    }
+    setPortableBusy(true);
+    try {
+      const pkg = await fetchPortableAgentPackage(url);
+      setPortablePreview({ pkg, source: url, action: "hatch" });
+      setRegistryLoadUrl("");
+    } catch (error) {
+      notice(error instanceof Error ? error.message : t`The agent package could not be downloaded.`, "error");
+    } finally {
+      setPortableBusy(false);
+    }
+  }, [notice, registryLoadUrl]);
+
+  const confirmPortablePreview = useCallback(async () => {
+    if (!portablePreview || portableBusy) return;
+    setPortableBusy(true);
+    try {
+      if (portablePreview.action === "publish") {
+        const base = registryBaseUrl();
+        if (!base) throw new Error("No registry is configured for this deployment.");
+        const result = await publishToRegistry(base, registryToken.trim(), portablePreview.pkg);
+        setPortablePreview(null);
+        notice(t`Published to the registry as ${result.publisherId}/${result.agentId}. Immutable package: ${registryPackageUrl(base, result)}`);
+      } else {
+        const id = await swarm.hatchFromPackage(portablePreview.pkg);
+        swarm.select(id);
+        setPortablePreview(null);
+        notice(t`Hatched “${portablePreview.pkg.manifest.name}” from the package. Its playbook and files are in place; it only has the capabilities shown in the preview.`);
+      }
+    } catch (error) {
+      notice(error instanceof Error
+        ? error.message
+        : portablePreview.action === "publish" ? t`The registry publish failed.` : t`The package could not be hatched.`, "error");
+    } finally {
+      setPortableBusy(false);
+    }
+  }, [notice, portableBusy, portablePreview, registryToken, swarm]);
+
+  const exportPortable = useCallback(async () => {
+    setPortableBusy(true);
+    try {
+      const pkg = await swarm.exportPortableHatchling(swarm.selectedThreadId);
+      const copy = new Uint8Array(pkg.bytes.byteLength);
+      copy.set(pkg.bytes);
+      const url = URL.createObjectURL(new Blob([copy.buffer], { type: PORTABLE_AGENT_MEDIA_TYPE }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = portableFileName(pkg.manifest);
+      link.click();
+      URL.revokeObjectURL(url);
+      notice(t`Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials.`);
+    } catch (error) {
+      notice(error instanceof Error ? error.message : t`The hatchling could not be exported.`, "error");
+    } finally {
+      setPortableBusy(false);
+    }
+  }, [notice, swarm]);
+
+  // Publishing goes through the same preview card: the exact file list and
+  // requested capabilities are shown before any upload.
+  const publishPortable = useCallback(async () => {
+    const base = registryBaseUrl();
+    if (!base || !registryToken.trim()) return;
+    setPortableBusy(true);
+    try {
+      const pkg = await swarm.exportPortableHatchling(swarm.selectedThreadId);
+      setPortablePreview({ pkg, source: t`this hatchling, before upload`, action: "publish" });
+    } catch (error) {
+      notice(error instanceof Error ? error.message : t`The hatchling could not be exported.`, "error");
+    } finally {
+      setPortableBusy(false);
+    }
+  }, [notice, registryToken, swarm]);
+
+  // ?agent=<registry package URL> — the shareable try link. The package is
+  // fetched and previewed; nothing hatches without the user's click.
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("agent");
+    if (!param) return;
+    const base = registryBaseUrl();
+    if (!isRegistryPackageUrl(param, base)) {
+      notice(t`That URL is not on this deployment's registry, so the browser cannot fetch it. Download the .agent file instead and import it here.`, "error");
+      return;
+    }
+    let cancelled = false;
+    void fetchPortableAgentPackage(param)
+      .then((pkg) => { if (!cancelled) setPortablePreview({ pkg, source: param, action: "hatch" }); })
+      .catch((error: unknown) => {
+        if (!cancelled) notice(error instanceof Error ? error.message : t`The agent package could not be downloaded.`, "error");
+      });
+    return () => { cancelled = true; };
+    // Runs once per page load for the initial URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const refreshFiles = useCallback(async () => {
     try {
@@ -927,6 +1061,48 @@ export function ChatPage() {
                 </div>
               </section>
             )}
+
+            {portablePreview && (() => {
+              const manifest = portablePreview.pkg.manifest;
+              const capabilities = summarizeRequestedCapabilities(manifest.permissions.tools);
+              return (
+                <section className="chat-permission" aria-label={t`Portable agent preview`}>
+                  <h2>
+                    {portablePreview.action === "publish"
+                      ? t`Publish “${manifest.name}”?`
+                      : t`Hatch “${manifest.name}”?`}
+                  </h2>
+                  <p className="chat-permission-meta">
+                    {manifest.id}@{manifest.version} · {manifest.license} · {portablePreview.source}
+                  </p>
+                  <p className="chat-permission-meta">{manifest.summary}</p>
+                  <p className="chat-permission-meta">
+                    {t`${manifest.files.length} files:`}{" "}
+                    {manifest.files.slice(0, 8).map((file) => file.path).join(", ")}
+                    {manifest.files.length > 8 ? "…" : ""}
+                  </p>
+                  <p className="chat-permission-meta">
+                    {capabilities.known.length
+                      ? t`Requested capabilities: ${capabilities.known.join(", ")}`
+                      : t`Requested capabilities: none — it can only talk.`}
+                    {capabilities.unknown.length > 0 && ` ${t`Unrecognized requests (granted nothing): ${capabilities.unknown.join(", ")}`}`}
+                  </p>
+                  <p className="chat-permission-meta">
+                    <Trans>Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available.</Trans>
+                  </p>
+                  <div className="chat-permission-actions">
+                    <button className="button button-primary" type="button" disabled={portableBusy} onClick={() => { void confirmPortablePreview(); }}>
+                      {portablePreview.action === "publish"
+                        ? (portableBusy ? t`Publishing…` : t`Publish it`)
+                        : (portableBusy ? t`Hatching…` : t`Hatch it`)}
+                    </button>
+                    <button className="button button-quiet" type="button" disabled={portableBusy} onClick={() => setPortablePreview(null)}>
+                      <Trans>Cancel</Trans>
+                    </button>
+                  </div>
+                </section>
+              );
+            })()}
           </div>
 
           <div className="chat-composer">
@@ -1519,6 +1695,62 @@ export function ChatPage() {
                   </Trans>
                 </p>
               )}
+          </section>
+
+          <section className="chat-panel">
+            <h2><Trans>Portable agents</Trans></h2>
+            <label className="button chat-file-button">
+              <Trans>Import a .agent file</Trans>
+              <input
+                type="file"
+                accept=".agent,application/zip"
+                aria-label={t`Import portable agent file`}
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) void importPortableFile(file);
+                }}
+              />
+            </label>
+            <button className="button" type="button" disabled={portableBusy || !selected} onClick={() => { void exportPortable(); }}>
+              <Trans>Export this hatchling</Trans>
+            </button>
+            {registryBaseUrl() && (
+              <>
+                <label className="chat-field">
+                  <span><Trans>Registry package URL</Trans></span>
+                  <input
+                    type="text"
+                    value={registryLoadUrl}
+                    placeholder={`${registryBaseUrl()}/v1/agents/…/package`}
+                    onChange={(event) => setRegistryLoadUrl(event.target.value)}
+                  />
+                </label>
+                <button className="button" type="button" disabled={portableBusy || !registryLoadUrl.trim()} onClick={() => { void loadPortableFromRegistry(); }}>
+                  <Trans>Load from the registry</Trans>
+                </button>
+                <label className="chat-field">
+                  <span><Trans>Publish token</Trans></span>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={registryToken}
+                    onChange={(event) => setRegistryToken(event.target.value)}
+                  />
+                </label>
+                <button className="button" type="button" disabled={portableBusy || !registryToken.trim() || !selected} onClick={() => { void publishPortable(); }}>
+                  <Trans>Publish this hatchling</Trans>
+                </button>
+              </>
+            )}
+            <p className="chat-hint">
+              <Trans>
+                A hatchling travels as one .agent file: its playbook, starter files, and requested
+                capabilities — never credentials or chat history. Importing always shows a preview first,
+                and packaged instructions can never unlock more than you see there.
+              </Trans>
+            </p>
           </section>
 
           {viewer && (

@@ -36,6 +36,7 @@ jobs:
           VITE_GOOGLE_APP_ID: ${{ vars.VITE_GOOGLE_APP_ID }}
           VITE_EXTRA_MCP_SERVERS: ${{ vars.VITE_EXTRA_MCP_SERVERS }}
           VITE_SLACK_PROXY_URL: ${{ vars.VITE_SLACK_PROXY_URL }}
+          VITE_REGISTRY_URL: ${{ vars.VITE_REGISTRY_URL }}
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

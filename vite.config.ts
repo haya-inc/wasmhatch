@@ -69,6 +69,19 @@ export default defineConfig(({ command, mode }) => ({
               // Malformed values are dropped, mirroring parseExtraMcpServers.
             }
           }
+          // Optional portable-agent registry (VITE_REGISTRY_URL): publish and
+          // package downloads go straight from the browser to this origin.
+          const registryRaw = loadEnv(mode, process.cwd(), "VITE_").VITE_REGISTRY_URL;
+          let registryOrigin = "";
+          if (registryRaw) {
+            try {
+              const registryUrl = new URL(registryRaw);
+              const loopback = registryUrl.hostname === "localhost" || registryUrl.hostname === "127.0.0.1";
+              if (registryUrl.protocol === "https:" || loopback) registryOrigin = ` ${registryUrl.origin}`;
+            } catch {
+              // Malformed values are dropped.
+            }
+          }
           // MCP origins come from the same audited-registry pattern as model
           // providers: wildcard-port loopback for the user's own machine, plus
           // exact remote origins a deployment bakes in via VITE_EXTRA_MCP_SERVERS.
@@ -88,7 +101,7 @@ export default defineConfig(({ command, mode }) => ({
             stylePolicy,
             `img-src 'self' data: ${pickerImgOrigins}`,
             "font-src 'self'",
-            `connect-src 'self' ${PROVIDER_CONNECT_SRCS.join(" ")} ${connectorOrigins}${slackProxyOrigin} ${pickerConnectOrigins} ${mcpOrigins} ${googleIdentityBase}${developmentConnect}`,
+            `connect-src 'self' ${PROVIDER_CONNECT_SRCS.join(" ")} ${connectorOrigins}${slackProxyOrigin}${registryOrigin} ${pickerConnectOrigins} ${mcpOrigins} ${googleIdentityBase}${developmentConnect}`,
             "worker-src 'self'",
             "manifest-src 'self'"
           ].join("; ");

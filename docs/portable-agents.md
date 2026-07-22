@@ -60,6 +60,39 @@ file. `fetchPortableAgentPackage` adds a registry-neutral HTTPS loading path;
 localhost HTTP is accepted for development. Browser CSP still decides which
 origins an application deployment permits.
 
+## Runtime model — hatchlings are the unit of sharing
+
+A hatchling's shareable profile is exactly what the package carries:
+
+- the **playbook** (the `AGENTS.md` entrypoint) becomes the hatchling's
+  packaged instructions, injected into the system prompt between explicit
+  markers and framed as untrusted authored content — it can never override
+  the app's rules, unlock tools, or reach credentials;
+- `files/` seed the new hatchling's isolated workspace;
+- `permissions.tools` use the shared **capability vocabulary**
+  (`src/lib/hatchling-capabilities.ts`: `workspace.read`, `workspace.write`,
+  `workspace.script`, `artifacts`, `tickets`, `google`, `google.sensitive`,
+  `slack`, `mcp`) and become the hatchling's allowlist. Filtering fails
+  closed: unrecognized names grant nothing, and connectors the user has not
+  connected simply are not there to grant.
+
+Import always stops at a preview card — name, files, requested
+capabilities, license, source — and nothing hatches without a click.
+Publishing to a registry goes through the same card before any upload.
+Exporting reverses the mapping (protected credential paths are excluded
+twice: by the exporter and again by the package validator).
+
+## Registry client
+
+The optional hosted registry is a deployment choice: set
+`VITE_REGISTRY_URL` (https, or localhost for development) and its origin
+joins the audited CSP `connect-src`. The sidebar then offers load-by-URL
+and token-gated publish, and `?agent=<package-url>` becomes a shareable
+try link that fetches, previews, and waits for consent. Every route the
+client uses is documented in the registry repository's `docs/api.md`;
+package bytes are immutable under their SHA-256. Without a configured
+registry, `.agent` files still travel by hand — download, send, import.
+
 ## What stays outside the package
 
 - model and connector credentials;

@@ -155,17 +155,28 @@ scheduled-run features. Design record: `docs/hatchlings-design.md`.
 - [x] Versioned `wasmhatch.agent` ZIP contract with exact file hashes, bounded
       extraction, protected credential paths, declared capabilities, and a
       registry-neutral HTTPS loader (`src/lib/agent-package.ts`).
-- [ ] Add a plain-language publish preview that lists included files,
+- [x] Add a plain-language publish preview that lists included files,
       requested capabilities, compatibility, and sample prompts before any
-      upload.
-- [ ] Load a selected portable agent into the chat runtime without allowing
+      upload. (One preview card gates both hatch and publish.)
+- [x] Load a selected portable agent into the chat runtime without allowing
       package instructions or scripts to access provider credentials.
-- [ ] Connect an optional official Registry adapter for publish, unpublish,
+      Hatch-from-package: the playbook rides the system prompt as marked
+      untrusted content, files seed the isolated workspace, and the
+      declared capabilities become a fail-closed tool allowlist
+      (`hatchling-capabilities.ts`, `portable-hatchling.ts`).
+- [x] Connect an optional official Registry adapter for publish, unpublish,
       and immutable revision lookup; keep local file and arbitrary HTTPS
-      sources first-class.
+      sources first-class. Client side shipped behind `VITE_REGISTRY_URL`
+      (publish + load-by-URL + `?agent=` try links); the service lives in
+      the private `wasmhatch-registry` repo (publish/list/metadata/
+      immutable download, in-memory M0). Unpublish flows are M1 service
+      work.
 - [ ] Add a one-click public trial route using the visitor's existing BYOK
       configuration, with an example-output fallback for visitors without a
-      provider key.
+      provider key. Shipped so far: `?agent=<registry package URL>`
+      fetches, previews, and hatches with the visitor's BYOK; the
+      example-output fallback for keyless visitors remains (M1, with the
+      registry's public pages).
 
 ## Phase 3 — Traction-gated expansion
 

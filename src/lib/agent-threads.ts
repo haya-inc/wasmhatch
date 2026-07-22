@@ -53,11 +53,24 @@ export interface HatchlingThread {
   species: number;
   createdAt: string;
   schedule: ThreadSchedule;
+  /**
+   * Packaged persona/playbook injected into the system prompt as untrusted
+   * data; "" for an ordinary hatchling.
+   */
+  instructions: string;
+  /**
+   * Capability allowlist (hatchling-capabilities vocabulary). Null means
+   * everything — the ordinary hatchling default; a list fails closed.
+   */
+  capabilities: readonly string[] | null;
 }
 
 const THREADS_KEY = "threads";
 const THREAD_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 const MAX_NAME_CHARS = 24;
+export const MAX_INSTRUCTION_CHARS = 16_000;
+const MAX_CAPABILITIES = 64;
+const CAPABILITY_PATTERN = /^[a-z][a-z0-9_.-]{0,127}$/;
 
 export const HATCHLING_NAMES: readonly string[] = [
   "Pip", "Momo", "Coco", "Mame", "Yuzu", "Taro", "Nori", "Fuku", "Beni", "Kuri", "Suzu", "Hana"
@@ -82,8 +95,32 @@ export function mainHatchling(now: Date = new Date()): HatchlingThread {
     name: HATCHLING_NAMES[0],
     species: 0,
     createdAt: now.toISOString(),
-    schedule: defaultSchedule()
+    schedule: defaultSchedule(),
+    instructions: "",
+    capabilities: null
   };
+}
+
+export interface HatchlingProfile {
+  name?: string;
+  instructions?: string;
+  capabilities?: readonly string[] | null;
+}
+
+function sanitizeInstructions(value: unknown): string {
+  return typeof value === "string" ? value.trim().slice(0, MAX_INSTRUCTION_CHARS) : "";
+}
+
+function sanitizeCapabilities(value: unknown): readonly string[] | null {
+  if (value === null || value === undefined) return null;
+  if (!Array.isArray(value)) return null;
+  const capabilities: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== "string" || !CAPABILITY_PATTERN.test(entry) || capabilities.includes(entry)) continue;
+    capabilities.push(entry);
+    if (capabilities.length >= MAX_CAPABILITIES) break;
+  }
+  return Object.freeze(capabilities);
 }
 
 function randomThreadId(): string {
@@ -107,7 +144,22 @@ function pickName(existing: readonly HatchlingThread[]): string {
   }
 }
 
-export function createHatchling(existing: readonly HatchlingThread[], now: Date = new Date()): HatchlingThread {
+/** Trims a requested name and numbers it if another hatchling holds it. */
+function uniqueName(requested: string, existing: readonly HatchlingThread[]): string {
+  const base = requested.trim().slice(0, MAX_NAME_CHARS) || HATCHLING_NAMES[0];
+  const used = new Set(existing.map((thread) => thread.name));
+  if (!used.has(base)) return base;
+  for (let index = 2; ; index += 1) {
+    const candidate = `${base.slice(0, MAX_NAME_CHARS - 3)} ${index}`;
+    if (!used.has(candidate)) return candidate;
+  }
+}
+
+export function createHatchling(
+  existing: readonly HatchlingThread[],
+  now: Date = new Date(),
+  profile: HatchlingProfile = {}
+): HatchlingThread {
   if (existing.length >= MAX_HATCHLINGS) {
     throw new Error(`The nest is full — at most ${MAX_HATCHLINGS} hatchlings per browser.`);
   }
@@ -116,10 +168,12 @@ export function createHatchling(existing: readonly HatchlingThread[], now: Date 
   while (usedIds.has(id)) id = randomThreadId();
   return {
     id,
-    name: pickName(existing),
+    name: profile.name !== undefined ? uniqueName(profile.name, existing) : pickName(existing),
     species: existing.length % SPECIES_COUNT,
     createdAt: now.toISOString(),
-    schedule: defaultSchedule()
+    schedule: defaultSchedule(),
+    instructions: sanitizeInstructions(profile.instructions),
+    capabilities: sanitizeCapabilities(profile.capabilities ?? null)
   };
 }
 
@@ -170,7 +224,9 @@ function sanitizeThread(value: unknown): HatchlingThread | null {
     name,
     species: clampInteger(record.species, 0, SPECIES_COUNT - 1, 0),
     createdAt: typeof record.createdAt === "string" ? record.createdAt : new Date(0).toISOString(),
-    schedule: sanitizeSchedule(record.schedule)
+    schedule: sanitizeSchedule(record.schedule),
+    instructions: sanitizeInstructions(record.instructions),
+    capabilities: sanitizeCapabilities(record.capabilities ?? null)
   };
 }
 

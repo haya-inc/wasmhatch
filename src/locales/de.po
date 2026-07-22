@@ -30,6 +30,11 @@ msgstr "{0, plural, one {# Google-Datei an den Agenten übergeben.} other {# Goo
 msgid "{0} events · {1} tool calls · {2} writes"
 msgstr "{0} Ereignisse · {1} Tool-Aufrufe · {2} Schreibvorgänge"
 
+#. placeholder {0}: manifest.files.length
+#: src/pages/ChatPage.tsx
+msgid "{0} files:"
+msgstr "{0} Dateien:"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -77,6 +82,10 @@ msgstr "{used} belegt."
 #: src/pages/ChatPage.tsx
 msgid "60-second setup: create an Incoming Webhook in Slack (one channel, one URL) and paste it here. The agent gains exactly one ability — posting messages to that channel; it reads nothing from Slack. The URL stays in this tab's memory."
 msgstr "Einrichtung in 60 Sekunden: Erstelle in Slack einen Incoming Webhook (ein Kanal, eine URL) und füge die URL hier ein. Der Agent erhält genau eine Fähigkeit — Nachrichten in diesen Kanal zu posten; er liest nichts aus Slack. Die URL bleibt im Speicher dieses Tabs."
+
+#: src/pages/ChatPage.tsx
+msgid "A hatchling travels as one .agent file: its playbook, starter files, and requested capabilities — never credentials or chat history. Importing always shows a preview first, and packaged instructions can never unlock more than you see there."
+msgstr "Ein Küken reist als eine .agent-Datei: sein Playbook, Startdateien und angefragte Fähigkeiten — niemals Zugangsdaten oder Chatverlauf. Beim Import erscheint immer zuerst eine Vorschau, und paketierte Anweisungen können nie mehr freischalten, als dort zu sehen ist."
 
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
@@ -187,6 +196,10 @@ msgstr "In Chrome eingebaut — kostenlos, kein Schlüssel"
 #: src/pages/ChatPage.tsx
 msgid "bytes. Nothing is written until you decide."
 msgstr "Bytes. Es wird nichts geschrieben, bis du entscheidest."
+
+#: src/pages/ChatPage.tsx
+msgid "Cancel"
+msgstr "Abbrechen"
 
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
@@ -352,6 +365,14 @@ msgid "Export JSON"
 msgstr "JSON exportieren"
 
 #: src/pages/ChatPage.tsx
+msgid "Export this hatchling"
+msgstr "Dieses Küken exportieren"
+
+#: src/pages/ChatPage.tsx
+msgid "Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials."
+msgstr "Dieses Küken wurde als portable .agent-Datei exportiert. Sie enthält Playbook, Arbeitsbereichsdateien und angefragte Fähigkeiten — niemals Zugangsdaten."
+
+#: src/pages/ChatPage.tsx
 msgid "failed"
 msgstr "fehlgeschlagen"
 
@@ -399,13 +420,31 @@ msgstr "Dateien an WasmHatch übergeben"
 msgid "Hand Google Drive files to the agent?"
 msgstr "Google-Drive-Dateien an den Agenten übergeben?"
 
+#. placeholder {0}: manifest.name
+#: src/pages/ChatPage.tsx
+msgid "Hatch “{0}”?"
+msgstr "„{0}“ ausbrüten?"
+
 #: src/pages/ChatPage.tsx
 msgid "Hatch a new one"
 msgstr "Neues Küken ausbrüten"
 
+#: src/pages/ChatPage.tsx
+msgid "Hatch it"
+msgstr "Ausbrüten"
+
+#. placeholder {0}: portablePreview.pkg.manifest.name
+#: src/pages/ChatPage.tsx
+msgid "Hatched “{0}” from the package. Its playbook and files are in place; it only has the capabilities shown in the preview."
+msgstr "„{0}“ wurde aus dem Paket ausgebrütet. Playbook und Dateien sind an Ort und Stelle; es hat nur die in der Vorschau gezeigten Fähigkeiten."
+
 #: src/App.tsx
 msgid "Hatching workspace…"
 msgstr "Arbeitsbereich wird ausgebrütet…"
+
+#: src/pages/ChatPage.tsx
+msgid "Hatching…"
+msgstr "Brütet …"
 
 #: src/pages/ChatPage.tsx
 msgid "Hatchlings"
@@ -418,6 +457,14 @@ msgstr "Team-Seitenleiste ausblenden"
 #: src/pages/ChatPage.tsx
 msgid "Hide the tools sidebar"
 msgstr "Tools-Seitenleiste ausblenden"
+
+#: src/pages/ChatPage.tsx
+msgid "Import a .agent file"
+msgstr ".agent-Datei importieren"
+
+#: src/pages/ChatPage.tsx
+msgid "Import portable agent file"
+msgstr "Portable-Agent-Datei importieren"
 
 #: src/pages/ChatPage.tsx
 msgid "Incoming Webhook URL"
@@ -438,6 +485,10 @@ msgstr "Sprache"
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
 msgstr "Dateien im Arbeitsbereich werden aufgelistet"
+
+#: src/pages/ChatPage.tsx
+msgid "Load from the registry"
+msgstr "Aus der Registry laden"
 
 #: src/pages/ChatPage.tsx
 msgid "MCP connection failed."
@@ -524,6 +575,10 @@ msgid "Opening…"
 msgstr "Wird geöffnet …"
 
 #: src/pages/ChatPage.tsx
+msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
+msgstr "Paketierte Anweisungen gelten als nicht vertrauenswürdiger Inhalt: Sie sehen deine Schlüssel nie, und nur die oben gezeigten Fähigkeiten stehen zur Verfügung."
+
+#: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
 msgstr "Gesamte automatische Arbeit pausieren"
 
@@ -534,6 +589,14 @@ msgstr "Nur Zugriff pro Datei (drive.file): Der Agent kann Google Docs, Tabellen
 #: src/pages/ChatPage.tsx
 msgid "Pinning…"
 msgstr "Wird geschützt…"
+
+#: src/pages/ChatPage.tsx
+msgid "Portable agent preview"
+msgstr "Portable-Agent-Vorschau"
+
+#: src/pages/ChatPage.tsx
+msgid "Portable agents"
+msgstr "Portable Agents"
 
 #: src/lib/tool-summary.ts
 msgid "Posting to Slack"
@@ -551,6 +614,34 @@ msgstr "Wird vorbereitet…"
 msgid "Provider"
 msgstr "Anbieter"
 
+#. placeholder {0}: manifest.name
+#: src/pages/ChatPage.tsx
+msgid "Publish “{0}”?"
+msgstr "„{0}“ veröffentlichen?"
+
+#: src/pages/ChatPage.tsx
+msgid "Publish it"
+msgstr "Veröffentlichen"
+
+#: src/pages/ChatPage.tsx
+msgid "Publish this hatchling"
+msgstr "Dieses Küken veröffentlichen"
+
+#: src/pages/ChatPage.tsx
+msgid "Publish token"
+msgstr "Veröffentlichungs-Token"
+
+#. placeholder {0}: result.publisherId
+#. placeholder {1}: result.agentId
+#. placeholder {2}: registryPackageUrl(base, result)
+#: src/pages/ChatPage.tsx
+msgid "Published to the registry as {0}/{1}. Immutable package: {2}"
+msgstr "In der Registry als {0}/{1} veröffentlicht. Unveränderliches Paket: {2}"
+
+#: src/pages/ChatPage.tsx
+msgid "Publishing…"
+msgstr "Veröffentlicht …"
+
 #: src/pages/ChatPage.tsx
 msgid "Queue a piece of work…"
 msgstr "Eine Aufgabe einreihen…"
@@ -562,6 +653,10 @@ msgstr "{path} wird gelesen"
 #: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
 msgstr "Google-Tabelle wird gelesen"
+
+#: src/pages/ChatPage.tsx
+msgid "Registry package URL"
+msgstr "Registry-Paket-URL"
 
 #: src/pages/ChatPage.tsx
 msgid "Reject"
@@ -583,6 +678,15 @@ msgstr "Dieses Küken entfernen"
 #: src/pages/ChatPage.tsx
 msgid "Reopen"
 msgstr "Wieder öffnen"
+
+#. placeholder {0}: capabilities.known.join(", ")
+#: src/pages/ChatPage.tsx
+msgid "Requested capabilities: {0}"
+msgstr "Angefragte Fähigkeiten: {0}"
+
+#: src/pages/ChatPage.tsx
+msgid "Requested capabilities: none — it can only talk."
+msgstr "Angefragte Fähigkeiten: keine — es kann nur reden."
 
 #: src/pages/ChatPage.tsx
 msgid "Reset budget"
@@ -685,12 +789,24 @@ msgid "That does not look like a Slack Incoming Webhook URL — it starts with h
 msgstr "Das sieht nicht nach einer Slack-Incoming-Webhook-URL aus — sie beginnt mit https://hooks.slack.com/services/…"
 
 #: src/pages/ChatPage.tsx
+msgid "That URL is not on this deployment's registry, so the browser cannot fetch it. Download the .agent file instead and import it here."
+msgstr "Diese URL liegt nicht auf der Registry dieses Deployments, der Browser kann sie nicht laden. Lade stattdessen die .agent-Datei herunter und importiere sie hier."
+
+#: src/pages/ChatPage.tsx
 msgid "The agent asked for existing Google files it cannot see on its own."
 msgstr "Der Agent bittet um bestehende Google-Dateien, die er selbst nicht sehen kann."
 
 #: src/pages/ChatPage.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
 msgstr "Der Agent kann Google Docs, Tabellen und Präsentationen erstellen, per Link geteilte Dateien öffnen und Kalendertermine lesen oder anlegen. Das Token bleibt in diesem Tab; jede Schreibaktion wird vor dem Anwenden angezeigt."
+
+#: src/pages/ChatPage.tsx
+msgid "The agent package could not be downloaded."
+msgstr "Das Agentenpaket konnte nicht heruntergeladen werden."
+
+#: src/pages/ChatPage.tsx
+msgid "The agent package could not be read."
+msgstr "Das Agentenpaket konnte nicht gelesen werden."
 
 #: src/pages/ChatPage.tsx
 msgid "The backup could not be created."
@@ -708,6 +824,10 @@ msgstr "Die direkte Browser-Route zu Slack scheint gerade blockiert zu sein. Ein
 msgid "The Google Picker could not be opened."
 msgstr "Der Google Picker konnte nicht geöffnet werden."
 
+#: src/pages/ChatPage.tsx
+msgid "The hatchling could not be exported."
+msgstr "Das Küken konnte nicht exportiert werden."
+
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
 msgid "The model can search the web through {0}. Searches are billed by your provider alongside tokens; untick to turn this off."
@@ -716,6 +836,14 @@ msgstr "Das Modell kann über {0} im Web suchen. Suchen rechnet dein Anbieter zu
 #: src/pages/ChatPage.tsx
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
 msgstr "Das On-Device-Modell spricht diese Sprache noch nicht und antwortet auf Englisch; Cloud-Anbieter antworten in deiner Sprache."
+
+#: src/pages/ChatPage.tsx
+msgid "The package could not be hatched."
+msgstr "Das Paket konnte nicht ausgebrütet werden."
+
+#: src/pages/ChatPage.tsx
+msgid "The registry publish failed."
+msgstr "Die Registry-Veröffentlichung ist fehlgeschlagen."
 
 #: src/pages/ChatPage.tsx
 msgid "The sample spreadsheet is already in your files."
@@ -734,12 +862,21 @@ msgid "This browser can't promise to keep data around, so a backup is the safest
 msgstr "Dieser Browser kann nicht versprechen, deine Daten zu behalten — ein Backup ist daher die sicherste Wahl."
 
 #: src/pages/ChatPage.tsx
+msgid "this hatchling, before upload"
+msgstr "dieses Küken, vor dem Hochladen"
+
+#: src/pages/ChatPage.tsx
 msgid "Tickets"
 msgstr "Tickets"
 
 #: src/pages/ChatPage.tsx
 msgid "To do"
 msgstr "Offen"
+
+#. placeholder {0}: capabilities.unknown.join(", ")
+#: src/pages/ChatPage.tsx
+msgid "Unrecognized requests (granted nothing): {0}"
+msgstr "Unbekannte Anfragen (nichts gewährt): {0}"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
