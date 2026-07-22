@@ -57,6 +57,7 @@ import {
 import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "./google-connectors";
 import { GOOGLE_SENSITIVE_TOOLS, createGoogleSensitiveExecutor } from "./google-sensitive-connectors";
 import { SLACK_WEBHOOK_TOOLS, createSlackWebhookExecutor } from "./slack-webhook";
+import { SLACK_API_TOOLS, createSlackApiExecutor, slackProxyBaseUrl } from "./slack-tools";
 import { buildMcpToolset, McpConnection, type McpToolset } from "./mcp-client";
 import { isAllowedMcpUrl, isLoopbackUrl, MCP_SERVERS, type McpServerDef } from "./mcp-servers";
 import { createMetaStore, type AsyncTextStore } from "./opfs-kv";
@@ -140,8 +141,8 @@ export interface SwarmDeps {
     sensitiveEnabled: boolean;
     getToken: (signal?: AbortSignal) => Promise<string>;
   };
-  /** Incoming Webhook URL, read per call; "" while Slack is not connected. */
-  slack?: { getWebhookUrl: () => string };
+  /** Slack credentials, read per call; "" while that route is not connected. */
+  slack?: { getWebhookUrl: () => string; getToken?: () => string };
   getBuiltinApi?: () => ChromeLanguageModelApi | undefined;
   metaStore?: AsyncTextStore;
   now?: () => number;
@@ -643,6 +644,7 @@ export class HatchlingSwarm {
       ...(this.deps.google.isConnected() ? GOOGLE_CONNECTOR_TOOLS : []),
       ...(this.deps.google.isConnected() && this.deps.google.sensitiveEnabled ? GOOGLE_SENSITIVE_TOOLS : []),
       ...(this.deps.slack?.getWebhookUrl() ? SLACK_WEBHOOK_TOOLS : []),
+      ...(this.deps.slack?.getToken?.() ? SLACK_API_TOOLS : []),
       ...mcp.flatMap((runtime) => runtime.toolset.definitions)
     ];
     return { tools, mcp };
@@ -677,10 +679,15 @@ export class HatchlingSwarm {
     const googleExecute = createGoogleConnectorExecutor(this.deps.google.getToken);
     const googleSensitiveExecute = createGoogleSensitiveExecutor(this.deps.google.getToken);
     const slackExecute = createSlackWebhookExecutor(() => this.deps.slack?.getWebhookUrl() ?? "");
+    const slackApiExecute = createSlackApiExecutor(
+      () => this.deps.slack?.getToken?.() ?? "",
+      { baseUrl: slackProxyBaseUrl() }
+    );
     const ticketExecute = createTicketToolExecutor(this.tickets, runtime.thread.id);
     const googleToolNames = new Set(GOOGLE_CONNECTOR_TOOLS.map((tool) => tool.name));
     const googleSensitiveToolNames = new Set(GOOGLE_SENSITIVE_TOOLS.map((tool) => tool.name));
     const slackToolNames = new Set(SLACK_WEBHOOK_TOOLS.map((tool) => tool.name));
+    const slackApiToolNames = new Set(SLACK_API_TOOLS.map((tool) => tool.name));
     const ticketToolNames = new Set(TICKET_TOOLS.map((tool) => tool.name));
     const mcpRoutes = new Map<string, { runtime: McpRuntime; tool: string }>();
     for (const mcpRuntime of mcp) {
@@ -694,6 +701,7 @@ export class HatchlingSwarm {
       if (googleToolNames.has(name)) return googleExecute(name, args, context);
       if (googleSensitiveToolNames.has(name)) return googleSensitiveExecute(name, args, context);
       if (slackToolNames.has(name)) return slackExecute(name, args, context);
+      if (slackApiToolNames.has(name)) return slackApiExecute(name, args, context);
       const mcpRoute = mcpRoutes.get(name);
       if (mcpRoute) {
         try {

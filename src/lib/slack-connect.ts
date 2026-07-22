@@ -34,6 +34,7 @@ export interface SlackProbeResult {
 export interface SlackConnectOptions {
   fetchImpl?: typeof fetch;
   baseUrl?: string;
+  signal?: AbortSignal;
 }
 
 const SLACK_METHOD_NAME_PATTERN = /^[a-z]+(\.[a-zA-Z]+)+$/;
@@ -90,7 +91,8 @@ function postForm(
   return fetchImpl(`${resolveBaseUrl(options)}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString()
+    body: body.toString(),
+    signal: options?.signal
   });
 }
 
@@ -101,7 +103,7 @@ function postForm(
  */
 export async function probeSlackConnectivity(
   token: string,
-  options?: { fetchImpl?: typeof fetch; baseUrl?: string }
+  options?: SlackConnectOptions
 ): Promise<SlackProbeResult> {
   if (token.trim() === "") {
     return {
@@ -115,6 +117,7 @@ export async function probeSlackConnectivity(
   try {
     response = await postForm("auth.test", token, {}, options);
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
     if (error instanceof TypeError) {
       // Browsers surface both CORS rejections and CSP/network refusals as a TypeError.
       return { ok: false, status: "cors-blocked", diagnostic: CORS_BLOCKED_DIAGNOSTIC };
@@ -190,7 +193,7 @@ export async function slackApiCall<T>(
   method: string,
   token: string,
   params: Record<string, string | number | boolean>,
-  options?: { fetchImpl?: typeof fetch; baseUrl?: string }
+  options?: SlackConnectOptions
 ): Promise<T> {
   if (!SLACK_METHOD_NAME_PATTERN.test(method)) {
     // Deliberately does not echo the rejected value: a caller that swaps
@@ -202,6 +205,7 @@ export async function slackApiCall<T>(
   try {
     response = await postForm(method, token, params, options);
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
     if (error instanceof TypeError) {
       throw new Error(`Slack API call ${method} failed. ${CORS_BLOCKED_DIAGNOSTIC}`);
     }

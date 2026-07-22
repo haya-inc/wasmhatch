@@ -16,6 +16,8 @@ import { CLOUD_PROVIDERS, getCloudProvider, type ChatProviderId } from "../lib/c
 import { FIRST_RUN_CSV_SAMPLE, FIRST_RUN_SAMPLE_FILES } from "../lib/first-run-csv-sample";
 import { isProtectedAgentPath } from "../lib/secrets";
 import { isSlackWebhookUrl } from "../lib/slack-webhook";
+import { probeSlackConnectivity } from "../lib/slack-connect";
+import { slackProxyBaseUrl } from "../lib/slack-tools";
 import { PROMPT_API_LANGUAGES } from "../lib/builtin-ai-language";
 import { activeLocale, localePreference, setLocalePreference } from "../lib/i18n";
 import { AUTO_LOCALE, UI_LOCALES } from "../lib/locales";
@@ -236,6 +238,12 @@ export function ChatPage() {
   const [slackDraft, setSlackDraft] = useState("");
   const [slackConnected, setSlackConnected] = useState(false);
   const slackUrlRef = useRef("");
+  // Slack bot token (Web API stage): same memory-only handling; the team name
+  // is the only piece of the probe result that is kept for display.
+  const [slackTokenDraft, setSlackTokenDraft] = useState("");
+  const [slackTeam, setSlackTeam] = useState<string | null>(null);
+  const [slackTokenBusy, setSlackTokenBusy] = useState(false);
+  const slackTokenRef = useRef("");
   // UI language. Changing it activates the catalog in place (no reload), and
   // this state update is what re-renders the page in the new language.
   const [langPref, setLangPref] = useState<string>(localePreference);
@@ -274,7 +282,7 @@ export function ChatPage() {
       sensitiveEnabled: GOOGLE_SENSITIVE_ENABLED,
       getToken: (signal) => googleSession.current.credentialProvider().getToken(signal)
     },
-    slack: { getWebhookUrl: () => slackUrlRef.current },
+    slack: { getWebhookUrl: () => slackUrlRef.current, getToken: () => slackTokenRef.current },
     getBuiltinApi: () => (globalThis as typeof globalThis & { LanguageModel?: ChromeLanguageModelApi }).LanguageModel
   }));
   useEffect(() => () => swarm.dispose(), [swarm]);
@@ -307,6 +315,37 @@ export function ChatPage() {
     slackUrlRef.current = "";
     setSlackConnected(false);
     notice(t`Slack disconnected.`);
+  }, [notice]);
+
+  const connectSlackToken = useCallback(async () => {
+    const token = slackTokenDraft.trim();
+    if (!token) return;
+    setSlackTokenBusy(true);
+    try {
+      const result = await probeSlackConnectivity(token, { baseUrl: slackProxyBaseUrl() });
+      if (result.ok) {
+        slackTokenRef.current = token;
+        setSlackTokenDraft("");
+        setSlackTeam(result.team ?? "Slack");
+        notice(result.team
+          ? t`Connected to the Slack workspace “${result.team}”. Channel tools are active for every hatchling.`
+          : t`Slack bot token connected. Channel tools are active for every hatchling.`);
+      } else if (result.status === "invalid-token") {
+        notice(t`Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again.`, "error");
+      } else if (result.status === "cors-blocked") {
+        notice(t`The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL.`, "error");
+      } else {
+        notice(t`Slack could not be reached. Check your connection and try again.`, "error");
+      }
+    } finally {
+      setSlackTokenBusy(false);
+    }
+  }, [slackTokenDraft, notice]);
+
+  const disconnectSlackToken = useCallback(() => {
+    slackTokenRef.current = "";
+    setSlackTeam(null);
+    notice(t`Slack bot token disconnected.`);
   }, [notice]);
 
   const refreshFiles = useCallback(async () => {
@@ -1245,6 +1284,41 @@ export function ChatPage() {
                 </p>
                 <button className="button button-quiet" type="button" onClick={disconnectSlack}>
                   <Trans>Disconnect Slack</Trans>
+                </button>
+              </>
+            )}
+            {slackTeam === null && (
+              <>
+                <label className="chat-field">
+                  <span><Trans>Bot token (channel tools)</Trans></span>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={slackTokenDraft}
+                    placeholder="xoxb-…"
+                    onChange={(event) => setSlackTokenDraft(event.target.value)}
+                  />
+                </label>
+                <button className="button" type="button" disabled={slackTokenBusy || !slackTokenDraft.trim()} onClick={() => { void connectSlackToken(); }}>
+                  {slackTokenBusy ? t`Connecting…` : t`Connect bot token`}
+                </button>
+                <p className="chat-hint">
+                  <Trans>
+                    Want more than one channel? Create a tiny Slack app from the ready-made manifest in{" "}
+                    <a href="https://github.com/haya-inc/wasmhatch/blob/main/docs/slack.md" target="_blank" rel="noreferrer">docs/slack.md</a>{" "}
+                    and paste its bot token: the agent can then list public channels and post to any of them.
+                    It still reads no messages. The token stays in this tab's memory.
+                  </Trans>
+                </p>
+              </>
+            )}
+            {slackTeam !== null && (
+              <>
+                <p className="chat-hint">
+                  {t`Connected to “${slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript.`}
+                </p>
+                <button className="button button-quiet" type="button" onClick={disconnectSlackToken}>
+                  <Trans>Disconnect bot token</Trans>
                 </button>
               </>
             )}

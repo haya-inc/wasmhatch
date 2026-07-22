@@ -37,6 +37,7 @@ const requiredConnectSrc = [
   "https://www.googleapis.com",
   "https://docs.googleapis.com",
   "https://hooks.slack.com",
+  "https://slack.com",
   "https://accounts.google.com/gsi/",
   // MCP: any Streamable-HTTP server on the user's own machine, any port.
   // Loopback-only http is the same audited exception Ollama uses; remote MCP

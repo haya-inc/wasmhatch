@@ -157,6 +157,10 @@ msgid "Blocked"
 msgstr "Bloqueado"
 
 #: src/pages/ChatPage.tsx
+msgid "Bot token (channel tools)"
+msgstr "Token do bot (ferramentas de canal)"
+
+#: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
 msgstr "Integrado ao Chrome — grátis, sem chave"
 
@@ -167,6 +171,10 @@ msgstr "bytes. Nada é gravado até você decidir."
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
 msgstr "Cauteloso — pergunta antes de salvar"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Slack channels"
+msgstr "Conferindo os canais do Slack"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
@@ -181,6 +189,10 @@ msgid "Connect"
 msgstr "Conectar"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect bot token"
+msgstr "Conectar token do bot"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Google"
 msgstr "Conectar Google"
 
@@ -191,6 +203,15 @@ msgstr "Conectar Slack"
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "Conectado nesta sessão. As ferramentas de Documentos, Planilhas e Apresentações estão ativas."
+
+#: src/pages/ChatPage.tsx
+msgid "Connected to “{slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript."
+msgstr "Conectado a “{slackTeam}”. Cada pintinho pode listar os canais públicos e publicar neles; cada publicação aparece na conversa."
+
+#. placeholder {0}: result.team
+#: src/pages/ChatPage.tsx
+msgid "Connected to the Slack workspace “{0}”. Channel tools are active for every hatchling."
+msgstr "Conectado ao workspace do Slack “{0}”. As ferramentas de canal estão ativas para cada pintinho."
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
@@ -249,6 +270,10 @@ msgstr "Descreva o resultado que você precisa…"
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
 msgstr "Desconectar"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect bot token"
+msgstr "Desconectar token do bot"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
@@ -458,6 +483,10 @@ msgstr "Protegendo…"
 msgid "Posting to Slack"
 msgstr "Publicando no Slack"
 
+#: src/lib/tool-summary.ts
+msgid "Posting to Slack — {channel}"
+msgstr "Publicando no Slack — {channel}"
+
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
 msgstr "Preparando…"
@@ -552,12 +581,28 @@ msgid "Show the tools sidebar"
 msgstr "Mostrar a barra lateral de ferramentas"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack bot token connected. Channel tools are active for every hatchling."
+msgstr "Token do bot do Slack conectado. As ferramentas de canal estão ativas para cada pintinho."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack bot token disconnected."
+msgstr "Token do bot do Slack desconectado."
+
+#: src/pages/ChatPage.tsx
 msgid "Slack connected. Every hatchling can now post to the webhook's channel."
 msgstr "Slack conectado. Agora cada pintinho pode publicar no canal do webhook."
 
 #: src/pages/ChatPage.tsx
+msgid "Slack could not be reached. Check your connection and try again."
+msgstr "Não foi possível alcançar o Slack. Verifique sua conexão e tente de novo."
+
+#: src/pages/ChatPage.tsx
 msgid "Slack disconnected."
 msgstr "Slack desconectado."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
+msgstr "O Slack rejeitou esse token. Reinstale o app no Slack, copie um token do bot novo e tente de novo."
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
@@ -586,6 +631,10 @@ msgstr "Não foi possível criar o backup."
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
 msgstr "O navegador disse que ainda não. Ele costuma aceitar depois que você usa o app um pouco mais — até lá, um backup é a segurança mais garantida."
+
+#: src/pages/ChatPage.tsx
+msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
+msgstr "A rota direta do navegador para o Slack parece bloqueada agora. Uma implantação pode incluir o relay descrito em docs/slack.md e definir VITE_SLACK_PROXY_URL."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
@@ -644,6 +693,10 @@ msgstr "Usando {server} — {tool}"
 #: src/pages/ChatPage.tsx
 msgid "view diff"
 msgstr "ver diferenças"
+
+#: src/pages/ChatPage.tsx
+msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
+msgstr "Quer mais de um canal? Crie um pequeno app do Slack a partir do manifesto pronto em <0>docs/slack.md</0> e cole o token do bot: o agente poderá listar os canais públicos e publicar em qualquer um deles. Ele continua sem ler mensagens. O token fica só na memória desta aba."
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"

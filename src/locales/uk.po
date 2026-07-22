@@ -157,6 +157,10 @@ msgid "Blocked"
 msgstr "Заблоковано"
 
 #: src/pages/ChatPage.tsx
+msgid "Bot token (channel tools)"
+msgstr "Токен бота (інструменти каналів)"
+
+#: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
 msgstr "Вбудовано в Chrome — безкоштовно, без ключа"
 
@@ -167,6 +171,10 @@ msgstr "байтів. Нічого не буде записано, доки ви
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
 msgstr "Обережний — питає перед збереженням"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Slack channels"
+msgstr "Перегляд каналів Slack"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
@@ -181,6 +189,10 @@ msgid "Connect"
 msgstr "Підключити"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect bot token"
+msgstr "Підключити токен бота"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Google"
 msgstr "Підключити Google"
 
@@ -191,6 +203,15 @@ msgstr "Підключити Slack"
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "Підключено на цю сесію. Інструменти Google Документів, Таблиць і Презентацій активні."
+
+#: src/pages/ChatPage.tsx
+msgid "Connected to “{slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript."
+msgstr "Підключено до «{slackTeam}». Кожне курчатко може переглядати публічні канали й дописувати в них; кожен допис видно в розмові."
+
+#. placeholder {0}: result.team
+#: src/pages/ChatPage.tsx
+msgid "Connected to the Slack workspace “{0}”. Channel tools are active for every hatchling."
+msgstr "Підключено до робочого простору Slack «{0}». Інструменти каналів активні для кожного курчатка."
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
@@ -249,6 +270,10 @@ msgstr "Опишіть потрібний результат…"
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
 msgstr "Відключити"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect bot token"
+msgstr "Відключити токен бота"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
@@ -458,6 +483,10 @@ msgstr "Закріплення…"
 msgid "Posting to Slack"
 msgstr "Публікація в Slack"
 
+#: src/lib/tool-summary.ts
+msgid "Posting to Slack — {channel}"
+msgstr "Публікація в Slack — {channel}"
+
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
 msgstr "Підготовка…"
@@ -552,12 +581,28 @@ msgid "Show the tools sidebar"
 msgstr "Показати панель інструментів"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack bot token connected. Channel tools are active for every hatchling."
+msgstr "Токен бота Slack підключено. Інструменти каналів активні для кожного курчатка."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack bot token disconnected."
+msgstr "Токен бота Slack відключено."
+
+#: src/pages/ChatPage.tsx
 msgid "Slack connected. Every hatchling can now post to the webhook's channel."
 msgstr "Slack підключено. Тепер кожне курчатко може публікувати в канал вебхука."
 
 #: src/pages/ChatPage.tsx
+msgid "Slack could not be reached. Check your connection and try again."
+msgstr "Не вдалося зв'язатися зі Slack. Перевірте з'єднання і спробуйте ще раз."
+
+#: src/pages/ChatPage.tsx
 msgid "Slack disconnected."
 msgstr "Slack відключено."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
+msgstr "Slack відхилив цей токен. Перевстановіть застосунок у Slack, скопіюйте свіжий токен бота і спробуйте знову."
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
@@ -586,6 +631,10 @@ msgstr "Не вдалося створити резервну копію."
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
 msgstr "Браузер відповів «поки ні». Зазвичай він погоджується, коли ви трохи більше покористуєтеся застосунком. До того часу найнадійніша страховка — резервна копія."
+
+#: src/pages/ChatPage.tsx
+msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
+msgstr "Прямий шлях із браузера до Slack зараз, схоже, заблоковано. Розгортання може додати ретранслятор, описаний у docs/slack.md, і задати VITE_SLACK_PROXY_URL."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
@@ -644,6 +693,10 @@ msgstr "Використання {server} — {tool}"
 #: src/pages/ChatPage.tsx
 msgid "view diff"
 msgstr "переглянути зміни"
+
+#: src/pages/ChatPage.tsx
+msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
+msgstr "Потрібен не один канал? Створіть невеликий застосунок Slack з готового маніфесту в <0>docs/slack.md</0> і вставте його токен бота: агент зможе переглядати публічні канали й дописувати в будь-який із них. Повідомлення він, як і раніше, не читає. Токен залишається в пам'яті цієї вкладки."
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"

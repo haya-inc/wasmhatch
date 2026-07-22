@@ -157,6 +157,10 @@ msgid "Blocked"
 msgstr "受阻"
 
 #: src/pages/ChatPage.tsx
+msgid "Bot token (channel tools)"
+msgstr "機器人權杖(頻道工具)"
+
+#: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
 msgstr "Chrome 內建 — 免費、免金鑰"
 
@@ -167,6 +171,10 @@ msgstr "位元組。在你決定之前不會寫入任何內容。"
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
 msgstr "謹慎 — 儲存前先詢問"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Slack channels"
+msgstr "正在查看 Slack 頻道"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
@@ -181,6 +189,10 @@ msgid "Connect"
 msgstr "連線"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect bot token"
+msgstr "連接機器人權杖"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Google"
 msgstr "連線 Google"
 
@@ -191,6 +203,15 @@ msgstr "連接 Slack"
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "本次工作階段已連線。文件、試算表和簡報工具已啟用。"
+
+#: src/pages/ChatPage.tsx
+msgid "Connected to “{slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript."
+msgstr "已連接「{slackTeam}」。每隻小雛都能列出公開頻道並傳訊息;每則訊息都會顯示在對話中。"
+
+#. placeholder {0}: result.team
+#: src/pages/ChatPage.tsx
+msgid "Connected to the Slack workspace “{0}”. Channel tools are active for every hatchling."
+msgstr "已連接 Slack 工作區「{0}」。頻道工具已對每隻小雛生效。"
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
@@ -249,6 +270,10 @@ msgstr "描述你想要的成果…"
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
 msgstr "中斷連線"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect bot token"
+msgstr "中斷機器人權杖"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
@@ -458,6 +483,10 @@ msgstr "固定保存中…"
 msgid "Posting to Slack"
 msgstr "正在傳訊息到 Slack"
 
+#: src/lib/tool-summary.ts
+msgid "Posting to Slack — {channel}"
+msgstr "正在傳訊息到 Slack — {channel}"
+
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
 msgstr "準備中…"
@@ -552,12 +581,28 @@ msgid "Show the tools sidebar"
 msgstr "顯示工具側邊欄"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack bot token connected. Channel tools are active for every hatchling."
+msgstr "Slack 機器人權杖已連接。頻道工具已對每隻小雛生效。"
+
+#: src/pages/ChatPage.tsx
+msgid "Slack bot token disconnected."
+msgstr "已中斷 Slack 機器人權杖。"
+
+#: src/pages/ChatPage.tsx
 msgid "Slack connected. Every hatchling can now post to the webhook's channel."
 msgstr "Slack 已連接。現在每隻小雛都能傳訊息到 webhook 的頻道。"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack could not be reached. Check your connection and try again."
+msgstr "無法連上 Slack。請檢查網路後再試一次。"
+
+#: src/pages/ChatPage.tsx
 msgid "Slack disconnected."
 msgstr "已中斷 Slack 連接。"
+
+#: src/pages/ChatPage.tsx
+msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
+msgstr "Slack 拒絕了這個權杖。請在 Slack 重新安裝應用程式,複製新的機器人權杖後再試一次。"
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
@@ -586,6 +631,10 @@ msgstr "無法建立備份。"
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
 msgstr "瀏覽器說還不行。通常再多用一陣子它就會同意 — 在那之前,備份是最保險的做法。"
+
+#: src/pages/ChatPage.tsx
+msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
+msgstr "瀏覽器直連 Slack 的路徑目前似乎被封鎖。部署方可以依 docs/slack.md 的說明附上中繼,並設定 VITE_SLACK_PROXY_URL。"
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
@@ -644,6 +693,10 @@ msgstr "正在使用 {server} — {tool}"
 #: src/pages/ChatPage.tsx
 msgid "view diff"
 msgstr "檢視差異"
+
+#: src/pages/ChatPage.tsx
+msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
+msgstr "想使用多個頻道?用 <0>docs/slack.md</0> 裡現成的 manifest 建立一個小小的 Slack 應用程式,然後貼上它的機器人權杖:助理就能列出公開頻道並傳訊息到任何一個頻道。它仍然不會讀取任何訊息。權杖只會留在此分頁的記憶體中。"
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"

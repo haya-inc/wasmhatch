@@ -157,6 +157,10 @@ msgid "Blocked"
 msgstr "Bị chặn"
 
 #: src/pages/ChatPage.tsx
+msgid "Bot token (channel tools)"
+msgstr "Token bot (công cụ kênh)"
+
+#: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
 msgstr "Tích hợp sẵn trong Chrome — miễn phí, không cần khóa"
 
@@ -167,6 +171,10 @@ msgstr "byte. Chưa có gì được ghi cho đến khi bạn quyết định."
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
 msgstr "Cẩn trọng — hỏi trước khi lưu"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Slack channels"
+msgstr "Đang xem các kênh Slack"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
@@ -181,6 +189,10 @@ msgid "Connect"
 msgstr "Kết nối"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect bot token"
+msgstr "Kết nối token bot"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Google"
 msgstr "Kết nối Google"
 
@@ -191,6 +203,15 @@ msgstr "Kết nối Slack"
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "Đã kết nối trong phiên này. Các công cụ Google Tài liệu, Trang tính và Trang trình bày đang hoạt động."
+
+#: src/pages/ChatPage.tsx
+msgid "Connected to “{slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript."
+msgstr "Đã kết nối với “{slackTeam}”. Mỗi gà con đều có thể liệt kê các kênh công khai và đăng vào đó; mỗi bài đăng đều hiện trong cuộc trò chuyện."
+
+#. placeholder {0}: result.team
+#: src/pages/ChatPage.tsx
+msgid "Connected to the Slack workspace “{0}”. Channel tools are active for every hatchling."
+msgstr "Đã kết nối với workspace Slack “{0}”. Công cụ kênh đã bật cho mọi gà con."
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
@@ -249,6 +270,10 @@ msgstr "Mô tả kết quả bạn cần…"
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
 msgstr "Ngắt kết nối"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect bot token"
+msgstr "Ngắt kết nối token bot"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
@@ -458,6 +483,10 @@ msgstr "Đang ghim…"
 msgid "Posting to Slack"
 msgstr "Đang đăng lên Slack"
 
+#: src/lib/tool-summary.ts
+msgid "Posting to Slack — {channel}"
+msgstr "Đang đăng lên Slack — {channel}"
+
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
 msgstr "Đang chuẩn bị…"
@@ -552,12 +581,28 @@ msgid "Show the tools sidebar"
 msgstr "Hiện thanh bên công cụ"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack bot token connected. Channel tools are active for every hatchling."
+msgstr "Đã kết nối token bot Slack. Công cụ kênh đã bật cho mọi gà con."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack bot token disconnected."
+msgstr "Đã ngắt kết nối token bot Slack."
+
+#: src/pages/ChatPage.tsx
 msgid "Slack connected. Every hatchling can now post to the webhook's channel."
 msgstr "Đã kết nối Slack. Giờ đây mỗi gà con đều có thể đăng vào kênh của webhook."
 
 #: src/pages/ChatPage.tsx
+msgid "Slack could not be reached. Check your connection and try again."
+msgstr "Không thể kết nối tới Slack. Hãy kiểm tra mạng rồi thử lại."
+
+#: src/pages/ChatPage.tsx
 msgid "Slack disconnected."
 msgstr "Đã ngắt kết nối Slack."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
+msgstr "Slack đã từ chối token đó. Hãy cài lại ứng dụng trong Slack, sao chép token bot mới rồi thử lại."
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
@@ -586,6 +631,10 @@ msgstr "Không thể tạo bản sao lưu."
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
 msgstr "Trình duyệt bảo là chưa được. Thường thì sau khi bạn dùng ứng dụng thêm một chút, nó sẽ đồng ý — trước lúc đó, sao lưu là cách an toàn chắc chắn nhất."
+
+#: src/pages/ChatPage.tsx
+msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
+msgstr "Đường kết nối trực tiếp từ trình duyệt tới Slack có vẻ đang bị chặn. Bản triển khai có thể kèm theo relay được mô tả trong docs/slack.md và đặt VITE_SLACK_PROXY_URL."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
@@ -644,6 +693,10 @@ msgstr "Đang dùng {server} — {tool}"
 #: src/pages/ChatPage.tsx
 msgid "view diff"
 msgstr "xem thay đổi"
+
+#: src/pages/ChatPage.tsx
+msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
+msgstr "Muốn nhiều hơn một kênh? Hãy tạo một ứng dụng Slack nhỏ từ manifest có sẵn trong <0>docs/slack.md</0> rồi dán token bot của nó: trợ lý sẽ liệt kê được các kênh công khai và đăng vào bất kỳ kênh nào. Nó vẫn không đọc tin nhắn nào. Token chỉ nằm trong bộ nhớ của thẻ này."
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"

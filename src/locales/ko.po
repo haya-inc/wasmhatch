@@ -157,6 +157,10 @@ msgid "Blocked"
 msgstr "차단됨"
 
 #: src/pages/ChatPage.tsx
+msgid "Bot token (channel tools)"
+msgstr "봇 토큰(채널 도구)"
+
+#: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
 msgstr "Chrome 내장 — 무료, 키 불필요"
 
@@ -167,6 +171,10 @@ msgstr "바이트. 결정하기 전에는 아무것도 기록되지 않아요."
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
 msgstr "신중 — 저장 전에 물어봐요"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Slack channels"
+msgstr "Slack 채널 확인 중"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
@@ -181,6 +189,10 @@ msgid "Connect"
 msgstr "연결"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect bot token"
+msgstr "봇 토큰 연결"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Google"
 msgstr "Google 연결"
 
@@ -191,6 +203,15 @@ msgstr "Slack 연결"
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "이 세션 동안 연결되어 있어요. 문서·스프레드시트·프레젠테이션 도구가 활성화됐어요."
+
+#: src/pages/ChatPage.tsx
+msgid "Connected to “{slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript."
+msgstr "“{slackTeam}”에 연결됨. 모든 해츨링이 공개 채널을 나열하고 게시할 수 있으며, 모든 게시물이 대화에 표시됩니다."
+
+#. placeholder {0}: result.team
+#: src/pages/ChatPage.tsx
+msgid "Connected to the Slack workspace “{0}”. Channel tools are active for every hatchling."
+msgstr "Slack 워크스페이스 “{0}”에 연결했습니다. 채널 도구가 모든 해츨링에서 활성화되었습니다."
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
@@ -249,6 +270,10 @@ msgstr "원하는 결과를 적어 보세요…"
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
 msgstr "연결 해제"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect bot token"
+msgstr "봇 토큰 연결 해제"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
@@ -458,6 +483,10 @@ msgstr "고정하는 중…"
 msgid "Posting to Slack"
 msgstr "Slack에 게시하는 중"
 
+#: src/lib/tool-summary.ts
+msgid "Posting to Slack — {channel}"
+msgstr "Slack에 게시하는 중 — {channel}"
+
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
 msgstr "준비 중…"
@@ -552,12 +581,28 @@ msgid "Show the tools sidebar"
 msgstr "도구 사이드바 표시"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack bot token connected. Channel tools are active for every hatchling."
+msgstr "Slack 봇 토큰이 연결되었습니다. 채널 도구가 모든 해츨링에서 활성화되었습니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack bot token disconnected."
+msgstr "Slack 봇 토큰 연결이 해제되었습니다."
+
+#: src/pages/ChatPage.tsx
 msgid "Slack connected. Every hatchling can now post to the webhook's channel."
 msgstr "Slack이 연결되었습니다. 이제 모든 해츨링이 webhook 채널에 메시지를 올릴 수 있습니다."
 
 #: src/pages/ChatPage.tsx
+msgid "Slack could not be reached. Check your connection and try again."
+msgstr "Slack에 연결할 수 없습니다. 네트워크를 확인하고 다시 시도하세요."
+
+#: src/pages/ChatPage.tsx
 msgid "Slack disconnected."
 msgstr "Slack 연결이 해제되었습니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
+msgstr "Slack이 해당 토큰을 거부했습니다. Slack에서 앱을 다시 설치해 새 봇 토큰을 복사한 뒤 다시 시도하세요."
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
@@ -586,6 +631,10 @@ msgstr "백업을 만들지 못했어요."
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
 msgstr "브라우저가 아직은 안 된다고 했어요. 앱을 조금 더 쓰면 대개 허용해 줘요 — 그때까지는 백업이 가장 확실한 안전장치예요."
+
+#: src/pages/ChatPage.tsx
+msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
+msgstr "브라우저에서 Slack으로 가는 직접 경로가 지금 차단된 것 같습니다. 배포 측에서 docs/slack.md에 설명된 릴레이를 포함하고 VITE_SLACK_PROXY_URL을 설정할 수 있습니다."
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
@@ -644,6 +693,10 @@ msgstr "{server} 사용 중 — {tool}"
 #: src/pages/ChatPage.tsx
 msgid "view diff"
 msgstr "변경 내용 보기"
+
+#: src/pages/ChatPage.tsx
+msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
+msgstr "채널이 여러 개 필요하면 <0>docs/slack.md</0>의 준비된 manifest로 작은 Slack 앱을 만들고 그 봇 토큰을 붙여넣으세요. 에이전트가 공개 채널을 나열하고 어느 채널에든 게시할 수 있게 됩니다. 메시지는 여전히 읽지 않습니다. 토큰은 이 탭의 메모리에만 남습니다."
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"

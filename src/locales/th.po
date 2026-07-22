@@ -157,6 +157,10 @@ msgid "Blocked"
 msgstr "ติดขัด"
 
 #: src/pages/ChatPage.tsx
+msgid "Bot token (channel tools)"
+msgstr "โทเคนของบอต (เครื่องมือช่อง)"
+
+#: src/pages/ChatPage.tsx
 msgid "Built into Chrome — free, no key"
 msgstr "มีในตัว Chrome — ฟรี ไม่ต้องใช้คีย์"
 
@@ -167,6 +171,10 @@ msgstr "ไบต์ — จะไม่มีการเขียนใด ๆ
 #: src/pages/ChatPage.tsx
 msgid "Careful — asks before saving"
 msgstr "รอบคอบ — ถามก่อนบันทึก"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Slack channels"
+msgstr "กำลังดูช่องใน Slack"
 
 #: src/lib/tool-summary.ts
 msgid "Checking the ticket board"
@@ -181,6 +189,10 @@ msgid "Connect"
 msgstr "เชื่อมต่อ"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect bot token"
+msgstr "เชื่อมต่อโทเคนของบอต"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Google"
 msgstr "เชื่อมต่อ Google"
 
@@ -191,6 +203,15 @@ msgstr "เชื่อมต่อ Slack"
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "เชื่อมต่อแล้วสำหรับเซสชันนี้ เครื่องมือ Google เอกสาร ชีต และสไลด์พร้อมใช้งาน"
+
+#: src/pages/ChatPage.tsx
+msgid "Connected to “{slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript."
+msgstr "เชื่อมต่อกับ “{slackTeam}” แล้ว ลูกเจี๊ยบทุกตัวดูรายชื่อช่องสาธารณะและโพสต์ลงช่องเหล่านั้นได้ และทุกโพสต์จะแสดงในบทสนทนา"
+
+#. placeholder {0}: result.team
+#: src/pages/ChatPage.tsx
+msgid "Connected to the Slack workspace “{0}”. Channel tools are active for every hatchling."
+msgstr "เชื่อมต่อกับเวิร์กสเปซ Slack “{0}” แล้ว เครื่องมือช่องพร้อมใช้สำหรับลูกเจี๊ยบทุกตัว"
 
 #. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
 #: src/pages/ChatPage.tsx
@@ -249,6 +270,10 @@ msgstr "บอกผลลัพธ์ที่คุณต้องการ…
 #: src/pages/ChatPage.tsx
 msgid "Disconnect"
 msgstr "ยกเลิกการเชื่อมต่อ"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect bot token"
+msgstr "ยกเลิกการเชื่อมต่อโทเคนของบอต"
 
 #: src/pages/ChatPage.tsx
 msgid "Disconnect Google"
@@ -458,6 +483,10 @@ msgstr "กำลังปักหมุด…"
 msgid "Posting to Slack"
 msgstr "กำลังโพสต์ไปยัง Slack"
 
+#: src/lib/tool-summary.ts
+msgid "Posting to Slack — {channel}"
+msgstr "กำลังโพสต์ไปยัง Slack — {channel}"
+
 #: src/pages/ChatPage.tsx
 msgid "Preparing…"
 msgstr "กำลังเตรียม…"
@@ -552,12 +581,28 @@ msgid "Show the tools sidebar"
 msgstr "แสดงแถบด้านข้างเครื่องมือ"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack bot token connected. Channel tools are active for every hatchling."
+msgstr "เชื่อมต่อโทเคนของบอต Slack แล้ว เครื่องมือช่องพร้อมใช้สำหรับลูกเจี๊ยบทุกตัว"
+
+#: src/pages/ChatPage.tsx
+msgid "Slack bot token disconnected."
+msgstr "ยกเลิกการเชื่อมต่อโทเคนของบอต Slack แล้ว"
+
+#: src/pages/ChatPage.tsx
 msgid "Slack connected. Every hatchling can now post to the webhook's channel."
 msgstr "เชื่อมต่อ Slack แล้ว ตอนนี้ลูกเจี๊ยบทุกตัวโพสต์ไปยังช่องของ webhook ได้"
 
 #: src/pages/ChatPage.tsx
+msgid "Slack could not be reached. Check your connection and try again."
+msgstr "ติดต่อ Slack ไม่ได้ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง"
+
+#: src/pages/ChatPage.tsx
 msgid "Slack disconnected."
 msgstr "ยกเลิกการเชื่อมต่อ Slack แล้ว"
+
+#: src/pages/ChatPage.tsx
+msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
+msgstr "Slack ปฏิเสธโทเคนนั้น โปรดติดตั้งแอปใน Slack ใหม่ คัดลอกโทเคนของบอตอันใหม่ แล้วลองอีกครั้ง"
 
 #: src/pages/ChatPage.tsx
 msgid "Sources:"
@@ -586,6 +631,10 @@ msgstr "สร้างข้อมูลสำรองไม่สำเร็
 #: src/pages/ChatPage.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
 msgstr "เบราว์เซอร์บอกว่ายังไม่ได้ ปกติจะยอมเมื่อคุณใช้แอปมากขึ้นอีกหน่อย — ระหว่างนี้ การสำรองข้อมูลคือวิธีที่ปลอดภัยที่สุด"
+
+#: src/pages/ChatPage.tsx
+msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
+msgstr "เส้นทางตรงจากเบราว์เซอร์ไปยัง Slack ดูเหมือนถูกบล็อกอยู่ตอนนี้ ผู้ติดตั้งระบบสามารถแนบรีเลย์ตามที่อธิบายใน docs/slack.md และตั้งค่า VITE_SLACK_PROXY_URL ได้"
 
 #. placeholder {0}: providerDef.host
 #: src/pages/ChatPage.tsx
@@ -644,6 +693,10 @@ msgstr "กำลังใช้ {server} — {tool}"
 #: src/pages/ChatPage.tsx
 msgid "view diff"
 msgstr "ดูการเปลี่ยนแปลง"
+
+#: src/pages/ChatPage.tsx
+msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
+msgstr "อยากได้มากกว่าหนึ่งช่อง? สร้างแอป Slack เล็ก ๆ จาก manifest สำเร็จรูปใน <0>docs/slack.md</0> แล้ววางโทเคนของบอต ผู้ช่วยจะดูรายชื่อช่องสาธารณะและโพสต์ลงช่องไหนก็ได้ โดยยังคงไม่อ่านข้อความใด ๆ โทเคนจะอยู่แค่ในหน่วยความจำของแท็บนี้"
 
 #: src/pages/ChatPage.tsx
 msgid "Web search"

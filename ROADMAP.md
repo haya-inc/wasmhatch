@@ -59,14 +59,17 @@ vocabulary on screen.
       never `allow-same-origin`) with an injected frame policy;
       self-contained single-file HTML renders beside the chat and downloads
       instantly (`ArtifactPanel.tsx`, `artifact.ts`).
-- [ ] Slack, staged: Incoming Webhook connector (60-second setup), then
+- [x] Slack, staged: Incoming Webhook connector (60-second setup), then
       form-encoded body-token Web API client with guided internal-app
       manifest install; startup CORS probe with plain-language diagnostics;
       Cloudflare Worker relay template bundled as the documented fallback.
-      Shipped so far: the webhook connector (`slack-webhook.ts` + sidebar
-      panel; form-encoded delivery with a readable ok/error response —
-      measured, not fire-and-hope). The Web API client and relay template
-      exist unwired (`slack-connect.ts`, `workers/slack-proxy`).
+      All stages shipped: webhook connector (`slack-webhook.ts`), bot-token
+      channel tools (`slack-tools.ts` over `slack-connect.ts` — list public
+      channels, post to any; the connect probe classifies invalid-token /
+      cors-blocked / network with plain-language copy), the guided manifest
+      in `docs/slack.md`, and the bundled relay wired via the build-time
+      `VITE_SLACK_PROXY_URL` (its https origin joins the audited CSP).
+      Post-only by scope design — no history read.
 - [x] README "What it cannot do" section: full-Drive listing/search,
       Calendar until verification clears, arbitrary web browsing (provider
       web search with cited sources is the documented exception), background

@@ -46,8 +46,21 @@ export default defineConfig(({ command, mode }) => ({
           // Google Calendar, which is served from www.googleapis.com). Slides and Calendar
           // are only reached when the deployment opts into Sensitive scopes, but the CSP
           // stays static so the audit never depends on a runtime flag. hooks.slack.com is
-          // the Slack Incoming Webhook connector: one-way POSTs to a user-pasted webhook.
-          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://slides.googleapis.com https://hooks.slack.com";
+          // the Slack Incoming Webhook connector (one-way POSTs to a user-pasted webhook);
+          // slack.com carries the form-encoded body-token Web API route. A deployment may
+          // additionally bake in its own workers/slack-proxy relay via VITE_SLACK_PROXY_URL
+          // (https origin only) for the day Slack closes the direct browser route.
+          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://slides.googleapis.com https://hooks.slack.com https://slack.com";
+          const slackProxyRaw = loadEnv(mode, process.cwd(), "VITE_").VITE_SLACK_PROXY_URL;
+          let slackProxyOrigin = "";
+          if (slackProxyRaw) {
+            try {
+              const proxyUrl = new URL(slackProxyRaw);
+              if (proxyUrl.protocol === "https:") slackProxyOrigin = ` ${proxyUrl.origin}`;
+            } catch {
+              // Malformed values are dropped, mirroring parseExtraMcpServers.
+            }
+          }
           // MCP origins come from the same audited-registry pattern as model
           // providers: wildcard-port loopback for the user's own machine, plus
           // exact remote origins a deployment bakes in via VITE_EXTRA_MCP_SERVERS.
@@ -67,7 +80,7 @@ export default defineConfig(({ command, mode }) => ({
             stylePolicy,
             "img-src 'self' data:",
             "font-src 'self'",
-            `connect-src 'self' ${PROVIDER_CONNECT_SRCS.join(" ")} ${connectorOrigins} ${mcpOrigins} ${googleIdentityBase}${developmentConnect}`,
+            `connect-src 'self' ${PROVIDER_CONNECT_SRCS.join(" ")} ${connectorOrigins}${slackProxyOrigin} ${mcpOrigins} ${googleIdentityBase}${developmentConnect}`,
             "worker-src 'self'",
             "manifest-src 'self'"
           ].join("; ");
