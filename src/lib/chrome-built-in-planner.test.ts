@@ -1,8 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   ChromeBuiltInPlanner,
   chromeBuiltInPlannerAvailability
 } from "./chrome-built-in-planner";
+import { i18n } from "./i18n";
+
+// Language declarations follow the active UI locale; pin it so assertions do
+// not depend on the OS language of the machine running the tests.
+beforeAll(() => {
+  i18n.load("en", {});
+  i18n.activate("en");
+});
 
 function validPlan() {
   return JSON.stringify({
@@ -47,7 +55,7 @@ describe("ChromeBuiltInPlanner", () => {
     expect(result.inputCells).toBe(4);
     expect(create).toHaveBeenCalledOnce();
     expect(create.mock.calls[0][0]).toMatchObject({
-      expectedInputs: [{ type: "text", languages: ["en", "ja"] }],
+      expectedInputs: [{ type: "text", languages: ["en"] }],
       expectedOutputs: [{ type: "text", languages: ["en"] }]
     });
     expect(create.mock.calls[0][0].initialPrompts[0].content).toContain("untrusted data");

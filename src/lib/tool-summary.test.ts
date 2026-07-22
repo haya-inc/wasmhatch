@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { summarizeToolCall } from "./tool-summary";
+import { i18n } from "./i18n";
+
+// Summaries are Lingui messages; with the source locale active and no catalog
+// loaded they render their English defaults, which is what this suite asserts.
+beforeAll(() => {
+  i18n.load("en", {});
+  i18n.activate("en");
+});
 
 describe("summarizeToolCall", () => {
   // Original tools

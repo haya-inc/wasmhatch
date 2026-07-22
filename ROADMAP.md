@@ -99,6 +99,32 @@ Exit — the five launch conditions, one uncut take, or no launch date:
 Exit: 8/8 weekly artifacts; first stranger-authored issue or PR; Sensitive
 verification cleared.
 
+## Parallel track — Hatchling swarm (shipped 2026-07-22)
+
+A small team of agents that keeps doing useful work for as long as the tab
+is open — the serverless answer to the incumbents' multi-agent and
+scheduled-run features. Design record: `docs/hatchlings-design.md`.
+
+- [x] Multi-thread agents: up to eight hatchlings, each with its own name,
+      conversation, and isolated workspace pair; the legacy workspace became
+      hatchling `main` with nothing moved (`agent-threads.ts`,
+      `agent-session.ts`; transcripts moved to OPFS via `opfs-kv.ts`).
+- [x] Shared ticket board as the coordination surface — a work queue, not a
+      PM tool: `todo / doing / done / blocked`, atomic claims, user panel
+      plus three agent tools (`tickets.ts`).
+- [x] Interval "auto work" while the tab is open: worker-timer ticks,
+      immediate first run, cumulative visible run budget, exponential
+      failure backoff with auto-off, autonomous-mode only, global pause
+      (`agent-scheduler.ts`). Copy never claims background execution.
+- [x] Browser MCP client, Streamable HTTP: loopback servers out of the box
+      (any port), remote origins only via the build-time
+      `VITE_EXTRA_MCP_SERVERS` allowlist feeding the same audited CSP as
+      model providers (`mcp-client.ts`, `mcp-servers.ts`). CORS diagnostics
+      and a curated reachable-server list remain Phase 2 artifacts.
+- [x] Pixel office: dependency-free canvas, one chick per hatchling with
+      mood glyphs, click-to-select, and an aria-label that says everything
+      the pixels do (`pixel-office.ts`, `HatchlingOffice.tsx`).
+
 ## Parallel track — Portable agent distribution
 
 - [x] Versioned `wasmhatch.agent` ZIP contract with exact file hashes, bounded

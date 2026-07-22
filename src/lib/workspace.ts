@@ -33,6 +33,29 @@ export interface WorkspaceUsage {
 const FALLBACK_KEY = "wasmhatch-workspace-v1";
 const FALLBACK_BASELINE_KEY = "wasmhatch-baseline-v1";
 
+/**
+ * OPFS directory names (or localStorage key roots in the fallback) for one
+ * workspace pair: the working tree and the revert baseline. Every hatchling
+ * thread gets its own pair; the historical single workspace keeps the
+ * original names so existing users' files stay exactly where they were.
+ */
+export interface WorkspaceRoots {
+  working: string;
+  baseline: string;
+}
+
+export const DEFAULT_WORKSPACE_ROOTS: WorkspaceRoots = Object.freeze({
+  working: "wasmhatch-workspace",
+  baseline: "wasmhatch-baseline"
+});
+
+const ROOT_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+
+function assertRootName(name: string): string {
+  if (!ROOT_NAME_PATTERN.test(name)) throw new Error(`Invalid workspace root name: ${name}`);
+  return name;
+}
+
 export function normalizeWorkspacePath(input: string): string {
   const normalized = input.replaceAll("\\", "/").replace(/^\.\//, "");
   const parts = normalized.split("/").filter(Boolean);
@@ -50,13 +73,25 @@ export function normalizeWorkspacePath(input: string): string {
 
 class LocalStorageWorkspace implements WorkspaceStore {
   readonly backend = "local-storage" as const;
+  private readonly workingKey: string;
+  private readonly baselineKey: string;
 
-  private load(key = FALLBACK_KEY): Record<string, string> {
+  constructor(roots: WorkspaceRoots = DEFAULT_WORKSPACE_ROOTS) {
+    // The historical single workspace keeps its original storage keys.
+    this.workingKey = roots.working === DEFAULT_WORKSPACE_ROOTS.working
+      ? FALLBACK_KEY
+      : `wasmhatch-ws-v1:${assertRootName(roots.working)}`;
+    this.baselineKey = roots.baseline === DEFAULT_WORKSPACE_ROOTS.baseline
+      ? FALLBACK_BASELINE_KEY
+      : `wasmhatch-bl-v1:${assertRootName(roots.baseline)}`;
+  }
+
+  private load(key = this.workingKey): Record<string, string> {
     const saved = localStorage.getItem(key);
     return saved ? (JSON.parse(saved) as Record<string, string>) : {};
   }
 
-  private save(files: Record<string, string>, key = FALLBACK_KEY) {
+  private save(files: Record<string, string>, key = this.workingKey) {
     localStorage.setItem(key, JSON.stringify(files));
   }
 
@@ -70,7 +105,7 @@ class LocalStorageWorkspace implements WorkspaceStore {
   }
 
   async listBaselineFiles() {
-    return Object.keys(this.load(FALLBACK_BASELINE_KEY)).sort();
+    return Object.keys(this.load(this.baselineKey)).sort();
   }
 
   async readFile(path: string) {
@@ -82,7 +117,7 @@ class LocalStorageWorkspace implements WorkspaceStore {
 
   async readBaselineFile(path: string) {
     const normalized = normalizeWorkspacePath(path);
-    const content = this.load(FALLBACK_BASELINE_KEY)[normalized];
+    const content = this.load(this.baselineKey)[normalized];
     if (content === undefined) throw new Error(`Baseline file not found: ${normalized}`);
     return content;
   }
@@ -95,15 +130,15 @@ class LocalStorageWorkspace implements WorkspaceStore {
 
   async replaceAll(files: WorkspaceFile[]) {
     const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
-    const previousWorking = localStorage.getItem(FALLBACK_KEY);
-    const previousBaseline = localStorage.getItem(FALLBACK_BASELINE_KEY);
+    const previousWorking = localStorage.getItem(this.workingKey);
+    const previousBaseline = localStorage.getItem(this.baselineKey);
     try {
       this.save(next);
-      this.save(next, FALLBACK_BASELINE_KEY);
+      this.save(next, this.baselineKey);
     } catch (error) {
       try {
-        this.restore(FALLBACK_KEY, previousWorking);
-        this.restore(FALLBACK_BASELINE_KEY, previousBaseline);
+        this.restore(this.workingKey, previousWorking);
+        this.restore(this.baselineKey, previousBaseline);
       } catch (rollbackError) {
         throw new AggregateError([error, rollbackError], "Workspace replacement and rollback both failed.");
       }
@@ -113,12 +148,12 @@ class LocalStorageWorkspace implements WorkspaceStore {
 
   async replaceBaseline(files: WorkspaceFile[]) {
     const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
-    const previous = localStorage.getItem(FALLBACK_BASELINE_KEY);
+    const previous = localStorage.getItem(this.baselineKey);
     try {
-      this.save(next, FALLBACK_BASELINE_KEY);
+      this.save(next, this.baselineKey);
     } catch (error) {
       try {
-        this.restore(FALLBACK_BASELINE_KEY, previous);
+        this.restore(this.baselineKey, previous);
       } catch (rollbackError) {
         throw new AggregateError([error, rollbackError], "Baseline replacement and rollback both failed.");
       }
@@ -127,20 +162,25 @@ class LocalStorageWorkspace implements WorkspaceStore {
   }
 
   async clear() {
-    localStorage.removeItem(FALLBACK_KEY);
-    localStorage.removeItem(FALLBACK_BASELINE_KEY);
+    localStorage.removeItem(this.workingKey);
+    localStorage.removeItem(this.baselineKey);
   }
 }
 
 class OpfsWorkspace implements WorkspaceStore {
   readonly backend = "opfs" as const;
+  private readonly roots: WorkspaceRoots;
 
-  private async root(name = "wasmhatch-workspace") {
+  constructor(roots: WorkspaceRoots = DEFAULT_WORKSPACE_ROOTS) {
+    this.roots = { working: assertRootName(roots.working), baseline: assertRootName(roots.baseline) };
+  }
+
+  private async root(name = this.roots.working) {
     const originRoot = await navigator.storage.getDirectory();
     return originRoot.getDirectoryHandle(name, { create: true });
   }
 
-  private async fileHandle(path: string, create = false, rootName = "wasmhatch-workspace") {
+  private async fileHandle(path: string, create = false, rootName = this.roots.working) {
     const parts = normalizeWorkspacePath(path).split("/");
     const fileName = parts.pop()!;
     let directory = await this.root(rootName);
@@ -195,11 +235,11 @@ class OpfsWorkspace implements WorkspaceStore {
   }
 
   async listFiles() {
-    return this.listRoot("wasmhatch-workspace");
+    return this.listRoot(this.roots.working);
   }
 
   async listBaselineFiles() {
-    return this.listRoot("wasmhatch-baseline");
+    return this.listRoot(this.roots.baseline);
   }
 
   async readFile(path: string) {
@@ -208,12 +248,12 @@ class OpfsWorkspace implements WorkspaceStore {
   }
 
   async readBaselineFile(path: string) {
-    const handle = await this.fileHandle(path, false, "wasmhatch-baseline");
+    const handle = await this.fileHandle(path, false, this.roots.baseline);
     return (await handle.getFile()).text();
   }
 
   async writeFile(path: string, content: string) {
-    await this.writeToRoot(path, content, "wasmhatch-workspace");
+    await this.writeToRoot(path, content, this.roots.working);
   }
 
   private async writeToRoot(path: string, content: string, rootName: string) {
@@ -225,16 +265,16 @@ class OpfsWorkspace implements WorkspaceStore {
 
   async replaceAll(files: WorkspaceFile[]) {
     const [previousWorking, previousBaseline] = await Promise.all([
-      this.readRoot("wasmhatch-workspace"),
-      this.readRoot("wasmhatch-baseline")
+      this.readRoot(this.roots.working),
+      this.readRoot(this.roots.baseline)
     ]);
     try {
-      await this.replaceRoot("wasmhatch-workspace", files);
-      await this.replaceRoot("wasmhatch-baseline", files);
+      await this.replaceRoot(this.roots.working, files);
+      await this.replaceRoot(this.roots.baseline, files);
     } catch (error) {
       try {
-        await this.replaceRoot("wasmhatch-workspace", previousWorking);
-        await this.replaceRoot("wasmhatch-baseline", previousBaseline);
+        await this.replaceRoot(this.roots.working, previousWorking);
+        await this.replaceRoot(this.roots.baseline, previousBaseline);
       } catch (rollbackError) {
         throw new AggregateError([error, rollbackError], "Workspace replacement and rollback both failed.");
       }
@@ -243,12 +283,12 @@ class OpfsWorkspace implements WorkspaceStore {
   }
 
   async replaceBaseline(files: WorkspaceFile[]) {
-    const previous = await this.readRoot("wasmhatch-baseline");
+    const previous = await this.readRoot(this.roots.baseline);
     try {
-      await this.replaceRoot("wasmhatch-baseline", files);
+      await this.replaceRoot(this.roots.baseline, files);
     } catch (error) {
       try {
-        await this.replaceRoot("wasmhatch-baseline", previous);
+        await this.replaceRoot(this.roots.baseline, previous);
       } catch (rollbackError) {
         throw new AggregateError([error, rollbackError], "Baseline replacement and rollback both failed.");
       }
@@ -259,15 +299,15 @@ class OpfsWorkspace implements WorkspaceStore {
   async clear() {
     // Remove the baseline first so a partial failure cannot leave an old baseline
     // paired with a newly seeded working tree on the next visit.
-    await this.removeRoot("wasmhatch-baseline");
-    await this.removeRoot("wasmhatch-workspace");
+    await this.removeRoot(this.roots.baseline);
+    await this.removeRoot(this.roots.working);
   }
 }
 
-export function createWorkspaceStore(): WorkspaceStore {
+export function createWorkspaceStore(roots: WorkspaceRoots = DEFAULT_WORKSPACE_ROOTS): WorkspaceStore {
   return "storage" in navigator && "getDirectory" in navigator.storage
-    ? new OpfsWorkspace()
-    : new LocalStorageWorkspace();
+    ? new OpfsWorkspace(roots)
+    : new LocalStorageWorkspace(roots);
 }
 
 export async function inspectBrowserStorage(): Promise<BrowserStorageStatus> {

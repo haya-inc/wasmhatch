@@ -22,6 +22,13 @@ approve things first? Switch on Careful mode.
   (connect Google in a couple of clicks).
 - Build one-file HTML reports and dashboards that render beside the chat and
   download instantly.
+- Run a small team of **hatchlings** — up to eight agents, each with its own
+  name, chat, and isolated workspace — visualized as pixel characters at
+  their desks. A shared ticket board is the work queue, and any hatchling
+  can be put on **auto work**: while the tab is open, it checks the board on
+  the interval you set, with a visible run budget and one-click pause.
+- Reach extra tools through an MCP server on your own machine (Streamable
+  HTTP) — every hatchling shares them.
 - Run with your own AI key (Claude, OpenAI, or OpenRouter), with Ollama on
   your own machine, or with Chrome's built-in on-device model — free, no
   key at all.
@@ -37,7 +44,10 @@ Honesty beats surprises. WasmHatch currently does **not**:
   verification of our app completes);
 - manage your Calendar (same verification gate);
 - browse the open web;
-- run long jobs in the background — it works while the tab is open;
+- run anything with the tab closed — auto work is honest polling *while the
+  tab is open*, not a background service;
+- reach remote MCP servers unless a deployment bakes them into its audited
+  allowlist — out of the box, MCP means servers on your own machine;
 - work with admin-managed Google Workspace accounts that block new apps.
 
 ## Quick start
@@ -74,6 +84,13 @@ For the technically curious — this is where WasmHatch is unusual:
 - **Visible, revertible effects.** Every write is recorded with its exact
   diff; workspace changes revert in one click; an optional Careful mode asks
   before each write.
+- **A swarm without a server.** Each hatchling owns an isolated workspace
+  pair (no cross-agent write conflicts by construction); the ticket board is
+  the only shared work surface; scheduled runs are worker-timer polling with
+  cumulative budgets, failure backoff, and auto-off — and they stop the
+  moment the tab closes, which the UI says out loud. MCP endpoints follow
+  the same audited-registry CSP rule as model providers
+  (see [docs/hatchlings-design.md](docs/hatchlings-design.md)).
 
 Portable agents can be exported, content-verified, and loaded from any allowed
 HTTPS source. The optional hosted catalog is a distribution service, not a

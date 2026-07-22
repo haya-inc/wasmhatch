@@ -12,8 +12,16 @@
  */
 
 import type { KeyValueStore } from "./chat-settings";
+import type { AsyncTextStore } from "./opfs-kv";
 
 const STORAGE_KEY = "wasmhatch-chat-transcript-v1";
+
+const THREAD_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+
+function threadKey(threadId: string): string {
+  if (!THREAD_ID_PATTERN.test(threadId)) throw new Error(`Invalid thread id: ${threadId}`);
+  return `transcript-${threadId}`;
+}
 
 export const CHAT_TRANSCRIPT_MAX_BYTES = 1_000_000;
 
@@ -64,27 +72,37 @@ function dropOldestTurn<TItem extends TranscriptItemShape, TMessage extends Tran
   return { items: items.slice(itemBoundary), messages: messages.slice(messageBoundary) };
 }
 
+/**
+ * Serializes a snapshot within the byte budget, dropping whole oldest turns
+ * first. Returns null when even the newest turn alone exceeds the budget —
+ * the caller should then clear the stored entry rather than persist a torn
+ * conversation.
+ */
+export function serializeTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
+  snapshot: ChatTranscriptSnapshot<TItem, TMessage>,
+  maxBytes: number = CHAT_TRANSCRIPT_MAX_BYTES
+): string | null {
+  let items = snapshot.items;
+  let messages = snapshot.messages;
+  let serialized = JSON.stringify({ schemaVersion: 1, provider: snapshot.provider, nextId: snapshot.nextId, items, messages });
+  while (encoder.encode(serialized).byteLength > maxBytes) {
+    const trimmed = dropOldestTurn(items, messages);
+    if (!trimmed) return null;
+    items = trimmed.items;
+    messages = trimmed.messages;
+    serialized = JSON.stringify({ schemaVersion: 1, provider: snapshot.provider, nextId: snapshot.nextId, items, messages });
+  }
+  return serialized;
+}
+
 export function saveChatTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
   snapshot: ChatTranscriptSnapshot<TItem, TMessage>,
   store: KeyValueStore | null = defaultStore(),
   maxBytes: number = CHAT_TRANSCRIPT_MAX_BYTES
 ): void {
   if (!store) return;
-  let items = snapshot.items;
-  let messages = snapshot.messages;
   try {
-    let serialized = JSON.stringify({ schemaVersion: 1, provider: snapshot.provider, nextId: snapshot.nextId, items, messages });
-    while (encoder.encode(serialized).byteLength > maxBytes) {
-      const trimmed = dropOldestTurn(items, messages);
-      if (!trimmed) {
-        store.setItem(STORAGE_KEY, "");
-        return;
-      }
-      items = trimmed.items;
-      messages = trimmed.messages;
-      serialized = JSON.stringify({ schemaVersion: 1, provider: snapshot.provider, nextId: snapshot.nextId, items, messages });
-    }
-    store.setItem(STORAGE_KEY, serialized);
+    store.setItem(STORAGE_KEY, serializeTranscript(snapshot, maxBytes) ?? "");
   } catch {
     // Quota pressure or a blocked store must never surface as a page error.
     try {
@@ -95,17 +113,11 @@ export function saveChatTranscript<TItem extends TranscriptItemShape, TMessage e
   }
 }
 
-export function loadChatTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
-  provider: string,
-  store: KeyValueStore | null = defaultStore()
+/** Validates a stored blob structurally; null on any anomaly or provider mismatch. */
+export function parseTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
+  raw: string | null,
+  provider: string
 ): { items: TItem[]; messages: TMessage[]; nextId: number } | null {
-  if (!store) return null;
-  let raw: string | null;
-  try {
-    raw = store.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
   if (!raw) return null;
   let parsed: unknown;
   try {
@@ -130,9 +142,69 @@ export function loadChatTranscript<TItem extends TranscriptItemShape, TMessage e
   };
 }
 
+export function loadChatTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
+  provider: string,
+  store: KeyValueStore | null = defaultStore()
+): { items: TItem[]; messages: TMessage[]; nextId: number } | null {
+  if (!store) return null;
+  let raw: string | null;
+  try {
+    raw = store.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+  return parseTranscript(raw, provider);
+}
+
 export function clearChatTranscript(store: KeyValueStore | null = defaultStore()): void {
   try {
     store?.setItem(STORAGE_KEY, "");
+  } catch {
+    /* nothing to clear or storage is blocked — both are fine */
+  }
+}
+
+/**
+ * Per-thread persistence over the async meta store (OPFS). Same trim
+ * semantics as the legacy single-thread localStorage path; several
+ * hatchlings' transcripts must not compete for localStorage's tiny budget.
+ */
+export async function saveThreadTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
+  threadId: string,
+  snapshot: ChatTranscriptSnapshot<TItem, TMessage>,
+  store: AsyncTextStore,
+  maxBytes: number = CHAT_TRANSCRIPT_MAX_BYTES
+): Promise<void> {
+  const key = threadKey(threadId);
+  try {
+    const serialized = serializeTranscript(snapshot, maxBytes);
+    if (serialized === null) await store.remove(key);
+    else await store.write(key, serialized);
+  } catch {
+    // Quota pressure or a blocked store must never surface as a page error.
+    try {
+      await store.remove(key);
+    } catch {
+      /* the thread simply won't survive a reload */
+    }
+  }
+}
+
+export async function loadThreadTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
+  threadId: string,
+  provider: string,
+  store: AsyncTextStore
+): Promise<{ items: TItem[]; messages: TMessage[]; nextId: number } | null> {
+  try {
+    return parseTranscript<TItem, TMessage>(await store.read(threadKey(threadId)), provider);
+  } catch {
+    return null;
+  }
+}
+
+export async function clearThreadTranscript(threadId: string, store: AsyncTextStore): Promise<void> {
+  try {
+    await store.remove(threadKey(threadId));
   } catch {
     /* nothing to clear or storage is blocked — both are fine */
   }

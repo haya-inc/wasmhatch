@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Trans } from "@lingui/react/macro";
 import { BusinessLandingPage } from "./pages/BusinessLandingPage";
 
 const WorkspacePage = lazy(() =>
@@ -19,21 +20,21 @@ export function App() {
   const requestedView = new URLSearchParams(window.location.search).get("view");
   if (route.startsWith("chat") || requestedView === "chat") {
     return (
-      <Suspense fallback={<div className="route-loading">Opening WasmHatch…</div>}>
+      <Suspense fallback={<div className="route-loading"><Trans>Opening WasmHatch…</Trans></div>}>
         <ChatPage />
       </Suspense>
     );
   }
   if (route.startsWith("work") || requestedView === "work") {
     return (
-      <Suspense fallback={<div className="route-loading">Opening your workspace…</div>}>
+      <Suspense fallback={<div className="route-loading"><Trans>Opening your workspace…</Trans></div>}>
         <OperatorPage simple />
       </Suspense>
     );
   }
   if (route.startsWith("operator") || requestedView === "operator") {
     return (
-      <Suspense fallback={<div className="route-loading">Opening operator…</div>}>
+      <Suspense fallback={<div className="route-loading"><Trans>Opening operator…</Trans></div>}>
         <OperatorPage />
       </Suspense>
     );
@@ -41,7 +42,7 @@ export function App() {
   if (!route.startsWith("workspace") && requestedView !== "workspace") return <BusinessLandingPage />;
 
   return (
-    <Suspense fallback={<div className="route-loading">Hatching workspace…</div>}>
+    <Suspense fallback={<div className="route-loading"><Trans>Hatching workspace…</Trans></div>}>
       <WorkspacePage />
     </Suspense>
   );

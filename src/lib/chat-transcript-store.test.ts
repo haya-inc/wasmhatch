@@ -3,9 +3,13 @@ import type { KeyValueStore } from "./chat-settings";
 import {
   CHAT_TRANSCRIPT_MAX_BYTES,
   clearChatTranscript,
+  clearThreadTranscript,
   loadChatTranscript,
-  saveChatTranscript
+  loadThreadTranscript,
+  saveChatTranscript,
+  saveThreadTranscript
 } from "./chat-transcript-store";
+import { MemoryTextStore } from "./opfs-kv";
 
 class FakeStore implements KeyValueStore {
   private readonly values = new Map<string, string>();
@@ -159,5 +163,65 @@ describe("chat transcript store", () => {
 
   it("keeps the default budget generous enough for real threads", () => {
     expect(CHAT_TRANSCRIPT_MAX_BYTES).toBeGreaterThanOrEqual(500_000);
+  });
+});
+
+describe("per-thread transcript store", () => {
+  it("round-trips one transcript per thread without cross-talk", async () => {
+    const store = new MemoryTextStore();
+    const first = thread(2);
+    const second = thread(1, 32);
+    await saveThreadTranscript("main", { provider: "anthropic", ...first, nextId: 9 }, store);
+    await saveThreadTranscript("h-abc123", { provider: "anthropic", ...second, nextId: 4 }, store);
+    const loadedMain = await loadThreadTranscript<Item, Message>("main", "anthropic", store);
+    const loadedOther = await loadThreadTranscript<Item, Message>("h-abc123", "anthropic", store);
+    expect(loadedMain?.items).toEqual(first.items);
+    expect(loadedOther?.items).toEqual(second.items);
+    expect(loadedOther?.nextId).toBe(4);
+  });
+
+  it("applies the same trim and provider rules as the legacy path", async () => {
+    const store = new MemoryTextStore();
+    const { items, messages } = thread(4, 64);
+    const full = JSON.stringify({ schemaVersion: 1, provider: "anthropic", nextId: 99, items, messages });
+    await saveThreadTranscript(
+      "main",
+      { provider: "anthropic", items, messages, nextId: 99 },
+      store,
+      new TextEncoder().encode(full).byteLength - 1
+    );
+    const loaded = await loadThreadTranscript<Item, Message>("main", "anthropic", store);
+    expect(loaded).not.toBeNull();
+    expect(loaded!.items.length).toBeLessThan(items.length);
+    expect(loaded!.items[0]?.kind).toBe("user");
+    expect(await loadThreadTranscript("main", "openai", store)).toBeNull();
+  });
+
+  it("removes the entry when even the newest turn exceeds the budget", async () => {
+    const store = new MemoryTextStore();
+    const { items, messages } = thread(1, 64);
+    await saveThreadTranscript("main", { provider: "anthropic", items, messages, nextId: 3 }, store, 32);
+    expect(await loadThreadTranscript("main", "anthropic", store)).toBeNull();
+  });
+
+  it("clears one thread without touching the others", async () => {
+    const store = new MemoryTextStore();
+    const { items, messages } = thread(1);
+    await saveThreadTranscript("main", { provider: "anthropic", items, messages, nextId: 3 }, store);
+    await saveThreadTranscript("h-abc123", { provider: "anthropic", items, messages, nextId: 3 }, store);
+    await clearThreadTranscript("main", store);
+    expect(await loadThreadTranscript("main", "anthropic", store)).toBeNull();
+    expect(await loadThreadTranscript("h-abc123", "anthropic", store)).not.toBeNull();
+  });
+
+  it("rejects invalid thread ids instead of writing strange keys", async () => {
+    const store = new MemoryTextStore();
+    const { items, messages } = thread(1);
+    // An invalid id is a caller bug, not a storage failure: save throws loudly…
+    await expect(
+      saveThreadTranscript("../evil", { provider: "anthropic", items, messages, nextId: 2 }, store)
+    ).rejects.toThrow(/Invalid thread id/);
+    // …while the read path stays boot-safe and reports null.
+    expect(await loadThreadTranscript("../evil", "anthropic", store)).toBeNull();
   });
 });

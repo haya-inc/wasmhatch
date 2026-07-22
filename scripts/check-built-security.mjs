@@ -36,7 +36,13 @@ const requiredConnectSrc = [
   "https://sheets.googleapis.com",
   "https://www.googleapis.com",
   "https://docs.googleapis.com",
-  "https://accounts.google.com/gsi/"
+  "https://accounts.google.com/gsi/",
+  // MCP: any Streamable-HTTP server on the user's own machine, any port.
+  // Loopback-only http is the same audited exception Ollama uses; remote MCP
+  // origins (VITE_EXTRA_MCP_SERVERS) are https and deployment-specific, so
+  // they are not required here.
+  "http://localhost:*",
+  "http://127.0.0.1:*"
 ];
 
 const connectSrc = policy.match(/connect-src ([^;]+)/)?.[1] ?? "";

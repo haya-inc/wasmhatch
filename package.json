@@ -9,12 +9,16 @@
     "build:pages": "tsc -b && vite build --mode github-pages && node scripts/check-built-security.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "render:social": "node scripts/render-social-preview.mjs",
+    "i18n:extract": "lingui extract",
+    "i18n:check": "node scripts/check-catalogs.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@jitl/quickjs-wasmfile-release-sync": "^0.32.0",
+    "@lingui/core": "^6.5.0",
+    "@lingui/react": "^6.5.0",
     "fflate": "^0.8.2",
     "lucide-react": "^1.24.0",
     "quickjs-emscripten-core": "^0.32.0",
@@ -23,7 +27,12 @@
     "saxes": "^6.0.0"
   },
   "devDependencies": {
+    "@lingui/babel-plugin-lingui-macro": "^6.5.0",
+    "@lingui/cli": "^6.5.0",
+    "@lingui/format-po": "^6.5.0",
+    "@lingui/vite-plugin": "^6.5.0",
     "@playwright/test": "^1.61.1",
+    "@types/babel__core": "^7.20.5",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_MAX_STEPS,
   TOOL_RESULT_EXCERPT_CHAR_CAP,
@@ -9,6 +9,14 @@ import {
   type BuiltinAiSessionLike,
   type BuiltinTool
 } from "./builtin-ai-loop";
+import { i18n } from "./i18n";
+
+// Language declarations follow the active UI locale; pin it so assertions do
+// not depend on the OS language of the machine running the tests.
+beforeAll(() => {
+  i18n.load("en", {});
+  i18n.activate("en");
+});
 
 type PromptOptions = Parameters<BuiltinAiSessionLike["prompt"]>[1];
 
@@ -72,9 +80,24 @@ describe("detectBuiltinAiToolLoopSupport", () => {
       LanguageModel: { availability, create: vi.fn() }
     })).resolves.toBe("downloadable");
     expect(availability).toHaveBeenCalledWith(expect.objectContaining({
-      expectedInputs: [{ type: "text", languages: ["en", "ja"] }],
+      expectedInputs: [{ type: "text", languages: ["en"] }],
       expectedOutputs: [{ type: "text", languages: ["en"] }]
     }));
+  });
+
+  it("declares the UI language alongside English when the Prompt API supports it", async () => {
+    i18n.load("ja", {});
+    i18n.activate("ja");
+    try {
+      const availability = vi.fn(async () => "available");
+      await detectBuiltinAiToolLoopSupport({ LanguageModel: { availability, create: vi.fn() } });
+      expect(availability).toHaveBeenCalledWith(expect.objectContaining({
+        expectedInputs: [{ type: "text", languages: ["en", "ja"] }],
+        expectedOutputs: [{ type: "text", languages: ["en", "ja"] }]
+      }));
+    } finally {
+      i18n.activate("en");
+    }
   });
 
   it("normalises unknown states and probe failures to unavailable", async () => {

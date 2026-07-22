@@ -6,6 +6,8 @@
 // key, no network, everything on-device. Tool results are treated strictly as
 // data and nothing returned by the model or a tool is ever evaluated as code.
 
+import { callWithLanguageFallback } from "./builtin-ai-language";
+
 export type BuiltinAiToolLoopAvailability = "available" | "downloadable" | "downloading" | "unavailable";
 
 export interface BuiltinTool {
@@ -74,11 +76,6 @@ const SECURITY_PREAMBLE =
 const AVAILABILITY_STATES: readonly BuiltinAiToolLoopAvailability[] =
   ["available", "downloadable", "downloading", "unavailable"];
 
-const LANGUAGE_OPTIONS = Object.freeze({
-  expectedInputs: Object.freeze([{ type: "text" as const, languages: Object.freeze(["en", "ja"]) }]),
-  expectedOutputs: Object.freeze([{ type: "text" as const, languages: Object.freeze(["en"]) }])
-});
-
 export async function detectBuiltinAiToolLoopSupport(
   globalObject: { LanguageModel?: unknown } = globalThis as typeof globalThis & { LanguageModel?: unknown }
 ): Promise<BuiltinAiToolLoopAvailability> {
@@ -90,8 +87,8 @@ export async function detectBuiltinAiToolLoopSupport(
     return "unavailable";
   }
   try {
-    const status: unknown = await (candidate.availability as (options: unknown) => Promise<unknown>)(
-      LANGUAGE_OPTIONS
+    const status: unknown = await callWithLanguageFallback((languageOptions) =>
+      (candidate.availability as (options: unknown) => Promise<unknown>)(languageOptions)
     );
     return typeof status === "string" && (AVAILABILITY_STATES as readonly string[]).includes(status)
       ? status as BuiltinAiToolLoopAvailability

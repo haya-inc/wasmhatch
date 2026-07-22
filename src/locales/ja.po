@@ -1,0 +1,647 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-07-22 13:23+0900\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: ja\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. placeholder {0}: status.toolCount
+#: src/pages/ChatPage.tsx
+msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
+msgstr "{0, plural, other {接続中 · # 個のツール}}"
+
+#. placeholder {0}: selectedSchedule.intervalMinutes
+#: src/pages/ChatPage.tsx
+msgid "{0} min"
+msgstr "{0}分"
+
+#. placeholder {0}: selected.runsLeft
+#. placeholder {1}: selectedSchedule.maxAutoRuns
+#: src/pages/ChatPage.tsx
+msgid "{0} of {1} auto runs left."
+msgstr "自動実行の残り回数: {0}/{1}。"
+
+#. placeholder {0}: selected.thread.name
+#: src/pages/ChatPage.tsx
+msgid "{0}'s workspace — each hatchling keeps its own files."
+msgstr "{0}のワークスペース — ハッチリングはそれぞれ自分のファイルを持ちます。"
+
+#: src/pages/ChatPage.tsx
+msgid "{minutes} min"
+msgstr "{minutes}分"
+
+#: src/lib/pixel-office.ts
+msgid "{name} hit an error"
+msgstr "{name}でエラーが発生"
+
+#: src/lib/pixel-office.ts
+msgid "{name} is resting"
+msgstr "{name}は休憩中"
+
+#: src/lib/pixel-office.ts
+msgid "{name} is waiting for the next auto-work run"
+msgstr "{name}は次の自動作業を待機中"
+
+#: src/lib/pixel-office.ts
+msgid "{name} is working"
+msgstr "{name}は作業中"
+
+#: src/pages/ChatPage.tsx
+msgid "{toolCount, plural, one {MCP server connected — # tool available to every hatchling.} other {MCP server connected — # tools available to every hatchling.}}"
+msgstr "{toolCount, plural, other {MCPサーバーに接続しました — # 個のツールが全ハッチリングで使えます。}}"
+
+#: src/pages/ChatPage.tsx
+msgid "{used} used."
+msgstr "使用量: {used}。"
+
+#: src/pages/ChatPage.tsx
+msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
+msgstr "散らかったサンプルのスプレッドシートを用意しました — 整理を頼んで、変更が反映されていく様子を見てみましょう。"
+
+#: src/pages/ChatPage.tsx
+msgid "Access token (optional)"
+msgstr "アクセストークン(任意)"
+
+#: src/pages/ChatPage.tsx
+msgid "Add"
+msgstr "追加"
+
+#: src/pages/ChatPage.tsx
+msgid "Add a sample spreadsheet"
+msgstr "サンプルのスプレッドシートを追加"
+
+#: src/lib/tool-summary.ts
+msgid "Adding a ticket — {title}"
+msgstr "チケットを追加中 — {title}"
+
+#: src/pages/ChatPage.tsx
+msgid "Allow once"
+msgstr "今回のみ許可"
+
+#: src/pages/ChatPage.tsx
+msgid "Always allow this file"
+msgstr "このファイルは常に許可"
+
+#. placeholder {0}: swarm.grantedPaths(selectedId).join(", ")
+#: src/pages/ChatPage.tsx
+msgid "Always-allowed this session: {0}"
+msgstr "このセッションで常に許可: {0}"
+
+#: src/pages/ChatPage.tsx
+msgid "API key"
+msgstr "APIキー"
+
+#: src/lib/tool-summary.ts
+msgid "Appending text to a Google Doc"
+msgstr "Googleドキュメントに追記中"
+
+#. placeholder {0}: selected.thread.name
+#: src/pages/ChatPage.tsx
+msgid "Ask {0} for the outcome you need…"
+msgstr "{0}にほしい成果を伝えましょう…"
+
+#: src/pages/ChatPage.tsx
+msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
+msgstr "普段の言葉で頼むだけ — スプレッドシートの修正も、文書の作成も、レポート作りもこの場で進みます。変更はすべてその場で表示され、元に戻すのもワンクリック。先に確認したい場合は、サイドバーで「慎重」に切り替えてください。"
+
+#: src/pages/ChatPage.tsx
+msgid "Assistant"
+msgstr "アシスタント"
+
+#: src/pages/ChatPage.tsx
+msgid "Auto — match this browser"
+msgstr "自動 — ブラウザに合わせる"
+
+#: src/pages/ChatPage.tsx
+msgid "Auto budget used up"
+msgstr "自動実行の回数を使い切りました"
+
+#: src/pages/ChatPage.tsx
+msgid "Auto work in progress…"
+msgstr "自動作業を実行中…"
+
+#: src/pages/ChatPage.tsx
+msgid "Auto work on"
+msgstr "自動作業オン"
+
+#: src/pages/ChatPage.tsx
+msgid "Auto work waiting"
+msgstr "自動作業は待機中"
+
+#: src/pages/ChatPage.tsx
+msgid "Auto work while this tab is open"
+msgstr "タブを開いている間は自動で作業する"
+
+#: src/pages/ChatPage.tsx
+msgid "Autonomy"
+msgstr "自律性"
+
+#: src/pages/ChatPage.tsx
+msgid "Back up everything"
+msgstr "すべてバックアップ"
+
+#: src/pages/ChatPage.tsx
+msgid "Blocked"
+msgstr "ブロック中"
+
+#: src/pages/ChatPage.tsx
+msgid "Built into Chrome — free, no key"
+msgstr "Chrome内蔵 — 無料・キー不要"
+
+#: src/pages/ChatPage.tsx
+msgid "bytes. Nothing is written until you decide."
+msgstr "バイト。承認するまで何も書き込まれません。"
+
+#: src/pages/ChatPage.tsx
+msgid "Careful — asks before saving"
+msgstr "慎重 — 保存前に確認します"
+
+#: src/lib/tool-summary.ts
+msgid "Checking the ticket board"
+msgstr "チケットボードを確認中"
+
+#: src/pages/ChatPage.tsx
+msgid "Close"
+msgstr "閉じる"
+
+#: src/pages/ChatPage.tsx
+msgid "Connect"
+msgstr "接続"
+
+#: src/pages/ChatPage.tsx
+msgid "Connect Google"
+msgstr "Googleに接続"
+
+#: src/pages/ChatPage.tsx
+msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
+msgstr "このセッションの間は接続されています。ドキュメント・スプレッドシート・スライドのツールが有効です。"
+
+#. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
+#: src/pages/ChatPage.tsx
+msgid "Connected until {0}. Docs, Sheets, and Slides tools are active."
+msgstr "{0}まで接続されています。ドキュメント・スプレッドシート・スライドのツールが有効です。"
+
+#: src/pages/ChatPage.tsx
+msgid "Connecting…"
+msgstr "接続中…"
+
+#: src/pages/ChatPage.tsx
+msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
+msgstr "このマシン上のMCPサーバー(Streamable HTTP)のツールに全ハッチリングを接続します。例: ローカルプロキシ経由のstdioサーバー。トークンはこのタブのメモリ内に留まります。リモートサーバーはデプロイ時の許可リスト登録が必須で、実行時の例外は認めません。"
+
+#. placeholder {0}: activePermission.request.path
+#: src/pages/ChatPage.tsx
+msgid "Create {0}"
+msgstr "{0} を作成"
+
+#: src/lib/tool-summary.ts
+msgid "Creating a Google Doc — {title}"
+msgstr "Googleドキュメントを作成中 — {title}"
+
+#: src/lib/tool-summary.ts
+msgid "Creating a Google Sheet — {title}"
+msgstr "Googleスプレッドシートを作成中 — {title}"
+
+#: src/lib/tool-summary.ts
+msgid "Creating a Google Slides deck — {title}"
+msgstr "Googleスライドを作成中 — {title}"
+
+#: src/lib/tool-summary.ts
+msgid "Creating an HTML artifact — {title}"
+msgstr "HTML成果物を作成中 — {title}"
+
+#: src/pages/ChatPage.tsx
+msgid "Custom model ID"
+msgstr "カスタムモデルID"
+
+#: src/pages/ChatPage.tsx
+msgid "Custom model ID…"
+msgstr "カスタムモデルID…"
+
+#: src/pages/ChatPage.tsx
+msgid "Delete"
+msgstr "削除"
+
+#: src/pages/ChatPage.tsx
+msgid "Describe the outcome you need…"
+msgstr "ほしい成果を書いてください…"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect"
+msgstr "切断"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect Google"
+msgstr "Googleを切断"
+
+#: src/pages/ChatPage.tsx
+msgid "Doing"
+msgstr "作業中"
+
+#: src/pages/ChatPage.tsx
+msgid "done"
+msgstr "完了"
+
+#: src/pages/ChatPage.tsx
+msgid "Done"
+msgstr "完了"
+
+#: src/pages/ChatPage.tsx
+msgid "Done — this browser will keep your data safe."
+msgstr "完了 — このブラウザがデータを保持します。"
+
+#: src/pages/ChatPage.tsx
+msgid "Download"
+msgstr "ダウンロード"
+
+#: src/pages/ChatPage.tsx
+msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
+msgstr "このハッチリングのファイルを1つのZIPにまとめてダウンロードし、好きな場所に保管できます — まずファイルを追加してください。"
+
+#: src/pages/ChatPage.tsx
+msgid "Downloads this hatchling's files as one ZIP you can keep anywhere."
+msgstr "このハッチリングのファイルを1つのZIPにまとめてダウンロードし、好きな場所に保管できます。"
+
+#: src/pages/ChatPage.tsx
+msgid "Each run"
+msgstr "毎回の指示"
+
+#: src/pages/ChatPage.tsx
+msgid "Every"
+msgstr "間隔"
+
+#: src/pages/ChatPage.tsx
+msgid "failed"
+msgstr "失敗"
+
+#: src/pages/ChatPage.tsx
+msgid "Fast — just does it (undo anytime)"
+msgstr "おまかせ — すぐ実行(いつでも元に戻せます)"
+
+#: src/pages/ChatPage.tsx
+msgid "Google access revoked for this tab."
+msgstr "このタブのGoogleアクセスを取り消しました。"
+
+#: src/pages/ChatPage.tsx
+msgid "Google authorization failed."
+msgstr "Google認証に失敗しました。"
+
+#: src/pages/ChatPage.tsx
+msgid "Google connected. The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events."
+msgstr "Googleに接続しました。エージェントはドキュメント・スプレッドシート・スライドの作成、リンク共有されたファイルのオープン、カレンダー予定の読み取り・追加ができます。"
+
+#: src/pages/ChatPage.tsx
+msgid "Google connected. The agent can now create Docs, Sheets, and Slides and edit the ones it creates."
+msgstr "Googleに接続しました。エージェントはドキュメント・スプレッドシート・スライドを作成し、自分が作ったものを編集できます。"
+
+#: src/pages/ChatPage.tsx
+msgid "Google revocation failed."
+msgstr "Googleアクセスの取り消しに失敗しました。"
+
+#: src/pages/ChatPage.tsx
+msgid "Hatch a new one"
+msgstr "新しく孵す"
+
+#: src/App.tsx
+msgid "Hatching workspace…"
+msgstr "ワークスペースを孵化中…"
+
+#: src/pages/ChatPage.tsx
+msgid "Hatchlings"
+msgstr "ハッチリング"
+
+#: src/pages/ChatPage.tsx
+msgid "Hide the team sidebar"
+msgstr "チームサイドバーを隠す"
+
+#: src/pages/ChatPage.tsx
+msgid "Hide the tools sidebar"
+msgstr "ツールサイドバーを隠す"
+
+#: src/pages/ChatPage.tsx
+msgid "It's saved in this browser until you untick the box."
+msgstr "チェックを外すまでこのブラウザに保存されます。"
+
+#: src/pages/ChatPage.tsx
+msgid "Keep my data safe"
+msgstr "データを守る"
+
+#: src/pages/ChatPage.tsx
+msgid "Language"
+msgstr "言語"
+
+#: src/lib/tool-summary.ts
+msgid "Listing workspace files"
+msgstr "ワークスペースのファイルを一覧中"
+
+#: src/pages/ChatPage.tsx
+msgid "MCP connection failed."
+msgstr "MCP接続に失敗しました。"
+
+#: src/pages/ChatPage.tsx
+msgid "MCP servers"
+msgstr "MCPサーバー"
+
+#: src/pages/ChatPage.tsx
+msgid "Message the agent"
+msgstr "エージェントへのメッセージ"
+
+#: src/pages/ChatPage.tsx
+msgid "Model"
+msgstr "モデル"
+
+#: src/pages/ChatPage.tsx
+msgid "Name"
+msgstr "名前"
+
+#: src/pages/ChatPage.tsx
+msgid "Needs attention"
+msgstr "要確認"
+
+#: src/pages/ChatPage.tsx
+msgid "New chat"
+msgstr "新しいチャット"
+
+#: src/pages/ChatPage.tsx
+msgid "New ticket title"
+msgstr "新しいチケットのタイトル"
+
+#: src/pages/ChatPage.tsx
+msgid "Next auto run any moment"
+msgstr "まもなく次の自動実行"
+
+#: src/pages/ChatPage.tsx
+msgid "Next auto run in ~{minutes} min"
+msgstr "次の自動実行まで約{minutes}分"
+
+#: src/lib/pixel-office.ts
+msgid "No hatchlings yet."
+msgstr "まだハッチリングがいません。"
+
+#: src/pages/ChatPage.tsx
+msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
+msgstr "キーは不要 — お使いのコンピュータ上のOllamaと通信します。このサイトを許可した状態で(OLLAMA_ORIGINSを設定)Ollamaを起動し、取得済みのモデル(ollama list)を選んでください。"
+
+#: src/pages/ChatPage.tsx
+msgid "Not configured for this deployment. Set VITE_GOOGLE_CLIENT_ID to enable Google Docs, Sheets, and Slides tools."
+msgstr "このデプロイでは未設定です。VITE_GOOGLE_CLIENT_IDを設定すると、Googleドキュメント・スプレッドシート・スライドのツールが有効になります。"
+
+#: src/pages/ChatPage.tsx
+msgid "Not pinned yet — the browser could clear saved work if this device runs low on space."
+msgstr "まだ保護されていません — 端末の空き容量が少なくなると、ブラウザが保存した作業を消す可能性があります。"
+
+#: src/pages/ChatPage.tsx
+msgid "Nothing here yet. Add the samples or just ask for something — files it creates appear here."
+msgstr "まだ何もありません。サンプルを追加するか、何か頼んでみてください — 作成されたファイルがここに並びます。"
+
+#: src/pages/ChatPage.tsx
+msgid "off"
+msgstr "未接続"
+
+#: src/pages/ChatPage.tsx
+msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
+msgstr "オンデバイスモデルの状態: {builtinAvailability}。対応デスクトップのChrome 138+なら、キーなしでタスクを実行できます。"
+
+#: src/App.tsx
+msgid "Opening operator…"
+msgstr "オペレーターを開いています…"
+
+#: src/App.tsx
+msgid "Opening WasmHatch…"
+msgstr "WasmHatchを開いています…"
+
+#: src/App.tsx
+msgid "Opening your workspace…"
+msgstr "ワークスペースを開いています…"
+
+#: src/pages/ChatPage.tsx
+msgid "Pause all auto work"
+msgstr "自動作業をすべて一時停止"
+
+#: src/pages/ChatPage.tsx
+msgid "Per-file access only (drive.file): the agent can create Docs, Sheets, and Slides and edit the ones it creates. It cannot browse your existing Drive. The token stays in this tab."
+msgstr "ファイル単位のアクセスのみ(drive.file): エージェントはドキュメント・スプレッドシート・スライドを作成し、自分が作ったものだけを編集できます。既存のDriveは閲覧できません。トークンはこのタブ内に留まります。"
+
+#: src/pages/ChatPage.tsx
+msgid "Pinning…"
+msgstr "保護を設定中…"
+
+#: src/pages/ChatPage.tsx
+msgid "Preparing…"
+msgstr "準備中…"
+
+#: src/pages/ChatPage.tsx
+msgid "Provider"
+msgstr "プロバイダ"
+
+#: src/pages/ChatPage.tsx
+msgid "Queue a piece of work…"
+msgstr "作業をキューに積む…"
+
+#: src/lib/tool-summary.ts
+msgid "Reading {path}"
+msgstr "{path}を読み取り中"
+
+#: src/lib/tool-summary.ts
+msgid "Reading a Google Sheet"
+msgstr "Googleスプレッドシートを読み取り中"
+
+#: src/pages/ChatPage.tsx
+msgid "Reject"
+msgstr "拒否"
+
+#: src/pages/ChatPage.tsx
+msgid "Remember on this device"
+msgstr "この端末に記憶する"
+
+#. placeholder {0}: selected.thread.name
+#: src/pages/ChatPage.tsx
+msgid "Remove {0}? Its files and conversation are deleted (the shared ticket board stays)."
+msgstr "{0}を削除しますか?ファイルと会話は消えます(共有のチケットボードは残ります)。"
+
+#: src/pages/ChatPage.tsx
+msgid "Remove this hatchling"
+msgstr "このハッチリングを削除"
+
+#: src/pages/ChatPage.tsx
+msgid "Reopen"
+msgstr "再開"
+
+#: src/pages/ChatPage.tsx
+msgid "Reset budget"
+msgstr "回数をリセット"
+
+#: src/pages/ChatPage.tsx
+msgid "Resting"
+msgstr "休憩中"
+
+#: src/pages/ChatPage.tsx
+msgid "Revert"
+msgstr "元に戻す"
+
+#: src/pages/ChatPage.tsx
+msgid "reverted"
+msgstr "取り消し済み"
+
+#: src/pages/ChatPage.tsx
+msgid "Right now it's kept just for this tab and gone when the tab closes."
+msgstr "今はこのタブ限りで、タブを閉じると消えます。"
+
+#: src/pages/ChatPage.tsx
+msgid "running"
+msgstr "実行中"
+
+#: src/lib/tool-summary.ts
+msgid "Running a sandboxed script"
+msgstr "サンドボックスでスクリプトを実行中"
+
+#: src/pages/ChatPage.tsx
+msgid "Runs only while this tab is open, in Fast mode, with its own token budget — it stops itself after repeated failures."
+msgstr "このタブが開いている間だけ、おまかせモードで、専用のトークン枠内で動きます。失敗が続くと自動で停止します。"
+
+#: src/pages/ChatPage.tsx
+msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
+msgstr "サンプルのスプレッドシートをあなたのファイルの隣に追加しました — 既存のファイルには触れていません。"
+
+#: src/lib/tool-summary.ts
+msgid "Searching the web — {query}"
+msgstr "Webを検索中 — {query}"
+
+#: src/pages/ChatPage.tsx
+msgid "Send"
+msgstr "送信"
+
+#: src/pages/ChatPage.tsx
+msgid "Show the team sidebar"
+msgstr "チームサイドバーを表示"
+
+#: src/pages/ChatPage.tsx
+msgid "Show the tools sidebar"
+msgstr "ツールサイドバーを表示"
+
+#: src/pages/ChatPage.tsx
+msgid "Sources:"
+msgstr "出典:"
+
+#: src/pages/ChatPage.tsx
+msgid "Stop"
+msgstr "停止"
+
+#: src/pages/ChatPage.tsx
+msgid "Storage"
+msgstr "ストレージ"
+
+#: src/pages/ChatPage.tsx
+msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
+msgstr "エージェントはドキュメント・スプレッドシート・スライドの作成、リンク共有されたファイルのオープン、カレンダー予定の読み取り・追加ができます。トークンはこのタブ内に留まり、書き込みはすべて適用前に表示されます。"
+
+#: src/pages/ChatPage.tsx
+msgid "The backup could not be created."
+msgstr "バックアップを作成できませんでした。"
+
+#: src/pages/ChatPage.tsx
+msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
+msgstr "ブラウザは「まだ」と答えました。もう少し使い込むと許可されるのが通例です — それまではバックアップが最も確実です。"
+
+#. placeholder {0}: providerDef.host
+#: src/pages/ChatPage.tsx
+msgid "The model can search the web through {0}. Searches are billed by your provider alongside tokens; untick to turn this off."
+msgstr "モデルは{0}経由でWebを検索できます。検索はトークンと併せてプロバイダから請求されます。オフにするにはチェックを外してください。"
+
+#: src/pages/ChatPage.tsx
+msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
+msgstr "オンデバイスモデルはこの言語にまだ対応しておらず、英語で応答します。クラウドプロバイダならこの言語で応答できます。"
+
+#: src/pages/ChatPage.tsx
+msgid "The sample spreadsheet is already in your files."
+msgstr "サンプルのスプレッドシートはすでにファイルにあります。"
+
+#: src/pages/ChatPage.tsx
+msgid "The shared work queue is empty. Add tickets here or let hatchlings queue their own follow-ups."
+msgstr "共有の作業キューは空です。ここでチケットを追加するか、ハッチリング自身に続きの作業を積ませましょう。"
+
+#: src/pages/ChatPage.tsx
+msgid "The ticket could not be created."
+msgstr "チケットを作成できませんでした。"
+
+#: src/pages/ChatPage.tsx
+msgid "This browser can't promise to keep data around, so a backup is the safest bet."
+msgstr "このブラウザはデータの保持を保証できないため、バックアップが最も確実です。"
+
+#: src/pages/ChatPage.tsx
+msgid "Tickets"
+msgstr "チケット"
+
+#: src/pages/ChatPage.tsx
+msgid "To do"
+msgstr "未着手"
+
+#. placeholder {0}: activePermission.request.path
+#: src/pages/ChatPage.tsx
+msgid "Update {0}"
+msgstr "{0} を更新"
+
+#: src/lib/tool-summary.ts
+msgid "Updating a Google Sheet"
+msgstr "Googleスプレッドシートを更新中"
+
+#: src/lib/tool-summary.ts
+msgid "Updating ticket {id}"
+msgstr "チケット{id}を更新中"
+
+#: src/pages/ChatPage.tsx
+msgid "URL (this machine only)"
+msgstr "URL(このマシンのみ)"
+
+#: src/lib/tool-summary.ts
+msgid "Using {server} — {tool}"
+msgstr "{server}を使用中 — {tool}"
+
+#: src/pages/ChatPage.tsx
+msgid "view diff"
+msgstr "差分を表示"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search"
+msgstr "Web検索"
+
+#: src/pages/ChatPage.tsx
+msgid "What do you want to get done?"
+msgstr "何を片付けましょうか?"
+
+#: src/pages/ChatPage.tsx
+msgid "Working…"
+msgstr "作業中…"
+
+#: src/pages/ChatPage.tsx
+msgid "Write approval required"
+msgstr "書き込みの承認が必要です"
+
+#: src/lib/tool-summary.ts
+msgid "Writing {path}"
+msgstr "{path}を書き込み中"
+
+#: src/pages/ChatPage.tsx
+msgid "Your AI assistant, right in this tab — fast, visible, and undoable."
+msgstr "このタブで動くあなたのAIアシスタント — 速く、見えて、元に戻せる。"
+
+#: src/pages/ChatPage.tsx
+msgid "Your data is pinned — this browser won't clear it on its own."
+msgstr "データは保護されています — このブラウザが勝手に消すことはありません。"
+
+#: src/pages/ChatPage.tsx
+msgid "Your files"
+msgstr "あなたのファイル"
+
+#. placeholder {0}: providerDef.host
+#: src/pages/ChatPage.tsx
+msgid "Your key goes only to {0} — nowhere else."
+msgstr "キーの送信先は{0}だけ — 他へは送られません。"

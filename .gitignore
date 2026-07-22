@@ -11,6 +11,8 @@ demo-recordings/
 playwright-report/
 test-results/
 *.tsbuildinfo
+# lingui compile output; the Vite plugin compiles .po in-memory instead
+src/locales/*.js
 .vercel
 .env*
 .claude/
