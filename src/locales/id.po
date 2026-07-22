@@ -23,6 +23,13 @@ msgstr "{0, plural, other {terhubung · # alat}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, other {# file Google diserahkan ke agen.}}"
 
+#. placeholder {0}: journal.events.length
+#. placeholder {1}: journal.metrics.toolCalls
+#. placeholder {2}: journal.metrics.commits
+#: src/pages/ChatPage.tsx
+msgid "{0} events · {1} tool calls · {2} writes"
+msgstr "{0} peristiwa · {1} panggilan perkakas · {2} penulisan"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -74,6 +81,10 @@ msgstr "Penyiapan 60 detik: buat Incoming Webhook di Slack (satu channel, satu U
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "Spreadsheet contoh yang berantakan sudah siap — minta dirapikan dan lihat setiap perubahan terjadi."
+
+#: src/pages/ChatPage.tsx
+msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
+msgstr "Catatan terstruktur yang bisa diekspor dari eksekusi piyik ini — giliran model, panggilan perkakas, dan penulisan, selalu tanpa kredensial. Tetap di tab ini sampai Anda mengekspornya."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
@@ -337,6 +348,10 @@ msgid "Every"
 msgstr "Setiap"
 
 #: src/pages/ChatPage.tsx
+msgid "Export JSON"
+msgstr "Ekspor JSON"
+
+#: src/pages/ChatPage.tsx
 msgid "failed"
 msgstr "gagal"
 
@@ -588,6 +603,14 @@ msgstr "dikembalikan"
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
 msgstr "Saat ini hanya disimpan untuk tab ini dan hilang saat tab ditutup."
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal"
+msgstr "Jurnal eksekusi"
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal exported."
+msgstr "Jurnal eksekusi diekspor."
 
 #: src/pages/ChatPage.tsx
 msgid "running"

@@ -23,6 +23,13 @@ msgstr "{0, plural, one {bağlı · # araç} other {bağlı · # araç}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, one {Asistana # Google dosyası verildi.} other {Asistana # Google dosyası verildi.}}"
 
+#. placeholder {0}: journal.events.length
+#. placeholder {1}: journal.metrics.toolCalls
+#. placeholder {2}: journal.metrics.commits
+#: src/pages/ChatPage.tsx
+msgid "{0} events · {1} tool calls · {2} writes"
+msgstr "{0} olay · {1} araç çağrısı · {2} yazma"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -74,6 +81,10 @@ msgstr "60 saniyede kurulum: Slack'te bir Incoming Webhook oluşturun (tek kanal
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "Dağınık bir örnek e-tablo hazır — temizlemesini isteyin ve her değişikliğin anında uygulanışını izleyin."
+
+#: src/pages/ChatPage.tsx
+msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
+msgstr "Bu civcivin çalıştırmalarının yapılandırılmış, dışa aktarılabilir kaydı — model turları, araç çağrıları ve yazmalar; kimlik bilgileri her zaman hariçtir. Siz dışa aktarana kadar bu sekmede kalır."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
@@ -337,6 +348,10 @@ msgid "Every"
 msgstr "Her"
 
 #: src/pages/ChatPage.tsx
+msgid "Export JSON"
+msgstr "JSON olarak dışa aktar"
+
+#: src/pages/ChatPage.tsx
 msgid "failed"
 msgstr "başarısız"
 
@@ -588,6 +603,14 @@ msgstr "geri alındı"
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
 msgstr "Şu an yalnızca bu sekme için tutuluyor; sekme kapanınca silinir."
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal"
+msgstr "Çalıştırma günlüğü"
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal exported."
+msgstr "Çalıştırma günlüğü dışa aktarıldı."
 
 #: src/pages/ChatPage.tsx
 msgid "running"

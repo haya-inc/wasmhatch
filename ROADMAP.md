@@ -27,7 +27,12 @@ feature. Un-advertised capability gaps kill agents; documented limits do not.
       point.
 - [ ] Retire `OperatorPage.tsx` once its remaining flows (guided demos,
       Google Sheets range effects, run journal) have chat-side homes; until
-      then it stays a parts donor.
+      then it stays a parts donor. Done so far: the run journal lives
+      chat-side (per-hatchling, passive recording of runs/tools/writes with
+      JSON export in the sidebar). Remaining: the reconciliation guided demo
+      (the 60-second demo is largely covered by the chat sample flow), and
+      the existing-Sheet commit/recheck/rollback protocol — blocked on
+      Google Sensitive-scope verification, sequence it after that clears.
 - [x] Autonomy by default: writes apply immediately with the exact diff
       surfaced in the transcript and one-click revert; the opt-in Careful
       mode gates writes behind Allow / Always-allow / Reject. Proposal and

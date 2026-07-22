@@ -686,6 +686,19 @@ export function ChatPage() {
     }
   }, [mcpBusy, mcpTokens, mcpUrls, notice, swarm]);
 
+  const journal = swarm.runJournal(selectedId);
+  const exportJournal = () => {
+    const result = swarm.exportRunJournal(selectedId);
+    if (!result) return;
+    const url = URL.createObjectURL(new Blob([result.json], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = result.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+    notice(t`Run journal exported.`);
+  };
+
   const activePermission = permissionQueue[0];
   const providerDef = provider === "builtin" ? null : getCloudProvider(provider);
   const modelChoices = providerDef?.models ?? [];
@@ -1476,6 +1489,36 @@ export function ChatPage() {
                 ? t`Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first.`
                 : t`Downloads this hatchling's files as one ZIP you can keep anywhere.`}
             </p>
+          </section>
+
+          <section className="chat-panel">
+            <h2><Trans>Run journal</Trans></h2>
+            {journal && journal.events.length > 0
+              ? (
+                <>
+                  <p className="chat-hint">
+                    {t`${journal.events.length} events · ${journal.metrics.toolCalls} tool calls · ${journal.metrics.commits} writes`}
+                  </p>
+                  <ol className="chat-journal">
+                    {journal.events.slice(-5).map((event) => (
+                      <li key={event.sequence}>
+                        <span className="chat-journal-seq">{event.sequence}</span> {event.summary}
+                      </li>
+                    ))}
+                  </ol>
+                  <button className="button" type="button" onClick={exportJournal}>
+                    <Trans>Export JSON</Trans>
+                  </button>
+                </>
+              )
+              : (
+                <p className="chat-hint">
+                  <Trans>
+                    A structured, exportable record of this hatchling's runs — model turns, tool calls, and
+                    writes, with credentials always excluded. It stays in this tab until you export it.
+                  </Trans>
+                </p>
+              )}
           </section>
 
           {viewer && (

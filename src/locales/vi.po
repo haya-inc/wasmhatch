@@ -23,6 +23,13 @@ msgstr "{0, plural, other {đã kết nối · # công cụ}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, other {Đã trao # tệp Google cho trợ lý.}}"
 
+#. placeholder {0}: journal.events.length
+#. placeholder {1}: journal.metrics.toolCalls
+#. placeholder {2}: journal.metrics.commits
+#: src/pages/ChatPage.tsx
+msgid "{0} events · {1} tool calls · {2} writes"
+msgstr "{0} sự kiện · {1} lần gọi công cụ · {2} lần ghi"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -74,6 +81,10 @@ msgstr "Thiết lập trong 60 giây: tạo một Incoming Webhook trong Slack (
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "Bảng tính mẫu lộn xộn đã sẵn sàng — hãy nhờ dọn dẹp và xem từng thay đổi diễn ra."
+
+#: src/pages/ChatPage.tsx
+msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
+msgstr "Bản ghi có cấu trúc, xuất được về các lần chạy của gà con này — lượt mô hình, lần gọi công cụ và lần ghi; thông tin đăng nhập luôn được loại trừ. Nó ở lại thẻ này cho đến khi bạn xuất ra."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
@@ -337,6 +348,10 @@ msgid "Every"
 msgstr "Mỗi"
 
 #: src/pages/ChatPage.tsx
+msgid "Export JSON"
+msgstr "Xuất JSON"
+
+#: src/pages/ChatPage.tsx
 msgid "failed"
 msgstr "thất bại"
 
@@ -588,6 +603,14 @@ msgstr "đã hoàn tác"
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
 msgstr "Hiện tại khóa chỉ được giữ trong tab này và sẽ mất khi đóng tab."
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal"
+msgstr "Nhật ký chạy"
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal exported."
+msgstr "Đã xuất nhật ký chạy."
 
 #: src/pages/ChatPage.tsx
 msgid "running"

@@ -23,6 +23,13 @@ msgstr "{0, plural, one {connecté · # outil} other {connecté · # outils}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, one {# fichier Google confié à l'agent.} other {# fichiers Google confiés à l'agent.}}"
 
+#. placeholder {0}: journal.events.length
+#. placeholder {1}: journal.metrics.toolCalls
+#. placeholder {2}: journal.metrics.commits
+#: src/pages/ChatPage.tsx
+msgid "{0} events · {1} tool calls · {2} writes"
+msgstr "{0} événements · {1} appels d'outils · {2} écritures"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -74,6 +81,10 @@ msgstr "Configuration en 60 secondes : créez un Incoming Webhook dans Slack (u
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "Un tableur d'exemple en désordre est prêt — demandez un nettoyage et regardez chaque modification s'appliquer."
+
+#: src/pages/ChatPage.tsx
+msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
+msgstr "Un journal structuré et exportable des exécutions de ce poussin — tours du modèle, appels d'outils et écritures, identifiants toujours exclus. Il reste dans cet onglet jusqu'à l'export."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
@@ -337,6 +348,10 @@ msgid "Every"
 msgstr "Toutes les"
 
 #: src/pages/ChatPage.tsx
+msgid "Export JSON"
+msgstr "Exporter en JSON"
+
+#: src/pages/ChatPage.tsx
 msgid "failed"
 msgstr "échec"
 
@@ -588,6 +603,14 @@ msgstr "annulé"
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
 msgstr "Pour l'instant, elle n'est conservée que pour cet onglet et disparaît à sa fermeture."
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal"
+msgstr "Journal d'exécution"
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal exported."
+msgstr "Journal d'exécution exporté."
 
 #: src/pages/ChatPage.tsx
 msgid "running"

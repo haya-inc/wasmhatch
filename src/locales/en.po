@@ -23,6 +23,13 @@ msgstr "{0, plural, one {connected · # tool} other {connected · # tools}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 
+#. placeholder {0}: journal.events.length
+#. placeholder {1}: journal.metrics.toolCalls
+#. placeholder {2}: journal.metrics.commits
+#: src/pages/ChatPage.tsx
+msgid "{0} events · {1} tool calls · {2} writes"
+msgstr "{0} events · {1} tool calls · {2} writes"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -74,6 +81,10 @@ msgstr "60-second setup: create an Incoming Webhook in Slack (one channel, one U
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
+
+#: src/pages/ChatPage.tsx
+msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
+msgstr "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
@@ -337,6 +348,10 @@ msgid "Every"
 msgstr "Every"
 
 #: src/pages/ChatPage.tsx
+msgid "Export JSON"
+msgstr "Export JSON"
+
+#: src/pages/ChatPage.tsx
 msgid "failed"
 msgstr "failed"
 
@@ -588,6 +603,14 @@ msgstr "reverted"
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
 msgstr "Right now it's kept just for this tab and gone when the tab closes."
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal"
+msgstr "Run journal"
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal exported."
+msgstr "Run journal exported."
 
 #: src/pages/ChatPage.tsx
 msgid "running"

@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
 test("renders assistant markdown as structure without ever injecting HTML", async ({ page }) => {
@@ -65,4 +66,51 @@ test("renders assistant markdown as structure without ever injecting HTML", asyn
   // The system prompt carries today's date so models can resolve "this Friday"
   // without asking the user.
   expect(instructions).toMatch(/Today is \w+, \d{4}-\d{2}-\d{2}/);
+});
+
+test("records the run in the journal and exports it as credential-redacted JSON", async ({ page }) => {
+  await page.route("https://api.openai.com/v1/responses", async (route) => {
+    const events = [
+      { type: "response.output_text.delta", output_index: 0, delta: "All done." },
+      {
+        type: "response.completed",
+        response: { status: "completed", output: [{ id: "msg_1", type: "message" }], usage: { input_tokens: 2, output_tokens: 2 } }
+      }
+    ];
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join("")
+    });
+  });
+
+  await page.goto("/?view=chat");
+  const journalPanel = page.locator(".chat-panel", { hasText: "Run journal" });
+  await expect(journalPanel).toContainText("stays in this tab");
+
+  await page.getByLabel("Provider").selectOption("openai");
+  await page.getByLabel("API key", { exact: true }).fill("sk-e2e-journal-secret");
+  await page.getByLabel("Message the agent").fill("Say you are done.");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.locator(".chat-assistant").last()).toContainText("All done.");
+
+  await expect(journalPanel).toContainText("2 events · 0 tool calls · 0 writes");
+  await expect(journalPanel).toContainText("Manual run started");
+  await expect(journalPanel).toContainText("Run finished");
+
+  const downloadPromise = page.waitForEvent("download");
+  await journalPanel.getByRole("button", { name: "Export JSON" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^wasmhatch-run-[a-f0-9]{12}\.json$/);
+  const exported = JSON.parse(await readFile(await download.path(), "utf8")) as {
+    schemaVersion: number;
+    events: { summary: string }[];
+    context: { task: string };
+    privacy: { credentialFieldsIncluded: boolean };
+  };
+  expect(exported.schemaVersion).toBe(1);
+  expect(exported.events.map((event) => event.summary)).toEqual(["Manual run started", "Run finished"]);
+  expect(exported.context.task).toBe("Say you are done.");
+  expect(exported.privacy.credentialFieldsIncluded).toBe(false);
+  expect(JSON.stringify(exported)).not.toContain("sk-e2e-journal-secret");
 });

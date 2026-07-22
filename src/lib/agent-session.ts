@@ -57,6 +57,12 @@ import {
 import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "./google-connectors";
 import { GOOGLE_SENSITIVE_TOOLS, createGoogleSensitiveExecutor } from "./google-sensitive-connectors";
 import { GOOGLE_PICKER_TOOL, createGooglePickerExecutor, type PickedDriveFile } from "./google-picker";
+import {
+  appendRunJournalEvent,
+  createRunJournal,
+  serializeRunJournal,
+  type RunJournal
+} from "./run-journal";
 import { SLACK_WEBHOOK_TOOLS, createSlackWebhookExecutor } from "./slack-webhook";
 import { SLACK_API_TOOLS, createSlackApiExecutor, slackProxyBaseUrl } from "./slack-tools";
 import { buildMcpToolset, McpConnection, type McpToolset } from "./mcp-client";
@@ -171,6 +177,8 @@ interface ThreadRuntime {
   autoSkipNote: string | null;
   saveTimer: ReturnType<typeof setTimeout> | null;
   writeCount: number;
+  /** In-memory audit trail of this thread's runs; exported on demand. */
+  journal: RunJournal;
 }
 
 interface McpRuntime {
@@ -331,7 +339,8 @@ export class HatchlingSwarm {
       lastRunEndedAt: null,
       autoSkipNote: null,
       saveTimer: null,
-      writeCount: 0
+      writeCount: 0,
+      journal: createRunJournal()
     };
     this.runtimes.set(thread.id, runtime);
     if (!this.threadOrder.includes(thread.id)) this.threadOrder.push(thread.id);
@@ -520,6 +529,12 @@ export class HatchlingSwarm {
     const write = item?.write;
     if (!item || !write || write.reverted || write.creates) return false;
     await runtime.workspace.writeFile(write.path, write.before);
+    this.recordJournal(runtime, {
+      category: "effect",
+      outcome: "cancelled",
+      summary: `Reverted ${write.path} to its previous content`,
+      evidence: { path: write.path }
+    });
     runtime.writeCount += 1;
     runtime.items = runtime.items.map((entry) => (
       entry.id === itemId && entry.write ? { ...entry, write: { ...entry.write, reverted: true } } : entry
@@ -631,6 +646,50 @@ export class HatchlingSwarm {
     await this.runLoop(runtime, trimmed, "manual");
   }
 
+  /** Appends to the thread's journal; never lets bookkeeping break a run. */
+  private recordJournal(runtime: ThreadRuntime, input: Parameters<typeof appendRunJournalEvent>[1]): void {
+    const bounded = { ...input, summary: (input.summary.trim() || "(event)").slice(0, 256) };
+    try {
+      runtime.journal = appendRunJournalEvent(runtime.journal, bounded);
+    } catch {
+      // The journal is full (or the event malformed): rotate rather than
+      // losing the run to bookkeeping; earlier events leave with the export.
+      try {
+        let rotated = appendRunJournalEvent(createRunJournal(), {
+          category: "system",
+          outcome: "info",
+          summary: "Journal rotated after reaching its bounds; earlier events were discarded."
+        });
+        rotated = appendRunJournalEvent(rotated, bounded);
+        runtime.journal = rotated;
+      } catch {
+        // Give up on this one event.
+      }
+    }
+  }
+
+  /** The thread's current run journal, or null for an unknown thread. */
+  runJournal(threadId: string): RunJournal | null {
+    return this.runtimes.get(threadId)?.journal ?? null;
+  }
+
+  /** Serializes the thread's journal for download (credential-redacted). */
+  exportRunJournal(threadId: string): { fileName: string; json: string } | null {
+    const runtime = this.runtimes.get(threadId);
+    if (!runtime) return null;
+    const task = [...runtime.items].reverse().find((entry) => entry.kind === "user")?.text ?? "";
+    const json = serializeRunJournal(runtime.journal, {
+      task,
+      source: {
+        kind: "artifact",
+        connectorId: null,
+        resource: `hatchling:${runtime.thread.name}`,
+        sourceSha256: null
+      }
+    });
+    return { fileName: `wasmhatch-run-${runtime.journal.runId.slice("run_journal_".length).slice(0, 12)}.json`, json };
+  }
+
   private setMood(runtime: ThreadRuntime, mood: HatchlingMood, activity?: string): void {
     runtime.mood = mood;
     runtime.moodChangedAt = this.now();
@@ -671,6 +730,12 @@ export class HatchlingSwarm {
         }];
         runtime.nextId += 1;
         runtime.writeCount += 1;
+        this.recordJournal(runtime, {
+          category: "effect",
+          outcome: "committed",
+          summary: `${write.creates ? "Created" : "Updated"} ${write.path}`,
+          evidence: { path: write.path, created: write.creates }
+        });
         this.setMood(runtime, "write", `${write.creates ? "Created" : "Updated"} ${write.path}`);
       },
       runScript: (source, scriptInput, options) =>
@@ -678,6 +743,12 @@ export class HatchlingSwarm {
     });
     const artifactExecute = createArtifactExecutor(({ title, html }) => {
       this.artifactCounter += 1;
+      this.recordJournal(runtime, {
+        category: "export",
+        outcome: "completed",
+        summary: `HTML artifact — ${title}`,
+        evidence: { bytes: html.length }
+      });
       this.deps.onArtifact({ id: `artifact-${this.artifactCounter}`, title, html, createdIndex: this.artifactCounter });
     });
     const googleExecute = createGoogleConnectorExecutor(this.deps.google.getToken);
@@ -702,7 +773,7 @@ export class HatchlingSwarm {
         mcpRoutes.set(name, { runtime: mcpRuntime, tool: route.tool });
       }
     }
-    return async (name, args, context) => {
+    const dispatch: AgentToolExecutor = async (name, args, context) => {
       if (name === ARTIFACT_TOOL.name) return artifactExecute(name, args, context);
       if (ticketToolNames.has(name)) return ticketExecute(name, args, context);
       if (googleToolNames.has(name)) return googleExecute(name, args, context);
@@ -720,6 +791,28 @@ export class HatchlingSwarm {
         }
       }
       return workspaceExecute(name, args, context);
+    };
+    return async (name, args, context) => {
+      const target = typeof args.path === "string" ? args.path : typeof args.title === "string" ? args.title : "";
+      const summary = target ? `${name} — ${target}` : name;
+      try {
+        const outcome = await dispatch(name, args, context);
+        this.recordJournal(runtime, {
+          category: "tool",
+          outcome: outcome.isError ? "failed" : "completed",
+          summary,
+          evidence: { tool: name, result_chars: outcome.content.length }
+        });
+        return outcome;
+      } catch (error) {
+        this.recordJournal(runtime, {
+          category: "tool",
+          outcome: error instanceof DOMException && error.name === "AbortError" ? "cancelled" : "failed",
+          summary,
+          evidence: { tool: name }
+        });
+        throw error;
+      }
     };
   }
 
@@ -778,6 +871,13 @@ export class HatchlingSwarm {
     const controller = new AbortController();
     runtime.abort = controller;
     this.setMood(runtime, "thinking", runKind === "auto" ? "Auto work check-in…" : "Thinking…");
+    this.recordJournal(runtime, {
+      category: "model",
+      outcome: "info",
+      summary: runKind === "auto" ? "Auto work run started" : "Manual run started",
+      detail: task,
+      evidence: { provider: config.provider, run_kind: runKind }
+    });
     let succeeded = false;
     try {
       if (config.provider === "builtin") {
@@ -785,11 +885,22 @@ export class HatchlingSwarm {
       } else {
         succeeded = await this.runCloud(runtime, task, runKind, config, controller.signal);
       }
+      this.recordJournal(runtime, {
+        category: "model",
+        outcome: succeeded ? "completed" : "cancelled",
+        summary: succeeded ? "Run finished" : "Run ended without completing"
+      });
     } catch (error) {
       this.pushItem(runtime, {
         kind: "notice",
         text: error instanceof Error ? error.message : "The run failed unexpectedly.",
         tone: "error"
+      });
+      this.recordJournal(runtime, {
+        category: "system",
+        outcome: "failed",
+        summary: "Run failed",
+        detail: error instanceof Error ? error.message : String(error)
       });
       this.setMood(runtime, "error", "Something went wrong");
     } finally {

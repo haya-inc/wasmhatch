@@ -23,6 +23,13 @@ msgstr "{0, plural, other {연결됨 · 도구 #개}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, other {Google 파일 #개를 에이전트에게 건넸습니다.}}"
 
+#. placeholder {0}: journal.events.length
+#. placeholder {1}: journal.metrics.toolCalls
+#. placeholder {2}: journal.metrics.commits
+#: src/pages/ChatPage.tsx
+msgid "{0} events · {1} tool calls · {2} writes"
+msgstr "이벤트 {0}건 · 도구 호출 {1}회 · 쓰기 {2}건"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/pages/ChatPage.tsx
 msgid "{0} min"
@@ -74,6 +81,10 @@ msgstr "60초 설정: Slack에서 Incoming Webhook을 만들고(채널 1개, URL
 #: src/pages/ChatPage.tsx
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "지저분한 샘플 스프레드시트가 준비됐어요 — 정리를 부탁하고 변경이 하나씩 반영되는 모습을 지켜보세요."
+
+#: src/pages/ChatPage.tsx
+msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
+msgstr "이 해츨링의 실행에 대한 구조화된, 내보내기 가능한 기록입니다 — 모델 턴, 도구 호출, 쓰기. 자격 증명은 항상 제외됩니다. 내보내기 전까지 이 탭에만 남습니다."
 
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
@@ -337,6 +348,10 @@ msgid "Every"
 msgstr "간격"
 
 #: src/pages/ChatPage.tsx
+msgid "Export JSON"
+msgstr "JSON 내보내기"
+
+#: src/pages/ChatPage.tsx
 msgid "failed"
 msgstr "실패"
 
@@ -588,6 +603,14 @@ msgstr "되돌림"
 #: src/pages/ChatPage.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
 msgstr "지금은 이 탭에서만 유지되고, 탭을 닫으면 사라져요."
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal"
+msgstr "실행 저널"
+
+#: src/pages/ChatPage.tsx
+msgid "Run journal exported."
+msgstr "실행 저널을 내보냈습니다."
 
 #: src/pages/ChatPage.tsx
 msgid "running"
