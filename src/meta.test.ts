@@ -84,6 +84,9 @@ describe("public sharing metadata", () => {
     // served from www.googleapis.com (already allowed); Slides needs its own host.
     expect(viteConfig).toContain("https://slides.googleapis.com");
     expect(viteConfig).toContain("https://docs.googleapis.com");
+    // User-key web tools: Tavily search fallback and the Jina page reader.
+    expect(viteConfig).toContain("https://api.tavily.com");
+    expect(viteConfig).toContain("https://r.jina.ai");
     expect(viteConfig).toContain("https://accounts.google.com/gsi/client");
     expect(viteConfig).toContain('"same-origin-allow-popups"');
   });

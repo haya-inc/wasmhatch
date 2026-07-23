@@ -39,6 +39,8 @@ const requiredConnectSrc = [
   "https://docs.googleapis.com",
   "https://hooks.slack.com",
   "https://slack.com",
+  "https://api.tavily.com",
+  "https://r.jina.ai",
   "https://apis.google.com",
   "https://content.googleapis.com",
   "https://accounts.google.com/gsi/",

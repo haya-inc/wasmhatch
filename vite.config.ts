@@ -58,7 +58,10 @@ export default defineConfig(({ command, mode }) => ({
           // slack.com carries the form-encoded body-token Web API route. A deployment may
           // additionally bake in its own workers/slack-proxy relay via VITE_SLACK_PROXY_URL
           // (https origin only) for the day Slack closes the direct browser route.
-          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://slides.googleapis.com https://hooks.slack.com https://slack.com";
+          // api.tavily.com is the user-key web_search fallback and r.jina.ai the
+          // user-key fetch_page reader (both CORS-probed from a browser page);
+          // their tools appear only after the user pastes a key.
+          const connectorOrigins = "https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://slides.googleapis.com https://hooks.slack.com https://slack.com https://api.tavily.com https://r.jina.ai";
           const slackProxyRaw = loadEnv(mode, process.cwd(), "VITE_").VITE_SLACK_PROXY_URL;
           let slackProxyOrigin = "";
           if (slackProxyRaw) {

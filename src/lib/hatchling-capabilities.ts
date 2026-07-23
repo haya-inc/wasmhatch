@@ -25,6 +25,7 @@ export const HATCHLING_CAPABILITY_IDS = Object.freeze([
   "google",
   "google.sensitive",
   "slack",
+  "web",
   "mcp"
 ] as const);
 
@@ -56,7 +57,9 @@ const TOOL_CAPABILITY: Readonly<Record<string, HatchlingCapability>> = Object.fr
   create_calendar_event: "google.sensitive",
   post_slack_message: "slack",
   list_slack_channels: "slack",
-  send_slack_channel_message: "slack"
+  send_slack_channel_message: "slack",
+  web_search: "web",
+  fetch_page: "web"
 });
 
 /** Maps a concrete tool name to its capability; null for unmapped tools. */

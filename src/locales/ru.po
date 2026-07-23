@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "Выбрать файлы…"
 
 #: src/pages/ChatPage.tsx
+msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
+msgstr "Claude и OpenRouter ищут на стороне провайдера — этот ключ является запасным вариантом, который даёт инструмент web_search всем остальным провайдерам (встроенный Chrome, Ollama, OpenAI). Бесплатный ключ можно получить за минуту на tavily.com. Он отправляется только на api.tavily.com и остаётся в памяти этой вкладки."
+
+#: src/pages/ChatPage.tsx
 msgid "Clipboard API is not available in this browser."
 msgstr "API буфера обмена недоступен в этом браузере."
 
@@ -245,8 +249,16 @@ msgid "Connect Google"
 msgstr "Подключить Google"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect page reading"
+msgstr "Подключить чтение страниц"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Slack"
 msgstr "Подключить Slack"
+
+#: src/pages/ChatPage.tsx
+msgid "Connect web search"
+msgstr "Подключить веб-поиск"
 
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
@@ -340,8 +352,16 @@ msgid "Disconnect Google"
 msgstr "Отключить Google"
 
 #: src/pages/ChatPage.tsx
+msgid "Disconnect page reading"
+msgstr "Отключить чтение страниц"
+
+#: src/pages/ChatPage.tsx
 msgid "Disconnect Slack"
 msgstr "Отключить Slack"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect web search"
+msgstr "Отключить веб-поиск"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
@@ -494,12 +514,20 @@ msgid "It's saved in this browser until you untick the box."
 msgstr "Хранится в этом браузере, пока вы не снимете галочку."
 
 #: src/pages/ChatPage.tsx
+msgid "Jina API key (page reading)"
+msgstr "API-ключ Jina (чтение страниц)"
+
+#: src/pages/ChatPage.tsx
 msgid "Keep my data safe"
 msgstr "Защитить мои данные"
 
 #: src/pages/ChatPage.tsx
 msgid "Language"
 msgstr "Язык"
+
+#: src/pages/ChatPage.tsx
+msgid "Lets any hatchling read one specific page as clean text with fetch_page — for example a promising search result. A free key takes a minute at jina.ai. Page URLs go through r.jina.ai; the key stays in this tab's memory."
+msgstr "Позволяет любому птенцу прочитать конкретную страницу как чистый текст с помощью fetch_page — например, многообещающий результат поиска. Бесплатный ключ можно получить за минуту на jina.ai. URL страниц проходят через r.jina.ai; ключ остаётся в памяти этой вкладки."
 
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
@@ -596,6 +624,18 @@ msgstr "Открывается…"
 #: src/pages/ChatPage.tsx
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "Упакованные инструкции считаются недоверенным содержимым: они никогда не видят ваши ключи, и доступны только возможности выше."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
+msgstr "Чтение страниц подключено. Каждый птенец может прочитать конкретный URL с помощью fetch_page."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Hatchlings can now read a specific page with fetch_page."
+msgstr "Чтение страниц подключено. Птенцы теперь могут читать конкретную страницу с помощью fetch_page."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading disconnected."
+msgstr "Чтение страниц отключено."
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -804,6 +844,10 @@ msgid "Storage"
 msgstr "Хранилище"
 
 #: src/pages/ChatPage.tsx
+msgid "Tavily API key (web search)"
+msgstr "API-ключ Tavily (веб-поиск)"
+
+#: src/pages/ChatPage.tsx
 msgid "That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…"
 msgstr "Это не похоже на URL Incoming Webhook в Slack — он начинается с https://hooks.slack.com/services/…"
 
@@ -929,6 +973,22 @@ msgstr "Нужен не один канал? Создайте небольшое
 #: src/pages/ChatPage.tsx
 msgid "Web search"
 msgstr "Поиск в интернете"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search & reading"
+msgstr "Веб-поиск и чтение"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Hatchlings can now use web_search; each search spends your Tavily quota."
+msgstr "Веб-поиск подключён. Птенцы теперь могут использовать web_search; каждый поиск расходует вашу квоту Tavily."
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Providers without their own search now get a web_search tool; each search spends your Tavily quota."
+msgstr "Веб-поиск подключён. Провайдеры без собственного поиска теперь получают инструмент web_search; каждый поиск расходует вашу квоту Tavily."
+
+#: src/pages/ChatPage.tsx
+msgid "Web search disconnected."
+msgstr "Веб-поиск отключён."
 
 #: src/pages/ChatPage.tsx
 msgid "What do you want to get done?"

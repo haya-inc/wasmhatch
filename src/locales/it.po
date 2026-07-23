@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "Scegli i file…"
 
 #: src/pages/ChatPage.tsx
+msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
+msgstr "Claude e OpenRouter cercano dal lato del fornitore — questa chiave è il ripiego che dà uno strumento web_search a tutti gli altri fornitori (Chrome integrato, Ollama, OpenAI). Una chiave gratuita si ottiene in un minuto su tavily.com. Va solo ad api.tavily.com e resta nella memoria di questa scheda."
+
+#: src/pages/ChatPage.tsx
 msgid "Clipboard API is not available in this browser."
 msgstr "L'API degli appunti non è disponibile in questo browser."
 
@@ -245,8 +249,16 @@ msgid "Connect Google"
 msgstr "Connetti Google"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect page reading"
+msgstr "Collega la lettura delle pagine"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Slack"
 msgstr "Collega Slack"
+
+#: src/pages/ChatPage.tsx
+msgid "Connect web search"
+msgstr "Collega la ricerca web"
 
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
@@ -340,8 +352,16 @@ msgid "Disconnect Google"
 msgstr "Disconnetti Google"
 
 #: src/pages/ChatPage.tsx
+msgid "Disconnect page reading"
+msgstr "Scollega la lettura delle pagine"
+
+#: src/pages/ChatPage.tsx
 msgid "Disconnect Slack"
 msgstr "Scollega Slack"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect web search"
+msgstr "Scollega la ricerca web"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
@@ -494,12 +514,20 @@ msgid "It's saved in this browser until you untick the box."
 msgstr "Resta salvata in questo browser finché non togli la spunta."
 
 #: src/pages/ChatPage.tsx
+msgid "Jina API key (page reading)"
+msgstr "Chiave API Jina (lettura delle pagine)"
+
+#: src/pages/ChatPage.tsx
 msgid "Keep my data safe"
 msgstr "Proteggi i miei dati"
 
 #: src/pages/ChatPage.tsx
 msgid "Language"
 msgstr "Lingua"
+
+#: src/pages/ChatPage.tsx
+msgid "Lets any hatchling read one specific page as clean text with fetch_page — for example a promising search result. A free key takes a minute at jina.ai. Page URLs go through r.jina.ai; the key stays in this tab's memory."
+msgstr "Consente a ogni pulcino di leggere una pagina specifica come testo pulito con fetch_page — per esempio un risultato di ricerca promettente. Una chiave gratuita si ottiene in un minuto su jina.ai. Gli URL delle pagine passano da r.jina.ai; la chiave resta nella memoria di questa scheda."
 
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
@@ -596,6 +624,18 @@ msgstr "Apertura…"
 #: src/pages/ChatPage.tsx
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "Le istruzioni del pacchetto sono trattate come contenuto non attendibile: non vedono mai le tue chiavi e sono disponibili solo le capacità qui sopra."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
+msgstr "Lettura delle pagine collegata. Ogni pulcino può leggere un URL specifico con fetch_page."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Hatchlings can now read a specific page with fetch_page."
+msgstr "Lettura delle pagine collegata. I pulcini ora possono leggere una pagina specifica con fetch_page."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading disconnected."
+msgstr "Lettura delle pagine scollegata."
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -804,6 +844,10 @@ msgid "Storage"
 msgstr "Archiviazione"
 
 #: src/pages/ChatPage.tsx
+msgid "Tavily API key (web search)"
+msgstr "Chiave API Tavily (ricerca web)"
+
+#: src/pages/ChatPage.tsx
 msgid "That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…"
 msgstr "Non sembra un URL di Incoming Webhook di Slack — inizia con https://hooks.slack.com/services/…"
 
@@ -929,6 +973,22 @@ msgstr "Vuoi più di un canale? Crea una piccola app Slack dal manifest già pro
 #: src/pages/ChatPage.tsx
 msgid "Web search"
 msgstr "Ricerca web"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search & reading"
+msgstr "Ricerca web e lettura"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Hatchlings can now use web_search; each search spends your Tavily quota."
+msgstr "Ricerca web collegata. I pulcini ora possono usare web_search; ogni ricerca consuma la tua quota Tavily."
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Providers without their own search now get a web_search tool; each search spends your Tavily quota."
+msgstr "Ricerca web collegata. I fornitori senza ricerca propria ora ricevono uno strumento web_search; ogni ricerca consuma la tua quota Tavily."
+
+#: src/pages/ChatPage.tsx
+msgid "Web search disconnected."
+msgstr "Ricerca web scollegata."
 
 #: src/pages/ChatPage.tsx
 msgid "What do you want to get done?"

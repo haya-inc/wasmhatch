@@ -53,9 +53,11 @@ Honesty beats surprises. WasmHatch currently does **not**:
   created or that you hand it — broader access unlocks after Google's
   verification of our app completes);
 - manage your Calendar (same verification gate);
-- open arbitrary web pages itself — web search runs inside your AI
-  provider (Claude or OpenRouter) and cites its sources; with other
-  providers the agent stays offline;
+- fetch web pages directly from the tab — the page's CSP allows only
+  audited origins. Web search runs inside your AI provider (Claude or
+  OpenRouter) with cited sources, or over your own Tavily key for every
+  other provider; reading one specific page goes through the Jina Reader
+  with your key. No key connected, no web;
 - run anything with the tab closed — auto work is honest polling *while the
   tab is open*, not a background service;
 - reach remote MCP servers unless a deployment bakes them into its audited

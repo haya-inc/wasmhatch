@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "파일 선택…"
 
 #: src/pages/ChatPage.tsx
+msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
+msgstr "Claude와 OpenRouter는 제공자 측에서 검색합니다 — 이 키는 그 외 모든 제공자(Chrome 내장, Ollama, OpenAI)에 web_search 도구를 제공하는 대체 수단입니다. 무료 키는 tavily.com에서 1분이면 받을 수 있습니다. 키는 api.tavily.com에만 전송되며 이 탭의 메모리에만 유지됩니다."
+
+#: src/pages/ChatPage.tsx
 msgid "Clipboard API is not available in this browser."
 msgstr "이 브라우저에서는 클립보드 API를 사용할 수 없습니다."
 
@@ -245,8 +249,16 @@ msgid "Connect Google"
 msgstr "Google 연결"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect page reading"
+msgstr "페이지 읽기 연결"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Slack"
 msgstr "Slack 연결"
+
+#: src/pages/ChatPage.tsx
+msgid "Connect web search"
+msgstr "웹 검색 연결"
 
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
@@ -340,8 +352,16 @@ msgid "Disconnect Google"
 msgstr "Google 연결 해제"
 
 #: src/pages/ChatPage.tsx
+msgid "Disconnect page reading"
+msgstr "페이지 읽기 연결 해제"
+
+#: src/pages/ChatPage.tsx
 msgid "Disconnect Slack"
 msgstr "Slack 연결 해제"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect web search"
+msgstr "웹 검색 연결 해제"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
@@ -494,12 +514,20 @@ msgid "It's saved in this browser until you untick the box."
 msgstr "체크를 해제할 때까지 이 브라우저에 저장돼요."
 
 #: src/pages/ChatPage.tsx
+msgid "Jina API key (page reading)"
+msgstr "Jina API 키(페이지 읽기)"
+
+#: src/pages/ChatPage.tsx
 msgid "Keep my data safe"
 msgstr "내 데이터 지키기"
 
 #: src/pages/ChatPage.tsx
 msgid "Language"
 msgstr "언어"
+
+#: src/pages/ChatPage.tsx
+msgid "Lets any hatchling read one specific page as clean text with fetch_page — for example a promising search result. A free key takes a minute at jina.ai. Page URLs go through r.jina.ai; the key stays in this tab's memory."
+msgstr "모든 해츨링이 fetch_page로 특정 페이지를 깔끔한 텍스트로 읽을 수 있게 합니다 — 예를 들어 유망한 검색 결과 등. 무료 키는 jina.ai에서 1분이면 받을 수 있습니다. 페이지 URL은 r.jina.ai를 경유하며 키는 이 탭의 메모리에만 유지됩니다."
 
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
@@ -596,6 +624,18 @@ msgstr "여는 중…"
 #: src/pages/ChatPage.tsx
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "패키지의 지시는 신뢰할 수 없는 콘텐츠로 취급됩니다. 당신의 키를 절대 볼 수 없고, 위에 표시된 능력만 사용할 수 있습니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
+msgstr "페이지 읽기가 연결되었습니다. 모든 해츨링이 fetch_page로 특정 URL을 읽을 수 있습니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Hatchlings can now read a specific page with fetch_page."
+msgstr "페이지 읽기가 연결되었습니다. 이제 해츨링이 fetch_page로 특정 페이지를 읽을 수 있습니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading disconnected."
+msgstr "페이지 읽기 연결이 해제되었습니다."
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -804,6 +844,10 @@ msgid "Storage"
 msgstr "저장 공간"
 
 #: src/pages/ChatPage.tsx
+msgid "Tavily API key (web search)"
+msgstr "Tavily API 키(웹 검색)"
+
+#: src/pages/ChatPage.tsx
 msgid "That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…"
 msgstr "Slack Incoming Webhook URL이 아닌 것 같습니다 — https://hooks.slack.com/services/… 로 시작합니다"
 
@@ -929,6 +973,22 @@ msgstr "채널이 여러 개 필요하면 <0>docs/slack.md</0>의 준비된 mani
 #: src/pages/ChatPage.tsx
 msgid "Web search"
 msgstr "웹 검색"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search & reading"
+msgstr "웹 검색 및 읽기"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Hatchlings can now use web_search; each search spends your Tavily quota."
+msgstr "웹 검색이 연결되었습니다. 이제 해츨링이 web_search를 사용할 수 있으며, 검색할 때마다 Tavily 할당량이 소모됩니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Providers without their own search now get a web_search tool; each search spends your Tavily quota."
+msgstr "웹 검색이 연결되었습니다. 자체 검색이 없는 제공자에 web_search 도구가 추가되며, 검색할 때마다 Tavily 할당량이 소모됩니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Web search disconnected."
+msgstr "웹 검색 연결이 해제되었습니다."
 
 #: src/pages/ChatPage.tsx
 msgid "What do you want to get done?"

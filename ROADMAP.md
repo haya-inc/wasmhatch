@@ -109,8 +109,11 @@ Exit — the five launch conditions, one uncut take, or no launch date:
       the 100-user cap during the spike.
 - [ ] One visible artifact per week for 8 weeks: Slack full flow, curated
       "browser-reachable MCP servers" list, MCP-by-URL client with CORS
-      diagnostics, Calendar (post-verification), search APIs (user-key
-      Tavily/Brave), Ollama localhost CSP exception, Pyodide heavy sandbox.
+      diagnostics, Calendar (post-verification), search APIs (shipped:
+      user-key Tavily `web_search` fallback for providers without native
+      search + user-key Jina Reader `fetch_page`; Brave stays out — its API
+      blocks browser CORS), Ollama localhost CSP exception, Pyodide heavy
+      sandbox.
 - [x] Fork guide (`docs/fork-guide.md`): fork → enable Pages → done,
       bring-your-own Google client ID (rclone pattern), and two documented
       enterprise escape hatches (admin allowlist / internal fork); the Pages

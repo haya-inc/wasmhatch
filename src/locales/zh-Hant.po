@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "選擇檔案…"
 
 #: src/pages/ChatPage.tsx
+msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
+msgstr "Claude 與 OpenRouter 在供應商端完成搜尋 — 此金鑰是為其餘供應商(Chrome 內建、Ollama、OpenAI)提供 web_search 工具的後備方案。在 tavily.com 一分鐘即可取得免費金鑰。金鑰只會傳送到 api.tavily.com,並且只保存在此分頁的記憶體中。"
+
+#: src/pages/ChatPage.tsx
 msgid "Clipboard API is not available in this browser."
 msgstr "此瀏覽器不支援剪貼簿 API。"
 
@@ -245,8 +249,16 @@ msgid "Connect Google"
 msgstr "連線 Google"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect page reading"
+msgstr "連接網頁閱讀"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Slack"
 msgstr "連接 Slack"
+
+#: src/pages/ChatPage.tsx
+msgid "Connect web search"
+msgstr "連接網頁搜尋"
 
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
@@ -340,8 +352,16 @@ msgid "Disconnect Google"
 msgstr "中斷 Google 連線"
 
 #: src/pages/ChatPage.tsx
+msgid "Disconnect page reading"
+msgstr "中斷網頁閱讀"
+
+#: src/pages/ChatPage.tsx
 msgid "Disconnect Slack"
 msgstr "中斷 Slack 連接"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect web search"
+msgstr "中斷網頁搜尋"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
@@ -494,12 +514,20 @@ msgid "It's saved in this browser until you untick the box."
 msgstr "在你取消勾選之前,會一直保存在這個瀏覽器裡。"
 
 #: src/pages/ChatPage.tsx
+msgid "Jina API key (page reading)"
+msgstr "Jina API 金鑰(網頁閱讀)"
+
+#: src/pages/ChatPage.tsx
 msgid "Keep my data safe"
 msgstr "保護我的資料"
 
 #: src/pages/ChatPage.tsx
 msgid "Language"
 msgstr "語言"
+
+#: src/pages/ChatPage.tsx
+msgid "Lets any hatchling read one specific page as clean text with fetch_page — for example a promising search result. A free key takes a minute at jina.ai. Page URLs go through r.jina.ai; the key stays in this tab's memory."
+msgstr "讓任何小雛都能用 fetch_page 將特定網頁讀取為乾淨的文字 — 例如一條有希望的搜尋結果。在 jina.ai 一分鐘即可取得免費金鑰。網頁 URL 會經過 r.jina.ai;金鑰只保存在此分頁的記憶體中。"
 
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
@@ -596,6 +624,18 @@ msgstr "正在開啟…"
 #: src/pages/ChatPage.tsx
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "封裝的指示被視為不可信內容:它們永遠看不到你的金鑰,只能使用上方顯示的能力。"
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
+msgstr "網頁閱讀已連接。每隻小雛都能用 fetch_page 讀取特定 URL。"
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Hatchlings can now read a specific page with fetch_page."
+msgstr "網頁閱讀已連接。小雛現在可以用 fetch_page 讀取特定網頁。"
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading disconnected."
+msgstr "網頁閱讀已中斷。"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -804,6 +844,10 @@ msgid "Storage"
 msgstr "儲存空間"
 
 #: src/pages/ChatPage.tsx
+msgid "Tavily API key (web search)"
+msgstr "Tavily API 金鑰(網頁搜尋)"
+
+#: src/pages/ChatPage.tsx
 msgid "That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…"
 msgstr "這看起來不像 Slack Incoming Webhook 的 URL — 它會以 https://hooks.slack.com/services/… 開頭"
 
@@ -929,6 +973,22 @@ msgstr "想使用多個頻道?用 <0>docs/slack.md</0> 裡現成的 manifest 建
 #: src/pages/ChatPage.tsx
 msgid "Web search"
 msgstr "網頁搜尋"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search & reading"
+msgstr "網頁搜尋與閱讀"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Hatchlings can now use web_search; each search spends your Tavily quota."
+msgstr "網頁搜尋已連接。小雛現在可以使用 web_search;每次搜尋都會消耗你的 Tavily 配額。"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Providers without their own search now get a web_search tool; each search spends your Tavily quota."
+msgstr "網頁搜尋已連接。沒有自帶搜尋的供應商現在會獲得 web_search 工具;每次搜尋都會消耗你的 Tavily 配額。"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search disconnected."
+msgstr "網頁搜尋已中斷。"
 
 #: src/pages/ChatPage.tsx
 msgid "What do you want to get done?"

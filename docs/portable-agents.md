@@ -72,7 +72,7 @@ A hatchling's shareable profile is exactly what the package carries:
 - `permissions.tools` use the shared **capability vocabulary**
   (`src/lib/hatchling-capabilities.ts`: `workspace.read`, `workspace.write`,
   `workspace.script`, `artifacts`, `tickets`, `google`, `google.sensitive`,
-  `slack`, `mcp`) and become the hatchling's allowlist. Filtering fails
+  `slack`, `web`, `mcp`) and become the hatchling's allowlist. Filtering fails
   closed: unrecognized names grant nothing, and connectors the user has not
   connected simply are not there to grant.
 

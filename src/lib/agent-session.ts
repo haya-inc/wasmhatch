@@ -70,6 +70,7 @@ import {
 } from "./run-journal";
 import { SLACK_WEBHOOK_TOOLS, createSlackWebhookExecutor } from "./slack-webhook";
 import { SLACK_API_TOOLS, createSlackApiExecutor, slackProxyBaseUrl } from "./slack-tools";
+import { FETCH_PAGE_TOOL, WEB_SEARCH_FALLBACK_TOOL, createWebToolExecutor } from "./web-tools";
 import { buildMcpToolset, McpConnection, type McpToolset } from "./mcp-client";
 import { isAllowedMcpUrl, isLoopbackUrl, MCP_SERVERS, type McpServerDef } from "./mcp-servers";
 import { createMetaStore, type AsyncTextStore } from "./opfs-kv";
@@ -157,6 +158,8 @@ export interface SwarmDeps {
   };
   /** Slack credentials, read per call; "" while that route is not connected. */
   slack?: { getWebhookUrl: () => string; getToken?: () => string };
+  /** Web-tool keys, read per call; "" while that tool is not connected. */
+  web?: { getTavilyKey: () => string; getJinaKey: () => string };
   getBuiltinApi?: () => ChromeLanguageModelApi | undefined;
   metaStore?: AsyncTextStore;
   now?: () => number;
@@ -202,7 +205,7 @@ const SAVE_DEBOUNCE_MS = 400;
 
 export function systemPrompt(
   policy: WritePolicy,
-  webSearch: boolean,
+  web: { search: boolean; fetchPage: boolean },
   swarm?: { name: string; coworkers: readonly string[]; scheduled: boolean },
   packagedInstructions?: string
 ): string {
@@ -231,9 +234,14 @@ export function systemPrompt(
       : "The user chose careful mode: each write_file call shows them the exact diff first, and a rejected write is a final decision, not an error to work around.",
     "Use create_artifact for polished deliverables (reports, dashboards, slide decks) as one self-contained HTML file.",
     "For data transforms over workspace files (filtering, aggregating, reshaping, math), prefer run_script over hand-computing rows; it runs in a no-network sandbox and output_path saves its result.",
-    webSearch
+    web.search
       ? "When current information from the web would change the answer (recent events, prices, versions, anything time-sensitive), use web_search rather than answering from memory."
-      : "You cannot browse or search the web in this session; say so plainly when asked for current information.",
+      : web.fetchPage
+        ? "You cannot search the web in this session, but fetch_page reads a specific page when you have its URL; say plainly when other current information is out of reach."
+        : "You cannot browse or search the web in this session; say so plainly when asked for current information.",
+    ...(web.search && web.fetchPage
+      ? ["After a web_search, fetch_page can read a promising result in full from its URL."]
+      : []),
     "When Google tools are available, you can create Google Docs, Sheets, and Slides and edit the ones you created; you cannot browse the user's existing Drive. If open_google_file_picker is available, the user can hand you specific existing files through it.",
     ...(swarm?.scheduled
       ? ["This is a scheduled check-in with no user present: never ask questions, keep the final reply to a few short lines, and prefer ticket notes over long prose."]
@@ -750,6 +758,12 @@ export class HatchlingSwarm {
     this.emit();
   }
 
+  /** Provider-native search owns the web_search name; the Tavily fallback steps aside. */
+  private nativeSearchActive(config: RunConfig): boolean {
+    if (config.provider === "builtin") return false;
+    return config.webSearch && getCloudProvider(config.provider).webSearch !== undefined;
+  }
+
   private buildTools(runtime: ThreadRuntime): { tools: AgentToolDefinition[]; mcp: McpRuntime[] } {
     const mcp = [...this.mcpRuntimes.values()].filter((entry) => !entry.error);
     const tools: AgentToolDefinition[] = [
@@ -761,6 +775,8 @@ export class HatchlingSwarm {
       ...(this.deps.google.isConnected() && this.deps.google.sensitiveEnabled ? GOOGLE_SENSITIVE_TOOLS : []),
       ...(this.deps.slack?.getWebhookUrl() ? SLACK_WEBHOOK_TOOLS : []),
       ...(this.deps.slack?.getToken?.() ? SLACK_API_TOOLS : []),
+      ...(this.deps.web?.getTavilyKey() && !this.nativeSearchActive(this.deps.getConfig()) ? [WEB_SEARCH_FALLBACK_TOOL] : []),
+      ...(this.deps.web?.getJinaKey() ? [FETCH_PAGE_TOOL] : []),
       ...mcp.flatMap((entry) => entry.toolset.definitions)
     ];
     // A packaged hatchling's capability list is an allowlist that fails
@@ -816,6 +832,10 @@ export class HatchlingSwarm {
       () => this.deps.slack?.getToken?.() ?? "",
       { baseUrl: slackProxyBaseUrl() }
     );
+    const webExecute = createWebToolExecutor(() => ({
+      tavily: this.deps.web?.getTavilyKey() ?? "",
+      jina: this.deps.web?.getJinaKey() ?? ""
+    }));
     const ticketExecute = createTicketToolExecutor(this.tickets, runtime.thread.id);
     const googleToolNames = new Set(GOOGLE_CONNECTOR_TOOLS.map((tool) => tool.name));
     const googleSensitiveToolNames = new Set(GOOGLE_SENSITIVE_TOOLS.map((tool) => tool.name));
@@ -836,6 +856,7 @@ export class HatchlingSwarm {
       if (googleSensitiveToolNames.has(name)) return googleSensitiveExecute(name, args, context);
       if (slackToolNames.has(name)) return slackExecute(name, args, context);
       if (slackApiToolNames.has(name)) return slackApiExecute(name, args, context);
+      if (name === WEB_SEARCH_FALLBACK_TOOL.name || name === FETCH_PAGE_TOOL.name) return webExecute(name, args, context);
       const mcpRoute = mcpRoutes.get(name);
       if (mcpRoute) {
         try {
@@ -1005,9 +1026,10 @@ export class HatchlingSwarm {
       });
       return false;
     }
-    const searchActive = config.webSearch && def.webSearch !== undefined;
+    const nativeSearch = config.webSearch && def.webSearch !== undefined;
+    const fallbackSearch = !nativeSearch && Boolean(this.deps.web?.getTavilyKey());
     const providerImpl = def.adapter === "anthropic"
-      ? createAnthropicProvider({ apiKey: key, webSearch: searchActive && def.webSearch === "server-tool" })
+      ? createAnthropicProvider({ apiKey: key, webSearch: nativeSearch && def.webSearch === "server-tool" })
       : def.adapter === "openai-responses"
         ? createOpenAiResponsesProvider({ apiKey: key, baseUrl: def.baseUrl, id: def.id })
         : createOpenAiCompatibleProvider({
@@ -1015,14 +1037,19 @@ export class HatchlingSwarm {
           baseUrl: def.baseUrl,
           id: def.id,
           maxTokensParam: def.maxTokensParam,
-          webPlugin: searchActive && def.webSearch === "plugin"
+          webPlugin: nativeSearch && def.webSearch === "plugin"
         });
     const { tools, mcp } = this.buildTools(runtime);
     const policy = runKind === "auto" ? "autonomous" : config.writeMode;
     const result = await runAgentLoop({
       provider: providerImpl,
       model: config.model.trim() || def.defaultModel,
-      system: systemPrompt(policy, searchActive, this.swarmPromptContext(runtime, runKind === "auto"), runtime.thread.instructions),
+      system: systemPrompt(
+        policy,
+        { search: nativeSearch || fallbackSearch, fetchPage: Boolean(this.deps.web?.getJinaKey()) },
+        this.swarmPromptContext(runtime, runKind === "auto"),
+        runtime.thread.instructions
+      ),
       messages: runtime.messages.length ? runtime.messages : undefined,
       task,
       tools,
@@ -1065,7 +1092,12 @@ export class HatchlingSwarm {
         signal,
         initialPrompts: [{
           role: "system",
-          content: systemPrompt(this.deps.getConfig().writeMode, false, this.swarmPromptContext(runtime, false), runtime.thread.instructions)
+          content: systemPrompt(
+            this.deps.getConfig().writeMode,
+            { search: Boolean(this.deps.web?.getTavilyKey()), fetchPage: Boolean(this.deps.web?.getJinaKey()) },
+            this.swarmPromptContext(runtime, false),
+            runtime.thread.instructions
+          )
         }]
       }));
       return {

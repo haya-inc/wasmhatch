@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "ファイルを選ぶ…"
 
 #: src/pages/ChatPage.tsx
+msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
+msgstr "ClaudeとOpenRouterはプロバイダ側で検索します — このキーは、それ以外のプロバイダ(Chrome内蔵、Ollama、OpenAI)にweb_searchツールを与えるフォールバックです。無料キーはtavily.comで1分で取得できます。キーはapi.tavily.comだけに送られ、このタブのメモリ内に留まります。"
+
+#: src/pages/ChatPage.tsx
 msgid "Clipboard API is not available in this browser."
 msgstr "このブラウザではクリップボードAPIを利用できません。"
 
@@ -245,8 +249,16 @@ msgid "Connect Google"
 msgstr "Googleに接続"
 
 #: src/pages/ChatPage.tsx
+msgid "Connect page reading"
+msgstr "ページ読み取りを接続"
+
+#: src/pages/ChatPage.tsx
 msgid "Connect Slack"
 msgstr "Slackを接続"
+
+#: src/pages/ChatPage.tsx
+msgid "Connect web search"
+msgstr "ウェブ検索を接続"
 
 #: src/pages/ChatPage.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
@@ -340,8 +352,16 @@ msgid "Disconnect Google"
 msgstr "Googleを切断"
 
 #: src/pages/ChatPage.tsx
+msgid "Disconnect page reading"
+msgstr "ページ読み取りを切断"
+
+#: src/pages/ChatPage.tsx
 msgid "Disconnect Slack"
 msgstr "Slackを切断"
+
+#: src/pages/ChatPage.tsx
+msgid "Disconnect web search"
+msgstr "ウェブ検索を切断"
 
 #: src/pages/ChatPage.tsx
 msgid "Doing"
@@ -494,12 +514,20 @@ msgid "It's saved in this browser until you untick the box."
 msgstr "チェックを外すまでこのブラウザに保存されます。"
 
 #: src/pages/ChatPage.tsx
+msgid "Jina API key (page reading)"
+msgstr "Jina APIキー(ページ読み取り)"
+
+#: src/pages/ChatPage.tsx
 msgid "Keep my data safe"
 msgstr "データを守る"
 
 #: src/pages/ChatPage.tsx
 msgid "Language"
 msgstr "言語"
+
+#: src/pages/ChatPage.tsx
+msgid "Lets any hatchling read one specific page as clean text with fetch_page — for example a promising search result. A free key takes a minute at jina.ai. Page URLs go through r.jina.ai; the key stays in this tab's memory."
+msgstr "どのハッチリングもfetch_pageで特定の1ページをきれいなテキストとして読めるようになります — 例えば有望な検索結果など。無料キーはjina.aiで1分で取得できます。ページURLはr.jina.aiを経由し、キーはこのタブのメモリ内に留まります。"
 
 #: src/lib/tool-summary.ts
 msgid "Listing workspace files"
@@ -596,6 +624,18 @@ msgstr "開いています…"
 #: src/pages/ChatPage.tsx
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "パッケージの指示は信頼できないコンテンツとして扱われます。あなたのキーには一切触れられず、使えるのは上に表示された能力だけです。"
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
+msgstr "ページ読み取りを接続しました。どのハッチリングもfetch_pageで特定のURLを読めます。"
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading connected. Hatchlings can now read a specific page with fetch_page."
+msgstr "ページ読み取りを接続しました。ハッチリングがfetch_pageで特定のページを読めるようになりました。"
+
+#: src/pages/ChatPage.tsx
+msgid "Page reading disconnected."
+msgstr "ページ読み取りを切断しました。"
 
 #: src/pages/ChatPage.tsx
 msgid "Pause all auto work"
@@ -804,6 +844,10 @@ msgid "Storage"
 msgstr "ストレージ"
 
 #: src/pages/ChatPage.tsx
+msgid "Tavily API key (web search)"
+msgstr "Tavily APIキー(ウェブ検索)"
+
+#: src/pages/ChatPage.tsx
 msgid "That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…"
 msgstr "Slack Incoming WebhookのURLではないようです — https://hooks.slack.com/services/… で始まるURLです"
 
@@ -929,6 +973,22 @@ msgstr "複数のチャンネルに投稿したいときは、<0>docs/slack.md</
 #: src/pages/ChatPage.tsx
 msgid "Web search"
 msgstr "Web検索"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search & reading"
+msgstr "ウェブ検索と読み取り"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Hatchlings can now use web_search; each search spends your Tavily quota."
+msgstr "ウェブ検索を接続しました。ハッチリングがweb_searchを使えるようになりました。検索のたびにTavilyのクォータを消費します。"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search connected. Providers without their own search now get a web_search tool; each search spends your Tavily quota."
+msgstr "ウェブ検索を接続しました。自前の検索を持たないプロバイダにweb_searchツールが加わります。検索のたびにTavilyのクォータを消費します。"
+
+#: src/pages/ChatPage.tsx
+msgid "Web search disconnected."
+msgstr "ウェブ検索を切断しました。"
 
 #: src/pages/ChatPage.tsx
 msgid "What do you want to get done?"

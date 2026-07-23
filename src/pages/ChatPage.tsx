@@ -274,6 +274,14 @@ export function ChatPage() {
   const [slackTeam, setSlackTeam] = useState<string | null>(null);
   const [slackTokenBusy, setSlackTokenBusy] = useState(false);
   const slackTokenRef = useRef("");
+  // Web-tool keys (Tavily search fallback, Jina page reader): same
+  // memory-only handling — draft in the field, connected value in a ref.
+  const [tavilyDraft, setTavilyDraft] = useState("");
+  const [tavilyConnected, setTavilyConnected] = useState(false);
+  const tavilyKeyRef = useRef("");
+  const [jinaDraft, setJinaDraft] = useState("");
+  const [jinaConnected, setJinaConnected] = useState(false);
+  const jinaKeyRef = useRef("");
   // UI language. Changing it activates the catalog in place (no reload), and
   // this state update is what re-renders the page in the new language.
   const [langPref, setLangPref] = useState<string>(localePreference);
@@ -357,6 +365,7 @@ export function ChatPage() {
       } : {})
     },
     slack: { getWebhookUrl: () => slackUrlRef.current, getToken: () => slackTokenRef.current },
+    web: { getTavilyKey: () => tavilyKeyRef.current, getJinaKey: () => jinaKeyRef.current },
     getBuiltinApi: () => (globalThis as typeof globalThis & { LanguageModel?: ChromeLanguageModelApi }).LanguageModel
   }));
   useEffect(() => () => swarm.dispose(), [swarm]);
@@ -420,6 +429,36 @@ export function ChatPage() {
     slackTokenRef.current = "";
     setSlackTeam(null);
     notice(t`Slack bot token disconnected.`);
+  }, [notice]);
+
+  const connectTavily = useCallback(() => {
+    const key = tavilyDraft.trim();
+    if (!key) return;
+    tavilyKeyRef.current = key;
+    setTavilyDraft("");
+    setTavilyConnected(true);
+    notice(t`Web search connected. Hatchlings can now use web_search; each search spends your Tavily quota.`);
+  }, [tavilyDraft, notice]);
+
+  const disconnectTavily = useCallback(() => {
+    tavilyKeyRef.current = "";
+    setTavilyConnected(false);
+    notice(t`Web search disconnected.`);
+  }, [notice]);
+
+  const connectJina = useCallback(() => {
+    const key = jinaDraft.trim();
+    if (!key) return;
+    jinaKeyRef.current = key;
+    setJinaDraft("");
+    setJinaConnected(true);
+    notice(t`Page reading connected. Hatchlings can now read a specific page with fetch_page.`);
+  }, [jinaDraft, notice]);
+
+  const disconnectJina = useCallback(() => {
+    jinaKeyRef.current = "";
+    setJinaConnected(false);
+    notice(t`Page reading disconnected.`);
   }, [notice]);
 
   const previewPortableBytes = useCallback(async (bytes: Uint8Array, source: string) => {
@@ -1653,6 +1692,78 @@ export function ChatPage() {
                 </p>
                 <button className="button button-quiet" type="button" onClick={disconnectSlackToken}>
                   <Trans>Disconnect bot token</Trans>
+                </button>
+              </>
+            )}
+          </section>
+
+          <section className="chat-panel">
+            <h2><Trans>Web search &amp; reading</Trans></h2>
+            {!tavilyConnected && (
+              <>
+                <label className="chat-field">
+                  <span><Trans>Tavily API key (web search)</Trans></span>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={tavilyDraft}
+                    placeholder="tvly-…"
+                    onChange={(event) => setTavilyDraft(event.target.value)}
+                  />
+                </label>
+                <button className="button" type="button" disabled={!tavilyDraft.trim()} onClick={connectTavily}>
+                  <Trans>Connect web search</Trans>
+                </button>
+                <p className="chat-hint">
+                  <Trans>
+                    Claude and OpenRouter search from the provider's own side — this key is the fallback that
+                    gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key
+                    takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory.
+                  </Trans>
+                </p>
+              </>
+            )}
+            {tavilyConnected && (
+              <>
+                <p className="chat-hint">
+                  <Trans>Web search connected. Providers without their own search now get a web_search tool; each search spends your Tavily quota.</Trans>
+                </p>
+                <button className="button button-quiet" type="button" onClick={disconnectTavily}>
+                  <Trans>Disconnect web search</Trans>
+                </button>
+              </>
+            )}
+            {!jinaConnected && (
+              <>
+                <label className="chat-field">
+                  <span><Trans>Jina API key (page reading)</Trans></span>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={jinaDraft}
+                    placeholder="jina_…"
+                    onChange={(event) => setJinaDraft(event.target.value)}
+                  />
+                </label>
+                <button className="button" type="button" disabled={!jinaDraft.trim()} onClick={connectJina}>
+                  <Trans>Connect page reading</Trans>
+                </button>
+                <p className="chat-hint">
+                  <Trans>
+                    Lets any hatchling read one specific page as clean text with fetch_page — for example a
+                    promising search result. A free key takes a minute at jina.ai. Page URLs go through
+                    r.jina.ai; the key stays in this tab's memory.
+                  </Trans>
+                </p>
+              </>
+            )}
+            {jinaConnected && (
+              <>
+                <p className="chat-hint">
+                  <Trans>Page reading connected. Every hatchling can read a specific URL with fetch_page.</Trans>
+                </p>
+                <button className="button button-quiet" type="button" onClick={disconnectJina}>
+                  <Trans>Disconnect page reading</Trans>
                 </button>
               </>
             )}
