@@ -6,6 +6,8 @@
  *   npm run i18n:check -- ja ko   # some locales
  *
  * Checks, per non-source catalog:
+ * - every en.po entry exists in the catalog (a truncated or stale file
+ *   fails loudly instead of passing with fewer entries);
  * - every entry has a translation (no empty msgstr);
  * - `{placeholder}` sets survive the translation verbatim;
  * - ICU plural messages keep the plural skeleton, the same variable,
@@ -119,17 +121,25 @@ async function main() {
     process.exit(1);
   }
 
+  const sourceIds = parsePo(await readFile(path.join(LOCALES_DIR, `${SOURCE_LOCALE}.po`), "utf8"))
+    .map((entry) => entry.msgid);
+
   let problems = 0;
   for (const { locale, filePath } of files) {
     const entries = parsePo(await readFile(filePath, "utf8"));
+    const present = new Set(entries.map((entry) => entry.msgid));
+    const absent = sourceIds.filter((msgid) => !present.has(msgid));
     const bad = entries
       .map((entry) => ({ ...entry, problem: validateTranslation(entry.msgid, entry.msgstr) }))
       .filter((entry) => entry.problem);
-    if (!bad.length) {
+    if (!bad.length && !absent.length) {
       console.log(`${locale}: ok (${entries.length} messages)`);
       continue;
     }
-    problems += bad.length;
+    problems += bad.length + absent.length;
+    for (const msgid of absent) {
+      console.error(`${locale}: "${msgid.slice(0, 60)}" — entry absent (truncated or stale catalog; run i18n:extract)`);
+    }
     for (const entry of bad) {
       console.error(`${locale}:${entry.line}: "${entry.msgid.slice(0, 60)}" — ${entry.problem}`);
     }
