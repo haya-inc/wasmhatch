@@ -107,7 +107,15 @@ export function portableFileName(manifest: PortableAgentManifest): string {
 export interface RegistryPublishResult {
   publisherId: string;
   agentId: string;
-  latestSha256: string;
+  /** Digest of the revision this publish created (or re-confirmed). */
+  sha256: string;
+  /**
+   * True while the revision sits in the registry's quarantine window —
+   * accepted, owner-fetchable, but not yet on any public surface.
+   */
+  quarantined: boolean;
+  /** Instant the quarantine window elapses; null when already public. */
+  quarantineUntil: string | null;
 }
 
 function requireRegistryUrl(baseUrl: string): string {
@@ -140,7 +148,14 @@ export async function publishToRegistry(
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new Error("The registry could not be reached. Check the network and the deployment's registry configuration.");
   }
-  let body: { error?: unknown; message?: unknown; publisherId?: unknown; agentId?: unknown; latestSha256?: unknown };
+  let body: {
+    error?: unknown;
+    message?: unknown;
+    publisherId?: unknown;
+    agentId?: unknown;
+    latestSha256?: unknown;
+    revision?: { sha256?: unknown; state?: unknown; quarantineUntil?: unknown };
+  };
   try {
     body = await response.json() as typeof body;
   } catch {
@@ -150,10 +165,22 @@ export async function publishToRegistry(
     const message = typeof body.message === "string" && body.message ? body.message : `HTTP ${response.status}`;
     throw new Error(`The registry declined the publish: ${message}`);
   }
-  if (typeof body.publisherId !== "string" || typeof body.agentId !== "string" || typeof body.latestSha256 !== "string") {
+  // The revision digest is authoritative: with quarantine enabled a brand-new
+  // agent has latestSha256 null until promotion, so that field cannot be
+  // required (docs/revision-lifecycle.md in the registry repository).
+  const sha256 = typeof body.revision?.sha256 === "string" && body.revision.sha256
+    ? body.revision.sha256
+    : typeof body.latestSha256 === "string" ? body.latestSha256 : "";
+  if (typeof body.publisherId !== "string" || typeof body.agentId !== "string" || !sha256) {
     throw new Error("The registry returned an incomplete publish result.");
   }
-  return { publisherId: body.publisherId, agentId: body.agentId, latestSha256: body.latestSha256 };
+  return {
+    publisherId: body.publisherId,
+    agentId: body.agentId,
+    sha256,
+    quarantined: body.revision?.state === "quarantined",
+    quarantineUntil: typeof body.revision?.quarantineUntil === "string" ? body.revision.quarantineUntil : null
+  };
 }
 
 /**
@@ -196,7 +223,7 @@ export async function unpublishFromRegistry(
 export function registryPackageUrl(baseUrl: string, result: RegistryPublishResult): string {
   const root = requireRegistryUrl(baseUrl);
   // Publisher/agent ids and the sha256 are all URL-safe by their patterns.
-  return `${root}/v1/agents/${result.publisherId}/${result.agentId}/revisions/${result.latestSha256}/package`;
+  return `${root}/v1/agents/${result.publisherId}/${result.agentId}/revisions/${result.sha256}/package`;
 }
 
 /** True when a pasted package URL sits on the deployment's registry origin. */

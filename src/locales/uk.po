@@ -95,6 +95,13 @@ msgstr "Безладна зразкова таблиця готова — поп
 msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
 msgstr "Структурований запис запусків цього курчатка, який можна експортувати — ходи моделі, виклики інструментів і записи; облікові дані завжди вилучені. Він залишається в цій вкладці, доки ви його не експортуєте."
 
+#. placeholder {0}: result.publisherId
+#. placeholder {1}: result.agentId
+#. placeholder {2}: registryPackageUrl(base, result)
+#: src/pages/ChatPage.tsx
+msgid "Accepted into the registry as {0}/{1} — quarantined until {until}, then public once its checks pass. Until then only your token can fetch it: {2}"
+msgstr "Прийнято до реєстру як {0}/{1} — на карантині до {until}, після проходження перевірок стане публічним. До того часу отримати його може лише ваш токен: {2}"
+
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
 msgstr "Токен доступу (необов'язково)"

@@ -95,6 +95,13 @@ msgstr "散らかったサンプルのスプレッドシートを用意しまし
 msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
 msgstr "このハッチリングの実行の構造化された記録(モデルターン・ツール呼び出し・書き込み)で、エクスポートできます。認証情報は常に除外され、エクスポートするまでこのタブから出ません。"
 
+#. placeholder {0}: result.publisherId
+#. placeholder {1}: result.agentId
+#. placeholder {2}: registryPackageUrl(base, result)
+#: src/pages/ChatPage.tsx
+msgid "Accepted into the registry as {0}/{1} — quarantined until {until}, then public once its checks pass. Until then only your token can fetch it: {2}"
+msgstr "レジストリに {0}/{1} として受理されました — {until} まで検疫中で、チェック通過後に公開されます。それまでは自分のトークンでのみ取得できます: {2}"
+
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
 msgstr "アクセストークン(任意)"

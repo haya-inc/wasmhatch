@@ -94,19 +94,43 @@ describe("registry client", () => {
   it("publishes the package bytes with the bearer token and media type", async () => {
     const pkg = await buildPortableHatchling(thread({ name: "Pip" }), []);
     const fetchImpl = vi.fn(async () => Response.json(
-      { publisherId: "haya", agentId: "pip", latestSha256: pkg.sha256 },
+      { publisherId: "haya", agentId: "pip", latestSha256: pkg.sha256, revision: { sha256: pkg.sha256, state: "public" } },
       { status: 201 }
     ));
 
     const result = await publishToRegistry("https://registry.example", "publish-token", pkg, { fetchImpl: fetchImpl as typeof fetch });
 
-    expect(result).toEqual({ publisherId: "haya", agentId: "pip", latestSha256: pkg.sha256 });
+    expect(result).toEqual({ publisherId: "haya", agentId: "pip", sha256: pkg.sha256, quarantined: false, quarantineUntil: null });
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://registry.example/v1/agents");
     expect((init.headers as Record<string, string>).authorization).toBe("Bearer publish-token");
     expect((init.headers as Record<string, string>)["content-type"]).toBe(PORTABLE_AGENT_MEDIA_TYPE);
     expect(registryPackageUrl("https://registry.example/", result))
       .toBe(`https://registry.example/v1/agents/haya/pip/revisions/${pkg.sha256}/package`);
+  });
+
+  it("reads the revision digest when quarantine leaves latestSha256 null", async () => {
+    const pkg = await buildPortableHatchling(thread({ name: "Pip" }), []);
+    const fetchImpl = vi.fn(async () => Response.json(
+      {
+        publisherId: "haya",
+        agentId: "pip",
+        latestSha256: null,
+        revision: { sha256: pkg.sha256, state: "quarantined", quarantineUntil: "2026-07-24T00:00:00.000Z" }
+      },
+      { status: 201 }
+    ));
+
+    const result = await publishToRegistry("https://registry.example", "publish-token", pkg, { fetchImpl: fetchImpl as typeof fetch });
+
+    expect(result).toEqual({
+      publisherId: "haya",
+      agentId: "pip",
+      sha256: pkg.sha256,
+      quarantined: true,
+      quarantineUntil: "2026-07-24T00:00:00.000Z"
+    });
+    expect(registryPackageUrl("https://registry.example", result)).toContain(pkg.sha256);
   });
 
   it("surfaces the registry's decline message without the token", async () => {

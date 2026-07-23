@@ -443,7 +443,12 @@ export function ChatPage() {
         if (!base) throw new Error("No registry is configured for this deployment.");
         const result = await publishToRegistry(base, registryToken.trim(), portablePreview.pkg);
         setPortablePreview(null);
-        notice(t`Published to the registry as ${result.publisherId}/${result.agentId}. Immutable package: ${registryPackageUrl(base, result)}`);
+        if (result.quarantined) {
+          const until = result.quarantineUntil ? new Date(result.quarantineUntil).toLocaleString(activeLocale()) : "";
+          notice(t`Accepted into the registry as ${result.publisherId}/${result.agentId} — quarantined until ${until}, then public once its checks pass. Until then only your token can fetch it: ${registryPackageUrl(base, result)}`);
+        } else {
+          notice(t`Published to the registry as ${result.publisherId}/${result.agentId}. Immutable package: ${registryPackageUrl(base, result)}`);
+        }
       } else {
         const id = await swarm.hatchFromPackage(portablePreview.pkg);
         swarm.select(id);

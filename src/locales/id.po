@@ -95,6 +95,13 @@ msgstr "Spreadsheet contoh yang berantakan sudah siap — minta dirapikan dan li
 msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
 msgstr "Catatan terstruktur yang bisa diekspor dari eksekusi piyik ini — giliran model, panggilan perkakas, dan penulisan, selalu tanpa kredensial. Tetap di tab ini sampai Anda mengekspornya."
 
+#. placeholder {0}: result.publisherId
+#. placeholder {1}: result.agentId
+#. placeholder {2}: registryPackageUrl(base, result)
+#: src/pages/ChatPage.tsx
+msgid "Accepted into the registry as {0}/{1} — quarantined until {until}, then public once its checks pass. Until then only your token can fetch it: {2}"
+msgstr "Diterima di registri sebagai {0}/{1} — dikarantina sampai {until}, lalu menjadi publik setelah pemeriksaan lolos. Sampai saat itu hanya token Anda yang bisa mengambilnya: {2}"
+
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
 msgstr "Token akses (opsional)"

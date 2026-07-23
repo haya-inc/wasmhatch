@@ -95,6 +95,13 @@ msgstr "Eine unordentliche Beispieltabelle steht bereit — bitte ums Aufräumen
 msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
 msgstr "Ein strukturiertes, exportierbares Protokoll der Läufe dieses Kükens — Modellrunden, Tool-Aufrufe und Schreibvorgänge, Zugangsdaten immer ausgenommen. Es bleibt in diesem Tab, bis du es exportierst."
 
+#. placeholder {0}: result.publisherId
+#. placeholder {1}: result.agentId
+#. placeholder {2}: registryPackageUrl(base, result)
+#: src/pages/ChatPage.tsx
+msgid "Accepted into the registry as {0}/{1} — quarantined until {until}, then public once its checks pass. Until then only your token can fetch it: {2}"
+msgstr "In der Registry als {0}/{1} angenommen — in Quarantäne bis {until}, danach öffentlich, sobald die Prüfungen bestehen. Bis dahin kann nur dein Token es abrufen: {2}"
+
 #: src/pages/ChatPage.tsx
 msgid "Access token (optional)"
 msgstr "Zugriffstoken (optional)"
