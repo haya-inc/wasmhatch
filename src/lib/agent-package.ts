@@ -4,7 +4,7 @@ import { normalizeWorkspacePath, type WorkspaceFile } from "./workspace";
 
 export const PORTABLE_AGENT_SCHEMA_VERSION = 1 as const;
 export const PORTABLE_AGENT_KIND = "wasmhatch.agent" as const;
-export const PORTABLE_AGENT_CORE_VERSION = "0.46.0";
+export const PORTABLE_AGENT_CORE_VERSION = "0.47.0";
 export const PORTABLE_AGENT_MEDIA_TYPE = "application/vnd.wasmhatch.agent+zip";
 export const PORTABLE_AGENT_LIMITS = Object.freeze({
   archiveBytes: 8 * 1024 * 1024,

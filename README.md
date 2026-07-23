@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/haya-inc/wasmhatch/actions/workflows/ci.yml/badge.svg)](https://github.com/haya-inc/wasmhatch/actions/workflows/ci.yml)
 
-![WasmHatch — the AI assistant that actually does the work](https://wasmhatch.com/social-preview.png?v=0.46.0)
+![WasmHatch — the AI assistant that actually does the work](https://wasmhatch.com/social-preview.png?v=0.47.0)
 
 **[Open WasmHatch](https://wasmhatch.com/?view=chat)** — free, no install, no account.
 
@@ -27,6 +27,10 @@ approve things first? Switch on Careful mode.
   their desks. A shared ticket board is the work queue, and any hatchling
   can be put on **auto work**: while the tab is open, it checks the board on
   the interval you set, with a visible run budget and one-click pause.
+- Package any hatchling as a portable `.agent` file to share it — export
+  it, load one from a file or a trusted URL, or publish and discover them
+  through an optional registry, always behind a plain-language preview
+  before anything hatches.
 - Reach extra tools through an MCP server on your own machine (Streamable
   HTTP) — every hatchling shares them.
 - Search the web through your AI provider's own search tool (Claude and
