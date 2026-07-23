@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "파일 선택…"
 
 #: src/pages/ChatPage.tsx
+msgid "Clipboard API is not available in this browser."
+msgstr "이 브라우저에서는 클립보드 API를 사용할 수 없습니다."
+
+#: src/pages/ChatPage.tsx
 msgid "Close"
 msgstr "닫기"
 
@@ -273,6 +277,14 @@ msgstr "연결하는 중…"
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "내 컴퓨터의 MCP 서버(Streamable HTTP)가 제공하는 도구에 모든 해츨링을 연결해요. 예: 로컬 프록시 뒤의 stdio 서버. 토큰은 이 탭의 메모리에만 남아요. 원격 서버는 배포 시 허용 목록 등록이 필수이며, 실행 중 예외는 허용되지 않아요."
+
+#: src/pages/ChatPage.tsx
+msgid "Copied"
+msgstr "복사됨"
+
+#: src/pages/ChatPage.tsx
+msgid "Copy"
+msgstr "복사"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx

@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "选择文件…"
 
 #: src/pages/ChatPage.tsx
+msgid "Clipboard API is not available in this browser."
+msgstr "此浏览器不支持剪贴板 API。"
+
+#: src/pages/ChatPage.tsx
 msgid "Close"
 msgstr "关闭"
 
@@ -273,6 +277,14 @@ msgstr "连接中…"
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "将所有小鸡仔连接到你机器上的 MCP 服务器(Streamable HTTP)提供的工具,例如本地代理后面的 stdio 服务器。令牌只保存在此标签页的内存中。远程服务器必须在部署时加入许可名单 — 绝不接受运行时例外。"
+
+#: src/pages/ChatPage.tsx
+msgid "Copied"
+msgstr "已复制"
+
+#: src/pages/ChatPage.tsx
+msgid "Copy"
+msgstr "复制"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx

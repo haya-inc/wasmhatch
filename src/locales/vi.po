@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "Chọn tệp…"
 
 #: src/pages/ChatPage.tsx
+msgid "Clipboard API is not available in this browser."
+msgstr "API bộ nhớ tạm không khả dụng trong trình duyệt này."
+
+#: src/pages/ChatPage.tsx
 msgid "Close"
 msgstr "Đóng"
 
@@ -273,6 +277,14 @@ msgstr "Đang kết nối…"
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "Kết nối mọi gà con với các công cụ từ máy chủ MCP trên máy của bạn (Streamable HTTP), ví dụ máy chủ stdio phía sau proxy cục bộ. Mã truy cập chỉ nằm trong bộ nhớ của tab này. Máy chủ từ xa phải được đưa vào danh sách cho phép ngay khi triển khai — không có ngoại lệ lúc chạy."
+
+#: src/pages/ChatPage.tsx
+msgid "Copied"
+msgstr "Đã sao chép"
+
+#: src/pages/ChatPage.tsx
+msgid "Copy"
+msgstr "Sao chép"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx

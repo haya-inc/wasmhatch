@@ -277,6 +277,26 @@ export function ChatPage() {
   // UI language. Changing it activates the catalog in place (no reload), and
   // this state update is what re-renders the page in the new language.
   const [langPref, setLangPref] = useState<string>(localePreference);
+  const [copied, setCopied] = useState(false);
+
+  const clipboardAvailable = typeof navigator !== "undefined" && !!navigator.clipboard;
+
+  const copyToClipboard = async () => {
+    if (!viewer || !clipboardAvailable) return;
+    try {
+      await navigator.clipboard.writeText(viewer.content);
+    } catch {
+      return;
+    }
+    setCopied(true);
+    window.setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    setCopied(false);
+  }, [viewer]);
 
   const keysRef = useRef(initialSettings.keys);
   const modelsRef = useRef(initialSettings.models);
@@ -1763,6 +1783,7 @@ export function ChatPage() {
               <h2>{viewer.path}</h2>
               <pre className="chat-viewer">{viewer.content}</pre>
               <button className="button button-quiet" type="button" onClick={() => { void downloadFile(viewer.path, viewer.content); }}><Trans>Download</Trans></button>
+              <button className="button button-quiet" type="button" onClick={() => { void copyToClipboard(); }} disabled={!clipboardAvailable} title={clipboardAvailable ? undefined : t`Clipboard API is not available in this browser.`}>{copied ? t`Copied` : t`Copy`}</button>
               <button className="button button-quiet" type="button" onClick={() => setViewer(null)}><Trans>Close</Trans></button>
             </section>
           )}

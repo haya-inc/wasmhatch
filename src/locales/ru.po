@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "Выбрать файлы…"
 
 #: src/pages/ChatPage.tsx
+msgid "Clipboard API is not available in this browser."
+msgstr "API буфера обмена недоступен в этом браузере."
+
+#: src/pages/ChatPage.tsx
 msgid "Close"
 msgstr "Закрыть"
 
@@ -273,6 +277,14 @@ msgstr "Подключение…"
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "Подключает всех птенцов к инструментам MCP-сервера на вашем компьютере (Streamable HTTP), например stdio-сервера за локальным прокси. Токены остаются в памяти этой вкладки. Удалённые серверы должны быть внесены в список разрешённых при развёртывании — исключений во время работы не бывает."
+
+#: src/pages/ChatPage.tsx
+msgid "Copied"
+msgstr "Скопировано"
+
+#: src/pages/ChatPage.tsx
+msgid "Copy"
+msgstr "Копировать"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx

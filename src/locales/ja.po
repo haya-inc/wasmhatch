@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "ファイルを選ぶ…"
 
 #: src/pages/ChatPage.tsx
+msgid "Clipboard API is not available in this browser."
+msgstr "このブラウザではクリップボードAPIを利用できません。"
+
+#: src/pages/ChatPage.tsx
 msgid "Close"
 msgstr "閉じる"
 
@@ -273,6 +277,14 @@ msgstr "接続中…"
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "このマシン上のMCPサーバー(Streamable HTTP)のツールに全ハッチリングを接続します。例: ローカルプロキシ経由のstdioサーバー。トークンはこのタブのメモリ内に留まります。リモートサーバーはデプロイ時の許可リスト登録が必須で、実行時の例外は認めません。"
+
+#: src/pages/ChatPage.tsx
+msgid "Copied"
+msgstr "コピーしました"
+
+#: src/pages/ChatPage.tsx
+msgid "Copy"
+msgstr "コピー"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx

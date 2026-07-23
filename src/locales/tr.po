@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "Dosyaları seç…"
 
 #: src/pages/ChatPage.tsx
+msgid "Clipboard API is not available in this browser."
+msgstr "Pano API'si bu tarayıcıda kullanılamıyor."
+
+#: src/pages/ChatPage.tsx
 msgid "Close"
 msgstr "Kapat"
 
@@ -273,6 +277,14 @@ msgstr "Bağlanıyor…"
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "Tüm civcivleri bilgisayarınızdaki bir MCP sunucusunun araçlarına bağlar (Streamable HTTP), ör. yerel bir proxy arkasındaki stdio sunucusu. Jetonlar bu sekmenin belleğinde kalır. Uzak sunucuların dağıtım sırasında izin listesine eklenmesi zorunludur — çalışma zamanında istisna tanınmaz."
+
+#: src/pages/ChatPage.tsx
+msgid "Copied"
+msgstr "Kopyalandı"
+
+#: src/pages/ChatPage.tsx
+msgid "Copy"
+msgstr "Kopyala"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx

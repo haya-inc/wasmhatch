@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "เลือกไฟล์…"
 
 #: src/pages/ChatPage.tsx
+msgid "Clipboard API is not available in this browser."
+msgstr "API คลิปบอร์ดไม่พร้อมใช้งานในเบราว์เซอร์นี้"
+
+#: src/pages/ChatPage.tsx
 msgid "Close"
 msgstr "ปิด"
 
@@ -273,6 +277,14 @@ msgstr "กำลังเชื่อมต่อ…"
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "เชื่อมลูกเจี๊ยบทุกตัวเข้ากับเครื่องมือจากเซิร์ฟเวอร์ MCP บนเครื่องของคุณ (Streamable HTTP) เช่น เซิร์ฟเวอร์ stdio ที่อยู่หลังพร็อกซีในเครื่อง โทเค็นเก็บอยู่ในหน่วยความจำของแท็บนี้เท่านั้น เซิร์ฟเวอร์ระยะไกลต้องถูกเพิ่มในรายการอนุญาตตั้งแต่ตอนติดตั้งระบบ — ไม่มีข้อยกเว้นตอนใช้งาน"
+
+#: src/pages/ChatPage.tsx
+msgid "Copied"
+msgstr "คัดลอกแล้ว"
+
+#: src/pages/ChatPage.tsx
+msgid "Copy"
+msgstr "คัดลอก"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx

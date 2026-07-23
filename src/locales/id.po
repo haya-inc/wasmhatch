@@ -225,6 +225,10 @@ msgid "Choose files…"
 msgstr "Pilih file…"
 
 #: src/pages/ChatPage.tsx
+msgid "Clipboard API is not available in this browser."
+msgstr "API papan klip tidak tersedia di browser ini."
+
+#: src/pages/ChatPage.tsx
 msgid "Close"
 msgstr "Tutup"
 
@@ -273,6 +277,14 @@ msgstr "Menghubungkan…"
 #: src/pages/ChatPage.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "Menghubungkan semua piyik ke alat dari server MCP di komputer Anda (Streamable HTTP), mis. server stdio di balik proxy lokal. Token tetap berada di memori tab ini. Server jarak jauh memerlukan entri daftar izin saat deployment — tidak pernah lewat pengecualian saat runtime."
+
+#: src/pages/ChatPage.tsx
+msgid "Copied"
+msgstr "Disalin"
+
+#: src/pages/ChatPage.tsx
+msgid "Copy"
+msgstr "Salin"
 
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
