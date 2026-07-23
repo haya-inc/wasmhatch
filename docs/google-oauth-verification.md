@@ -3,8 +3,12 @@
 > Draft submission package for Google's sensitive-scope verification of the
 > WasmHatch OAuth client at https://wasmhatch.com.
 
-- Status: infrastructure provisioned; sensitive-scope verification not yet
-  submitted
+- Status: **submitted 2026-07-22 — in review.** The Console Verification
+  Center shows "アプリのデータアクセスは審査中です" (data access under
+  review); branding is already verified. Submitted with the Section 2
+  justification texts and the Section 3 demo video (unlisted YouTube).
+  Expect 2–6 weeks and at least one round of reviewer questions; respond
+  promptly (checklist item 9 is the only live duty).
 - Canonical app URL: https://wasmhatch.com (live on Vercel with header CSP)
 - Privacy policy: https://wasmhatch.com/privacy.html (source:
   [`public/privacy.html`](../public/privacy.html)) — live
@@ -22,16 +26,18 @@
   production env var `VITE_GOOGLE_CLIENT_ID`; `OperatorPage`/the chat surface
   read it via `import.meta.env.VITE_GOOGLE_CLIENT_ID`.
 - OAuth consent screen: External, app name "WasmHatch", support and developer
-  contact `yusuke8h@gmail.com`. Publishing status is **Testing** — move to
-  In production only after the launch surface is ready, and keep launch-day
-  scopes to the non-sensitive `drive.file` only (100-user cap risk while
-  unverified).
+  contact `yusuke8h@gmail.com`. Publishing status is **In production**
+  (flipped from Testing on 2026-07-21; reversible via "テストに戻る").
+  Launch-day scopes stay non-sensitive `drive.file` only — the production
+  build leaves `VITE_GOOGLE_SENSITIVE_SCOPES` unset, so the In-production
+  status carries no unverified-warning or 100-user-cap risk.
 - Enabled APIs: Drive, Sheets, Docs, Slides, Calendar, Picker.
 - Domain ownership: `wasmhatch.com` verified in Search Console via a Vercel
   DNS TXT record (kept in place so verification persists).
 
-Remaining before submission: add the app logo on the consent screen, then
-submit the sensitive scopes for verification with the demo video below.
+Submission happened 2026-07-22; the sections below are kept as the record of
+what was submitted (and as the recipe if a resubmission is ever needed). The
+120×120 logo asset lives at [`public/logo-120.png`](../public/logo-120.png).
 
 ## 1. Requested scopes
 
@@ -133,41 +139,35 @@ Production requirements:
 
 ## 4. Submission checklist
 
-Work through these in order. Items 1–6 are prerequisites; Google rejects or
-stalls submissions with unverified domains or mismatched URLs.
+All prerequisites cleared and the submission went in on 2026-07-22; only
+item 9 remains live.
 
-1. [ ] **Domain ownership** — verify the `wasmhatch.com` domain property in
-   [Google Search Console](https://search.google.com/search-console) via DNS
-   TXT record (domain purchase is in progress; this is blocked until DNS is
-   under our control). The verified owner account must be an Owner/Editor on
-   the Google Cloud project.
-2. [ ] **Enable APIs** in the Cloud project: Google Sheets API, Google Docs
-   API, Google Slides API, Google Calendar API, Google Drive API, and Google
-   Picker API.
-3. [ ] **Extend the production CSP** — `vite.config.ts` currently allowlists
-   only `https://sheets.googleapis.com` in `connect-src`. Add the exact hosts
-   the Docs, Slides, Calendar, Drive, and Picker implementations call (for
-   example `docs.googleapis.com`, `slides.googleapis.com`,
-   `www.googleapis.com`) before recording the demo video, or the demoed
-   features will be blocked by the app's own policy.
-4. [ ] **Consent screen branding** — app name **WasmHatch**, 120×120 logo,
-   user support email, developer contact email, homepage
+1. [x] **Domain ownership** — `wasmhatch.com` verified in Search Console via
+   a Vercel DNS TXT record (kept in place so verification persists); the
+   verified owner account is an Owner on the Google Cloud project.
+2. [x] **Enable APIs** — Sheets, Docs, Slides, Calendar, Drive, and Picker
+   are enabled (Sheets/Docs/Slides/Calendar were found disabled on
+   2026-07-21 despite an earlier note claiming otherwise; a live-token run
+   surfaced it and all were enabled via the Console API Library).
+3. [x] **Extend the production CSP** — `vite.config.ts` allowlists
+   `sheets.googleapis.com`, `docs.googleapis.com`, `slides.googleapis.com`,
+   and `www.googleapis.com`; `meta.test.ts` asserts the host list.
+4. [x] **Consent screen branding** — published and showing as verified:
+   app name **WasmHatch**, support and developer emails, homepage
    `https://wasmhatch.com`, privacy policy
-   `https://wasmhatch.com/privacy.html`. Homepage and privacy policy must be
-   live, on the same verified domain, and consistent with each other.
-5. [ ] **Privacy policy live check** — `public/privacy.html` deploys to
-   `https://wasmhatch.com/privacy.html`, loads over HTTPS, and contains the
-   Google API Services User Data Policy **Limited Use** disclosure.
-6. [ ] **Authorized JavaScript origins** — `https://wasmhatch.com`
-   (production) plus `http://localhost:4173` and `http://localhost:5173` for
-   local preview/dev. The legacy `https://haya-inc.github.io` origin may stay
-   on the client during the migration, but every URL in the verification
-   submission must be on `wasmhatch.com`.
-7. [ ] **Declare exactly the scopes in Section 1** on the consent screen's
-   data-access configuration. Do not add the Restricted full-Drive scope.
-8. [ ] **Publish status** — move the consent screen from **Testing** to **In
-   production**, then submit for verification with the Section 2 texts and
-   the Section 3 video link.
+   `https://wasmhatch.com/privacy.html`. Logo asset:
+   [`public/logo-120.png`](../public/logo-120.png).
+5. [x] **Privacy policy live check** — `https://wasmhatch.com/privacy.html`
+   is live over HTTPS with the Google API Services User Data Policy
+   **Limited Use** disclosure.
+6. [x] **Authorized JavaScript origins** — `https://wasmhatch.com` plus
+   `http://localhost:4173` / `http://localhost:5173` for local dev.
+7. [x] **Declare exactly the scopes in Section 1** — all five declared in
+   the consent screen's Data Access configuration; no Restricted scope.
+8. [x] **Publish status** — moved from Testing to **In production**
+   (2026-07-21), then submitted for verification (2026-07-22) with the
+   Section 2 texts and the Section 3 video link. The Verification Center
+   shows the data-access review as in progress.
 9. [ ] **Respond promptly** to follow-up emails from Google's verification
    team; stale requests are closed and must be restarted.
 
