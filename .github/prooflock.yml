@@ -1,0 +1,44 @@
+version: 1
+# Observe integrity-sensitive changes before requiring an independent reviewer.
+mode: audit
+approval:
+  required: 1
+sourcePaths:
+  - "src/**/*.{js,jsx,ts,tsx}"
+  - "workers/**/*.{js,ts}"
+protectedSurfaces:
+  - id: prooflock-policy
+    title: ProofLock policy
+    paths:
+      - ".github/prooflock.yml"
+  - id: continuous-integration
+    title: Continuous integration and deployment workflows
+    paths:
+      - ".github/workflows/**"
+  - id: security-policy
+    title: Security policy
+    paths:
+      - "SECURITY.md"
+  - id: test-suites
+    title: Unit, security, and end-to-end tests
+    paths:
+      - "src/**/*.test.{js,jsx,ts,tsx}"
+      - "e2e/**"
+  - id: dependency-integrity
+    title: Dependency integrity
+    paths:
+      - "package.json"
+      - "package-lock.json"
+  - id: verification-tooling
+    title: Verification and build tooling
+    paths:
+      - "tsconfig*.json"
+      - "vite.config.ts"
+      - "vitest.config.ts"
+      - "playwright.config.ts"
+      - "scripts/check-*.mjs"
+  - id: production-contracts
+    title: Production deployment and agent contracts
+    paths:
+      - "public/schemas/**"
+      - "vercel.json"
