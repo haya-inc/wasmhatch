@@ -79,7 +79,7 @@ test("connects a Slack webhook and delivers an agent post as a form-encoded payl
   await page.getByLabel("Message the agent").fill("Post the weekly report summary to Slack.");
   await page.getByRole("button", { name: "Send" }).click();
 
-  await expect(page.getByText("Posting to Slack")).toBeVisible();
+  await expect(page.locator(".chat-tool").getByText("Posting to Slack")).toBeVisible();
   await expect(page.locator(".chat-assistant").last()).toContainText("Posted the update to Slack.");
 
   expect(slackBodies).toHaveLength(1);
@@ -128,8 +128,8 @@ test("connects a bot token, lists channels, and posts through the body-token Web
   await page.getByLabel("Message the agent").fill("Post the standup summary to the general channel.");
   await page.getByRole("button", { name: "Send" }).click();
 
-  await expect(page.getByText("Checking Slack channels")).toBeVisible();
-  await expect(page.getByText("Posting to Slack — C0GENERAL")).toBeVisible();
+  await expect(page.locator(".chat-tool").getByText("Checking Slack channels")).toBeVisible();
+  await expect(page.locator(".chat-tool").getByText("Posting to Slack — C0GENERAL")).toBeVisible();
   await expect(page.locator(".chat-assistant").last()).toContainText("Posted to #general.");
 
   const authParams = new URLSearchParams(apiBodies["auth.test"][0]);

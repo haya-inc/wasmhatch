@@ -378,6 +378,28 @@ export function ChatPage() {
   const running = selected?.running ?? false;
   const now = Date.now();
 
+  // Track which tool-call IDs have been announced to avoid duplicate screen-reader spam.
+  const announcedToolIds = useRef<Set<string>>(new Set());
+
+  // Build the live-region announcement text from tool items that changed state.
+  const [toolAnnouncement, setToolAnnouncement] = useState("");
+  const announcementClearTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    for (const item of items) {
+      if (item.kind !== "tool" || item.toolState === "running") continue;
+      const key = item.callId ?? `${item.id}`;
+      if (announcedToolIds.current.has(key)) continue;
+      announcedToolIds.current.add(key);
+      const stateLabel = item.toolState === "error" ? "failed" : "done";
+      setToolAnnouncement(`${item.text} — ${stateLabel}`);
+      // Clear after a short delay so the same announcement won't re-fire on the next render.
+      clearTimeout(announcementClearTimer.current);
+      announcementClearTimer.current = setTimeout(() => setToolAnnouncement(""), 2000);
+      break; // announce one at a time
+    }
+  }, [items]);
+  useEffect(() => () => clearTimeout(announcementClearTimer.current), []);
+
   const notice = useCallback((text: string, tone: "info" | "error" = "info") => {
     swarm.notice(swarm.selectedThreadId, text, tone);
   }, [swarm]);
@@ -996,6 +1018,10 @@ export function ChatPage() {
       <div className={`chat-columns${columns.left ? " has-left" : ""}${columns.right ? " has-right" : ""}`}>
         <main className="chat-main">
           <div className="chat-transcript" ref={listRef}>
+            {/* Screen-reader announcements for tool-chip state transitions */}
+            <div aria-live="polite" aria-atomic="true" className="sr-only" style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
+              {toolAnnouncement}
+            </div>
             {items.length === 0 && (
               <div className="chat-empty">
                 <h1><Trans>What do you want to get done?</Trans></h1>
