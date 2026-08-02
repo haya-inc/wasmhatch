@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/haya-inc/wasmhatch/actions/workflows/ci.yml/badge.svg)](https://github.com/haya-inc/wasmhatch/actions/workflows/ci.yml)
 
-![WasmHatch — the AI assistant that actually does the work](https://wasmhatch.com/social-preview.png?v=0.47.0)
+![WasmHatch — the AI assistant that actually does the work](https://wasmhatch.com/social-preview.png?v=0.48.0)
 
 **[Open WasmHatch](https://wasmhatch.com/?view=chat)** — free, no install, no account.
 
