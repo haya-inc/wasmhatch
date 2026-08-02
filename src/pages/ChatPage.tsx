@@ -383,6 +383,7 @@ export function ChatPage() {
 
   // Build the live-region announcement text from tool items that changed state.
   const [toolAnnouncement, setToolAnnouncement] = useState("");
+  const announcementClearTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     for (const item of items) {
       if (item.kind !== "tool" || item.toolState === "running") continue;
@@ -392,10 +393,12 @@ export function ChatPage() {
       const stateLabel = item.toolState === "error" ? "failed" : "done";
       setToolAnnouncement(`${item.text} — ${stateLabel}`);
       // Clear after a short delay so the same announcement won't re-fire on the next render.
-      setTimeout(() => setToolAnnouncement(""), 2000);
+      clearTimeout(announcementClearTimer.current);
+      announcementClearTimer.current = setTimeout(() => setToolAnnouncement(""), 2000);
       break; // announce one at a time
     }
   }, [items]);
+  useEffect(() => () => clearTimeout(announcementClearTimer.current), []);
 
   const notice = useCallback((text: string, tone: "info" | "error" = "info") => {
     swarm.notice(swarm.selectedThreadId, text, tone);
