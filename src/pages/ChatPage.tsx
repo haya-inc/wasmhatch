@@ -390,7 +390,7 @@ export function ChatPage() {
       const key = item.callId ?? `${item.id}`;
       if (announcedToolIds.current.has(key)) continue;
       announcedToolIds.current.add(key);
-      const stateLabel = item.toolState === "error" ? "failed" : "done";
+      const stateLabel = item.toolState === "error" ? t`failed` : t`done`;
       setToolAnnouncement(`${item.text} — ${stateLabel}`);
       // Clear after a short delay so the same announcement won't re-fire on the next render.
       clearTimeout(announcementClearTimer.current);
@@ -1019,7 +1019,7 @@ export function ChatPage() {
         <main className="chat-main">
           <div className="chat-transcript" ref={listRef}>
             {/* Screen-reader announcements for tool-chip state transitions */}
-            <div aria-live="polite" aria-atomic="true" className="sr-only" style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
+            <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
               {toolAnnouncement}
             </div>
             {items.length === 0 && (
