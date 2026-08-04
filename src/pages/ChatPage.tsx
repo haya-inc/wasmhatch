@@ -379,17 +379,27 @@ export function ChatPage() {
   const now = Date.now();
 
   // Track which tool-call IDs have been announced to avoid duplicate screen-reader spam.
-  const announcedToolIds = useRef<Set<string>>(new Set());
+  // Separate sets for start and completion so each event is announced once independently.
+  const announcedToolStartIds = useRef<Set<string>>(new Set());
+  const announcedToolCompletionIds = useRef<Set<string>>(new Set());
 
   // Build the live-region announcement text from tool items that changed state.
   const [toolAnnouncement, setToolAnnouncement] = useState("");
   const announcementClearTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     for (const item of items) {
-      if (item.kind !== "tool" || item.toolState === "running") continue;
+      if (item.kind !== "tool") continue;
       const key = item.callId ?? `${item.id}`;
-      if (announcedToolIds.current.has(key)) continue;
-      announcedToolIds.current.add(key);
+      if (item.toolState === "running") {
+        if (announcedToolStartIds.current.has(key)) continue;
+        announcedToolStartIds.current.add(key);
+        setToolAnnouncement(`${item.text} — ${t`running`}`);
+        clearTimeout(announcementClearTimer.current);
+        announcementClearTimer.current = setTimeout(() => setToolAnnouncement(""), 2000);
+        break; // announce one at a time
+      }
+      if (announcedToolCompletionIds.current.has(key)) continue;
+      announcedToolCompletionIds.current.add(key);
       const stateLabel = item.toolState === "error" ? t`failed` : t`done`;
       setToolAnnouncement(`${item.text} — ${stateLabel}`);
       // Clear after a short delay so the same announcement won't re-fire on the next render.
