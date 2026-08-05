@@ -286,6 +286,7 @@ export function ChatPage() {
   // this state update is what re-renders the page in the new language.
   const [langPref, setLangPref] = useState<string>(localePreference);
   const [copied, setCopied] = useState(false);
+  const [copiedBubble, setCopiedBubble] = useState<number | null>(null);
 
   const clipboardAvailable = typeof navigator !== "undefined" && !!navigator.clipboard;
 
@@ -300,6 +301,19 @@ export function ChatPage() {
     window.setTimeout(() => {
       setCopied(false);
     }, 2000);
+  };
+
+  const copyBubbleToClipboard = async (bubbleId: number, text: string) => {
+    if (!clipboardAvailable) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedBubble(bubbleId);
+      window.setTimeout(() => {
+        setCopiedBubble(null);
+      }, 2000);
+    } catch {
+      return;
+    }
   };
 
   useEffect(() => {
@@ -1043,6 +1057,16 @@ export function ChatPage() {
                 return (
                   <div key={item.id} className={item.streaming ? "chat-bubble chat-assistant chat-streaming" : "chat-bubble chat-assistant"}>
                     <AssistantMarkdown text={item.text} />
+                    {!item.streaming && clipboardAvailable && (
+                      <button
+                        className="button button-quiet"
+                        type="button"
+                        onClick={() => { void copyBubbleToClipboard(item.id, item.text); }}
+                        title={t`Copy assistant reply`}
+                      >
+                        {copiedBubble === item.id ? t`Copied` : t`Copy`}
+                      </button>
+                    )}
                   </div>
                 );
               }

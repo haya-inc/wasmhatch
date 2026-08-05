@@ -298,6 +298,10 @@ msgstr "Copied"
 msgid "Copy"
 msgstr "Copy"
 
+#: src/pages/ChatPage.tsx
+msgid "Copy assistant reply"
+msgstr "Copy assistant reply"
+
 #. placeholder {0}: activePermission.request.path
 #: src/pages/ChatPage.tsx
 msgid "Create {0}"
