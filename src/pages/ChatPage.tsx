@@ -17,7 +17,7 @@ import {
 } from "../lib/google-picker";
 import { parseSensitiveScopesFlag, resolveGoogleScopes } from "../lib/google-scopes";
 import { parseMarkdown, type MarkdownInline } from "../lib/markdown";
-import { createZipArchive } from "../lib/archive";
+import { createZipArchive, readZipArchive } from "../lib/archive";
 import { loadChatSettings, saveChatSettings } from "../lib/chat-settings";
 import { CLOUD_PROVIDERS, getCloudProvider, type ChatProviderId } from "../lib/chat-providers";
 import { FIRST_RUN_CSV_SAMPLE, FIRST_RUN_SAMPLE_FILES } from "../lib/first-run-csv-sample";
@@ -257,6 +257,8 @@ export function ChatPage() {
   const [pinBusy, setPinBusy] = useState(false);
   const [pinNote, setPinNote] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [restoreNote, setRestoreNote] = useState("");
   const [googleBusy, setGoogleBusy] = useState(false);
   const [ticketDraft, setTicketDraft] = useState("");
   const [columns, setColumns] = useState<ColumnLayout>(loadColumnLayout);
@@ -858,6 +860,27 @@ export function ChatPage() {
       setBackupBusy(false);
     }
   }, [backupBusy, notice, swarm]);
+
+  const restoreWorkspace = useCallback(async (file: File) => {
+    if (restoreBusy) return;
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const files = readZipArchive(bytes);
+      const count = files.length;
+      const previewText = t`${count} file${count === 1 ? "" : "s"}.`;
+      const confirmText = t`Restoring will replace your current workspace with ${previewText} from the backup. This can't be undone.`;
+      if (!window.confirm(confirmText)) return;
+      setRestoreBusy(true);
+      const workspace = swarm.workspaceFor(swarm.selectedThreadId);
+      await workspace.replaceAll(files);
+      await refreshFiles();
+      setRestoreNote(t`Restored ${count} file${count === 1 ? "" : "s"} from your backup.`);
+    } catch (error) {
+      notice(error instanceof Error ? error.message : t`The backup could not be restored.`, "error");
+    } finally {
+      setRestoreBusy(false);
+    }
+  }, [restoreBusy, notice, refreshFiles, swarm]);
 
   const downloadFile = useCallback(async (path: string, content: string) => {
     const ext = path.split(".").pop() ?? "";
@@ -1836,6 +1859,21 @@ export function ChatPage() {
                 ? t`Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first.`
                 : t`Downloads this hatchling's files as one ZIP you can keep anywhere.`}
             </p>
+            <label className="button chat-file-button">
+              <Trans>Restore from backup</Trans>
+              <input
+                type="file"
+                accept=".zip,application/zip"
+                aria-label={t`Restore workspace from ZIP backup`}
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) void restoreWorkspace(file);
+                }}
+              />
+            </label>
+            {restoreNote && <p className="chat-hint">{restoreNote}</p>}
           </section>
 
           <section className="chat-panel">
