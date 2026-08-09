@@ -10,7 +10,7 @@ name: OpenClaw promotion observation
 on:
   workflow_dispatch:
   schedule:
-    - cron: "41 5 * * *"
+    - cron: '41 5 * * 1'
 
 permissions:
   contents: read
@@ -18,7 +18,7 @@ permissions:
 jobs:
   clawsembly-policy:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 1
     steps:
       - id: policy
         uses: haya-inc/clawsembly/actions/promotion-policy@v0.1.0-alpha.6
