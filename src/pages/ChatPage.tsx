@@ -1,124 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { plural, t } from "@lingui/core/macro";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { HatchlingSwarm, type ChatItem, type HatchlingState, type RunConfig } from "../lib/agent-session";
-import { MAX_HATCHLINGS, MAIN_THREAD_ID, SCHEDULE_LIMITS } from "../lib/agent-threads";
-import { detectBuiltinAiToolLoopSupport } from "../lib/builtin-ai-loop";
+import { ChatTranscript, type PendingPermission } from "../components/chat/ChatTranscript";
+import { TeamSidebar } from "../components/chat/TeamSidebar";
+import { ToolsSidebar } from "../components/chat/ToolsSidebar";
+import { useGoogleConnector } from "../components/chat/useGoogleConnector";
+import { useColumnLayout, useHatchUrlSync } from "../components/chat/useHatchUrlSync";
+import { usePortableAgentFlow } from "../components/chat/usePortableAgentFlow";
+import { useSessionConnectors } from "../components/chat/useSessionConnectors";
+import { HatchlingSwarm, type ChatItem, type RunConfig, type SwarmDeps } from "../lib/agent-session";
 import type { HtmlArtifact } from "../lib/artifact";
-import { type PermissionDecision, type WritePermissionRequest } from "../lib/chat-permissions";
-import { type WritePolicy } from "../lib/chat-tools";
-import { GoogleOAuthReauthorizationRequiredError, GoogleOAuthSession, type GoogleOAuthStatus } from "../lib/google-oauth";
-import {
-  GOOGLE_PICKER_API_KEY,
-  GOOGLE_PICKER_APP_ID,
-  googlePickerConfigured,
-  openDriveFilePicker,
-  type PickedDriveFile
-} from "../lib/google-picker";
-import { parseSensitiveScopesFlag, resolveGoogleScopes } from "../lib/google-scopes";
-import { parseMarkdown, type MarkdownInline } from "../lib/markdown";
-import { createZipArchive } from "../lib/archive";
+import { detectBuiltinAiToolLoopSupport } from "../lib/builtin-ai-loop";
+import type { PermissionDecision, WritePermissionRequest } from "../lib/chat-permissions";
+import { getCloudProvider, type ChatProviderId } from "../lib/chat-providers";
 import { loadChatSettings, saveChatSettings } from "../lib/chat-settings";
-import { CLOUD_PROVIDERS, getCloudProvider, type ChatProviderId } from "../lib/chat-providers";
+import type { WritePolicy } from "../lib/chat-tools";
 import { FIRST_RUN_CSV_SAMPLE, FIRST_RUN_SAMPLE_FILES } from "../lib/first-run-csv-sample";
+import { i18n } from "../lib/i18n";
 import { isProtectedAgentPath } from "../lib/secrets";
-import {
-  fetchPortableAgentPackage,
-  PORTABLE_AGENT_MEDIA_TYPE,
-  readPortableAgentPackage,
-  type PortableAgentPackage
-} from "../lib/agent-package";
-import {
-  isRegistryPackageUrl,
-  portableFileName,
-  publishToRegistry,
-  registryBaseUrl,
-  registryPackageUrl
-} from "../lib/portable-hatchling";
-import { summarizeRequestedCapabilities } from "../lib/hatchling-capabilities";
-import { isSlackWebhookUrl } from "../lib/slack-webhook";
-import { probeSlackConnectivity } from "../lib/slack-connect";
-import { slackProxyBaseUrl } from "../lib/slack-tools";
-import { PROMPT_API_LANGUAGES } from "../lib/builtin-ai-language";
-import { activeLocale, localePreference, setLocalePreference } from "../lib/i18n";
-import { AUTO_LOCALE, UI_LOCALES } from "../lib/locales";
-import type { OfficeCharacter } from "../lib/pixel-office";
-import { type TicketStatus } from "../lib/tickets";
-import {
-  formatBytes,
-  inspectBrowserStorage,
-  requestPersistentStorage,
-  seedSampleFiles,
-  type BrowserStorageStatus
-} from "../lib/workspace";
-import { ArtifactPanel } from "./ArtifactPanel";
-import { HatchlingOffice } from "./HatchlingOffice";
+import { seedSampleFiles } from "../lib/workspace";
 
-interface PendingPermission {
-  request: WritePermissionRequest;
-  resolve: (decision: PermissionDecision) => void;
-}
-
-const GOOGLE_CLIENT_ID: string = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "";
-// Sensitive Google scopes (opening Sheets/Docs/Slides by URL or ID, and Calendar)
-// unlock only when a deployment opts in AFTER Google's Sensitive-scope verification
-// clears. Leave VITE_GOOGLE_SENSITIVE_SCOPES unset in production; the default keeps
-// the app on the non-sensitive drive.file scope with no unverified-app warning.
-const GOOGLE_SENSITIVE_ENABLED = parseSensitiveScopesFlag(import.meta.env.VITE_GOOGLE_SENSITIVE_SCOPES);
-
-// UI-only sentinel: "Custom" reveals a free-text model ID field.
-const CUSTOM_MODEL = "__custom__";
-
-const AUTO_WORK_INTERVALS = [1, 5, 10, 30, 60] as const;
-
-/** Which sidebars are open; the choice sticks per device. */
-interface ColumnLayout {
-  left: boolean;
-  right: boolean;
-}
-
-const LAYOUT_KEY = "wasmhatch-chat-layout-v1";
-
-function loadColumnLayout(): ColumnLayout {
-  try {
-    const raw = localStorage.getItem(LAYOUT_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<ColumnLayout>;
-      return { left: parsed.left !== false, right: parsed.right !== false };
-    }
-  } catch {
-    /* layout preference is cosmetic; a blocked store falls back to defaults */
-  }
-  return { left: true, right: true };
-}
-
-function saveColumnLayout(layout: ColumnLayout): void {
-  try {
-    localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
-  } catch {
-    /* the preference simply won't survive a reload */
-  }
-}
-
-/**
- * Deep-link routing per hatchling: ?view=chat&hatch=<thread id>. The id is
- * device-local (the registry lives in this browser), so this is navigation —
- * reload, bookmarks, back/forward — not a sharing feature. The main
- * hatchling keeps the clean parameter-free URL as its canonical form.
- */
-const HATCH_PARAM = "hatch";
-
-function hatchIdFromLocation(): string | null {
-  const value = new URLSearchParams(window.location.search).get(HATCH_PARAM);
-  return value && /^[a-z0-9][a-z0-9-]*$/.test(value) ? value : null;
-}
-
-function locationWithHatch(threadId: string): string {
-  const url = new URL(window.location.href);
-  if (threadId === MAIN_THREAD_ID) url.searchParams.delete(HATCH_PARAM);
-  else url.searchParams.set(HATCH_PARAM, threadId);
-  return url.pathname + url.search + url.hash;
-}
+type BuiltinApiGetter = NonNullable<SwarmDeps["getBuiltinApi"]>;
 
 function Chevron({ direction }: { direction: "left" | "right" }) {
   return (
@@ -138,98 +40,17 @@ function Chevron({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-interface ChromeLanguageModelApi {
-  create(options: {
-    signal?: AbortSignal;
-    initialPrompts: readonly { role: "system"; content: string }[];
-    expectedInputs?: unknown;
-    expectedOutputs?: unknown;
-  }): Promise<{
-    prompt(input: string, options: {
-      signal?: AbortSignal;
-      responseConstraint?: unknown;
-      omitResponseConstraintInput?: boolean;
-    }): Promise<string>;
-    destroy(): void;
-  }>;
-}
-
-function InlineNodes({ nodes }: { nodes: MarkdownInline[] }) {
-  return (
-    <>
-      {nodes.map((node, index) => {
-        if (node.kind === "code") return <code key={index}>{node.text}</code>;
-        if (node.kind === "strong") return <strong key={index}><InlineNodes nodes={node.inline} /></strong>;
-        if (node.kind === "em") return <em key={index}><InlineNodes nodes={node.inline} /></em>;
-        if (node.kind === "link") {
-          return <a key={index} href={node.href} target="_blank" rel="noreferrer noopener">{node.text}</a>;
-        }
-        return <span key={index}>{node.text}</span>;
-      })}
-    </>
-  );
-}
-
-function AssistantMarkdown({ text }: { text: string }) {
-  return (
-    <>
-      {parseMarkdown(text).map((block, index) => {
-        if (block.kind === "code") {
-          return <pre key={index} className="chat-md-code"><code>{block.text}</code></pre>;
-        }
-        if (block.kind === "heading") {
-          // Demoted inside a bubble: the page owns h1/h2, a message never does.
-          const Tag = (["h3", "h4", "h5"] as const)[block.level - 1];
-          return <Tag key={index}><InlineNodes nodes={block.inline} /></Tag>;
-        }
-        if (block.kind === "list") {
-          const items = block.items.map((item, itemIndex) => (
-            <li key={itemIndex}><InlineNodes nodes={item} /></li>
-          ));
-          return block.ordered ? <ol key={index}>{items}</ol> : <ul key={index}>{items}</ul>;
-        }
-        return <p key={index}><InlineNodes nodes={block.inline} /></p>;
-      })}
-    </>
-  );
-}
-
-function storageSummary(status: BrowserStorageStatus): string {
-  const state = status.persistence === "persistent"
-    ? t`Your data is pinned — this browser won't clear it on its own.`
-    : status.persistence === "best-effort"
-      ? t`Not pinned yet — the browser could clear saved work if this device runs low on space.`
-      : t`This browser can't promise to keep data around, so a backup is the safest bet.`;
-  if (status.originUsageBytes === null) return state;
-  const used = formatBytes(status.originUsageBytes);
-  return `${state} ${t`${used} used.`}`;
-}
-
-function hatchlingStatusLine(state: HatchlingState, now: number): string {
-  if (state.running) return state.runKind === "auto" ? t`Auto work in progress…` : t`Working…`;
-  if (state.mood === "error") return t`Needs attention`;
-  if (state.thread.schedule.enabled) {
-    if (state.autoBlocker === "exhausted") return t`Auto budget used up`;
-    if (state.autoSkipNote) return t`Auto work waiting`;
-    if (state.nextAutoRunAt !== null) {
-      const minutes = Math.max(0, Math.round((state.nextAutoRunAt - now) / 60_000));
-      return minutes <= 0 ? t`Next auto run any moment` : t`Next auto run in ~${minutes} min`;
-    }
-    return t`Auto work on`;
-  }
-  return state.mood === "done" && state.lastActivity ? state.lastActivity : t`Resting`;
-}
-
-function ticketStatusLabel(status: TicketStatus): string {
-  switch (status) {
-    case "todo": return t`To do`;
-    case "doing": return t`Doing`;
-    case "blocked": return t`Blocked`;
-    case "done": return t`Done`;
-  }
-}
-
 export function ChatPage() {
+  // Re-render the entire chat surface whenever the active Lingui catalog switches.
+  useSyncExternalStore(
+    useCallback((onStoreChange) => {
+      i18n.on("change", onStoreChange);
+      return () => { i18n.removeListener("change", onStoreChange); };
+    }, []),
+    () => i18n.locale,
+    () => i18n.locale
+  );
+
   const [initialSettings] = useState(() => loadChatSettings());
   const restoredCloud = initialSettings.provider === "builtin" ? null : initialSettings.provider;
   const [provider, setProvider] = useState<ChatProviderId>(initialSettings.provider);
@@ -240,71 +61,11 @@ export function ChatPage() {
   const [writeMode, setWriteMode] = useState<WritePolicy>("autonomous");
   const [builtinAvailability, setBuiltinAvailability] = useState<string>("checking");
   const [permissionQueue, setPermissionQueue] = useState<PendingPermission[]>([]);
-  // Google Picker handover requests raised by the agent; resolved by a click.
-  const [pickQueue, setPickQueue] = useState<{ reason: string; resolve: (files: PickedDriveFile[] | null) => void }[]>([]);
-  const [pickerBusy, setPickerBusy] = useState(false);
-  // Portable agent import/publish: nothing hatches or uploads until the
-  // user approves the preview card.
-  const [portablePreview, setPortablePreview] = useState<{ pkg: PortableAgentPackage; source: string; action: "hatch" | "publish" } | null>(null);
-  const [portableBusy, setPortableBusy] = useState(false);
-  const [registryToken, setRegistryToken] = useState("");
-  const [registryLoadUrl, setRegistryLoadUrl] = useState("");
   const [artifact, setArtifact] = useState<HtmlArtifact | null>(null);
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<string[]>([]);
   const [viewer, setViewer] = useState<{ path: string; content: string } | null>(null);
-  const [storageStatus, setStorageStatus] = useState<BrowserStorageStatus | null>(null);
-  const [pinBusy, setPinBusy] = useState(false);
-  const [pinNote, setPinNote] = useState("");
-  const [backupBusy, setBackupBusy] = useState(false);
-  const [googleBusy, setGoogleBusy] = useState(false);
-  const [ticketDraft, setTicketDraft] = useState("");
-  const [columns, setColumns] = useState<ColumnLayout>(loadColumnLayout);
-  const [mcpUrls, setMcpUrls] = useState<Record<string, string>>({});
-  const [mcpTokens, setMcpTokens] = useState<Record<string, string>>({});
-  const [mcpBusy, setMcpBusy] = useState<string | null>(null);
-  // Slack Incoming Webhook URL: a capability URL, so treated like a token —
-  // draft in the field, the connected value only in a ref, never persisted.
-  const [slackDraft, setSlackDraft] = useState("");
-  const [slackConnected, setSlackConnected] = useState(false);
-  const slackUrlRef = useRef("");
-  // Slack bot token (Web API stage): same memory-only handling; the team name
-  // is the only piece of the probe result that is kept for display.
-  const [slackTokenDraft, setSlackTokenDraft] = useState("");
-  const [slackTeam, setSlackTeam] = useState<string | null>(null);
-  const [slackTokenBusy, setSlackTokenBusy] = useState(false);
-  const slackTokenRef = useRef("");
-  // Web-tool keys (Tavily search fallback, Jina page reader): same
-  // memory-only handling — draft in the field, connected value in a ref.
-  const [tavilyDraft, setTavilyDraft] = useState("");
-  const [tavilyConnected, setTavilyConnected] = useState(false);
-  const tavilyKeyRef = useRef("");
-  const [jinaDraft, setJinaDraft] = useState("");
-  const [jinaConnected, setJinaConnected] = useState(false);
-  const jinaKeyRef = useRef("");
-  // UI language. Changing it activates the catalog in place (no reload), and
-  // this state update is what re-renders the page in the new language.
-  const [langPref, setLangPref] = useState<string>(localePreference);
-  const [copied, setCopied] = useState(false);
-
-  const clipboardAvailable = typeof navigator !== "undefined" && !!navigator.clipboard;
-
-  const copyToClipboard = async () => {
-    if (!viewer || !clipboardAvailable) return;
-    try {
-      await navigator.clipboard.writeText(viewer.content);
-    } catch {
-      return;
-    }
-    setCopied(true);
-    window.setTimeout(() => {
-      setCopied(false);
-    }, 2000);
-  };
-
-  useEffect(() => {
-    setCopied(false);
-  }, [viewer]);
+  const [columns, setColumns] = useColumnLayout();
 
   const keysRef = useRef(initialSettings.keys);
   const modelsRef = useRef(initialSettings.models);
@@ -318,12 +79,14 @@ export function ChatPage() {
   });
   configRef.current = { provider, apiKey, model, webSearch, writeMode, builtinAvailability };
 
-  const googleSession = useRef(new GoogleOAuthSession());
-  const [googleStatus, setGoogleStatus] = useState<GoogleOAuthStatus>(() => googleSession.current.status());
-  const googleStatusRef = useRef(googleStatus);
-  googleStatusRef.current = googleStatus;
+  const swarmRef = useRef<HatchlingSwarm | null>(null);
+  const notice = useCallback((text: string, tone: "info" | "error" = "info") => {
+    const instance = swarmRef.current;
+    if (instance) instance.notice(instance.selectedThreadId, text, tone);
+  }, []);
 
-  const listRef = useRef<HTMLDivElement | null>(null);
+  const google = useGoogleConnector(notice);
+  const connectors = useSessionConnectors(notice);
 
   const gate = useCallback((request: WritePermissionRequest) => {
     return new Promise<PermissionDecision>((resolve) => {
@@ -331,44 +94,23 @@ export function ChatPage() {
     });
   }, []);
 
-  const [swarm] = useState(() => new HatchlingSwarm({
-    getConfig: () => configRef.current,
-    gate,
-    onArtifact: setArtifact,
-    google: {
-      isConnected: () => googleStatusRef.current.connected,
-      sensitiveEnabled: GOOGLE_SENSITIVE_ENABLED,
-      // One silent re-grant hides ordinary token expiry from a running turn;
-      // if Google wants a gesture again, the visible reconnect flow remains.
-      getToken: async (signal) => {
-        const provider = googleSession.current.credentialProvider();
-        try {
-          return await provider.getToken(signal);
-        } catch (error) {
-          if (!GOOGLE_CLIENT_ID || !(error instanceof GoogleOAuthReauthorizationRequiredError)) throw error;
-          const renewed = await googleSession.current
-            .authorize(GOOGLE_CLIENT_ID, resolveGoogleScopes(GOOGLE_SENSITIVE_ENABLED), { silent: true })
-            .catch(() => null);
-          setGoogleStatus(googleSession.current.status());
-          if (!renewed?.connected) throw error;
-          return provider.getToken(signal);
-        }
-      },
-      ...(googlePickerConfigured() ? {
-        requestFilePick: (reason: string, signal?: AbortSignal) => new Promise<PickedDriveFile[] | null>((resolve) => {
-          setPickQueue((queue) => [...queue, { reason, resolve }]);
-          signal?.addEventListener("abort", () => {
-            resolve(null);
-            setPickQueue((queue) => queue.filter((entry) => entry.resolve !== resolve));
-          }, { once: true });
-        })
-      } : {})
-    },
-    slack: { getWebhookUrl: () => slackUrlRef.current, getToken: () => slackTokenRef.current },
-    web: { getTavilyKey: () => tavilyKeyRef.current, getJinaKey: () => jinaKeyRef.current },
-    getBuiltinApi: () => (globalThis as typeof globalThis & { LanguageModel?: ChromeLanguageModelApi }).LanguageModel
-  }));
+  const [swarm] = useState(() => {
+    const instance = new HatchlingSwarm({
+      getConfig: () => configRef.current,
+      gate,
+      onArtifact: setArtifact,
+      google: google.swarmDeps,
+      slack: connectors.slackDeps,
+      web: connectors.webDeps,
+      getBuiltinApi: () => (globalThis as typeof globalThis & { LanguageModel?: ReturnType<BuiltinApiGetter> }).LanguageModel
+    });
+    swarmRef.current = instance;
+    return instance;
+  });
+  swarmRef.current = swarm;
   useEffect(() => () => swarm.dispose(), [swarm]);
+
+  const portable = usePortableAgentFlow(swarm, notice);
 
   useSyncExternalStore(swarm.subscribe, swarm.getVersion, swarm.getVersion);
   const threads = swarm.listThreads();
@@ -376,231 +118,8 @@ export function ChatPage() {
   const selected = swarm.getState(selectedId);
   const items = selected?.items ?? [];
   const running = selected?.running ?? false;
-  const now = Date.now();
 
-  // Track which tool-call IDs have been announced to avoid duplicate screen-reader spam.
-  const announcedToolIds = useRef<Set<string>>(new Set());
-
-  // Build the live-region announcement text from tool items that changed state.
-  const [toolAnnouncement, setToolAnnouncement] = useState("");
-  const announcementClearTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => {
-    for (const item of items) {
-      if (item.kind !== "tool" || item.toolState === "running") continue;
-      const key = item.callId ?? `${item.id}`;
-      if (announcedToolIds.current.has(key)) continue;
-      announcedToolIds.current.add(key);
-      const stateLabel = item.toolState === "error" ? t`failed` : t`done`;
-      setToolAnnouncement(`${item.text} — ${stateLabel}`);
-      // Clear after a short delay so the same announcement won't re-fire on the next render.
-      clearTimeout(announcementClearTimer.current);
-      announcementClearTimer.current = setTimeout(() => setToolAnnouncement(""), 2000);
-      break; // announce one at a time
-    }
-  }, [items]);
-  useEffect(() => () => clearTimeout(announcementClearTimer.current), []);
-
-  const notice = useCallback((text: string, tone: "info" | "error" = "info") => {
-    swarm.notice(swarm.selectedThreadId, text, tone);
-  }, [swarm]);
-
-  const connectSlack = useCallback(() => {
-    const url = slackDraft.trim();
-    if (!isSlackWebhookUrl(url)) {
-      notice(t`That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…`, "error");
-      return;
-    }
-    slackUrlRef.current = url;
-    setSlackDraft("");
-    setSlackConnected(true);
-    notice(t`Slack connected. Every hatchling can now post to the webhook's channel.`);
-  }, [slackDraft, notice]);
-
-  const disconnectSlack = useCallback(() => {
-    slackUrlRef.current = "";
-    setSlackConnected(false);
-    notice(t`Slack disconnected.`);
-  }, [notice]);
-
-  const connectSlackToken = useCallback(async () => {
-    const token = slackTokenDraft.trim();
-    if (!token) return;
-    setSlackTokenBusy(true);
-    try {
-      const result = await probeSlackConnectivity(token, { baseUrl: slackProxyBaseUrl() });
-      if (result.ok) {
-        slackTokenRef.current = token;
-        setSlackTokenDraft("");
-        setSlackTeam(result.team ?? "Slack");
-        notice(result.team
-          ? t`Connected to the Slack workspace “${result.team}”. Channel tools are active for every hatchling.`
-          : t`Slack bot token connected. Channel tools are active for every hatchling.`);
-      } else if (result.status === "invalid-token") {
-        notice(t`Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again.`, "error");
-      } else if (result.status === "cors-blocked") {
-        notice(t`The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL.`, "error");
-      } else {
-        notice(t`Slack could not be reached. Check your connection and try again.`, "error");
-      }
-    } finally {
-      setSlackTokenBusy(false);
-    }
-  }, [slackTokenDraft, notice]);
-
-  const disconnectSlackToken = useCallback(() => {
-    slackTokenRef.current = "";
-    setSlackTeam(null);
-    notice(t`Slack bot token disconnected.`);
-  }, [notice]);
-
-  const connectTavily = useCallback(() => {
-    const key = tavilyDraft.trim();
-    if (!key) return;
-    tavilyKeyRef.current = key;
-    setTavilyDraft("");
-    setTavilyConnected(true);
-    notice(t`Web search connected. Hatchlings can now use web_search; each search spends your Tavily quota.`);
-  }, [tavilyDraft, notice]);
-
-  const disconnectTavily = useCallback(() => {
-    tavilyKeyRef.current = "";
-    setTavilyConnected(false);
-    notice(t`Web search disconnected.`);
-  }, [notice]);
-
-  const connectJina = useCallback(() => {
-    const key = jinaDraft.trim();
-    if (!key) return;
-    jinaKeyRef.current = key;
-    setJinaDraft("");
-    setJinaConnected(true);
-    notice(t`Page reading connected. Hatchlings can now read a specific page with fetch_page.`);
-  }, [jinaDraft, notice]);
-
-  const disconnectJina = useCallback(() => {
-    jinaKeyRef.current = "";
-    setJinaConnected(false);
-    notice(t`Page reading disconnected.`);
-  }, [notice]);
-
-  const previewPortableBytes = useCallback(async (bytes: Uint8Array, source: string) => {
-    try {
-      const pkg = await readPortableAgentPackage(bytes);
-      setPortablePreview({ pkg, source, action: "hatch" });
-    } catch (error) {
-      notice(error instanceof Error ? error.message : t`The agent package could not be read.`, "error");
-    }
-  }, [notice]);
-
-  const importPortableFile = useCallback(async (file: File) => {
-    await previewPortableBytes(new Uint8Array(await file.arrayBuffer()), file.name);
-  }, [previewPortableBytes]);
-
-  const loadPortableFromRegistry = useCallback(async () => {
-    const url = registryLoadUrl.trim();
-    const base = registryBaseUrl();
-    if (!isRegistryPackageUrl(url, base)) {
-      notice(t`That URL is not on this deployment's registry, so the browser cannot fetch it. Download the .agent file instead and import it here.`, "error");
-      return;
-    }
-    setPortableBusy(true);
-    try {
-      const pkg = await fetchPortableAgentPackage(url);
-      setPortablePreview({ pkg, source: url, action: "hatch" });
-      setRegistryLoadUrl("");
-    } catch (error) {
-      notice(error instanceof Error ? error.message : t`The agent package could not be downloaded.`, "error");
-    } finally {
-      setPortableBusy(false);
-    }
-  }, [notice, registryLoadUrl]);
-
-  const confirmPortablePreview = useCallback(async () => {
-    if (!portablePreview || portableBusy) return;
-    setPortableBusy(true);
-    try {
-      if (portablePreview.action === "publish") {
-        const base = registryBaseUrl();
-        if (!base) throw new Error("No registry is configured for this deployment.");
-        const result = await publishToRegistry(base, registryToken.trim(), portablePreview.pkg);
-        setPortablePreview(null);
-        if (result.quarantined) {
-          const until = result.quarantineUntil ? new Date(result.quarantineUntil).toLocaleString(activeLocale()) : "";
-          notice(t`Accepted into the registry as ${result.publisherId}/${result.agentId} — quarantined until ${until}, then public once its checks pass. Until then only your token can fetch it: ${registryPackageUrl(base, result)}`);
-        } else {
-          notice(t`Published to the registry as ${result.publisherId}/${result.agentId}. Immutable package: ${registryPackageUrl(base, result)}`);
-        }
-      } else {
-        const id = await swarm.hatchFromPackage(portablePreview.pkg);
-        swarm.select(id);
-        setPortablePreview(null);
-        notice(t`Hatched “${portablePreview.pkg.manifest.name}” from the package. Its playbook and files are in place; it only has the capabilities shown in the preview.`);
-      }
-    } catch (error) {
-      notice(error instanceof Error
-        ? error.message
-        : portablePreview.action === "publish" ? t`The registry publish failed.` : t`The package could not be hatched.`, "error");
-    } finally {
-      setPortableBusy(false);
-    }
-  }, [notice, portableBusy, portablePreview, registryToken, swarm]);
-
-  const exportPortable = useCallback(async () => {
-    setPortableBusy(true);
-    try {
-      const pkg = await swarm.exportPortableHatchling(swarm.selectedThreadId);
-      const copy = new Uint8Array(pkg.bytes.byteLength);
-      copy.set(pkg.bytes);
-      const url = URL.createObjectURL(new Blob([copy.buffer], { type: PORTABLE_AGENT_MEDIA_TYPE }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = portableFileName(pkg.manifest);
-      link.click();
-      URL.revokeObjectURL(url);
-      notice(t`Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials.`);
-    } catch (error) {
-      notice(error instanceof Error ? error.message : t`The hatchling could not be exported.`, "error");
-    } finally {
-      setPortableBusy(false);
-    }
-  }, [notice, swarm]);
-
-  // Publishing goes through the same preview card: the exact file list and
-  // requested capabilities are shown before any upload.
-  const publishPortable = useCallback(async () => {
-    const base = registryBaseUrl();
-    if (!base || !registryToken.trim()) return;
-    setPortableBusy(true);
-    try {
-      const pkg = await swarm.exportPortableHatchling(swarm.selectedThreadId);
-      setPortablePreview({ pkg, source: t`this hatchling, before upload`, action: "publish" });
-    } catch (error) {
-      notice(error instanceof Error ? error.message : t`The hatchling could not be exported.`, "error");
-    } finally {
-      setPortableBusy(false);
-    }
-  }, [notice, registryToken, swarm]);
-
-  // ?agent=<registry package URL> — the shareable try link. The package is
-  // fetched and previewed; nothing hatches without the user's click.
-  useEffect(() => {
-    const param = new URLSearchParams(window.location.search).get("agent");
-    if (!param) return;
-    const base = registryBaseUrl();
-    if (!isRegistryPackageUrl(param, base)) {
-      notice(t`That URL is not on this deployment's registry, so the browser cannot fetch it. Download the .agent file instead and import it here.`, "error");
-      return;
-    }
-    let cancelled = false;
-    void fetchPortableAgentPackage(param)
-      .then((pkg) => { if (!cancelled) setPortablePreview({ pkg, source: param, action: "hatch" }); })
-      .catch((error: unknown) => {
-        if (!cancelled) notice(error instanceof Error ? error.message : t`The agent package could not be downloaded.`, "error");
-      });
-    return () => { cancelled = true; };
-    // Runs once per page load for the initial URL.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useHatchUrlSync(swarm, selectedId);
 
   const refreshFiles = useCallback(async () => {
     try {
@@ -615,75 +134,10 @@ export function ChatPage() {
     void detectBuiltinAiToolLoopSupport().then(setBuiltinAvailability);
   }, []);
 
-  useEffect(() => {
-    saveColumnLayout(columns);
-  }, [columns]);
-
-  // Deep link in, back/forward across hatchlings.
-  const [urlRoutingReady, setUrlRoutingReady] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    void swarm.ready.then(() => {
-      if (cancelled) return;
-      const fromUrl = hatchIdFromLocation();
-      if (fromUrl && swarm.getState(fromUrl)) swarm.select(fromUrl);
-      setUrlRoutingReady(true);
-    });
-    const onPopState = () => {
-      const fromUrl = hatchIdFromLocation();
-      swarm.select(fromUrl && swarm.getState(fromUrl) ? fromUrl : MAIN_THREAD_ID);
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("popstate", onPopState);
-    };
-  }, [swarm]);
-
-  // Keep the URL in step with the selection. The first sync after boot
-  // replaces (normalizing a stale or invalid deep link without polluting
-  // history); every later change pushes so Back walks the selection.
-  const firstUrlSync = useRef(true);
-  useEffect(() => {
-    if (!urlRoutingReady) return;
-    const current = hatchIdFromLocation() ?? MAIN_THREAD_ID;
-    if (current === selectedId) {
-      firstUrlSync.current = false;
-      return;
-    }
-    if (firstUrlSync.current) {
-      history.replaceState(null, "", locationWithHatch(selectedId));
-      firstUrlSync.current = false;
-    } else {
-      history.pushState(null, "", locationWithHatch(selectedId));
-    }
-  }, [urlRoutingReady, selectedId]);
-
   const selectedWriteCount = selected?.writeCount ?? 0;
   useEffect(() => {
     void swarm.ready.then(() => refreshFiles());
   }, [refreshFiles, selectedId, selectedWriteCount, swarm]);
-
-  useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [items.length, permissionQueue, pickQueue]);
-
-  useEffect(() => {
-    if (!viewer) return;
-    const closeViewerOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setViewer(null);
-    };
-    window.addEventListener("keydown", closeViewerOnEscape);
-    return () => window.removeEventListener("keydown", closeViewerOnEscape);
-  }, [viewer]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void inspectBrowserStorage().then((status) => {
-      if (!cancelled) setStorageStatus(status);
-    });
-    return () => { cancelled = true; };
-  }, [files]);
 
   useEffect(() => {
     if (provider !== "builtin") {
@@ -735,61 +189,6 @@ export function ChatPage() {
     swarm.handleProviderSwitch();
   }, [swarm]);
 
-  // Renew the Google token a minute before it expires (silently, no UI). On
-  // success the new expiry reschedules this effect; on failure a second timer
-  // flips the panel to the expired state at the safety window, and the lazy
-  // per-call re-grant in the swarm deps remains as a backstop.
-  useEffect(() => {
-    if (!googleStatus.expiresAt || !GOOGLE_CLIENT_ID) return;
-    const expiresAtMs = new Date(googleStatus.expiresAt).getTime();
-    let flipTimer: ReturnType<typeof setTimeout> | undefined;
-    const renewTimer = setTimeout(() => {
-      void googleSession.current
-        .authorize(GOOGLE_CLIENT_ID, resolveGoogleScopes(GOOGLE_SENSITIVE_ENABLED), { silent: true })
-        .catch(() => null)
-        .then(() => {
-          setGoogleStatus(googleSession.current.status());
-          flipTimer = setTimeout(
-            () => setGoogleStatus(googleSession.current.status()),
-            Math.max(25, expiresAtMs - Date.now() - 30_000 + 25)
-          );
-        });
-    }, Math.max(1_000, expiresAtMs - Date.now() - 60_000));
-    return () => {
-      clearTimeout(renewTimer);
-      if (flipTimer !== undefined) clearTimeout(flipTimer);
-    };
-  }, [googleStatus.expiresAt]);
-
-  const connectGoogle = useCallback(async () => {
-    if (!GOOGLE_CLIENT_ID || googleBusy) return;
-    setGoogleBusy(true);
-    try {
-      setGoogleStatus(await googleSession.current.authorize(GOOGLE_CLIENT_ID, resolveGoogleScopes(GOOGLE_SENSITIVE_ENABLED)));
-      notice(GOOGLE_SENSITIVE_ENABLED
-        ? t`Google connected. The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events.`
-        : t`Google connected. The agent can now create Docs, Sheets, and Slides and edit the ones it creates.`);
-    } catch (error) {
-      notice(error instanceof Error ? error.message : t`Google authorization failed.`, "error");
-    } finally {
-      setGoogleBusy(false);
-    }
-  }, [googleBusy, notice]);
-
-  const disconnectGoogle = useCallback(async () => {
-    if (googleBusy) return;
-    setGoogleBusy(true);
-    try {
-      setGoogleStatus(await googleSession.current.revoke());
-      notice(t`Google access revoked for this tab.`);
-    } catch (error) {
-      setGoogleStatus(googleSession.current.status());
-      notice(error instanceof Error ? error.message : t`Google revocation failed.`, "error");
-    } finally {
-      setGoogleBusy(false);
-    }
-  }, [googleBusy, notice]);
-
   const revertWrite = useCallback((item: ChatItem) => {
     void swarm.revertWrite(swarm.selectedThreadId, item.id);
   }, [swarm]);
@@ -812,174 +211,6 @@ export function ChatPage() {
     const content = await swarm.workspaceFor(swarm.selectedThreadId).readFile(path);
     setViewer({ path, content });
   }, [swarm]);
-
-  const pinStorage = useCallback(async () => {
-    if (pinBusy) return;
-    setPinBusy(true);
-    try {
-      const granted = await requestPersistentStorage();
-      setStorageStatus(await inspectBrowserStorage());
-      setPinNote(granted
-        ? t`Done — this browser will keep your data safe.`
-        : t`The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety.`);
-    } finally {
-      setPinBusy(false);
-    }
-  }, [pinBusy]);
-
-  const backupWorkspace = useCallback(async () => {
-    if (backupBusy) return;
-    setBackupBusy(true);
-    try {
-      const workspace = swarm.workspaceFor(swarm.selectedThreadId);
-      const paths = (await workspace.listFiles()).filter((path) => !isProtectedAgentPath(path));
-      const entries = await Promise.all(paths.map(async (path) => ({
-        path,
-        content: await workspace.readFile(path)
-      })));
-      const bytes = createZipArchive(entries);
-      const copy = new Uint8Array(bytes.byteLength);
-      copy.set(bytes);
-      const url = URL.createObjectURL(new Blob([copy.buffer], { type: "application/zip" }));
-      const link = document.createElement("a");
-      link.href = url;
-      const stampDate = new Date();
-      const stamp = [
-        stampDate.getFullYear(),
-        String(stampDate.getMonth() + 1).padStart(2, "0"),
-        String(stampDate.getDate()).padStart(2, "0")
-      ].join("-");
-      link.download = `wasmhatch-backup-${stamp}.zip`;
-      link.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    } catch (error) {
-      notice(error instanceof Error ? error.message : t`The backup could not be created.`, "error");
-    } finally {
-      setBackupBusy(false);
-    }
-  }, [backupBusy, notice, swarm]);
-
-  const downloadFile = useCallback(async (path: string, content: string) => {
-    const ext = path.split(".").pop() ?? "";
-    const mimeMap: Record<string, string> = {
-      md: "text/markdown",
-      csv: "text/csv",
-      json: "application/json",
-      txt: "text/plain",
-      html: "text/html",
-      css: "text/css",
-      js: "text/javascript",
-      ts: "text/typescript",
-      tsx: "text/typescript",
-      py: "text/x-python",
-      sh: "text/x-shellscript",
-      yaml: "text/yaml",
-      yml: "text/yaml",
-    };
-    const mimeType = mimeMap[ext] ?? "text/plain";
-    const bytes = new TextEncoder().encode(content);
-    const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = path.split("/").pop() ?? path;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
-  }, []);
-
-  const addTicket = useCallback(async () => {
-    const title = ticketDraft.trim();
-    if (!title) return;
-    setTicketDraft("");
-    try {
-      await swarm.tickets.create({ title, createdBy: "user" });
-    } catch (error) {
-      notice(error instanceof Error ? error.message : t`The ticket could not be created.`, "error");
-    }
-  }, [notice, swarm, ticketDraft]);
-
-  const connectMcp = useCallback(async (serverId: string) => {
-    if (mcpBusy) return;
-    setMcpBusy(serverId);
-    try {
-      const url = mcpUrls[serverId];
-      const token = mcpTokens[serverId]?.trim();
-      const toolCount = await swarm.connectMcp(serverId, { url, bearerToken: token || undefined });
-      notice(plural(toolCount, {
-        one: "MCP server connected — # tool available to every hatchling.",
-        other: "MCP server connected — # tools available to every hatchling."
-      }));
-    } catch (error) {
-      notice(error instanceof Error ? error.message : t`MCP connection failed.`, "error");
-    } finally {
-      setMcpBusy(null);
-    }
-  }, [mcpBusy, mcpTokens, mcpUrls, notice, swarm]);
-
-  const journal = swarm.runJournal(selectedId);
-  const exportJournal = () => {
-    const result = swarm.exportRunJournal(selectedId);
-    if (!result) return;
-    const url = URL.createObjectURL(new Blob([result.json], { type: "application/json" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = result.fileName;
-    link.click();
-    URL.revokeObjectURL(url);
-    notice(t`Run journal exported.`);
-  };
-
-  const activePermission = permissionQueue[0];
-  const providerDef = provider === "builtin" ? null : getCloudProvider(provider);
-  const modelChoices = providerDef?.models ?? [];
-  const curatedModel = modelChoices.some((choice) => choice.value === model);
-  const tickets = swarm.tickets.list();
-  const mcpStatuses = swarm.mcpStatus();
-  const threadNames = useMemo(() => {
-    const names = new Map<string, string>();
-    for (const state of threads) names.set(state.thread.id, state.thread.name);
-    return names;
-  }, [threads]);
-
-  const officeCharacters: OfficeCharacter[] = threads.map((state) => ({
-    id: state.thread.id,
-    name: state.thread.name,
-    species: state.thread.species,
-    mood: state.mood,
-    running: state.running,
-    scheduled: state.thread.schedule.enabled,
-    selected: state.thread.id === selectedId
-  }));
-
-  const selectedSchedule = selected?.thread.schedule;
-
-  const activePick = pickQueue[0];
-  const declinePick = () => {
-    activePick?.resolve(null);
-    setPickQueue((queue) => queue.slice(1));
-  };
-  const chooseFilesForPick = async () => {
-    if (!activePick || pickerBusy) return;
-    setPickerBusy(true);
-    try {
-      const token = await googleSession.current.credentialProvider().getToken();
-      const files = await openDriveFilePicker({
-        accessToken: token,
-        apiKey: GOOGLE_PICKER_API_KEY,
-        appId: GOOGLE_PICKER_APP_ID || undefined,
-        title: t`Hand files to WasmHatch`
-      });
-      activePick.resolve(files);
-      setPickQueue((queue) => queue.slice(1));
-      notice(files?.length
-        ? plural(files.length, { one: "Handed # Google file to the agent.", other: "Handed # Google files to the agent." })
-        : t`File handover cancelled — nothing was shared.`);
-    } catch (error) {
-      // Keep the card so the user can retry or decline explicitly.
-      notice(error instanceof Error ? error.message : t`The Google Picker could not be opened.`, "error");
-    } finally {
-      setPickerBusy(false);
-    }
-  };
 
   return (
     <div className="fresh chat-shell">
@@ -1016,926 +247,68 @@ export function ChatPage() {
       </header>
 
       <div className={`chat-columns${columns.left ? " has-left" : ""}${columns.right ? " has-right" : ""}`}>
-        <main className="chat-main">
-          <div className="chat-transcript" ref={listRef}>
-            {/* Screen-reader announcements for tool-chip state transitions */}
-            <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
-              {toolAnnouncement}
-            </div>
-            {items.length === 0 && (
-              <div className="chat-empty">
-                <h1><Trans>What do you want to get done?</Trans></h1>
-                <p>
-                  <Trans>
-                    Ask in your own words — it fixes spreadsheets, writes documents, and builds
-                    reports right here. Every change is shown as it happens, and undo is one click.
-                    Prefer to approve things first? Switch to Careful in the sidebar.
-                  </Trans>
-                </p>
-                <button className="button" type="button" onClick={() => { void loadSamples(); }}>
-                  <Trans>Add a sample spreadsheet</Trans>
-                </button>
-              </div>
-            )}
-            {items.map((item) => {
-              if (item.kind === "user") return <div key={item.id} className="chat-bubble chat-user">{item.text}</div>;
-              if (item.kind === "assistant") {
-                return (
-                  <div key={item.id} className={item.streaming ? "chat-bubble chat-assistant chat-streaming" : "chat-bubble chat-assistant"}>
-                    <AssistantMarkdown text={item.text} />
-                  </div>
-                );
-              }
-              if (item.kind === "write" && item.write) {
-                return (
-                  <div key={item.id} className={item.write.reverted ? "chat-write chat-write-reverted" : "chat-write"}>
-                    <details>
-                      <summary>
-                        {item.text}
-                        {item.write.reverted ? ` — ${t`reverted`}` : ""}
-                        <span className="chat-write-hint"> · <Trans>view diff</Trans></span>
-                      </summary>
-                      <pre className="chat-diff">
-                        {item.write.diff.split("\n").map((line, index) => (
-                          <span
-                            key={index}
-                            className={line.startsWith("+") ? "diff-add" : line.startsWith("-") ? "diff-remove" : undefined}
-                          >
-                            {line}
-                            {"\n"}
-                          </span>
-                        ))}
-                      </pre>
-                    </details>
-                    {!item.write.creates && !item.write.reverted && (
-                      <button className="button button-quiet" type="button" onClick={() => { revertWrite(item); }}>
-                        <Trans>Revert</Trans>
-                      </button>
-                    )}
-                  </div>
-                );
-              }
-              if (item.kind === "tool") {
-                return (
-                  <div key={item.id} className={`chat-tool chat-tool-${item.toolState ?? "running"}`}>
-                    <span className="chat-tool-name">{item.toolName}</span>
-                    <span>{item.text}</span>
-                    <span className="chat-tool-state">
-                      {item.toolState === "running" ? t`running` : item.toolState === "error" ? t`failed` : t`done`}
-                    </span>
-                  </div>
-                );
-              }
-              if (item.kind === "sources" && item.sources?.length) {
-                return (
-                  <div key={item.id} className="chat-sources">
-                    <span><Trans>Sources:</Trans></span>
-                    {item.sources.map((source, index) => (
-                      <a key={index} href={source.url} target="_blank" rel="noreferrer noopener">{source.title}</a>
-                    ))}
-                  </div>
-                );
-              }
-              return (
-                <div key={item.id} className={item.tone === "error" ? "chat-notice chat-notice-error" : "chat-notice"}>
-                  {item.text}
-                </div>
-              );
-            })}
-
-            {activePermission && (
-              <section className="chat-permission" aria-label={t`Write approval required`}>
-                <h2>
-                  {activePermission.request.creates
-                    ? t`Create ${activePermission.request.path}`
-                    : t`Update ${activePermission.request.path}`}
-                </h2>
-                <p className="chat-permission-meta">
-                  {activePermission.request.beforeBytes.toLocaleString()} → {activePermission.request.afterBytes.toLocaleString()}{" "}
-                  <Trans>bytes. Nothing is written until you decide.</Trans>
-                </p>
-                <pre className="chat-diff">
-                  {activePermission.request.diff.split("\n").map((line, index) => (
-                    <span
-                      key={index}
-                      className={line.startsWith("+") ? "diff-add" : line.startsWith("-") ? "diff-remove" : undefined}
-                    >
-                      {line}
-                      {"\n"}
-                    </span>
-                  ))}
-                </pre>
-                <div className="chat-permission-actions">
-                  <button className="button button-primary" type="button" onClick={() => decidePermission("allow-once")}>
-                    <Trans>Allow once</Trans>
-                  </button>
-                  <button className="button" type="button" onClick={() => decidePermission("always-allow")}>
-                    <Trans>Always allow this file</Trans>
-                  </button>
-                  <button className="button button-quiet" type="button" onClick={() => decidePermission("reject")}>
-                    <Trans>Reject</Trans>
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {activePick && (
-              <section className="chat-permission" aria-label={t`Google file handover requested`}>
-                <h2><Trans>Hand Google Drive files to the agent?</Trans></h2>
-                <p className="chat-permission-meta">
-                  {activePick.reason
-                    ? activePick.reason
-                    : t`The agent asked for existing Google files it cannot see on its own.`}
-                </p>
-                <p className="chat-permission-meta">
-                  <Trans>Google's own picker opens next — only the files you choose there are shared.</Trans>
-                </p>
-                <div className="chat-permission-actions">
-                  <button className="button button-primary" type="button" disabled={pickerBusy} onClick={() => { void chooseFilesForPick(); }}>
-                    {pickerBusy ? t`Opening…` : t`Choose files…`}
-                  </button>
-                  <button className="button button-quiet" type="button" disabled={pickerBusy} onClick={declinePick}>
-                    <Trans>Decline</Trans>
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {portablePreview && (() => {
-              const manifest = portablePreview.pkg.manifest;
-              const capabilities = summarizeRequestedCapabilities(manifest.permissions.tools);
-              return (
-                <section className="chat-permission" aria-label={t`Portable agent preview`}>
-                  <h2>
-                    {portablePreview.action === "publish"
-                      ? t`Publish “${manifest.name}”?`
-                      : t`Hatch “${manifest.name}”?`}
-                  </h2>
-                  <p className="chat-permission-meta">
-                    {manifest.id}@{manifest.version} · {manifest.license} · {portablePreview.source}
-                  </p>
-                  <p className="chat-permission-meta">{manifest.summary}</p>
-                  <p className="chat-permission-meta">
-                    {t`${manifest.files.length} files:`}{" "}
-                    {manifest.files.slice(0, 8).map((file) => file.path).join(", ")}
-                    {manifest.files.length > 8 ? "…" : ""}
-                  </p>
-                  <p className="chat-permission-meta">
-                    {capabilities.known.length
-                      ? t`Requested capabilities: ${capabilities.known.join(", ")}`
-                      : t`Requested capabilities: none — it can only talk.`}
-                    {capabilities.unknown.length > 0 && ` ${t`Unrecognized requests (granted nothing): ${capabilities.unknown.join(", ")}`}`}
-                  </p>
-                  <p className="chat-permission-meta">
-                    <Trans>Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available.</Trans>
-                  </p>
-                  <div className="chat-permission-actions">
-                    <button className="button button-primary" type="button" disabled={portableBusy} onClick={() => { void confirmPortablePreview(); }}>
-                      {portablePreview.action === "publish"
-                        ? (portableBusy ? t`Publishing…` : t`Publish it`)
-                        : (portableBusy ? t`Hatching…` : t`Hatch it`)}
-                    </button>
-                    <button className="button button-quiet" type="button" disabled={portableBusy} onClick={() => setPortablePreview(null)}>
-                      <Trans>Cancel</Trans>
-                    </button>
-                  </div>
-                </section>
-              );
-            })()}
-          </div>
-
-          <div className="chat-composer">
-            <textarea
-              aria-label={t`Message the agent`}
-              placeholder={selected ? t`Ask ${selected.thread.name} for the outcome you need…` : t`Describe the outcome you need…`}
-              value={input}
-              rows={3}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void send();
-                }
-              }}
-            />
-            {running
-              ? <button className="button" type="button" onClick={stop}><Trans>Stop</Trans></button>
-              : <button className="button button-primary" type="button" disabled={!input.trim()} onClick={() => { void send(); }}><Trans>Send</Trans></button>}
-          </div>
-        </main>
+        <ChatTranscript
+          items={items}
+          selected={selected}
+          running={running}
+          input={input}
+          onInputChange={setInput}
+          onSend={send}
+          onStop={stop}
+          onLoadSamples={loadSamples}
+          onRevertWrite={revertWrite}
+          permissionQueue={permissionQueue}
+          onDecidePermission={decidePermission}
+          pickQueue={google.pickQueue}
+          activePick={google.activePick}
+          pickerBusy={google.pickerBusy}
+          onChooseFilesForPick={google.chooseFilesForPick}
+          onDeclinePick={google.declinePick}
+          portablePreview={portable.portablePreview}
+          portableBusy={portable.portableBusy}
+          onConfirmPortablePreview={portable.confirmPortablePreview}
+          onDismissPortablePreview={portable.dismissPortablePreview}
+        />
 
         {columns.left && (
-        <aside className="chat-side chat-side-left">
-          <section className="chat-panel">
-            <h2><Trans>Hatchlings</Trans></h2>
-            <HatchlingOffice characters={officeCharacters} onSelect={(id) => swarm.select(id)} />
-            <ul className="hatchling-list">
-              {threads.map((state) => (
-                <li key={state.thread.id}>
-                  <button
-                    type="button"
-                    className={state.thread.id === selectedId ? "hatchling-row hatchling-row-selected" : "hatchling-row"}
-                    onClick={() => swarm.select(state.thread.id)}
-                  >
-                    <span className={`hatchling-dot hatchling-dot-${state.running ? "running" : state.mood}`} aria-hidden="true" />
-                    <span className="hatchling-name">{state.thread.name}</span>
-                    <span className="hatchling-status">{hatchlingStatusLine(state, now)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="hatchling-actions">
-              {threads.length < MAX_HATCHLINGS && (
-                <button
-                  className="button"
-                  type="button"
-                  onClick={() => { void swarm.hatch().then((id) => swarm.select(id)); }}
-                >
-                  <Trans>Hatch a new one</Trans>
-                </button>
-              )}
-              <label className="chat-remember">
-                <input
-                  type="checkbox"
-                  checked={swarm.isGloballyPaused()}
-                  onChange={(event) => swarm.setGlobalPause(event.target.checked)}
-                />
-                <span><Trans>Pause all auto work</Trans></span>
-              </label>
-            </div>
-            {selected && selectedSchedule && (
-              <div className="hatchling-config">
-                <label className="chat-field">
-                  <span><Trans>Name</Trans></span>
-                  <input
-                    type="text"
-                    value={selected.thread.name}
-                    maxLength={24}
-                    onChange={(event) => { void swarm.rename(selectedId, event.target.value); }}
-                  />
-                </label>
-                <label className="chat-remember">
-                  <input
-                    type="checkbox"
-                    checked={selectedSchedule.enabled}
-                    onChange={(event) => { void swarm.setSchedule(selectedId, { enabled: event.target.checked }); }}
-                  />
-                  <span><Trans>Auto work while this tab is open</Trans></span>
-                </label>
-                {selectedSchedule.enabled && (
-                  <>
-                    <label className="chat-field">
-                      <span><Trans>Every</Trans></span>
-                      <select
-                        value={selectedSchedule.intervalMinutes}
-                        onChange={(event) => { void swarm.setSchedule(selectedId, { intervalMinutes: Number(event.target.value) }); }}
-                      >
-                        {AUTO_WORK_INTERVALS.map((minutes) => (
-                          <option key={minutes} value={minutes}>{t`${minutes} min`}</option>
-                        ))}
-                        {!AUTO_WORK_INTERVALS.includes(selectedSchedule.intervalMinutes as typeof AUTO_WORK_INTERVALS[number]) && (
-                          <option value={selectedSchedule.intervalMinutes}>{t`${selectedSchedule.intervalMinutes} min`}</option>
-                        )}
-                      </select>
-                    </label>
-                    <label className="chat-field">
-                      <span><Trans>Each run</Trans></span>
-                      <textarea
-                        rows={3}
-                        value={selectedSchedule.prompt}
-                        maxLength={SCHEDULE_LIMITS.maxPromptChars}
-                        onChange={(event) => { void swarm.setSchedule(selectedId, { prompt: event.target.value }); }}
-                      />
-                    </label>
-                    <p className="chat-hint">
-                      <Trans>{selected.runsLeft} of {selectedSchedule.maxAutoRuns} auto runs left.</Trans>{" "}
-                      <button
-                        className="chat-linklike"
-                        type="button"
-                        onClick={() => { void swarm.resetScheduleBudget(selectedId); }}
-                      >
-                        <Trans>Reset budget</Trans>
-                      </button>
-                    </p>
-                    {selected.autoSkipNote && <p className="chat-hint">{selected.autoSkipNote}</p>}
-                    <p className="chat-hint">
-                      <Trans>
-                        Runs only while this tab is open, in Fast mode, with its own token budget — it stops
-                        itself after repeated failures.
-                      </Trans>
-                    </p>
-                  </>
-                )}
-                {selectedId !== MAIN_THREAD_ID && (
-                  <button
-                    className="button button-quiet"
-                    type="button"
-                    disabled={running}
-                    onClick={() => {
-                      if (window.confirm(t`Remove ${selected.thread.name}? Its files and conversation are deleted (the shared ticket board stays).`)) {
-                        void swarm.removeHatchling(selectedId);
-                      }
-                    }}
-                  >
-                    <Trans>Remove this hatchling</Trans>
-                  </button>
-                )}
-              </div>
-            )}
-          </section>
-
-          <section className="chat-panel">
-            <h2><Trans>Tickets</Trans></h2>
-            <div className="ticket-add">
-              <input
-                type="text"
-                aria-label={t`New ticket title`}
-                placeholder={t`Queue a piece of work…`}
-                value={ticketDraft}
-                onChange={(event) => setTicketDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    void addTicket();
-                  }
-                }}
-              />
-              <button className="button" type="button" disabled={!ticketDraft.trim()} onClick={() => { void addTicket(); }}>
-                <Trans>Add</Trans>
-              </button>
-            </div>
-            {tickets.length === 0
-              ? <p className="chat-hint"><Trans>The shared work queue is empty. Add tickets here or let hatchlings queue their own follow-ups.</Trans></p>
-              : (
-                <ul className="ticket-list">
-                  {tickets.map((ticket) => (
-                    <li key={ticket.id} className={`ticket ticket-${ticket.status}`}>
-                      <span className={`ticket-chip ticket-chip-${ticket.status}`}>{ticketStatusLabel(ticket.status)}</span>
-                      <span className="ticket-title">{ticket.title}</span>
-                      {ticket.assignee && (
-                        <span className="ticket-assignee">{threadNames.get(ticket.assignee) ?? ticket.assignee}</span>
-                      )}
-                      {ticket.note && <span className="ticket-note">{ticket.note}</span>}
-                      <span className="ticket-actions">
-                        {ticket.status !== "done" && (
-                          <button
-                            className="chat-linklike"
-                            type="button"
-                            onClick={() => { void swarm.tickets.update(ticket.id, { status: "done" }); }}
-                          >
-                            <Trans>Done</Trans>
-                          </button>
-                        )}
-                        {ticket.status === "done" && (
-                          <button
-                            className="chat-linklike"
-                            type="button"
-                            onClick={() => { void swarm.tickets.update(ticket.id, { status: "todo", assignee: null }); }}
-                          >
-                            <Trans>Reopen</Trans>
-                          </button>
-                        )}
-                        <button
-                          className="chat-linklike"
-                          type="button"
-                          onClick={() => { void swarm.tickets.remove(ticket.id); }}
-                        >
-                          <Trans>Delete</Trans>
-                        </button>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-          </section>
-        </aside>
+          <TeamSidebar
+            swarm={swarm}
+            threads={threads}
+            selectedId={selectedId}
+            selected={selected}
+            onNotice={notice}
+          />
         )}
 
         {columns.right && (
-        <aside className="chat-side chat-side-right">
-          <section className="chat-panel">
-            <h2><Trans>Assistant</Trans></h2>
-            <label className="chat-field">
-              <span><Trans>Language</Trans></span>
-              <select
-                value={langPref}
-                onChange={(event) => {
-                  const next = event.target.value;
-                  setLangPref(next);
-                  void setLocalePreference(next);
-                }}
-              >
-                <option value={AUTO_LOCALE}>{t`Auto — match this browser`}</option>
-                {UI_LOCALES.map((locale) => (
-                  // Endonyms on purpose: every reader can find their own language.
-                  <option key={locale.code} value={locale.code}>{locale.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="chat-field">
-              <span><Trans>Autonomy</Trans></span>
-              <select
-                value={writeMode}
-                onChange={(event) => setWriteMode(event.target.value as WritePolicy)}
-              >
-                <option value="autonomous">{t`Fast — just does it (undo anytime)`}</option>
-                <option value="careful">{t`Careful — asks before saving`}</option>
-              </select>
-            </label>
-            <label className="chat-field">
-              <span><Trans>Provider</Trans></span>
-              <select
-                value={provider}
-                onChange={(event) => switchProvider(event.target.value as ChatProviderId)}
-              >
-                <option value="builtin">
-                  {t`Built into Chrome — free, no key`}{builtinAvailability === "available" ? "" : ` (${builtinAvailability})`}
-                </option>
-                {CLOUD_PROVIDERS.map((entry) => (
-                  <option key={entry.id} value={entry.id}>{entry.label}</option>
-                ))}
-              </select>
-            </label>
-            {providerDef && (
-              <>
-                {!providerDef.keyless && (
-                  <>
-                    <label className="chat-field">
-                      <span><Trans>API key</Trans></span>
-                      <input
-                        type="password"
-                        autoComplete="off"
-                        value={apiKey}
-                        placeholder={providerDef.keyPlaceholder}
-                        onChange={(event) => setApiKey(event.target.value)}
-                        aria-describedby="key-storage-hint"
-                      />
-                    </label>
-                    <label className="chat-remember">
-                      <input
-                        type="checkbox"
-                        checked={rememberKey}
-                        onChange={(event) => setRememberKey(event.target.checked)}
-                        aria-describedby="key-storage-hint"
-                      />
-                      <span><Trans>Remember on this device</Trans></span>
-                    </label>
-                  </>
-                )}
-                <label className="chat-field">
-                  <span><Trans>Model</Trans></span>
-                  <select
-                    value={curatedModel ? model : CUSTOM_MODEL}
-                    onChange={(event) => {
-                      const next = event.target.value;
-                      setModel(next === CUSTOM_MODEL ? "" : next);
-                    }}
-                  >
-                    {modelChoices.map((choice) => (
-                      <option key={choice.value} value={choice.value}>{choice.label}</option>
-                    ))}
-                    <option value={CUSTOM_MODEL}>{t`Custom model ID…`}</option>
-                  </select>
-                </label>
-                {!curatedModel && (
-                  <label className="chat-field">
-                    <span><Trans>Custom model ID</Trans></span>
-                    <input
-                      type="text"
-                      value={model}
-                      placeholder={providerDef.defaultModel}
-                      onChange={(event) => setModel(event.target.value)}
-                    />
-                  </label>
-                )}
-                {providerDef.webSearch && (
-                  <label className="chat-remember">
-                    <input
-                      type="checkbox"
-                      checked={webSearch}
-                      onChange={(event) => setWebSearch(event.target.checked)}
-                    />
-                    <span><Trans>Web search</Trans></span>
-                  </label>
-                )}
-                {providerDef.webSearch && webSearch && (
-                  <p className="chat-hint">
-                    <Trans>
-                      The model can search the web through {providerDef.host}. Searches are billed by your
-                      provider alongside tokens; untick to turn this off.
-                    </Trans>
-                  </p>
-                )}
-                {providerDef.keyless ? (
-                  <p className="chat-hint">
-                    <Trans>
-                      No key needed — this talks to Ollama on your own computer. Start Ollama with this site
-                      allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list).
-                    </Trans>
-                  </p>
-                ) : (
-                  <p className="chat-hint" id="key-storage-hint">
-                    <Trans>Your key goes only to {providerDef.host} — nowhere else.</Trans>{" "}
-                    {rememberKey
-                      ? t`It's saved in this browser until you untick the box.`
-                      : t`Right now it's kept just for this tab and gone when the tab closes.`}
-                  </p>
-                )}
-              </>
-            )}
-            {provider === "builtin" && builtinAvailability !== "available" && (
-              <p className="chat-hint">
-                <Trans>On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key.</Trans>
-              </p>
-            )}
-            {provider === "builtin" && !PROMPT_API_LANGUAGES.includes(activeLocale().split("-")[0]) && (
-              <p className="chat-hint">
-                <Trans>The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language.</Trans>
-              </p>
-            )}
-          </section>
-
-          <section className="chat-panel">
-            <h2><Trans>MCP servers</Trans></h2>
-            {mcpStatuses.map((status) => (
-              <div key={status.server.id} className="mcp-server">
-                <p className="mcp-server-head">
-                  <span className="mcp-server-label">{status.server.label}</span>
-                  <span className={status.connected ? "mcp-state mcp-state-on" : "mcp-state"}>
-                    {status.connected
-                      ? plural(status.toolCount, { one: "connected · # tool", other: "connected · # tools" })
-                      : t`off`}
-                  </span>
-                </p>
-                {status.server.loopback && (
-                  <label className="chat-field">
-                    <span><Trans>URL (this machine only)</Trans></span>
-                    <input
-                      type="text"
-                      value={mcpUrls[status.server.id] ?? status.url}
-                      placeholder="http://localhost:3001/mcp"
-                      onChange={(event) => setMcpUrls((current) => ({ ...current, [status.server.id]: event.target.value }))}
-                    />
-                  </label>
-                )}
-                <label className="chat-field">
-                  <span><Trans>Access token (optional)</Trans></span>
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={mcpTokens[status.server.id] ?? ""}
-                    onChange={(event) => setMcpTokens((current) => ({ ...current, [status.server.id]: event.target.value }))}
-                  />
-                </label>
-                {status.connected
-                  ? (
-                    <button className="button button-quiet" type="button" onClick={() => { void swarm.disconnectMcp(status.server.id); }}>
-                      <Trans>Disconnect</Trans>
-                    </button>
-                  )
-                  : (
-                    <button
-                      className="button"
-                      type="button"
-                      disabled={mcpBusy === status.server.id}
-                      onClick={() => { void connectMcp(status.server.id); }}
-                    >
-                      {mcpBusy === status.server.id ? t`Connecting…` : t`Connect`}
-                    </button>
-                  )}
-              </div>
-            ))}
-            <p className="chat-hint">
-              <Trans>
-                Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g.
-                a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require
-                a deployment-time allowlist entry — never a runtime exception.
-              </Trans>
-            </p>
-          </section>
-
-          <section className="chat-panel">
-            <h2>Google</h2>
-            {!GOOGLE_CLIENT_ID && (
-              <p className="chat-hint">
-                <Trans>
-                  Not configured for this deployment. Set VITE_GOOGLE_CLIENT_ID to enable Google Docs, Sheets,
-                  and Slides tools.
-                </Trans>
-              </p>
-            )}
-            {GOOGLE_CLIENT_ID && !googleStatus.connected && (
-              <>
-                <button className="button" type="button" disabled={googleBusy} onClick={() => { void connectGoogle(); }}>
-                  {googleBusy ? t`Connecting…` : t`Connect Google`}
-                </button>
-                <p className="chat-hint">
-                  {GOOGLE_SENSITIVE_ENABLED
-                    ? t`The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied.`
-                    : t`Per-file access only (drive.file): the agent can create Docs, Sheets, and Slides and edit the ones it creates. It cannot browse your existing Drive. The token stays in this tab.`}
-                </p>
-              </>
-            )}
-            {GOOGLE_CLIENT_ID && googleStatus.connected && (
-              <>
-                <p className="chat-hint">
-                  {googleStatus.expiresAt
-                    ? t`Connected until ${new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())}. Docs, Sheets, and Slides tools are active.`
-                    : t`Connected for this session. Docs, Sheets, and Slides tools are active.`}
-                </p>
-                <button className="button button-quiet" type="button" disabled={googleBusy} onClick={() => { void disconnectGoogle(); }}>
-                  <Trans>Disconnect Google</Trans>
-                </button>
-              </>
-            )}
-          </section>
-
-          <section className="chat-panel">
-            <h2>Slack</h2>
-            {!slackConnected && (
-              <>
-                <label className="chat-field">
-                  <span><Trans>Incoming Webhook URL</Trans></span>
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={slackDraft}
-                    placeholder="https://hooks.slack.com/services/…"
-                    onChange={(event) => setSlackDraft(event.target.value)}
-                  />
-                </label>
-                <button className="button" type="button" onClick={connectSlack}>
-                  <Trans>Connect Slack</Trans>
-                </button>
-                <p className="chat-hint">
-                  <Trans>
-                    60-second setup: create an Incoming Webhook in Slack (one channel, one URL) and paste it
-                    here. The agent gains exactly one ability — posting messages to that channel; it reads
-                    nothing from Slack. The URL stays in this tab's memory.
-                  </Trans>
-                </p>
-              </>
-            )}
-            {slackConnected && (
-              <>
-                <p className="chat-hint">
-                  <Trans>Connected. Every hatchling can post to the webhook's channel; each post appears in the transcript.</Trans>
-                </p>
-                <button className="button button-quiet" type="button" onClick={disconnectSlack}>
-                  <Trans>Disconnect Slack</Trans>
-                </button>
-              </>
-            )}
-            {slackTeam === null && (
-              <>
-                <label className="chat-field">
-                  <span><Trans>Bot token (channel tools)</Trans></span>
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={slackTokenDraft}
-                    placeholder="xoxb-…"
-                    onChange={(event) => setSlackTokenDraft(event.target.value)}
-                  />
-                </label>
-                <button className="button" type="button" disabled={slackTokenBusy || !slackTokenDraft.trim()} onClick={() => { void connectSlackToken(); }}>
-                  {slackTokenBusy ? t`Connecting…` : t`Connect bot token`}
-                </button>
-                <p className="chat-hint">
-                  <Trans>
-                    Want more than one channel? Create a tiny Slack app from the ready-made manifest in{" "}
-                    <a href="https://github.com/haya-inc/wasmhatch/blob/main/docs/slack.md" target="_blank" rel="noreferrer">docs/slack.md</a>{" "}
-                    and paste its bot token: the agent can then list public channels and post to any of them.
-                    It still reads no messages. The token stays in this tab's memory.
-                  </Trans>
-                </p>
-              </>
-            )}
-            {slackTeam !== null && (
-              <>
-                <p className="chat-hint">
-                  {t`Connected to “${slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript.`}
-                </p>
-                <button className="button button-quiet" type="button" onClick={disconnectSlackToken}>
-                  <Trans>Disconnect bot token</Trans>
-                </button>
-              </>
-            )}
-          </section>
-
-          <section className="chat-panel">
-            <h2><Trans>Web search &amp; reading</Trans></h2>
-            {!tavilyConnected && (
-              <>
-                <label className="chat-field">
-                  <span><Trans>Tavily API key (web search)</Trans></span>
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={tavilyDraft}
-                    placeholder="tvly-…"
-                    onChange={(event) => setTavilyDraft(event.target.value)}
-                  />
-                </label>
-                <button className="button" type="button" disabled={!tavilyDraft.trim()} onClick={connectTavily}>
-                  <Trans>Connect web search</Trans>
-                </button>
-                <p className="chat-hint">
-                  <Trans>
-                    Claude and OpenRouter search from the provider's own side — this key is the fallback that
-                    gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key
-                    takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory.
-                  </Trans>
-                </p>
-              </>
-            )}
-            {tavilyConnected && (
-              <>
-                <p className="chat-hint">
-                  <Trans>Web search connected. Providers without their own search now get a web_search tool; each search spends your Tavily quota.</Trans>
-                </p>
-                <button className="button button-quiet" type="button" onClick={disconnectTavily}>
-                  <Trans>Disconnect web search</Trans>
-                </button>
-              </>
-            )}
-            {!jinaConnected && (
-              <>
-                <label className="chat-field">
-                  <span><Trans>Jina API key (page reading)</Trans></span>
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={jinaDraft}
-                    placeholder="jina_…"
-                    onChange={(event) => setJinaDraft(event.target.value)}
-                  />
-                </label>
-                <button className="button" type="button" disabled={!jinaDraft.trim()} onClick={connectJina}>
-                  <Trans>Connect page reading</Trans>
-                </button>
-                <p className="chat-hint">
-                  <Trans>
-                    Lets any hatchling read one specific page as clean text with fetch_page — for example a
-                    promising search result. A free key takes a minute at jina.ai. Page URLs go through
-                    r.jina.ai; the key stays in this tab's memory.
-                  </Trans>
-                </p>
-              </>
-            )}
-            {jinaConnected && (
-              <>
-                <p className="chat-hint">
-                  <Trans>Page reading connected. Every hatchling can read a specific URL with fetch_page.</Trans>
-                </p>
-                <button className="button button-quiet" type="button" onClick={disconnectJina}>
-                  <Trans>Disconnect page reading</Trans>
-                </button>
-              </>
-            )}
-          </section>
-
-          <section className="chat-panel">
-            <h2><Trans>Your files</Trans></h2>
-            <p className="chat-hint">{selected ? t`${selected.thread.name}'s workspace — each hatchling keeps its own files.` : ""}</p>
-            {files.length === 0
-              ? <p className="chat-hint"><Trans>Nothing here yet. Add the samples or just ask for something — files it creates appear here.</Trans></p>
-              : (
-                <ul className="chat-files">
-                  {files.map((path) => (
-                    <li key={path}>
-                      <button type="button" onClick={() => { void openFile(path); }}>{path}</button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            {swarm.grantedPaths(selectedId).length > 0 && (
-              <p className="chat-hint"><Trans>Always-allowed this session: {swarm.grantedPaths(selectedId).join(", ")}</Trans></p>
-            )}
-          </section>
-
-          <section className="chat-panel">
-            <h2><Trans>Storage</Trans></h2>
-            {storageStatus && <p className="chat-hint">{storageSummary(storageStatus)}</p>}
-            {storageStatus?.persistence === "best-effort" && storageStatus.persistenceRequestAvailable && (
-              <button className="button" type="button" disabled={pinBusy} onClick={() => { void pinStorage(); }}>
-                {pinBusy ? t`Pinning…` : t`Keep my data safe`}
-              </button>
-            )}
-            {pinNote && <p className="chat-hint">{pinNote}</p>}
-            <button
-              className="button"
-              type="button"
-              disabled={backupBusy || files.length === 0}
-              onClick={() => { void backupWorkspace(); }}
-            >
-              {backupBusy ? t`Preparing…` : t`Back up everything`}
-            </button>
-            <p className="chat-hint">
-              {files.length === 0
-                ? t`Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first.`
-                : t`Downloads this hatchling's files as one ZIP you can keep anywhere.`}
-            </p>
-          </section>
-
-          <section className="chat-panel">
-            <h2><Trans>Run journal</Trans></h2>
-            {journal && journal.events.length > 0
-              ? (
-                <>
-                  <p className="chat-hint">
-                    {t`${journal.events.length} events · ${journal.metrics.toolCalls} tool calls · ${journal.metrics.commits} writes`}
-                  </p>
-                  <ol className="chat-journal">
-                    {journal.events.slice(-5).map((event) => (
-                      <li key={event.sequence}>
-                        <span className="chat-journal-seq">{event.sequence}</span> {event.summary}
-                      </li>
-                    ))}
-                  </ol>
-                  <button className="button" type="button" onClick={exportJournal}>
-                    <Trans>Export JSON</Trans>
-                  </button>
-                </>
-              )
-              : (
-                <p className="chat-hint">
-                  <Trans>
-                    A structured, exportable record of this hatchling's runs — model turns, tool calls, and
-                    writes, with credentials always excluded. It stays in this tab until you export it.
-                  </Trans>
-                </p>
-              )}
-          </section>
-
-          <section className="chat-panel">
-            <h2><Trans>Portable agents</Trans></h2>
-            <label className="button chat-file-button">
-              <Trans>Import a .agent file</Trans>
-              <input
-                type="file"
-                accept=".agent,application/zip"
-                aria-label={t`Import portable agent file`}
-                hidden
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (file) void importPortableFile(file);
-                }}
-              />
-            </label>
-            <button className="button" type="button" disabled={portableBusy || !selected} onClick={() => { void exportPortable(); }}>
-              <Trans>Export this hatchling</Trans>
-            </button>
-            {registryBaseUrl() && (
-              <>
-                <label className="chat-field">
-                  <span><Trans>Registry package URL</Trans></span>
-                  <input
-                    type="text"
-                    value={registryLoadUrl}
-                    placeholder={`${registryBaseUrl()}/v1/agents/…/package`}
-                    onChange={(event) => setRegistryLoadUrl(event.target.value)}
-                  />
-                </label>
-                <button className="button" type="button" disabled={portableBusy || !registryLoadUrl.trim()} onClick={() => { void loadPortableFromRegistry(); }}>
-                  <Trans>Load from the registry</Trans>
-                </button>
-                <label className="chat-field">
-                  <span><Trans>Publish token</Trans></span>
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={registryToken}
-                    onChange={(event) => setRegistryToken(event.target.value)}
-                  />
-                </label>
-                <button className="button" type="button" disabled={portableBusy || !registryToken.trim() || !selected} onClick={() => { void publishPortable(); }}>
-                  <Trans>Publish this hatchling</Trans>
-                </button>
-              </>
-            )}
-            <p className="chat-hint">
-              <Trans>
-                A hatchling travels as one .agent file: its playbook, starter files, and requested
-                capabilities — never credentials or chat history. Importing always shows a preview first,
-                and packaged instructions can never unlock more than you see there.
-              </Trans>
-            </p>
-          </section>
-
-          {viewer && (
-            <section className="chat-panel">
-              <h2>{viewer.path}</h2>
-              <pre className="chat-viewer">{viewer.content}</pre>
-              <button className="button button-quiet" type="button" onClick={() => { void downloadFile(viewer.path, viewer.content); }}><Trans>Download</Trans></button>
-              <button className="button button-quiet" type="button" onClick={() => { void copyToClipboard(); }} disabled={!clipboardAvailable} title={clipboardAvailable ? undefined : t`Clipboard API is not available in this browser.`}>{copied ? t`Copied` : t`Copy`}</button>
-              <button className="button button-quiet" type="button" onClick={() => setViewer(null)}><Trans>Close</Trans></button>
-            </section>
-          )}
-
-          <ArtifactPanel artifact={artifact} onClose={() => setArtifact(null)} />
-        </aside>
+          <ToolsSidebar
+            swarm={swarm}
+            selectedId={selectedId}
+            selected={selected}
+            provider={provider}
+            onSwitchProvider={switchProvider}
+            apiKey={apiKey}
+            onApiKeyChange={setApiKey}
+            model={model}
+            onModelChange={setModel}
+            rememberKey={rememberKey}
+            onRememberKeyChange={setRememberKey}
+            webSearch={webSearch}
+            onWebSearchChange={setWebSearch}
+            writeMode={writeMode}
+            onWriteModeChange={setWriteMode}
+            builtinAvailability={builtinAvailability}
+            google={google}
+            connectors={connectors}
+            portable={portable}
+            files={files}
+            onOpenFile={openFile}
+            viewer={viewer}
+            onCloseViewer={() => setViewer(null)}
+            artifact={artifact}
+            onCloseArtifact={() => setArtifact(null)}
+            onNotice={notice}
+          />
         )}
       </div>
     </div>

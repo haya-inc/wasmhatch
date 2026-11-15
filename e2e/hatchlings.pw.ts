@@ -79,3 +79,43 @@ test("hatches a second worker with its own chat, shared tickets, and swarm-aware
   await page.reload();
   await expect(page.getByLabel("Message the agent")).toHaveAttribute("placeholder", /Ask Momo/);
 });
+
+test("hatches a specialist preset with scoped capabilities and playbook instructions", async ({ page }) => {
+  let instructions = "";
+  let toolNames: string[] = [];
+  await page.route("https://api.openai.com/v1/responses", async (route) => {
+    const body = route.request().postDataJSON() as { instructions?: string; tools?: Array<{ name?: string }> };
+    instructions = String(body.instructions ?? "");
+    toolNames = (body.tools ?? []).map((tool) => String(tool.name ?? ""));
+    const events = [
+      { type: "response.output_text.delta", output_index: 0, delta: "Ready to wrangle CSVs." },
+      {
+        type: "response.completed",
+        response: { status: "completed", output: [{ id: "msg_1", type: "message" }], usage: { input_tokens: 1, output_tokens: 1 } }
+      }
+    ];
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join("")
+    });
+  });
+
+  await page.goto("/?view=chat");
+  await page.getByLabel("Provider").selectOption("openai");
+  await page.getByLabel("API key", { exact: true }).fill("sk-e2e-preset");
+
+  await page.getByRole("button", { name: "+ Data wrangler" }).click();
+  await expect(page.locator(".hatchling-row")).toHaveCount(2);
+  await expect(page.getByLabel("Message the agent")).toHaveAttribute("placeholder", /Ask Mame/);
+  await expect(page.getByText("Scoped tools: workspace.read, workspace.write, workspace.script, tickets")).toBeVisible();
+
+  await page.getByLabel("Message the agent").fill("Check what tools you have.");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.locator(".chat-assistant")).toContainText("Ready to wrangle CSVs.");
+
+  expect(instructions).toContain("You are Mame");
+  expect(instructions).toContain("BEGIN PACKAGED PLAYBOOK");
+  expect(toolNames).toEqual(expect.arrayContaining(["read_file", "write_file", "run_script", "list_tickets"]));
+  expect(toolNames).not.toContain("create_artifact");
+});

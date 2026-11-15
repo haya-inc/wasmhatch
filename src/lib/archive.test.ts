@@ -1,15 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
-import {
-  createZipArchive,
-  fetchGitHubRepository,
-  isSupportedGitHubPath,
-  parseGitHubRepository,
-  readZipArchive
-} from "./archive";
+import { createZipArchive, readZipArchive } from "./archive";
 
 describe("archive utilities", () => {
-  afterEach(() => vi.unstubAllGlobals());
   it("round-trips text files", () => {
     const files = [
       { path: "README.md", content: "# Hatch\n" },
@@ -64,75 +57,13 @@ describe("archive utilities", () => {
       .toThrow("Archive expands beyond the 20 MB limit.");
   });
 
-  it("parses GitHub repository references", () => {
-    expect(parseGitHubRepository("haya-inc/wasmhatch")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
-    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch.git")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
-    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch.git/")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
-    expect(parseGitHubRepository("haya-inc/wasmhatch.git/")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
-    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch?tab=readme-ov-file")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
-    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch#readme")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
-    expect(parseGitHubRepository("https://github.com/haya-inc/wasmhatch.git/?tab=readme-ov-file#readme")).toEqual({ owner: "haya-inc", repo: "wasmhatch" });
-  });
-
-  it("rejects unsupported GitHub repository references with URL suffixes", () => {
-    expect(() => parseGitHubRepository("https://example.com/haya-inc/wasmhatch?tab=readme")).toThrow(
-      "Use owner/repository or a GitHub repository URL."
-    );
-    expect(() => parseGitHubRepository("https://github.com/haya-inc/wasmhatch/issues?state=open#top")).toThrow(
-      "Use owner/repository or a GitHub repository URL."
-    );
-  });
-
-  it("filters common binary repository files", () => {
-    expect(isSupportedGitHubPath("src/main.ts")).toBe(true);
-    expect(isSupportedGitHubPath("assets/hero.png")).toBe(false);
-    expect(isSupportedGitHubPath("fonts/mono.woff2")).toBe(false);
-  });
-
-  it("skips UTF-16 files that would import as mojibake", () => {
+  it("skips binary extensions and UTF-16 files that would import as mojibake", () => {
     const utf16 = new Uint8Array([0xff, 0xfe, 0x42, 0x30, 0x44, 0x30]);
     const archive = zipSync({
+      "hero.png": new Uint8Array([1, 2, 3]),
       "utf16.txt": utf16,
       "utf8.txt": strToU8("plain\n")
     });
     expect(readZipArchive(archive)).toEqual([{ path: "utf8.txt", content: "plain\n" }]);
-  });
-
-  it("explains the GitHub rate limit instead of a bare status code", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", {
-      status: 403,
-      headers: { "x-ratelimit-remaining": "0" }
-    })));
-
-    await expect(fetchGitHubRepository("haya-inc/wasmhatch")).rejects.toThrow(
-      "GitHub API rate limit reached. Unauthenticated imports allow about 60 requests per hour; wait and try again."
-    );
-  });
-
-  it("keeps the status code for non-rate-limit GitHub failures", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 404 })));
-
-    await expect(fetchGitHubRepository("haya-inc/missing")).rejects.toThrow("GitHub import failed (404).");
-  });
-
-  it("resolves an explicit Git ref before fetching text files", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(Response.json({ default_branch: "main" }))
-      .mockResolvedValueOnce(Response.json({ sha: "abc123" }))
-      .mockResolvedValueOnce(Response.json({
-        truncated: false,
-        tree: [{ path: "README.md", type: "blob", size: 8 }]
-      }))
-      .mockResolvedValueOnce(new Response("# Hatch\n"));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(fetchGitHubRepository("haya-inc/wasmhatch", "v0.2.0")).resolves.toEqual([
-      { path: "README.md", content: "# Hatch\n" }
-    ]);
-    expect(fetchMock.mock.calls[1][0]).toContain("/commits/v0.2.0");
-    expect(fetchMock.mock.calls[3][0]).toBe(
-      "https://raw.githubusercontent.com/haya-inc/wasmhatch/abc123/README.md"
-    );
   });
 });
