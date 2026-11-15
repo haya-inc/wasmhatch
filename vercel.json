@@ -16,12 +16,13 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; base-uri 'none'; object-src 'none'; frame-src https://accounts.google.com/gsi/; form-action 'none'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client; style-src 'self' https://accounts.google.com/gsi/style; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://accounts.google.com/gsi/; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'"
+          "value": "default-src 'none'; base-uri 'none'; object-src 'none'; frame-src https://accounts.google.com/gsi/ https://docs.google.com https://drive.google.com; form-action 'none'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client https://apis.google.com; style-src 'self' https://accounts.google.com/gsi/style; img-src 'self' data: https://*.googleusercontent.com https://ssl.gstatic.com; font-src 'self'; connect-src 'self' https://api.anthropic.com https://api.openai.com https://openrouter.ai http://localhost:11434 https://api.github.com https://raw.githubusercontent.com https://sheets.googleapis.com https://www.googleapis.com https://docs.googleapis.com https://slides.googleapis.com https://hooks.slack.com https://slack.com https://api.tavily.com https://r.jina.ai https://apis.google.com https://content.googleapis.com http://localhost:* http://127.0.0.1:* https://accounts.google.com/gsi/; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'"
         },
+        { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" },
         { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" }
       ]
     },
@@ -31,7 +32,8 @@
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'; style-src 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'"
-        }
+        },
+        { "key": "X-Frame-Options", "value": "DENY" }
       ]
     }
   ]

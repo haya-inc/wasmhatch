@@ -47,9 +47,12 @@ header-only directives GitHub Pages could not express.
 
 - The deployment remains static. Adding any serverless function is a
   product decision recorded in ROADMAP.md, never a silent convenience.
-- The header CSP and the meta CSP must stay in sync; both are audited by
-  `scripts/check-built-security.mjs` (meta) and this file's curl check
-  (header). When a connector origin is added, it is added in both places
-  in the same commit.
+- The header CSP and the meta CSP must stay in sync; both `dist/index.html`
+  (meta CSP) and `vercel.json` (header CSP, `X-Frame-Options: DENY`, and
+  `Referrer-Policy: strict-origin-when-cross-origin`) are verified
+  automatically on every `npm run build` by `scripts/check-built-security.mjs`,
+  and smoke-checked post-deploy via this file's `curl` check. When a connector
+  origin is added, it must be added in `vite.config.ts`, `vercel.json`, and
+  `scripts/check-built-security.mjs` in the same commit.
 - `spikes/` and `workers/` are not part of the build output and must never
   be routable on the production domain.
