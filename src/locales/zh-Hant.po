@@ -14,44 +14,44 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: status.toolCount
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "{0, plural, one {connected · # tool} other {connected · # tools}}"
 msgstr "{0, plural, other {已連線 · # 個工具}}"
 
 #. placeholder {0}: files.length
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useGoogleConnector.ts
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, other {已將 # 個 Google 檔案交給助理。}}"
 
 #. placeholder {0}: journal.events.length
 #. placeholder {1}: journal.metrics.toolCalls
 #. placeholder {2}: journal.metrics.commits
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "{0} events · {1} tool calls · {2} writes"
 msgstr "{0} 個事件 · {1} 次工具呼叫 · {2} 次寫入"
 
 #. placeholder {0}: manifest.files.length
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "{0} files:"
 msgstr "{0} 個檔案:"
 
 #. placeholder {0}: selectedSchedule.intervalMinutes
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "{0} min"
 msgstr "{0} 分鐘"
 
 #. placeholder {0}: selected.runsLeft
 #. placeholder {1}: selectedSchedule.maxAutoRuns
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "{0} of {1} auto runs left."
 msgstr "自動執行剩餘 {0}/{1} 次。"
 
 #. placeholder {0}: selected.thread.name
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
 msgstr "{0} 的工作區 — 每隻小雛都有自己的檔案。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "{minutes} min"
 msgstr "{minutes} 分鐘"
 
@@ -71,19 +71,51 @@ msgstr "{name} 正在等待下一輪自動工作"
 msgid "{name} is working"
 msgstr "{name} 正在工作"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "{toolCount, plural, one {MCP server connected — # tool available to every hatchling.} other {MCP server connected — # tools available to every hatchling.}}"
 msgstr "{toolCount, plural, other {已連線 MCP 伺服器 — 每隻小雛都能使用 # 個工具。}}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "{used} used."
 msgstr "已使用 {used}。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "<0>Bring your own key:</0> paste a Claude, OpenAI, or OpenRouter key — it stays in your browser and goes straight to that provider."
+msgstr "<0>使用自己的金鑰：</0>貼上 Claude、OpenAI 或 OpenRouter 金鑰即可 — 金鑰只會留在你的瀏覽器中，直接傳送給該供應商。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "<0>Cleaned</0> sales-export.csv · 214 fixes"
+msgstr "<0>已整理</0> sales-export.csv · 214 處修正"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "<0>Created</0> q3-summary.html — open beside the chat"
+msgstr "<0>已建立</0> q3-summary.html — 已在對話旁開啟"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "<0>Free and open source</0> under Apache-2.0 — audit every line, fork to GitHub Pages in seconds, or help build it."
+msgstr "採用 Apache-2.0 授權<0>免費開源</0> — 每一行程式碼都能親自檢視，幾秒內就能 Fork 到 GitHub Pages，也歡迎一起參與開發。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "<0>Local and free:</0> connect Ollama on your own machine or use Chrome’s built-in AI — no API key at all."
+msgstr "<0>本機執行且免費：</0>連上你電腦裡的 Ollama 或使用 Chrome 內建 AI — 完全不需要 API 金鑰。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "<0>Self-host in 30 seconds:</0> fork on GitHub, enable Pages, done."
+msgstr "<0>30 秒自架完成：</0>在 GitHub 上 Fork，啟用 GitHub Pages，搞定。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "<0>Why is it this fast? There’s no account — and no server.</0> No signup, no password, and nothing sitting between your browser and the tools you connect; because no server registers you, there’s no account of yours here that could ever leak. Open DevTools and check the Network tab yourself."
+msgstr "<0>為什麼這麼快？因為沒有帳號 — 也沒有伺服器。</0>免註冊、免密碼，瀏覽器與你連接的工具之間沒有任何中繼伺服器；正因為沒有伺服器登記你的身分，這裡根本不會有你的帳號資料外洩。打開 DevTools 看看 Network 分頁就能親自驗證。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "60-second setup: create an Incoming Webhook in Slack (one channel, one URL) and paste it here. The agent gains exactly one ability — posting messages to that channel; it reads nothing from Slack. The URL stays in this tab's memory."
 msgstr "60 秒完成設定:在 Slack 建立一個 Incoming Webhook(一個頻道、一個 URL),再把 URL 貼到這裡。助理只會多出一項能力 — 傳訊息到該頻道;不會從 Slack 讀取任何內容。URL 只會留在此分頁的記憶體中。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "60-second Slack setup, cited web search, and loopback MCP servers running on your own machine."
+msgstr "60 秒完成 Slack 設定、附來源引用的網頁搜尋，以及在自己電腦上執行的本機 MCP 伺服器。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "A hatchling travels as one .agent file: its playbook, starter files, and requested capabilities — never credentials or chat history. Importing always shows a preview first, and packaged instructions can never unlock more than you see there."
 msgstr "一隻小雛以一個 .agent 檔案的形式旅行:它的手冊、初始檔案與請求的能力 — 絕不包含憑證或對話紀錄。匯入時一定先顯示預覽,封裝的指示永遠無法解鎖超出預覽所示的內容。"
 
@@ -91,26 +123,26 @@ msgstr "一隻小雛以一個 .agent 檔案的形式旅行:它的手冊、初始
 msgid "A messy sample spreadsheet is ready — ask for a cleanup and watch every change land."
 msgstr "已準備好一份雜亂的範例試算表 — 請它整理看看,親眼看著每個變更完成。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "A structured, exportable record of this hatchling's runs — model turns, tool calls, and writes, with credentials always excluded. It stays in this tab until you export it."
 msgstr "這隻小雛執行過程的結構化可匯出紀錄 — 模型回合、工具呼叫與寫入,一律不含憑證。在你匯出之前,它只會留在此分頁中。"
 
 #. placeholder {0}: result.publisherId
 #. placeholder {1}: result.agentId
 #. placeholder {2}: registryPackageUrl(base, result)
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "Accepted into the registry as {0}/{1} — quarantined until {until}, then public once its checks pass. Until then only your token can fetch it: {2}"
 msgstr "已被註冊庫受理為 {0}/{1} — 隔離至 {until},檢查通過後才會公開。在此之前只有你的權杖能取得它: {2}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Access token (optional)"
 msgstr "存取權杖(選填)"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Add"
 msgstr "新增"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Add a sample spreadsheet"
 msgstr "新增範例試算表"
 
@@ -118,20 +150,20 @@ msgstr "新增範例試算表"
 msgid "Adding a ticket — {title}"
 msgstr "正在新增工單 — {title}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Allow once"
 msgstr "允許一次"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Always allow this file"
 msgstr "一律允許此檔案"
 
 #. placeholder {0}: swarm.grantedPaths(selectedId).join(", ")
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Always-allowed this session: {0}"
 msgstr "本次工作階段一律允許:{0}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "API key"
 msgstr "API 金鑰"
 
@@ -140,75 +172,99 @@ msgid "Appending text to a Google Doc"
 msgstr "正在將文字附加到 Google 文件"
 
 #. placeholder {0}: selected.thread.name
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Ask {0} for the outcome you need…"
 msgstr "告訴 {0} 你想要的成果…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Ask in your own words — it fixes spreadsheets, writes documents, and builds reports right here. Every change is shown as it happens, and undo is one click. Prefer to approve things first? Switch to Careful in the sidebar."
 msgstr "用自己的話提出需求 — 修試算表、寫文件、做報告,都能在這裡完成。每個變更都會即時顯示,復原只要一鍵。想先確認再執行?到側邊欄切換成「謹慎」模式。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Ask Pip for anything…"
+msgstr "請 Pip 幫忙任何事…"
 
 #: src/lib/tool-summary.ts
 msgid "Asking for Google files"
 msgstr "正在請求 Google 檔案"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Assistant"
 msgstr "助理"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Auto — match this browser"
 msgstr "自動 — 跟隨瀏覽器"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Auto budget used up"
 msgstr "自動執行額度已用完"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Auto language"
+msgstr "自動（依瀏覽器設定）"
+
+#: src/components/chat/TeamSidebar.tsx
 msgid "Auto work in progress…"
 msgstr "自動工作進行中…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Auto work on"
 msgstr "自動工作已開啟"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Auto work waiting"
 msgstr "自動工作等待中"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Auto work while this tab is open"
 msgstr "此分頁開啟期間自動工作"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Autonomy"
 msgstr "自主程度"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Back up everything"
 msgstr "全部備份"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Blocked"
 msgstr "受阻"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Bot token (channel tools)"
 msgstr "機器人權杖(頻道工具)"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
+msgid "Build a clean one-page HTML status dashboard from the files in this workspace."
+msgstr "根據這個工作區裡的檔案，製作一份乾淨俐落的單頁 HTML 狀態儀表板。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Build reports and dashboards"
+msgstr "製作報告與儀表板"
+
+#: src/lib/hatchling-presets.ts
+msgid "Builds one-file HTML reports and dashboards."
+msgstr "製作單一檔案即可獨立開啟的 HTML 報告與儀表板。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Built for developers and prosumers tired of maintaining Docker stacks — with a calm, plain-language desk instead of config files."
+msgstr "專為厭倦維護 Docker 環境的開發者與進階使用者打造 — 用白話好懂的清爽工作桌，取代繁瑣的設定檔。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Built into Chrome — free, no key"
 msgstr "Chrome 內建 — 免費、免金鑰"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "bytes. Nothing is written until you decide."
 msgstr "位元組。在你決定之前不會寫入任何內容。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Cancel"
 msgstr "取消"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Careful — asks before saving"
 msgstr "謹慎 — 儲存前先詢問"
 
@@ -220,88 +276,116 @@ msgstr "正在查看 Slack 頻道"
 msgid "Checking the ticket board"
 msgstr "正在查看工單看板"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Checks the shared ticket board on your timer and turns finished notes into single-file HTML dashboards."
+msgstr "依照你設定的計時器檢查共用工單看板，並將完成的筆記整理成單一檔案的 HTML 儀表板。"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Choose files…"
 msgstr "選擇檔案…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
 msgstr "Claude 與 OpenRouter 在供應商端完成搜尋 — 此金鑰是為其餘供應商(Chrome 內建、Ollama、OpenAI)提供 web_search 工具的後備方案。在 tavily.com 一分鐘即可取得免費金鑰。金鑰只會傳送到 api.tavily.com,並且只保存在此分頁的記憶體中。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Clean up this export — normalize regions, deduplicate rows, and check the totals."
+msgstr "幫我整理這份匯出檔 — 統一地區名稱、移除重複列，並核對總計。"
+
+#: src/lib/hatchling-presets.ts
+msgid "Cleans and checks CSV / JSON files with local code."
+msgstr "以本機程式碼清理並檢查 CSV / JSON 檔案。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Clipboard API is not available in this browser."
 msgstr "此瀏覽器不支援剪貼簿 API。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Close"
 msgstr "關閉"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connect"
 msgstr "連線"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connect bot token"
 msgstr "連接機器人權杖"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connect Google"
 msgstr "連線 Google"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Connect Google in a couple of clicks and hand over only the specific files you pick."
+msgstr "點幾下就能連上 Google，而且只交付你親自挑選的指定檔案。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connect page reading"
 msgstr "連接網頁閱讀"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connect Slack"
 msgstr "連接 Slack"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Connect Slack, search, and MCP"
+msgstr "連接 Slack、搜尋與 MCP"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connect web search"
 msgstr "連接網頁搜尋"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connected for this session. Docs, Sheets, and Slides tools are active."
 msgstr "本次工作階段已連線。文件、試算表和簡報工具已啟用。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connected to “{slackTeam}”. Every hatchling can list public channels and post to them; each post appears in the transcript."
 msgstr "已連接「{slackTeam}」。每隻小雛都能列出公開頻道並傳訊息;每則訊息都會顯示在對話中。"
 
 #. placeholder {0}: result.team
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Connected to the Slack workspace “{0}”. Channel tools are active for every hatchling."
 msgstr "已連接 Slack 工作區「{0}」。頻道工具已對每隻小雛生效。"
 
-#. placeholder {0}: new Date(googleStatus.expiresAt).toLocaleTimeString(activeLocale())
-#: src/pages/ChatPage.tsx
+#. placeholder {0}: new Date(google.googleStatus.expiresAt).toLocaleTimeString(activeLocale())
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connected until {0}. Docs, Sheets, and Slides tools are active."
 msgstr "已連線至 {0}。文件、試算表和簡報工具已啟用。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connected. Every hatchling can post to the webhook's channel; each post appears in the transcript."
 msgstr "已連接。每隻小雛都能傳訊息到 webhook 的頻道;每則訊息都會顯示在對話中。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connecting…"
 msgstr "連線中…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Connects every hatchling to tools from an MCP server on your machine (Streamable HTTP), e.g. a stdio server behind a local proxy. Tokens stay in this tab's memory. Remote servers require a deployment-time allowlist entry — never a runtime exception."
 msgstr "將每隻小雛連上你電腦上 MCP 伺服器提供的工具(Streamable HTTP),例如透過本機代理的 stdio 伺服器。權杖只保留在此分頁的記憶體中。遠端伺服器必須在部署時列入許可清單 — 執行期間不接受例外。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Contribute"
+msgstr "參與貢獻"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Copied"
 msgstr "已複製"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Copy"
 msgstr "複製"
 
 #. placeholder {0}: activePermission.request.path
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Create {0}"
 msgstr "建立 {0}"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Create another account and upload files to a vendor server"
+msgstr "還得再辦一個新帳號，把檔案上傳到廠商的伺服器"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
@@ -319,173 +403,238 @@ msgstr "正在建立 Google 簡報 — {title}"
 msgid "Creating an HTML artifact — {title}"
 msgstr "正在建立 HTML 成果 — {title}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Custom model ID"
 msgstr "自訂模型 ID"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Custom model ID…"
 msgstr "自訂模型 ID…"
 
-#: src/pages/ChatPage.tsx
+#: src/lib/hatchling-presets.ts
+msgid "Data wrangler"
+msgstr "資料整理員"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Data wrangler · isolated workspace"
+msgstr "資料整理員 · 獨立工作區"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Decline"
 msgstr "拒絕"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Delete"
 msgstr "刪除"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Describe the outcome you need…"
 msgstr "描述你想要的成果…"
 
-#: src/pages/ChatPage.tsx
+#: src/lib/hatchling-presets.ts
+msgid "Desk runner"
+msgstr "事務協調員"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect"
 msgstr "中斷連線"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect bot token"
 msgstr "中斷機器人權杖"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect Google"
 msgstr "中斷 Google 連線"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect page reading"
 msgstr "中斷網頁閱讀"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect Slack"
 msgstr "中斷 Slack 連接"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect web search"
 msgstr "中斷網頁搜尋"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Doing"
 msgstr "進行中"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "done"
 msgstr "完成"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Done"
 msgstr "完成"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Done — this browser will keep your data safe."
 msgstr "完成 — 這個瀏覽器會妥善保存你的資料。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Done! Download the HTML report, update a Google Sheet, or send highlights to Slack."
+msgstr "完成了！你可以下載 HTML 報告、更新 Google Sheet，或把重點摘要傳到 Slack。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Download"
 msgstr "下載"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
 msgstr "會把這隻小雛的檔案打包成一個 ZIP 下載,存到哪裡都行 — 請先新增檔案。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere."
 msgstr "會把這隻小雛的檔案打包成一個 ZIP 下載,存到哪裡都行。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Draft docs and decks"
+msgstr "草擬文件與簡報"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Drop in a CSV or Excel file; local code transforms the rows accurately and lists every change."
+msgstr "拖入 CSV 或 Excel 檔案，本機程式碼會精準轉換每一列資料，並清楚列出所有變更。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Drop tasks on the board and put a hatchling on a timer while the tab stays open, with a visible run budget, automatic backoff, and one-click pause."
+msgstr "把任務放到看板上，在分頁開啟期間讓小雛按計時器自動執行 — 執行額度清楚可見、失敗時自動退避等待，隨時都能一鍵暫停。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Each change shows its exact diff with one-click undo. Prefer to approve writes first? Switch on Careful mode."
+msgstr "每次變更都會顯示精確差異，並支援一鍵復原。想先確認再寫入檔案？切換到「謹慎」模式即可。"
+
+#: src/components/chat/TeamSidebar.tsx
 msgid "Each run"
 msgstr "每次執行的指示"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Every"
 msgstr "間隔"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Every hatchling owns an isolated workspace and chat thread — or starts from a one-click specialist preset like Data Wrangler or Report Builder."
+msgstr "每隻小雛都擁有獨立的工作區與對話串 — 也能一鍵套用「資料整理員」或「報告製作員」等專職預設範本直接開始。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Every workspace edit records what changed before and after. One click puts your file back the way it was."
+msgstr "工作區裡的每次編輯都會記錄修改前後的內容。按一下就能讓檔案恢復原狀。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Everything is undoable"
+msgstr "所有變更都能復原"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Everything lives in your browser tab — there is no WasmHatch server to upload your files to. Prompts go straight to the provider you chose, or stay 100% on your machine with Ollama or Chrome’s built-in AI."
+msgstr "一切都在你的瀏覽器分頁裡運作 — 根本沒有用來上傳檔案的 WasmHatch 伺服器。提示詞會直接傳給所選供應商，或是搭配 Ollama 與 Chrome 內建 AI，100% 留在你自己的電腦上。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Example conversation"
+msgstr "對話範例"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Export JSON"
 msgstr "匯出 JSON"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Export this hatchling"
 msgstr "匯出這隻小雛"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials."
 msgstr "已把這隻小雛匯出為可攜的 .agent 檔案。裡面是它的手冊、工作區檔案與請求的能力 — 絕不包含憑證。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "failed"
 msgstr "失敗"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Fast — just does it (undo anytime)"
 msgstr "快速 — 直接執行(隨時可復原)"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Fast, and still yours."
+msgstr "輕快俐落，主導權依然在你手裡。"
+
+#: src/components/chat/useGoogleConnector.ts
 msgid "File handover cancelled — nothing was shared."
 msgstr "已取消檔案交付 — 未分享任何內容。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Fix messy spreadsheets"
+msgstr "整理雜亂的試算表"
+
+#: src/components/chat/useGoogleConnector.ts
 msgid "Google access revoked for this tab."
 msgstr "已撤銷此分頁的 Google 存取權。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useGoogleConnector.ts
 msgid "Google authorization failed."
 msgstr "Google 授權失敗。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useGoogleConnector.ts
 msgid "Google connected. The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events."
 msgstr "Google 已連線。助理可以建立文件、試算表和簡報,開啟你以連結分享的檔案,並讀取或新增日曆活動。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useGoogleConnector.ts
 msgid "Google connected. The agent can now create Docs, Sheets, and Slides and edit the ones it creates."
 msgstr "Google 已連線。助理現在可以建立文件、試算表和簡報,並編輯自己建立的檔案。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Google file handover requested"
 msgstr "收到 Google 檔案交付請求"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useGoogleConnector.ts
 msgid "Google revocation failed."
 msgstr "撤銷 Google 存取權失敗。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Google's own picker opens next — only the files you choose there are shared."
 msgstr "接著會開啟 Google 自己的選擇器 — 只有你在那裡選取的檔案才會被分享。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useGoogleConnector.ts
 msgid "Hand files to WasmHatch"
 msgstr "把檔案交給 WasmHatch"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Hand Google Drive files to the agent?"
 msgstr "要把 Google 雲端硬碟的檔案交給助理嗎?"
 
 #. placeholder {0}: manifest.name
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Hatch “{0}”?"
 msgstr "要孵化「{0}」嗎?"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Hatch a new one"
 msgstr "再孵一隻"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Hatch a tiny team in one tab."
+msgstr "在一個分頁裡孵出一支小團隊。"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Hatch it"
 msgstr "孵化"
 
 #. placeholder {0}: portablePreview.pkg.manifest.name
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "Hatched “{0}” from the package. Its playbook and files are in place; it only has the capabilities shown in the preview."
 msgstr "已從套件孵化「{0}」。手冊與檔案已就位;它只擁有預覽中顯示的能力。"
 
 #: src/App.tsx
-msgid "Hatching workspace…"
-msgstr "工作區孵化中…"
+#~ msgid "Hatching workspace…"
+#~ msgstr "工作區孵化中…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Hatching…"
 msgstr "正在孵化…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
+#: src/pages/BusinessLandingPage.tsx
 msgid "Hatchlings"
 msgstr "小雛"
 
@@ -497,35 +646,64 @@ msgstr "隱藏團隊側邊欄"
 msgid "Hide the tools sidebar"
 msgstr "隱藏工具側邊欄"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "How it works"
+msgstr "運作方式"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Import a .agent file"
 msgstr "匯入 .agent 檔案"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Import portable agent file"
 msgstr "匯入可攜代理檔案"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Incoming Webhook URL"
 msgstr "Incoming Webhook URL"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Inspect a hatchling"
+msgstr "查看小雛"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "It gets to work right away. Every tool call and file edit appears live in the conversation — no black box."
+msgstr "立刻動手處理。每次工具呼叫與檔案修改都會即時顯示在對話中 — 絕無黑箱作業。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "It just acts"
+msgstr "不囉嗦，直接動手"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "It's saved in this browser until you untick the box."
 msgstr "在你取消勾選之前,會一直保存在這個瀏覽器裡。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Jina API key (page reading)"
 msgstr "Jina API 金鑰(網頁閱讀)"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Keep an always-on machine patched and running"
+msgstr "得維持一台全天候開機的機器並持續更新修補"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Keep it or undo it"
+msgstr "保留結果或一鍵復原"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Keep my data safe"
 msgstr "保護我的資料"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Keep one focused chat, or hatch up to eight named hatchlings at pixel-art desks — each with its own private workspace, shared ticket board, and shareable <0>.agent</0> package."
+msgstr "你可以專注在單一對話，也可以在像素風工作桌上孵出最多八隻有名字的小雛 — 每隻都有專屬私密工作區、共用工單看板，以及可分享的 <0>.agent</0> 套件。"
+
+#: src/components/chat/ToolsSidebar.tsx
+#: src/pages/BusinessLandingPage.tsx
 msgid "Language"
 msgstr "語言"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Lets any hatchling read one specific page as clean text with fetch_page — for example a promising search result. A free key takes a minute at jina.ai. Page URLs go through r.jina.ai; the key stays in this tab's memory."
 msgstr "讓任何小雛都能用 fetch_page 將特定網頁讀取為乾淨的文字 — 例如一條有希望的搜尋結果。在 jina.ai 一分鐘即可取得免費金鑰。網頁 URL 會經過 r.jina.ai;金鑰只保存在此分頁的記憶體中。"
 
@@ -533,31 +711,43 @@ msgstr "讓任何小雛都能用 fetch_page 將特定網頁讀取為乾淨的文
 msgid "Listing workspace files"
 msgstr "正在列出工作區檔案"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Load from the registry"
 msgstr "從註冊庫載入"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Main desk · everyday partner"
+msgstr "主工作桌 · 日常好搭檔"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Make a one-page HTML status report I can send to the team."
+msgstr "幫我做一份可以直接傳給團隊的單頁 HTML 進度報告。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "MCP connection failed."
 msgstr "MCP 連線失敗。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "MCP servers"
 msgstr "MCP 伺服器"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Meet the hatchlings"
+msgstr "認識小雛們"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Message the agent"
 msgstr "傳訊息給助理"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Model"
 msgstr "模型"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Name"
 msgstr "名稱"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Needs attention"
 msgstr "需要留意"
 
@@ -565,97 +755,157 @@ msgstr "需要留意"
 msgid "New chat"
 msgstr "新對話"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "New ticket title"
 msgstr "新工單標題"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Next auto run any moment"
 msgstr "下一輪自動執行即將開始"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Next auto run in ~{minutes} min"
 msgstr "約 {minutes} 分鐘後進行下一輪自動執行"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "No approval pop-ups slowing every step by default. The assistant does the work and shows exact diffs as it goes."
+msgstr "預設不會每一步都跳出確認視窗打斷節奏。助理會直接完成工作，同時即時顯示清楚的修改差異。"
 
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
 msgstr "還沒有小雛。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "No install, no account"
+msgstr "免安裝、免帳號"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
 msgstr "不需要金鑰 — 這會連到你電腦上的 Ollama。啟動 Ollama 時允許本網站(設定 OLLAMA_ORIGINS),再選擇已下載的模型(ollama list)。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "No setup"
+msgstr "免設定"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "No setup wizard, no manual. Three moments, start to done."
+msgstr "不用設定精靈，也不用翻說明書。從開始到完成只要三步。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Not configured for this deployment. Set VITE_GOOGLE_CLIENT_ID to enable Google Docs, Sheets, and Slides tools."
 msgstr "此部署尚未設定。設定 VITE_GOOGLE_CLIENT_ID 即可啟用 Google 文件、試算表和簡報工具。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Not pinned yet — the browser could clear saved work if this device runs low on space."
 msgstr "尚未固定保存 — 裝置空間不足時,瀏覽器可能會清除已儲存的工作。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Nothing here yet. Add the samples or just ask for something — files it creates appear here."
 msgstr "這裡還沒有東西。新增範例,或直接提出需求 — 它建立的檔案會出現在這裡。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "off"
 msgstr "未連線"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "On it — running a local cleanup script and building your report now."
+msgstr "馬上處理 — 正在本機執行清理腳本，並為你建立報告。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
 msgstr "裝置端模型狀態:{builtinAvailability}。支援的桌面電腦搭配 Chrome 138+ 即可免金鑰執行任務。"
 
+#: src/pages/BusinessLandingPage.tsx
+msgid "One assistant for the busywork."
+msgstr "瑣碎雜務，交給一位助理就夠了。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Open the link — no server, no Docker, no signup. Clean messy spreadsheets with local code, draft Google Docs and Sheets, build one-file HTML reports, or hatch a tiny team of agents right in this tab."
+msgstr "打開連結就能用 — 免伺服器、免 Docker、免註冊。用本機程式碼整理雜亂試算表、草擬 Google Docs 與 Sheets、製作單一檔案 HTML 報告，或直接在這個分頁孵出一支迷你助理團隊。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Open the link."
+msgstr "打開連結。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Open the tab and ask. That’s the whole onboarding."
+msgstr "打開分頁、直接開口。這就是全部的上手流程。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Open WasmHatch"
+msgstr "開啟 WasmHatch"
+
 #: src/App.tsx
-msgid "Opening operator…"
-msgstr "正在開啟操作員…"
+#~ msgid "Opening operator…"
+#~ msgstr "正在開啟操作員…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
 msgstr "正在開啟 WasmHatch…"
 
 #: src/App.tsx
-msgid "Opening your workspace…"
-msgstr "正在開啟你的工作區…"
+#~ msgid "Opening your workspace…"
+#~ msgstr "正在開啟你的工作區…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Opening…"
 msgstr "正在開啟…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
+msgid "Or hatch a specialist:"
+msgstr "或者孵一隻專職小雛："
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Package any hatchling’s playbook and scoped permissions (never your keys) into a shareable <0>.agent</0> file or link, and plug in local MCP servers."
+msgstr "將任何小雛的工作手冊與權限範圍（絕不含你的金鑰）封裝成可分享的 <0>.agent</0> 檔案或連結，並隨時接上本機 MCP 伺服器。"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "封裝的指示被視為不可信內容:它們永遠看不到你的金鑰,只能使用上方顯示的能力。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
 msgstr "網頁閱讀已連接。每隻小雛都能用 fetch_page 讀取特定 URL。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Page reading connected. Hatchlings can now read a specific page with fetch_page."
 msgstr "網頁閱讀已連接。小雛現在可以用 fetch_page 讀取特定網頁。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Page reading disconnected."
 msgstr "網頁閱讀已中斷。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Pause all auto work"
 msgstr "暫停所有自動工作"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Per-file access only (drive.file): the agent can create Docs, Sheets, and Slides and edit the ones it creates. It cannot browse your existing Drive. The token stays in this tab."
 msgstr "僅限個別檔案存取(drive.file):助理可以建立文件、試算表和簡報,並編輯自己建立的檔案,但無法瀏覽你現有的雲端硬碟。權杖只保留在此分頁。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Pin browser storage so your workspaces stay put, export individual hatchlings as <0>.agent</0> files, or download a full ZIP backup in one click."
+msgstr "釘選瀏覽器儲存空間讓工作區穩穩保留，將個別小雛匯出為 <0>.agent</0> 檔案，或一鍵下載完整的 ZIP 備份。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Pinning…"
 msgstr "固定保存中…"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Portable .agent files & local MCP"
+msgstr "可攜式 .agent 檔案與本機 MCP"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Portable agent preview"
 msgstr "可攜代理預覽"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Portable agents"
 msgstr "可攜代理"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Post the Q3 highlights to #ops on Slack and check our local MCP tools."
+msgstr "把 Q3 重點摘要發到 Slack 的 #ops 頻道，並檢查我們的本機 MCP 工具。"
 
 #: src/lib/tool-summary.ts
 msgid "Posting to Slack"
@@ -665,43 +915,55 @@ msgstr "正在傳訊息到 Slack"
 msgid "Posting to Slack — {channel}"
 msgstr "正在傳訊息到 Slack — {channel}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Preparing…"
 msgstr "準備中…"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Primary"
+msgstr "主要"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Privacy"
+msgstr "隱私"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Private by design"
+msgstr "從設計開始守護隱私"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Provider"
 msgstr "供應商"
 
 #. placeholder {0}: manifest.name
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Publish “{0}”?"
 msgstr "要發佈「{0}」嗎?"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Publish it"
 msgstr "發佈"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Publish this hatchling"
 msgstr "發佈這隻小雛"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Publish token"
 msgstr "發佈權杖"
 
 #. placeholder {0}: result.publisherId
 #. placeholder {1}: result.agentId
 #. placeholder {2}: registryPackageUrl(base, result)
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "Published to the registry as {0}/{1}. Immutable package: {2}"
 msgstr "已在註冊庫發佈為 {0}/{1}。不可變套件: {2}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Publishing…"
 msgstr "正在發佈…"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Queue a piece of work…"
 msgstr "排入一項工作…"
 
@@ -713,69 +975,77 @@ msgstr "正在讀取 {path}"
 msgid "Reading a Google Sheet"
 msgstr "正在讀取 Google 試算表"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Registry package URL"
 msgstr "註冊庫套件 URL"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Reject"
 msgstr "拒絕"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Remember on this device"
 msgstr "在這部裝置上記住"
 
 #. placeholder {0}: selected.thread.name
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Remove {0}? Its files and conversation are deleted (the shared ticket board stays)."
 msgstr "要移除 {0} 嗎?它的檔案和對話會被刪除(共用的工單看板會保留)。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Remove this hatchling"
 msgstr "移除這隻小雛"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Reopen"
 msgstr "重新開啟"
 
+#: src/lib/hatchling-presets.ts
+msgid "Report builder"
+msgstr "報告製作員"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Report builder · tab-open auto work"
+msgstr "報告製作員 · 分頁開啟期間自動執行"
+
 #. placeholder {0}: capabilities.known.join(", ")
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Requested capabilities: {0}"
 msgstr "請求的能力: {0}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Requested capabilities: none — it can only talk."
 msgstr "請求的能力: 無 — 它只能聊天。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Reset budget"
 msgstr "重設額度"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Resting"
 msgstr "休息中"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Revert"
 msgstr "復原"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "reverted"
 msgstr "已復原"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Right now it's kept just for this tab and gone when the tab closes."
 msgstr "目前只保留在此分頁,分頁關閉後就會消失。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Run journal"
 msgstr "執行日誌"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Run journal exported."
 msgstr "已匯出執行日誌。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "running"
 msgstr "執行中"
 
@@ -783,7 +1053,15 @@ msgstr "執行中"
 msgid "Running a sandboxed script"
 msgstr "正在沙箱中執行腳本"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
+msgid "Runs in this browser tab with your API key, local Ollama, or Chrome’s built-in AI — no WasmHatch server in between."
+msgstr "使用你的 API 金鑰、本機 Ollama 或 Chrome 內建 AI 在此瀏覽器分頁中執行 — 中間沒有任何 WasmHatch 伺服器。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Runs local cleanup scripts on CSV and JSON files so counts and totals never rely on guesswork."
+msgstr "對 CSV 與 JSON 檔案執行本機清理腳本，筆數與總計全部實際運算，絕不靠猜測。"
+
+#: src/components/chat/TeamSidebar.tsx
 msgid "Runs only while this tab is open, in Fast mode, with its own token budget — it stops itself after repeated failures."
 msgstr "只在此分頁開啟時執行,採用快速模式,並有專屬的用量額度 — 連續失敗後會自行停止。"
 
@@ -791,13 +1069,38 @@ msgstr "只在此分頁開啟時執行,採用快速模式,並有專屬的用量�
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
 msgstr "已把範例試算表加到你的檔案旁邊 — 你的檔案完全沒被動到。"
 
+#: src/pages/BusinessLandingPage.tsx
+msgid "Say what you need"
+msgstr "說出你的需求"
+
+#. placeholder {0}: selected.thread.capabilities.join(", ")
+#: src/components/chat/TeamSidebar.tsx
+msgid "Scoped tools: {0}"
+msgstr "授權工具範圍：{0}"
+
+#: src/components/chat/TeamSidebar.tsx
+msgid "Scoped tools: conversation only"
+msgstr "授權工具範圍：僅限對話"
+
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
 msgstr "正在搜尋網頁 — {query}"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Self-contained HTML pages render right beside the chat, ready to download or share."
+msgstr "獨立完整的 HTML 頁面會直接在對話旁呈現，隨時都能下載或分享。"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Send"
 msgstr "傳送"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Separate desks, zero collisions"
+msgstr "獨立工作桌，零衝突不打架"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Shared ticket board & honest auto work"
+msgstr "共用工單看板與透明的自動執行"
 
 #: src/pages/ChatPage.tsx
 msgid "Show the team sidebar"
@@ -807,104 +1110,128 @@ msgstr "顯示團隊側邊欄"
 msgid "Show the tools sidebar"
 msgstr "顯示工具側邊欄"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Slack bot token connected. Channel tools are active for every hatchling."
 msgstr "Slack 機器人權杖已連接。頻道工具已對每隻小雛生效。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Slack bot token disconnected."
 msgstr "已中斷 Slack 機器人權杖。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Slack connected. Every hatchling can now post to the webhook's channel."
 msgstr "Slack 已連接。現在每隻小雛都能傳訊息到 webhook 的頻道。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Slack could not be reached. Check your connection and try again."
 msgstr "無法連上 Slack。請檢查網路後再試一次。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Slack disconnected."
 msgstr "已中斷 Slack 連接。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
 msgstr "Slack 拒絕了這個權杖。請在 Slack 重新安裝應用程式,複製新的機器人權杖後再試一次。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Sources:"
 msgstr "來源:"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Speed and approachability don’t have to cost you control or verifiable privacy."
+msgstr "追求快速與好上手，不必犧牲你的掌控權或可驗證的隱私。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Spin up Docker containers, databases, or desktop apps"
+msgstr "架設 Docker 容器、資料庫或安裝桌面應用程式"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Star on GitHub"
+msgstr "在 GitHub 上按 Star"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Starting with WasmHatch"
+msgstr "開始使用 WasmHatch"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Stop"
 msgstr "停止"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Storage"
 msgstr "儲存空間"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Tavily API key (web search)"
 msgstr "Tavily API 金鑰(網頁搜尋)"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "That does not look like a Slack Incoming Webhook URL — it starts with https://hooks.slack.com/services/…"
 msgstr "這看起來不像 Slack Incoming Webhook 的 URL — 它會以 https://hooks.slack.com/services/… 開頭"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "That URL is not on this deployment's registry, so the browser cannot fetch it. Download the .agent file instead and import it here."
 msgstr "該 URL 不在此部署的註冊庫上,瀏覽器無法取得。請改為下載 .agent 檔案並在這裡匯入。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "That’s the whole setup — it’s a static web page."
+msgstr "設定就這麼多 — 它只是一個靜態網頁。"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "The agent asked for existing Google files it cannot see on its own."
 msgstr "助理請求它自己看不到的現有 Google 檔案。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "The agent can create Docs, Sheets, and Slides, open ones you share by link, and read or add Calendar events. The token stays in this tab; every write is shown before it is applied."
 msgstr "助理可以建立文件、試算表和簡報,開啟你以連結分享的檔案,並讀取或新增日曆活動。權杖只保留在此分頁;每次寫入都會先顯示再套用。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "The agent package could not be downloaded."
 msgstr "無法下載代理套件。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "The agent package could not be read."
 msgstr "無法讀取代理套件。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "The AI assistant that <0>actually does the work.</0>"
+msgstr "<0>真正動手把事做好</0>的 AI 助理。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "The backup could not be created."
 msgstr "無法建立備份。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "The browser said not yet. It usually agrees once you've used the app a little more — until then, a backup is the surest safety."
 msgstr "瀏覽器說還不行。通常再多用一陣子它就會同意 — 在那之前,備份是最保險的做法。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "The direct browser route to Slack looks blocked right now. A deployment can bundle the relay described in docs/slack.md and set VITE_SLACK_PROXY_URL."
 msgstr "瀏覽器直連 Slack 的路徑目前似乎被封鎖。部署方可以依 docs/slack.md 的說明附上中繼,並設定 VITE_SLACK_PROXY_URL。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useGoogleConnector.ts
 msgid "The Google Picker could not be opened."
 msgstr "無法開啟 Google 選擇器。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "The hatchling could not be exported."
 msgstr "無法匯出這隻小雛。"
 
 #. placeholder {0}: providerDef.host
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "The model can search the web through {0}. Searches are billed by your provider alongside tokens; untick to turn this off."
 msgstr "模型可以透過 {0} 搜尋網頁。搜尋費用會連同 token 用量一併由你的供應商計費;取消勾選即可關閉。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
 msgstr "裝置端模型尚不支援這個語言,會以英文回覆;雲端供應商則能以你的語言回覆。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "The package could not be hatched."
 msgstr "無法孵化該套件。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "The registry publish failed."
 msgstr "發佈到註冊庫失敗。"
 
@@ -912,37 +1239,81 @@ msgstr "發佈到註冊庫失敗。"
 msgid "The sample spreadsheet is already in your files."
 msgstr "範例試算表已在你的檔案中。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "The shared work queue is empty. Add tickets here or let hatchlings queue their own follow-ups."
 msgstr "共用的工作佇列是空的。在這裡新增工單,或讓小雛自己排入後續工作。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "The tedious parts of everyday work — cleaning local data, drafting documents, shipping clean HTML deliverables — described in a sentence, done in moments."
+msgstr "日常工作裡最繁瑣的部分 — 清理本機資料、草擬文件、產出乾淨美觀的 HTML 成果 — 一句話交代清楚，轉眼就能完成。"
+
+#: src/components/chat/TeamSidebar.tsx
 msgid "The ticket could not be created."
 msgstr "無法建立工單。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "There is no setup."
+msgstr "完全不必設定。"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "This browser can't promise to keep data around, so a backup is the safest bet."
 msgstr "這個瀏覽器無法保證資料一定會保留,備份是最保險的做法。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/usePortableAgentFlow.ts
 msgid "this hatchling, before upload"
 msgstr "這隻小雛(上傳前)"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/TeamSidebar.tsx
 msgid "Tickets"
 msgstr "工單"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Tidies spreadsheets, drafts Google Docs, and keeps every edit one click from undo."
+msgstr "整理試算表、草擬 Google Docs，並讓每次編輯都能一鍵復原。"
+
+#: src/components/chat/TeamSidebar.tsx
 msgid "To do"
 msgstr "待辦"
 
+#: src/components/chat/ChatTranscript.tsx
+msgid "Try an HTML report prompt"
+msgstr "試試 HTML 報告提示詞範例"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Try it now — it’s free"
+msgstr "立即免費試用"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Turn these release notes into a Google Doc and a short slide deck."
+msgstr "把這份版本更新說明整理成一份 Google Doc 文件和簡短的投影片。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Turn this sales export into a clean summary I can share."
+msgstr "把這份銷售匯出檔整理成方便分享的清晰摘要。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Type it like you’d tell a teammate. Drop in local files, connect Google in a couple of clicks, or point at local Ollama or MCP."
+msgstr "就像平常跟隊友交代事情一樣輸入即可。拖入本機檔案、點幾下連上 Google，或指向本機的 Ollama 與 MCP。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Typical self-hosted or cloud stacks"
+msgstr "傳統自架或雲端環境"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Undo"
+msgstr "復原"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Undo anything in one click"
+msgstr "任何變更都能一鍵復原"
+
 #. placeholder {0}: capabilities.unknown.join(", ")
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Unrecognized requests (granted nothing): {0}"
 msgstr "無法辨識的請求(不授予任何內容): {0}"
 
 #. placeholder {0}: activePermission.request.path
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "Update {0}"
 msgstr "更新 {0}"
 
@@ -954,7 +1325,7 @@ msgstr "正在更新 Google 試算表"
 msgid "Updating ticket {id}"
 msgstr "正在更新工單 {id}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "URL (this machine only)"
 msgstr "URL(僅限本機)"
 
@@ -962,43 +1333,63 @@ msgstr "URL(僅限本機)"
 msgid "Using {server} — {tool}"
 msgstr "正在使用 {server} — {tool}"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "view diff"
 msgstr "檢視差異"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
 msgstr "想使用多個頻道?用 <0>docs/slack.md</0> 裡現成的 manifest 建立一個小小的 Slack 應用程式,然後貼上它的機器人權杖:助理就能列出公開頻道並傳訊息到任何一個頻道。它仍然不會讀取任何訊息。權杖只會留在此分頁的記憶體中。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Watch it happen"
+msgstr "即時看見處理過程"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Web search"
 msgstr "網頁搜尋"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Web search & reading"
 msgstr "網頁搜尋與閱讀"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Web search connected. Hatchlings can now use web_search; each search spends your Tavily quota."
 msgstr "網頁搜尋已連接。小雛現在可以使用 web_search;每次搜尋都會消耗你的 Tavily 配額。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Web search connected. Providers without their own search now get a web_search tool; each search spends your Tavily quota."
 msgstr "網頁搜尋已連接。沒有自帶搜尋的供應商現在會獲得 web_search 工具;每次搜尋都會消耗你的 Tavily 配額。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/useSessionConnectors.ts
 msgid "Web search disconnected."
 msgstr "網頁搜尋已中斷。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ChatTranscript.tsx
 msgid "What do you want to get done?"
 msgstr "你想完成什麼?"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "What it can do"
+msgstr "能做什麼"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "What should Pip do for you first?"
+msgstr "想先讓 Pip 幫你做什麼？"
+
+#: src/components/chat/TeamSidebar.tsx
 msgid "Working…"
 msgstr "工作中…"
 
-#: src/pages/ChatPage.tsx
+#: src/lib/hatchling-presets.ts
+msgid "Works the ticket board, Google files, Slack, and MCP."
+msgstr "負責處理工單看板、Google 檔案、Slack 與 MCP。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Wrestle with config files just to wire up tools"
+msgstr "光是要串接工具就得跟一堆設定檔搏鬥"
+
+#: src/components/chat/ChatTranscript.tsx
 msgid "Write approval required"
 msgstr "寫入需要核准"
 
@@ -1010,15 +1401,27 @@ msgstr "正在寫入 {path}"
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."
 msgstr "你的 AI 助理,就在這個分頁 — 快速、透明、可復原。"
 
-#: src/pages/ChatPage.tsx
+#: src/pages/BusinessLandingPage.tsx
+msgid "Your AI team in a single browser tab — no server, no signup."
+msgstr "濃縮在單一瀏覽器分頁裡的專屬 AI 團隊 — 免伺服器、免註冊。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Your API key, local Ollama, or Chrome’s built-in AI"
+msgstr "你自己的 API 金鑰、本機 Ollama 或 Chrome 內建 AI"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Your data is pinned — this browser won't clear it on its own."
 msgstr "資料已固定保存 — 瀏覽器不會自行清除。"
 
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Your files"
 msgstr "你的檔案"
 
 #. placeholder {0}: providerDef.host
-#: src/pages/ChatPage.tsx
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Your key goes only to {0} — nowhere else."
 msgstr "你的金鑰只會傳送到 {0} — 不會送往其他任何地方。"
+
+#: src/pages/BusinessLandingPage.tsx
+msgid "Yours to keep"
+msgstr "資料永遠歸你保管"

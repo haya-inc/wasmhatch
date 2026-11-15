@@ -25,3 +25,14 @@ test("auto-detects the browser language on first visit", async ({ browser }) => 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/何を片付け/);
   await context.close();
 });
+
+test("switches the landing page to Japanese in place without mobile overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+
+  await page.getByLabel("Language").selectOption("ja");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ja");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("本当に手を動かしてくれる");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});

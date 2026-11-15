@@ -1,154 +1,349 @@
+import { useState } from "react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import {
   ArrowRight,
+  Bot,
   Check,
   FileSpreadsheet,
   FileText,
-  FolderOpen,
   HardDrive,
   LayoutDashboard,
   Lock,
   MessageCircle,
   Minus,
+  Package,
+  Plug,
   RotateCcw,
   Sparkles,
+  Ticket,
   Zap
 } from "lucide-react";
+import { localePreference, setLocalePreference } from "../lib/i18n";
+import { AUTO_LOCALE, UI_LOCALES } from "../lib/locales";
+import type { OfficeCharacter } from "../lib/pixel-office";
+import { HatchlingOffice } from "../components/HatchlingOffice";
 
 const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 
-const useCases = [
-  {
-    icon: FileSpreadsheet,
-    title: "Fix messy spreadsheets",
-    prompt: "Clean up this export — the names and amounts are all over the place.",
-    detail: "Drop in a CSV or Excel file and it comes back tidy, with every change listed."
-  },
-  {
-    icon: FileText,
-    title: "Draft docs and decks",
-    prompt: "Turn these notes into a Google Doc and a short slide deck.",
-    detail: "Connect Google once and it creates Docs, Sheets, and Slides for you."
-  },
-  {
-    icon: LayoutDashboard,
-    title: "Build reports and dashboards",
-    prompt: "Make a one-page report I can send to the team.",
-    detail: "Polished pages appear right beside the chat, ready to download and share."
-  },
-  {
-    icon: FolderOpen,
-    title: "Organize your files",
-    prompt: "Merge these three lists and flag anything that looks off.",
-    detail: "It reads, compares, and rewrites files in a private workspace in your browser."
-  }
-] as const;
+type ShowcaseChickId = "pip" | "mame" | "yuzu";
 
 export function BusinessLandingPage() {
   const homeUrl = import.meta.env.BASE_URL;
   const appUrl = `${homeUrl}?view=chat`;
+  const [activeChick, setActiveChick] = useState<ShowcaseChickId>("pip");
+  const [langPref, setLangPref] = useState<string>(() => localePreference());
+
+  const showcaseChicks: readonly {
+    id: ShowcaseChickId;
+    character: OfficeCharacter;
+    role: string;
+    detail: string;
+  }[] = [
+    {
+      id: "pip",
+      character: {
+        id: "pip",
+        name: "Pip",
+        species: 0,
+        mood: "write",
+        running: true,
+        scheduled: false,
+        selected: activeChick === "pip"
+      },
+      role: t`Main desk · everyday partner`,
+      detail: t`Tidies spreadsheets, drafts Google Docs, and keeps every edit one click from undo.`
+    },
+    {
+      id: "mame",
+      character: {
+        id: "mame",
+        name: "Mame",
+        species: 2,
+        mood: "tool",
+        running: true,
+        scheduled: false,
+        selected: activeChick === "mame"
+      },
+      role: t`Data wrangler · isolated workspace`,
+      detail: t`Runs local cleanup scripts on CSV and JSON files so counts and totals never rely on guesswork.`
+    },
+    {
+      id: "yuzu",
+      character: {
+        id: "yuzu",
+        name: "Yuzu",
+        species: 4,
+        mood: "idle",
+        running: false,
+        scheduled: true,
+        selected: activeChick === "yuzu"
+      },
+      role: t`Report builder · tab-open auto work`,
+      detail: t`Checks the shared ticket board on your timer and turns finished notes into single-file HTML dashboards.`
+    }
+  ];
+
+  const selectedChick = showcaseChicks.find((entry) => entry.id === activeChick) ?? showcaseChicks[0];
+
+  const useCases = [
+    {
+      icon: FileSpreadsheet,
+      title: t`Fix messy spreadsheets`,
+      prompt: t`Clean up this export — normalize regions, deduplicate rows, and check the totals.`,
+      detail: t`Drop in a CSV or Excel file; local code transforms the rows accurately and lists every change.`
+    },
+    {
+      icon: FileText,
+      title: t`Draft docs and decks`,
+      prompt: t`Turn these release notes into a Google Doc and a short slide deck.`,
+      detail: t`Connect Google in a couple of clicks and hand over only the specific files you pick.`
+    },
+    {
+      icon: LayoutDashboard,
+      title: t`Build reports and dashboards`,
+      prompt: t`Make a one-page HTML status report I can send to the team.`,
+      detail: t`Self-contained HTML pages render right beside the chat, ready to download or share.`
+    },
+    {
+      icon: Plug,
+      title: t`Connect Slack, search, and MCP`,
+      prompt: t`Post the Q3 highlights to #ops on Slack and check our local MCP tools.`,
+      detail: t`60-second Slack setup, cited web search, and loopback MCP servers running on your own machine.`
+    }
+  ];
 
   return (
     <div className="fresh home">
       <header className="home-header">
-        <a className="home-brand" href={homeUrl} aria-label="WasmHatch home">
+        <a className="home-brand" href={homeUrl}>
           <img src={`${homeUrl}mark.svg`} alt="" aria-hidden="true" />
           WasmHatch
         </a>
-        <nav aria-label="Primary navigation">
-          <a href="#setup">No setup</a>
-          <a href="#can-do">What it can do</a>
-          <a href="#how">How it works</a>
-          <a href="#trust">Privacy</a>
+        <nav aria-label={t`Primary`}>
+          <a href="#setup"><Trans>No setup</Trans></a>
+          <a href="#hatchlings"><Trans>Hatchlings</Trans></a>
+          <a href="#can-do"><Trans>What it can do</Trans></a>
+          <a href="#trust"><Trans>Privacy</Trans></a>
           <a href={repositoryUrl}>GitHub</a>
         </nav>
-        <a className="btn btn-brand" href={appUrl}>Open WasmHatch</a>
+        <div className="home-header-actions">
+          <select
+            className="home-lang"
+            aria-label={t`Language`}
+            value={langPref}
+            onChange={(event) => {
+              const next = event.target.value;
+              setLangPref(next);
+              void setLocalePreference(next);
+            }}
+          >
+            <option value={AUTO_LOCALE}>{t`Auto language`}</option>
+            {UI_LOCALES.map((entry) => (
+              <option key={entry.code} value={entry.code}>{entry.label}</option>
+            ))}
+          </select>
+          <a className="btn btn-brand" href={appUrl}><Trans>Open WasmHatch</Trans></a>
+        </div>
       </header>
 
       <main>
-        <section className="home-hero" aria-labelledby="hero-title">
+        <section className="home-hero">
           <div>
-            <h1 id="hero-title">The AI assistant that <em>actually does the work.</em></h1>
+            <h1 id="hero-title">
+              <Trans>The AI assistant that <em>actually does the work.</em></Trans>
+            </h1>
             <p className="home-lede">
-              Ask for what you need in plain words. WasmHatch cleans your spreadsheets, writes
-              your docs, and builds your reports — right here in your browser, while you watch.
+              <Trans>
+                Open the link — no server, no Docker, no signup. Clean messy spreadsheets with local
+                code, draft Google Docs and Sheets, build one-file HTML reports, or hatch a tiny team
+                of agents right in this tab.
+              </Trans>
             </p>
             <div className="home-cta-row">
-              <a className="btn btn-brand" href={appUrl}>Try it now — it&rsquo;s free <ArrowRight size={17} /></a>
-              <a className="btn btn-ghost" href="#how">See how it works</a>
+              <a className="btn btn-brand" href={appUrl}>
+                <Trans>Try it now — it’s free</Trans> <ArrowRight size={17} aria-hidden="true" />
+              </a>
+              <a className="btn btn-ghost" href="#hatchlings"><Trans>Meet the hatchlings</Trans></a>
             </div>
-            <ul className="home-assure">
-              <li><Check size={15} /> No install, no account</li>
-              <li><Check size={15} /> Your files stay on your device</li>
-              <li><Check size={15} /> Undo anything in one click</li>
+            <ul className="home-assure" role="list">
+              <li><Check size={15} aria-hidden="true" /> <Trans>No install, no account</Trans></li>
+              <li><Check size={15} aria-hidden="true" /> <Trans>Your API key, local Ollama, or Chrome’s built-in AI</Trans></li>
+              <li><Check size={15} aria-hidden="true" /> <Trans>Undo anything in one click</Trans></li>
             </ul>
           </div>
 
-          <div className="home-demo" aria-label="Example conversation">
-            <header><i /> WasmHatch</header>
+          <div className="home-demo" aria-label={t`Example conversation`}>
+            <header><i aria-hidden="true" /> Pip · WasmHatch</header>
             <div className="home-demo-thread">
-              <div className="home-msg-user">Turn this sales export into a clean summary I can share.</div>
+              <div className="home-msg-user">
+                <Trans>Turn this sales export into a clean summary I can share.</Trans>
+              </div>
               <div className="home-msg-bot">
-                <p>On it — tidying the data and building your summary now.</p>
+                <p><Trans>On it — running a local cleanup script and building your report now.</Trans></p>
                 <div className="home-chip">
-                  <Check size={14} />
-                  <span><strong>Cleaned</strong> sales-export.csv · 214 fixes</span>
-                  <span className="home-undo">Undo</span>
+                  <Check size={14} aria-hidden="true" />
+                  <span><Trans><strong>Cleaned</strong> sales-export.csv · 214 fixes</Trans></span>
+                  <span className="home-undo"><Trans>Undo</Trans></span>
                 </div>
                 <div className="home-chip">
-                  <Sparkles size={14} />
-                  <span><strong>Created</strong> Q3 summary — open beside the chat</span>
+                  <Sparkles size={14} aria-hidden="true" />
+                  <span><Trans><strong>Created</strong> q3-summary.html — open beside the chat</Trans></span>
                 </div>
-                <p>Done! The summary is ready to download. Want it as a Google Doc too?</p>
+                <p><Trans>Done! Download the HTML report, update a Google Sheet, or send highlights to Slack.</Trans></p>
               </div>
             </div>
-            <footer><MessageCircle size={15} /> Ask for anything…</footer>
+            <footer><MessageCircle size={15} aria-hidden="true" /> <Trans>Ask Pip for anything…</Trans></footer>
           </div>
         </section>
 
-        <section className="home-section" id="setup" aria-labelledby="setup-title">
-          <h2 id="setup-title">There is no setup.</h2>
+        <section className="home-section" id="setup">
+          <h2><Trans>There is no setup.</Trans></h2>
           <p className="home-sub">
-            What it takes to get started, honestly compared. This part is why WasmHatch exists.
+            <Trans>
+              Built for developers and prosumers tired of maintaining Docker stacks — with a calm,
+              plain-language desk instead of config files.
+            </Trans>
           </p>
           <div className="home-setup">
             <div className="home-setup-card">
-              <h3>Starting with a typical AI tool</h3>
-              <ul>
-                <li><Minus size={15} aria-hidden="true" /> Install an app or extension</li>
-                <li><Minus size={15} aria-hidden="true" /> Create an account and verify your email</li>
-                <li><Minus size={15} aria-hidden="true" /> Keep a computer running for it</li>
-                <li><Minus size={15} aria-hidden="true" /> Edit config files to hook up your tools</li>
+              <h3><Trans>Typical self-hosted or cloud stacks</Trans></h3>
+              <ul role="list">
+                <li><Minus size={15} aria-hidden="true" /> <Trans>Spin up Docker containers, databases, or desktop apps</Trans></li>
+                <li><Minus size={15} aria-hidden="true" /> <Trans>Create another account and upload files to a vendor server</Trans></li>
+                <li><Minus size={15} aria-hidden="true" /> <Trans>Keep an always-on machine patched and running</Trans></li>
+                <li><Minus size={15} aria-hidden="true" /> <Trans>Wrestle with config files just to wire up tools</Trans></li>
               </ul>
             </div>
             <div className="home-setup-card home-setup-us">
-              <h3>Starting with WasmHatch</h3>
-              <p className="home-setup-big">Open the link.</p>
-              <p>That&rsquo;s the whole setup — it&rsquo;s a web page.</p>
-              <ul>
+              <h3><Trans>Starting with WasmHatch</Trans></h3>
+              <p className="home-setup-big"><Trans>Open the link.</Trans></p>
+              <p><Trans>That’s the whole setup — it’s a static web page.</Trans></p>
+              <ul role="list">
                 <li>
                   <Check size={15} aria-hidden="true" />
-                  In Chrome you can even skip the API key: the free built-in AI covers lighter tasks.
+                  <span>
+                    <Trans>
+                      <strong>Local and free:</strong> connect Ollama on your own machine or use Chrome’s
+                      built-in AI — no API key at all.
+                    </Trans>
+                  </span>
                 </li>
                 <li>
                   <Check size={15} aria-hidden="true" />
-                  For heavier work, paste your own Claude or OpenAI key — it stays in your browser
-                  and goes only to that provider.
+                  <span>
+                    <Trans>
+                      <strong>Bring your own key:</strong> paste a Claude, OpenAI, or OpenRouter key — it
+                      stays in your browser and goes straight to that provider.
+                    </Trans>
+                  </span>
+                </li>
+                <li>
+                  <Check size={15} aria-hidden="true" />
+                  <span>
+                    <Trans>
+                      <strong>Self-host in 30 seconds:</strong> fork on GitHub, enable Pages, done.
+                    </Trans>
+                  </span>
                 </li>
               </ul>
             </div>
           </div>
           <p className="home-setup-note">
-            <strong>Why is it this fast? There&rsquo;s no account.</strong> No signup, no email
-            confirmation, no password — so you&rsquo;re working in seconds; and because no server
-            registers you, there&rsquo;s no account of yours here that could ever leak.
+            <Trans>
+              <strong>Why is it this fast? There’s no account — and no server.</strong> No signup, no
+              password, and nothing sitting between your browser and the tools you connect; because no
+              server registers you, there’s no account of yours here that could ever leak. Open
+              DevTools and check the Network tab yourself.
+            </Trans>
           </p>
         </section>
 
-        <section className="home-section" id="can-do" aria-labelledby="can-do-title">
-          <h2 id="can-do-title">One assistant for the busywork.</h2>
+        <section className="home-section" id="hatchlings">
+          <h2><Trans>Hatch a tiny team in one tab.</Trans></h2>
           <p className="home-sub">
-            The tedious parts of everyday work — cleaning data, drafting documents, pulling
-            things together — described in a sentence, done in moments.
+            <Trans>
+              Keep one focused chat, or hatch up to eight named hatchlings at pixel-art desks — each
+              with its own private workspace, shared ticket board, and shareable <code>.agent</code> package.
+            </Trans>
+          </p>
+          <div className="home-swarm">
+            <div className="home-swarm-stage">
+              <div className="home-swarm-canvas-wrap">
+                <HatchlingOffice
+                  characters={showcaseChicks.map((entry) => entry.character)}
+                  onSelect={(id) => {
+                    if (id === "pip" || id === "mame" || id === "yuzu") setActiveChick(id);
+                  }}
+                />
+              </div>
+              <div className="home-swarm-tabs" role="group" aria-label={t`Inspect a hatchling`}>
+                {showcaseChicks.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={entry.id === activeChick ? "home-swarm-tab home-swarm-tab-active" : "home-swarm-tab"}
+                    aria-pressed={entry.id === activeChick}
+                    onClick={() => setActiveChick(entry.id)}
+                  >
+                    {entry.character.name}
+                  </button>
+                ))}
+              </div>
+              <div className="home-swarm-detail">
+                <strong>{selectedChick.character.name} — {selectedChick.role}</strong>
+                <p>{selectedChick.detail}</p>
+              </div>
+            </div>
+
+            <div className="home-swarm-points">
+              <article className="home-swarm-point">
+                <Bot size={20} aria-hidden="true" />
+                <div>
+                  <h3><Trans>Separate desks, zero collisions</Trans></h3>
+                  <p>
+                    <Trans>
+                      Every hatchling owns an isolated workspace and chat thread — or starts from a
+                      one-click specialist preset like Data Wrangler or Report Builder.
+                    </Trans>
+                  </p>
+                </div>
+              </article>
+              <article className="home-swarm-point">
+                <Ticket size={20} aria-hidden="true" />
+                <div>
+                  <h3><Trans>Shared ticket board &amp; honest auto work</Trans></h3>
+                  <p>
+                    <Trans>
+                      Drop tasks on the board and put a hatchling on a timer while the tab stays open,
+                      with a visible run budget, automatic backoff, and one-click pause.
+                    </Trans>
+                  </p>
+                </div>
+              </article>
+              <article className="home-swarm-point">
+                <Package size={20} aria-hidden="true" />
+                <div>
+                  <h3><Trans>Portable .agent files &amp; local MCP</Trans></h3>
+                  <p>
+                    <Trans>
+                      Package any hatchling’s playbook and scoped permissions (never your keys) into a
+                      shareable <code>.agent</code> file or link, and plug in local MCP servers.
+                    </Trans>
+                  </p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="home-section" id="can-do">
+          <h2><Trans>One assistant for the busywork.</Trans></h2>
+          <p className="home-sub">
+            <Trans>
+              The tedious parts of everyday work — cleaning local data, drafting documents, shipping
+              clean HTML deliverables — described in a sentence, done in moments.
+            </Trans>
           </p>
           <div className="home-cards">
             {useCases.map((useCase) => (
@@ -162,58 +357,61 @@ export function BusinessLandingPage() {
           </div>
         </section>
 
-        <section className="home-section" id="how" aria-labelledby="how-title">
-          <h2 id="how-title">How it works</h2>
-          <p className="home-sub">No setup wizard, no manual. Three moments, start to done.</p>
+        <section className="home-section" id="how">
+          <h2><Trans>How it works</Trans></h2>
+          <p className="home-sub"><Trans>No setup wizard, no manual. Three moments, start to done.</Trans></p>
           <div className="home-steps">
             <article className="home-step">
               <span>1</span>
-              <h3>Say what you need</h3>
-              <p>Type it like you&rsquo;d tell a colleague. Add a file if it helps, or connect Google in a couple of clicks.</p>
+              <h3><Trans>Say what you need</Trans></h3>
+              <p><Trans>Type it like you’d tell a teammate. Drop in local files, connect Google in a couple of clicks, or point at local Ollama or MCP.</Trans></p>
             </article>
             <article className="home-step">
               <span>2</span>
-              <h3>Watch it happen</h3>
-              <p>It gets to work immediately. Every step shows up in the conversation as it runs — no black box.</p>
+              <h3><Trans>Watch it happen</Trans></h3>
+              <p><Trans>It gets to work right away. Every tool call and file edit appears live in the conversation — no black box.</Trans></p>
             </article>
             <article className="home-step">
               <span>3</span>
-              <h3>Keep it or undo it</h3>
-              <p>Each change lists exactly what happened, with one-click undo. Prefer to approve things first? Turn on Careful mode.</p>
+              <h3><Trans>Keep it or undo it</Trans></h3>
+              <p><Trans>Each change shows its exact diff with one-click undo. Prefer to approve writes first? Switch on Careful mode.</Trans></p>
             </article>
           </div>
         </section>
 
-        <section className="home-section" id="trust" aria-labelledby="trust-title">
-          <h2 id="trust-title">Fast, and still yours.</h2>
-          <p className="home-sub">Speed doesn&rsquo;t have to cost you control or privacy.</p>
+        <section className="home-section" id="trust">
+          <h2><Trans>Fast, and still yours.</Trans></h2>
+          <p className="home-sub"><Trans>Speed and approachability don’t have to cost you control or verifiable privacy.</Trans></p>
           <div className="home-trust">
             <article>
               <Zap size={20} aria-hidden="true" />
-              <h3>It just acts</h3>
-              <p>No approval pop-ups slowing every step. The assistant does the work and keeps you in the picture as it goes.</p>
+              <h3><Trans>It just acts</Trans></h3>
+              <p><Trans>No approval pop-ups slowing every step by default. The assistant does the work and shows exact diffs as it goes.</Trans></p>
             </article>
             <article>
               <RotateCcw size={20} aria-hidden="true" />
-              <h3>Everything is undoable</h3>
-              <p>Every change is shown with exactly what changed. One click puts it back the way it was.</p>
+              <h3><Trans>Everything is undoable</Trans></h3>
+              <p><Trans>Every workspace edit records what changed before and after. One click puts your file back the way it was.</Trans></p>
             </article>
             <article>
               <Lock size={20} aria-hidden="true" />
-              <h3>Private by design</h3>
+              <h3><Trans>Private by design</Trans></h3>
               <p>
-                Everything happens in your browser tab. Your files stay here — there&rsquo;s no
-                WasmHatch server they could be uploaded to. What you ask the AI goes only to the
-                model provider you choose, and Chrome&rsquo;s built-in AI keeps even that on your device.
+                <Trans>
+                  Everything lives in your browser tab — there is no WasmHatch server to upload your
+                  files to. Prompts go straight to the provider you chose, or stay 100% on your machine
+                  with Ollama or Chrome’s built-in AI.
+                </Trans>
               </p>
             </article>
             <article>
               <HardDrive size={20} aria-hidden="true" />
-              <h3>Yours to keep</h3>
+              <h3><Trans>Yours to keep</Trans></h3>
               <p>
-                Your work lives in this browser, under your control: pin it so the browser keeps
-                it safe, and download a full backup anytime. No account needed for your data to
-                stay yours.
+                <Trans>
+                  Pin browser storage so your workspaces stay put, export individual hatchlings as{" "}
+                  <code>.agent</code> files, or download a full ZIP backup in one click.
+                </Trans>
               </p>
             </article>
           </div>
@@ -222,15 +420,22 @@ export function BusinessLandingPage() {
         <section className="home-section">
           <div className="home-oss">
             <Sparkles size={18} aria-hidden="true" />
-            <span><strong>Free and open source</strong> under Apache-2.0 — read every line, run it yourself, or help build it.</span>
-            <a href={repositoryUrl}>Star on GitHub <ArrowRight size={14} /></a>
+            <span>
+              <Trans>
+                <strong>Free and open source</strong> under Apache-2.0 — audit every line, fork to
+                GitHub Pages in seconds, or help build it.
+              </Trans>
+            </span>
+            <a href={repositoryUrl}><Trans>Star on GitHub</Trans> <ArrowRight size={14} aria-hidden="true" /></a>
           </div>
         </section>
 
         <section className="home-section home-final">
-          <h2>What should it do for you first?</h2>
-          <p>Open it and ask. That&rsquo;s the whole onboarding.</p>
-          <a className="btn btn-brand" href={appUrl}>Open WasmHatch <ArrowRight size={17} /></a>
+          <h2><Trans>What should Pip do for you first?</Trans></h2>
+          <p><Trans>Open the tab and ask. That’s the whole onboarding.</Trans></p>
+          <a className="btn btn-brand" href={appUrl}>
+            <Trans>Open WasmHatch</Trans> <ArrowRight size={17} aria-hidden="true" />
+          </a>
         </section>
       </main>
 
@@ -239,10 +444,10 @@ export function BusinessLandingPage() {
           <img src={`${homeUrl}mark.svg`} alt="" aria-hidden="true" />
           WasmHatch
         </a>
-        <span>Your AI assistant, right in the browser.</span>
+        <span><Trans>Your AI team in a single browser tab — no server, no signup.</Trans></span>
         <a href={repositoryUrl}>GitHub</a>
-        <a href={`${repositoryUrl}/blob/main/CONTRIBUTING.md`}>Contribute</a>
-        <a href={`${homeUrl}privacy.html`}>Privacy</a>
+        <a href={`${repositoryUrl}/blob/main/CONTRIBUTING.md`}><Trans>Contribute</Trans></a>
+        <a href={`${homeUrl}privacy.html`}><Trans>Privacy</Trans></a>
         <span>Apache-2.0</span>
       </footer>
     </div>

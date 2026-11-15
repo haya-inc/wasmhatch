@@ -1,83 +1,72 @@
 # Conversation-first product direction
 
 Status: canonical UX direction
-Updated: 2026-07-12
+Updated: 2026-11-15
 
-WasmHatch is a general-work AI workspace, not a spreadsheet application and not
-a coding IDE. A spreadsheet is one possible source of context. The product
-should be understood through the work a person can complete: understand
-information, compare records, transform data, prepare an update, and create a
-useful artifact.
+WasmHatch is built for **developers and prosumers** who value a zero-server,
+DevTools-verifiable browser runtime — while insisting on **warmth and plain
+human language** at every touchpoint ("hardcore architecture, friendly desk").
+It is neither a spreadsheet utility nor a developer ops console: the product
+is understood through the everyday outcomes a person can finish in one tab,
+solo with Pip or alongside a tiny team of pixel-art **hatchlings**.
 
 ## Product promise
 
-> Describe the work. Review the result.
+> Ask in plain words. Watch it happen. Keep it or undo it in one click.
 
-The primary interaction is a natural conversation. A user can begin with an
-outcome in their own words, add context when it becomes useful, inspect what
-WasmHatch proposes, and continue with a follow-up. Source selection, scripts,
-connector configuration, run journals, and sandbox details support that loop;
-they are not the default information hierarchy.
+The primary interaction is a calm conversation. A person opens the tab, sees
+immediately that no WasmHatch server sits in the middle (bring an API key,
+point at local Ollama, or use Chrome's built-in AI), drops in files or
+connects a tool when helpful, watches every tool call and file diff land live,
+and reverts anything in one click — or switches on Careful mode to approve
+writes first.
 
 ## UX rules
 
-1. **Lead with jobs, not infrastructure.** Show requests such as “compare these
-   records” or “create a concise report” before terms such as OPFS, QuickJS,
-   Worker, manifest, or connector broker.
-2. **Keep one obvious next action.** The normal entry is a request composer.
-   Context and activity controls are secondary and visible in the header.
-3. **Reveal complexity at the moment it matters.** Sources open when context is
-   needed. Review opens when an effect is staged. Script and sandbox details are
-   available in an expandable technical section.
-4. **Let the conversation teach the product.** Example requests demonstrate the
-   range of work without requiring a feature tour. Responses explain what was
-   read, what was prepared, and what requires a decision.
-5. **Never hide authority.** Progressive disclosure must not weaken the effect
-   boundary. Before a durable change, the user still sees the exact target and
-   diff and must explicitly approve it.
-6. **Do not promise unshipped integrations.** General framing describes a reusable
-   interaction model. Concrete entry points name only capabilities that work in
-   the current release.
+1. **Hardcore underneath, warm on screen.** Architecture wins trust when
+   curious users inspect DevTools or the repo, not by printing words like
+   `OPFS`, `QuickJS`, `Wasm`, `sandbox`, `manifest`, or `CSP` in the UI.
+   Explain guarantees in plain outcomes ("runs local code on your machine",
+   "goes straight from your browser to the provider you chose").
+2. **Be upfront about keys and local AI.** Developers and prosumers appreciate
+   honesty: state clearly that WasmHatch runs with their API key, local
+   Ollama, or Chrome's built-in AI because there is no WasmHatch server.
+3. **Keep one obvious next action.** The normal entry is the chat composer,
+   paired with zero-ceremony starter actions (*Add a sample spreadsheet*,
+   *Try an HTML report prompt*) so first contact works in seconds.
+4. **Make multi-agent approachable.** The Hatchlings office turns isolated
+   per-agent workspaces, scoped tool permissions, and tab-open scheduled check-ins
+   into something tactile and friendly: pixel chicks at desks, one-click
+   specialist presets (*Data wrangler*, *Report builder*, *Desk runner*), a
+   shared ticket board, and shareable `.agent` files.
+5. **Trust through visibility, not pop-up fatigue.** Autonomous ("Fast") mode
+   is the default because every workspace edit records its exact before/after
+   diff with one-click revert. Careful mode remains one toggle away whenever
+   explicit write approval is wanted.
+6. **State limits out loud.** Only capabilities shipped and bounded by code
+   appear as actions; anything outside the browser-tab boundary (tab-closed
+   background daemons, unverified Google scopes, arbitrary origins) is stated
+   plainly rather than papered over.
 
-## Current surface
+## Current surfaces
 
-`?view=work` is the default task surface. It provides:
+- `/` (`src/pages/BusinessLandingPage.tsx`) — the public landing page in all
+  18 supported UI languages. Introduces the zero-server promise, interactive
+  Hatchlings showcase, BYOK / Ollama / Chrome AI options, 30-second GitHub
+  Pages forkability, and direct entry into the workspace.
+- `?view=chat` (`src/pages/ChatPage.tsx`) — the primary product surface:
+  streaming multi-provider chat, Hatchlings pixel office and specialist
+  presets, shared ticket board, side-by-side HTML artifact preview, Google
+  Picker / Docs / Sheets / Slides, Slack, cited web search, loopback MCP,
+  `.agent` import/export, and run journal export.
 
-- a blank natural-language request rather than a preselected spreadsheet task;
-- four examples covering cleanup, comparison, report creation, and Google
-  Sheets updates;
-- optional Context and Activity panels;
-- plain-language output choices: **Update data** and **Create a file**;
-- a **Set up AI** action that reveals and focuses the provider boundary when no
-  on-device model or session provider is ready;
-- execution details collapsed by default; and
-- automatic review visibility when a real cell or file proposal is staged.
+## Acceptance checks for UX changes
 
-`?view=operator` remains the advanced surface. It exposes all source, planner,
-sandbox, workspace, review, and journal controls at once for development,
-auditing, and power-user workflows. Both surfaces use the same runtime,
-proposal, approval, and connector implementation.
-
-## Shipped work and honest limits
-
-The current release can import CSV/XLSX, use a foreground Google Sheets range,
-run bounded QuickJS/Wasm transformations, create reviewed Markdown/CSV/JSON/text
-artifacts, and preserve an inspectable local workspace and run journal. Local
-files do not need a WasmHatch server.
-
-Google Drive/Docs, calendars, task systems, mail, background schedules, and
-multi-step unattended work remain roadmap items. They should enter the same
-conversation and review model only after their connector and effect boundaries
-exist in code.
-
-## Acceptance checks for future UX work
-
-- A first-time user can name at least three kinds of useful work without reading
-  architecture documentation.
-- The initial viewport contains one primary action and no required technical
-  vocabulary.
-- Adding context, preparing an effect, reviewing it, and continuing the task are
-  possible without switching to the advanced surface.
-- Every simplified path exercises the production Worker/sandbox/proposal code;
-  examples must not be decorative simulations.
-- Desktop and 390 px mobile layouts have no horizontal overflow.
+- No banned internal jargon (`wasm` outside `WasmHatch`, `quickjs`, `sandbox`,
+  `manifest`, `opfs`, `csp`) appears in landing-page copy across locales.
+- Every new UI string is wrapped in Lingui macros and translated across all
+  supported catalogs (`npm run i18n:check`).
+- Desktop and `390×844` mobile viewports have zero horizontal overflow
+  (`scrollWidth === 390`).
+- Every write surfaces an exact diff with one-click revert in Fast mode and
+  explicit approval in Careful mode.

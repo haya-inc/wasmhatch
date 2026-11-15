@@ -92,15 +92,19 @@ available there.
 
 ## Scope and design
 
-WasmHatch competes on form factor: a general AI agent in a browser tab with
-genuinely easy setup. Features follow the incumbent agents (chat, connectors,
-artifacts) as closely as the platform allows; the commitment is not losing
+WasmHatch competes on form factor and feel: **hardcore architecture, friendly
+desk** — a general AI agent in a browser tab built for developers and
+prosumers, spoken in warm, plain language with zero internal jargon on screen.
+Features follow the incumbent agents (chat, connectors, artifacts, portable
+hatchlings) as closely as the browser tab allows; the commitment is not losing
 inside an advertised boundary, so documented limits beat surprise gaps
 (see [ROADMAP.md](ROADMAP.md)). Prefer improvements that keep setup at zero
-(no server, no account), make connectivity genuinely easier (Google
-Workspace, Slack), or make in-tab artifacts better. New connectors and broad
-abstractions still need a credential boundary, conflict semantics, and a
+(no server, no account, instant local Ollama / Chrome AI / BYOK), make
+connectivity genuinely easier (Google Workspace, Slack, local MCP), or make
+in-tab artifacts and specialist hatchlings more delightful. New connectors and
+broad abstractions still need a credential boundary, conflict semantics, and a
 visible failure story — and connector origins stay a build-time audited
-allowlist, never a blanket relaxation.
+allowlist in both `vite.config.ts` and `vercel.json`, never a blanket
+relaxation.
 
 Be respectful and follow the [Code of Conduct](CODE_OF_CONDUCT.md).

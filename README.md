@@ -6,39 +6,45 @@
 
 ![WasmHatch — the AI assistant that actually does the work](https://wasmhatch.com/social-preview.png?v=0.48.0)
 
-**[Open WasmHatch](https://wasmhatch.com/?view=chat)** — free, no install, no account.
+**[Open WasmHatch](https://wasmhatch.com/?view=chat)** — free, no server, no Docker, no signup.
 
-Ask in plain words. WasmHatch fixes messy spreadsheets, writes documents,
-creates Google Docs / Sheets / Slides, and builds polished reports — while you
-watch it happen. It acts fast by default: every change appears in the
-conversation with exactly what changed, and undo is one click. Prefer to
+Built for developers and prosumers who want full local control without
+maintaining containers or config files — and spoken in calm, plain words so it
+feels like a friendly desk rather than an ops console. Ask in your own words:
+WasmHatch cleans messy spreadsheets with local code, drafts documents, creates
+Google Docs / Sheets / Slides, builds one-file HTML reports, or hatches a tiny
+team of agents right in this tab. It acts fast by default: every change appears
+in the conversation with its exact diff, and undo is one click. Prefer to
 approve things first? Switch on Careful mode.
 
 ## What it can do today
 
-- Clean, transform, and analyze CSV / Excel files you drop in.
+- Clean, transform, and verify CSV / Excel files you drop in with real local
+  code — never guessed row math.
 - Write and edit files in a private workspace that lives in your browser.
-- Create Google Docs, Sheets, and Slides, and keep editing the ones it made
-  (connect Google in a couple of clicks).
+- Create Google Docs, Sheets, and Slides, or work on specific existing files
+  you hand over through the Google Picker (`drive.file` only).
 - Build one-file HTML reports and dashboards that render beside the chat and
   download instantly.
 - Run a small team of **hatchlings** — up to eight agents, each with its own
   name, chat, and isolated workspace — visualized as pixel characters at
-  their desks. A shared ticket board is the work queue, and any hatchling
-  can be put on **auto work**: while the tab is open, it checks the board on
-  the interval you set, with a visible run budget and one-click pause.
-- Package any hatchling as a portable `.agent` file to share it — export
-  it, load one from a file or a trusted URL, or publish and discover them
-  through an optional registry, always behind a plain-language preview
-  before anything hatches.
+  their desks, or hatched in one click from specialist presets (*Data
+  wrangler*, *Report builder*, *Desk runner*). A shared ticket board is the
+  work queue, and any hatchling can be put on **auto work**: while the tab is
+  open, it checks the board on the interval you set, with a visible run budget
+  and one-click pause.
+- Package any hatchling as a portable `.agent` file to share its playbook and
+  scoped permissions (never your keys) — export it, load one from a file or a
+  trusted URL, or publish and discover them through an optional registry,
+  always behind a plain-language preview before anything hatches.
 - Reach extra tools through an MCP server on your own machine (Streamable
   HTTP) — every hatchling shares them.
 - Search the web through your AI provider's own search tool (Claude and
-  OpenRouter keys), with sources listed under the answer.
+  OpenRouter keys) or your own Tavily + Jina Reader keys, with cited sources
+  listed under the answer.
 - Post updates to Slack: paste an Incoming Webhook for a 60-second one-channel
   setup, or connect a tiny Slack app's bot token to list public channels and
-  post to any of them ([guide](docs/slack.md)). Either way it's post-only —
-  nothing is read from Slack.
+  post to any of them ([guide](docs/slack.md)).
 - Run with your own AI key (Claude, OpenAI, or OpenRouter), with Ollama on
   your own machine, or with Chrome's built-in on-device model — free, no
   key at all.

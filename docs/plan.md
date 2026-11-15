@@ -54,10 +54,19 @@ origins, admin-managed Google Workspace accounts.
 ## Who it is for
 
 Launch persona: developers and prosumers with a personal Google account and
-their own API key — the Show HN / r/selfhosted / r/LocalLLaMA audience,
-including people tired of maintaining Docker stacks for chat UIs. Keyless
-consumers and admin-managed Workspace accounts are explicitly not the launch
-target; the Chrome built-in AI path is the bridge for first contact.
+their own API key or local model — the Show HN / `r/selfhosted` /
+`r/LocalLLaMA` audience, including people tired of maintaining Docker stacks
+for agent UIs. Keyless general consumers and admin-managed Workspace accounts
+are explicitly not the launch target; local Ollama and the Chrome built-in AI
+path are the key-free bridges for first contact.
+
+**Hardcore architecture, friendly desk.** Targeting developers and prosumers
+does not mean writing an ops console. Like Ollama or Excalidraw, WasmHatch
+pairs DevTools-verifiable architecture (zero server, Wasm-isolated code
+execution, loopback MCP, `.agent` packages, audited CSP) with warm,
+plain-language copy, pixel-art **hatchlings** at desks, one-click specialist
+presets, and one-click undo — zero internal jargon on screen, and zero hidden
+trust boundaries underneath.
 
 ## What carries over from the previous plan
 

@@ -24,7 +24,7 @@ const appUrl = process.argv[2] ?? "http://localhost:5173";
 const provider = process.env.WASMHATCH_DEMO_PROVIDER === "openai" ? "openai" : "anthropic";
 const key = process.env.WASMHATCH_DEMO_KEY ?? "";
 const task = process.env.WASMHATCH_DEMO_TASK ??
-  "Tidy up src/greet.ts (clearer names, add a doc comment), then create a one-page HTML report titled \"Tiny Hatch health check\" summarizing the files in this workspace.";
+  "Normalize names, regions, amounts, and stages in wasmhatch-pipeline-sample.csv, then create a clean one-page HTML pipeline summary report.";
 
 if (!key) {
   console.error("Set WASMHATCH_DEMO_KEY first (your Anthropic or OpenAI key). It is typed into the page and never logged.");
@@ -62,8 +62,8 @@ try {
   await pause(600);
 
   // Beat 3 — give it something real to work on.
-  await page.getByRole("button", { name: "Add sample files" }).click();
-  await page.getByRole("button", { name: "src/greet.ts" }).waitFor();
+  await page.getByRole("button", { name: "Add a sample spreadsheet" }).click();
+  await page.getByRole("button", { name: "wasmhatch-pipeline-sample.csv" }).waitFor();
   const composer = page.getByLabel("Message the agent");
   await composer.click();
   await composer.pressSequentially(task, { delay: 18 });
