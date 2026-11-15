@@ -2,8 +2,8 @@ import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { lingui } from "@lingui/vite-plugin";
 import { transformAsync } from "@babel/core";
-import { PROVIDER_CONNECT_SRCS } from "./src/lib/chat-providers";
-import { buildMcpServers, mcpConnectSources } from "./src/lib/mcp-servers";
+import { PROVIDER_CONNECT_SRCS } from "./src/lib/chat-providers.ts";
+import { buildMcpServers, mcpConnectSources } from "./src/lib/mcp-servers.ts";
 
 /**
  * Compile Lingui macros (t, Trans, ...) in every .ts/.tsx module, not just the

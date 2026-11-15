@@ -1,5 +1,5 @@
 import { defineConfig, mergeConfig } from "vitest/config";
-import viteConfig from "./vite.config";
+import viteConfig from "./vite.config.ts";
 
 // This file shadows vite.config.ts for Vitest, so merge the app config in —
 // tests need the same transform pipeline as the build (Lingui macro
