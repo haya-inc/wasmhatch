@@ -36,4 +36,9 @@ describe("executeBusinessScript", () => {
     await expect(executeBusinessScript(`(value) => value`, "oversized", { maxInputBytes: 4 }))
       .rejects.toThrow("Script input exceeds");
   });
+
+  it("evaluates scripts ending with a trailing single-line comment", async () => {
+    const result = await executeBusinessScript(`(n) => n + 1\n// trailing note`, 41);
+    expect(result.output).toBe(42);
+  });
 });

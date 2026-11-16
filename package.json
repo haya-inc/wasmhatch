@@ -5,17 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build && node scripts/check-built-security.mjs",
-    "build:pages": "tsc -b && vite build --mode github-pages && node scripts/check-built-security.mjs",
+    "build": "node scripts/patch-zod-v3.mjs --check && tsc -b && vite build && node scripts/check-built-security.mjs",
+    "build:pages": "node scripts/patch-zod-v3.mjs --check && tsc -b && vite build --mode github-pages && node scripts/check-built-security.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "render:social": "node scripts/render-social-preview.mjs",
     "i18n:extract": "lingui extract",
     "i18n:check": "node scripts/check-catalogs.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "postinstall": "node scripts/patch-zod-v3.mjs",
+    "patch:dependencies": "node scripts/patch-zod-v3.mjs",
+    "pretest": "node scripts/patch-zod-v3.mjs --check"
   },
   "dependencies": {
+    "@a2ui/agent": "^0.1.0",
+    "@a2ui/react": "^0.15.0",
+    "@a2ui/web_core": "^0.15.0",
     "@jitl/quickjs-wasmfile-release-sync": "^0.32.0",
     "@lingui/core": "^6.12.0",
     "@lingui/react": "^6.12.0",
@@ -24,15 +30,16 @@
     "quickjs-emscripten-core": "^0.32.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "saxes": "^6.0.0"
+    "saxes": "^6.0.0",
+    "zod": "4.6.7"
   },
   "devDependencies": {
+    "@babel/core": "^8.1.2",
     "@lingui/babel-plugin-lingui-macro": "^6.12.0",
     "@lingui/cli": "^6.12.0",
     "@lingui/format-po": "^6.12.0",
     "@lingui/vite-plugin": "^6.12.0",
     "@playwright/test": "^1.65.1",
-    "@types/babel__core": "^7.20.5",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -42,6 +49,10 @@
     "vitest": "^5.1.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": "^22.19.0 || ^24.11.0 || >=26.0.0"
+  },
+  "overrides": {
+    "dompurify": "^3.4.18",
+    "zod": "$zod"
   }
 }

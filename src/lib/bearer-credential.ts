@@ -5,10 +5,10 @@ export interface BearerCredentialProvider {
 
 const MAX_CREDENTIAL_LENGTH = 16 * 1024;
 
-function containsControlCharacters(value: string): boolean {
-  for (const character of value) {
-    const code = character.charCodeAt(0);
-    if (code <= 31 || code === 127) return true;
+function containsInvalidTokenCharacters(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 32 || code >= 127) return true;
   }
   return false;
 }
@@ -18,7 +18,7 @@ function validateBearerToken(value: unknown): string {
     throw new Error("Credential provider returned no token.");
   }
   const token = value.trim();
-  if (!token || token.length > MAX_CREDENTIAL_LENGTH || containsControlCharacters(token)) {
+  if (!token || token.length > MAX_CREDENTIAL_LENGTH || containsInvalidTokenCharacters(token)) {
     throw new Error("Credential provider returned an invalid token.");
   }
   return token;

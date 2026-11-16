@@ -18,6 +18,14 @@ describe("parseWorkspaceReference", () => {
 
   it("extracts the ID from a drive.google.com open?id= URL", () => {
     expect(parseWorkspaceReference(`https://drive.google.com/open?id=${id}`, "spreadsheet")).toBe(id);
+    expect(parseWorkspaceReference(`https://docs.google.com/document/u/0/d/${id}/edit`, "document")).toBe(id);
+  });
+
+  it("rejects untyped docs.google.com paths and ?id= fallbacks on docs.google.com", () => {
+    expect(() => parseWorkspaceReference(`https://docs.google.com/forms/d/${id}/edit`, "document"))
+      .toThrowError(/forms URL/);
+    expect(() => parseWorkspaceReference(`https://docs.google.com/open?id=${id}`, "spreadsheet"))
+      .toThrowError(/Could not find/);
   });
 
   it("rejects a URL whose file kind does not match the tool", () => {

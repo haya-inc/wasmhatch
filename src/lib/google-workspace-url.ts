@@ -64,28 +64,49 @@ export function parseWorkspaceReference(reference: unknown, kind: GoogleWorkspac
     throw new GoogleWorkspaceReferenceError("Only docs.google.com and drive.google.com URLs are supported.");
   }
 
-  // drive.google.com/open?id=<id> form.
-  const queryId = url.searchParams.get("id");
-  if (queryId) {
-    if (FILE_ID_PATTERN.test(queryId)) return queryId;
-    throw new GoogleWorkspaceReferenceError(`That URL does not contain a valid ${KIND_LABELS[kind]} file ID.`);
+  // drive.google.com/open?id=<id> or drive.google.com/uc?id=<id> form.
+  if (host === "drive.google.com") {
+    const queryId = url.searchParams.get("id");
+    if (queryId) {
+      if (FILE_ID_PATTERN.test(queryId)) return queryId;
+      throw new GoogleWorkspaceReferenceError(`That URL does not contain a valid ${KIND_LABELS[kind]} file ID.`);
+    }
   }
 
-  // docs.google.com/<segment>/d/<id>/... form.
-  const segments = url.pathname.split("/").filter(Boolean);
-  const leadingSegment = segments[0]?.toLowerCase();
+  // Normalize optional multi-account (/u/<n>/...) or Workspace domain (/a/<domain>/...) prefixes.
+  let segments = url.pathname.split("/").filter(Boolean);
   if (
-    host === "docs.google.com" &&
-    leadingSegment &&
-    leadingSegment !== KIND_SEGMENTS[kind] &&
-    (leadingSegment === "spreadsheets" || leadingSegment === "document" || leadingSegment === "presentation")
+    (segments[0] === "u" && /^\d+$/.test(segments[1] ?? "")) ||
+    (segments[0] === "a" && Boolean(segments[1]))
   ) {
-    throw new GoogleWorkspaceReferenceError(
-      `That looks like a ${leadingSegment} URL, but this tool expects a ${KIND_LABELS[kind]} file.`
-    );
+    segments = segments.slice(2);
   }
-  const idIndex = segments.indexOf("d") + 1;
-  const candidate = idIndex > 0 ? segments[idIndex] : undefined;
-  if (candidate && FILE_ID_PATTERN.test(candidate)) return candidate;
+
+  if (host === "docs.google.com") {
+    const leadingSegment = segments[0]?.toLowerCase();
+    if (
+      leadingSegment &&
+      leadingSegment !== KIND_SEGMENTS[kind] &&
+      (leadingSegment === "spreadsheets" || leadingSegment === "document" || leadingSegment === "presentation" || leadingSegment === "forms" || leadingSegment === "drawings")
+    ) {
+      throw new GoogleWorkspaceReferenceError(
+        `That looks like a ${leadingSegment} URL, but this tool expects a ${KIND_LABELS[kind]} file.`
+      );
+    }
+    if (leadingSegment !== KIND_SEGMENTS[kind]) {
+      throw new GoogleWorkspaceReferenceError(`Could not find a ${KIND_LABELS[kind]} file ID in that URL.`);
+    }
+    const rest = segments[1] === "u" && /^\d+$/.test(segments[2] ?? "") ? segments.slice(3) : segments.slice(1);
+    const candidate = rest[0] === "d" ? rest[1] : undefined;
+    if (candidate && FILE_ID_PATTERN.test(candidate)) return candidate;
+    throw new GoogleWorkspaceReferenceError(`Could not find a ${KIND_LABELS[kind]} file ID in that URL.`);
+  }
+
+  // drive.google.com/file/d/<id>/... form.
+  if (segments[0]?.toLowerCase() === "file") {
+    const rest = segments[1] === "u" && /^\d+$/.test(segments[2] ?? "") ? segments.slice(3) : segments.slice(1);
+    const candidate = rest[0] === "d" ? rest[1] : undefined;
+    if (candidate && FILE_ID_PATTERN.test(candidate)) return candidate;
+  }
   throw new GoogleWorkspaceReferenceError(`Could not find a ${KIND_LABELS[kind]} file ID in that URL.`);
 }

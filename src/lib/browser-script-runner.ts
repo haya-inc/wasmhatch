@@ -54,6 +54,11 @@ export async function runBusinessScriptInWorker(
       reject(new Error("Sandbox worker failed to start."));
     };
     options.signal?.addEventListener("abort", onAbort, { once: true });
-    worker.postMessage({ id, source, input, limits: options.limits });
+    try {
+      worker.postMessage({ id, source, input, limits: options.limits });
+    } catch (error) {
+      cleanup();
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
   });
 }

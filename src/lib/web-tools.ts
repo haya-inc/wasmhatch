@@ -162,6 +162,9 @@ export function createWebToolExecutor(
         if (!key) {
           return fail("Web search is not connected. Ask the user to add their Tavily key in the sidebar.");
         }
+        if (!/^[\x21-\x7e]{1,16384}$/.test(key)) {
+          return fail("The Tavily API key contains invalid characters. Re-paste the key in the sidebar.");
+        }
         const query = typeof args.query === "string" ? args.query.trim() : "";
         if (!query) return fail("web_search requires a non-empty query.");
         if (query.length > MAX_QUERY_LENGTH) {
@@ -202,6 +205,9 @@ export function createWebToolExecutor(
         if (!key) {
           return fail("Page reading is not connected. Ask the user to add their Jina key in the sidebar.");
         }
+        if (!/^[\x21-\x7e]{1,16384}$/.test(key)) {
+          return fail("The Jina API key contains invalid characters. Re-paste the key in the sidebar.");
+        }
         const url = requirePageUrl(args);
         if (!(url instanceof URL)) return url;
         const response = await fetchImpl(`${JINA_READER_BASE_URL}${url.toString()}`, {
@@ -228,8 +234,11 @@ export function createWebToolExecutor(
       return fail(`Unknown web tool: ${name}`);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") throw error;
-      // Network-layer failures never contain the key; keep the cause, bounded.
-      const cause = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      const keys = getKeys();
+      let cause = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      for (const secret of [keys.tavily.trim(), keys.jina.trim()]) {
+        if (secret) cause = cause.split(secret).join("[redacted]");
+      }
       return fail(`The web request failed before completion (${cause.slice(0, 160)}). Check the connection and retry.`);
     }
   };

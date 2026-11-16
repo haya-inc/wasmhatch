@@ -23,6 +23,17 @@ msgstr "{0, plural, other {เชื่อมต่อแล้ว · # เค�
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, other {ส่งไฟล์ Google # ไฟล์ให้ผู้ช่วยแล้ว}}"
 
+#. placeholder {0}: parsed.yTitle
+#. placeholder {1}: parsed.xTitle
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "{0} by {1}"
+msgstr "{0} ตาม {1}"
+
+#. placeholder {0}: dataset.columns.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} columns"
+msgstr "{0} คอลัมน์"
+
 #. placeholder {0}: journal.events.length
 #. placeholder {1}: journal.metrics.toolCalls
 #. placeholder {2}: journal.metrics.commits
@@ -35,6 +46,27 @@ msgstr "{0} เหตุการณ์ · เรียกเครื่อง�
 msgid "{0} files:"
 msgstr "{0} ไฟล์:"
 
+#. placeholder {0}: col.formulaWarningCount
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula"
+msgstr "สูตร {0} รายการ"
+
+#. placeholder {0}: dataset.formulaWarnings.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula warnings"
+msgstr "คำเตือนสูตร {0} รายการ"
+
+#. placeholder {0}: result.path
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} is already up to date."
+msgstr "{0} เป็นข้อมูลล่าสุดอยู่แล้ว"
+
+#. placeholder {0}: preview.totalLines
+#. placeholder {1}: preview.byteLength
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} lines · {1} B"
+msgstr "{0} บรรทัด · {1} B"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/components/chat/TeamSidebar.tsx
 msgid "{0} min"
@@ -46,10 +78,34 @@ msgstr "{0} นาที"
 msgid "{0} of {1} auto runs left."
 msgstr "เหลือรอบทำงานอัตโนมัติ {0} จาก {1} ครั้ง"
 
+#. placeholder {0}: filteredRows.length
+#. placeholder {1}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} of {1} rows"
+msgstr "{0} จาก {1} แถว"
+
+#. placeholder {0}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} rows"
+msgstr "{0} แถว"
+
+#. placeholder {0}: matrix.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{0} rows · {totalCells} cells"
+msgstr "{0} แถว · {totalCells} เซลล์"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ToolsSidebar.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
 msgstr "พื้นที่ทำงานของ {0} — ลูกเจี๊ยบแต่ละตัวมีไฟล์ของตัวเอง"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{formulaCount} formula cells neutralized on export"
+msgstr "ทำให้เซลล์สูตร {formulaCount} เซลล์ปลอดภัยเมื่อส่งออกแล้ว"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{formulaCount} formula-prefixed cells (written as literal text)"
+msgstr "{formulaCount} เซลล์ที่ขึ้นต้นด้วยสูตร (จะถูกเขียนเป็นข้อความธรรมดา)"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "{minutes} min"
@@ -147,6 +203,10 @@ msgid "Add a sample spreadsheet"
 msgstr "เพิ่มสเปรดชีตตัวอย่าง"
 
 #: src/lib/tool-summary.ts
+msgid "Adding a slide — {title}"
+msgstr "กำลังเพิ่มสไลด์ — {title}"
+
+#: src/lib/tool-summary.ts
 msgid "Adding a ticket — {title}"
 msgstr "กำลังเพิ่มตั๋วงาน — {title}"
 
@@ -171,6 +231,19 @@ msgstr "คีย์ API"
 msgid "Appending text to a Google Doc"
 msgstr "กำลังเพิ่มข้อความใน Google เอกสาร"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Apply to workspace"
+msgstr "นำไปใช้กับพื้นที่ทำงาน"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Applying…"
+msgstr "กำลังนำไปใช้…"
+
+#. placeholder {0}: artifact.title
+#: src/components/ArtifactPanel.tsx
+msgid "Artifact: {0}"
+msgstr "ชิ้นงาน: {0}"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ChatTranscript.tsx
 msgid "Ask {0} for the outcome you need…"
@@ -191,6 +264,10 @@ msgstr "กำลังขอไฟล์ Google"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Assistant"
 msgstr "ผู้ช่วย"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Audio unavailable in this tab"
+msgstr "ไม่สามารถเล่นเสียงในแท็บนี้ได้"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Auto — match this browser"
@@ -264,9 +341,29 @@ msgstr "ไบต์ — จะไม่มีการเขียนใด ๆ
 msgid "Cancel"
 msgstr "ยกเลิก"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas"
+msgstr "แคนวาส"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas actions"
+msgstr "การทำงานบนแคนวาส"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Careful — asks before saving"
 msgstr "รอบคอบ — ถามก่อนบันทึก"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Chart specification could not be parsed."
+msgstr "ไม่สามารถแยกวิเคราะห์ข้อมูลจำเพาะของแผนภูมิได้"
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "Check Chrome's on-device AI requirements"
+msgstr "ตรวจสอบข้อกำหนดของ AI ในตัว Chrome"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Google Calendar"
+msgstr "กำลังดู Google ปฏิทิน"
 
 #: src/lib/tool-summary.ts
 msgid "Checking Slack channels"
@@ -280,9 +377,17 @@ msgstr "กำลังดูบอร์ดตั๋วงาน"
 msgid "Checks the shared ticket board on your timer and turns finished notes into single-file HTML dashboards."
 msgstr "คอยเช็กบอร์ดตั๋วงานส่วนกลางตามเวลาที่คุณตั้ง แล้วเปลี่ยนบันทึกงานที่เสร็จแล้วเป็นแดชบอร์ด HTML ไฟล์เดียว"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose Drive files…"
+msgstr "เลือกไฟล์จาก Drive…"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Choose files…"
 msgstr "เลือกไฟล์…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose specific Google Drive files to grant access for this task."
+msgstr "เลือกไฟล์ Google Drive ที่ต้องการอนุญาตให้เข้าถึงสำหรับงานนี้"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
@@ -300,9 +405,25 @@ msgstr "จัดระเบียบและตรวจสอบไฟล์
 msgid "Clipboard API is not available in this browser."
 msgstr "API คลิปบอร์ดไม่พร้อมใช้งานในเบราว์เซอร์นี้"
 
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/basic-catalog-react.tsx
 msgid "Close"
 msgstr "ปิด"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column"
+msgstr "คอลัมน์"
+
+#. placeholder {0}: profiles.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column statistics ({0})"
+msgstr "สถิติคอลัมน์ ({0})"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Computing…"
+msgstr "กำลังคำนวณ…"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Connect"
@@ -370,13 +491,50 @@ msgstr "เชื่อมลูกเจี๊ยบทุกตัวเข้
 msgid "Contribute"
 msgstr "ร่วมพัฒนา"
 
+#: src/components/a2ui/CanvasStage.tsx
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copied"
 msgstr "คัดลอกแล้ว"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copied standalone HTML to clipboard"
+msgstr "คัดลอก HTML แบบสแตนด์อโลนไปยังคลิปบอร์ดแล้ว"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copy"
 msgstr "คัดลอก"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copy HTML"
+msgstr "คัดลอก HTML"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Could not compute diff preview."
+msgstr "ไม่สามารถคำนวณตัวอย่างความต่างได้"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Could not copy HTML to clipboard"
+msgstr "ไม่สามารถคัดลอก HTML ไปยังคลิปบอร์ดได้"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not open Google Drive picker."
+msgstr "ไม่สามารถเปิดหน้าต่างเลือกไฟล์ Google Drive ได้"
+
+#: src/pages/ChatPage.tsx
+msgid "Could not prepare the on-device model: {reason}"
+msgstr "ไม่สามารถเตรียมโมเดลบนอุปกรณ์ได้: {reason}"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not send Slack message."
+msgstr "ไม่สามารถส่งข้อความไปยัง Slack ได้"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not undo Google Sheet write."
+msgstr "ไม่สามารถเลิกทำการเขียนลงใน Google ชีตได้"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not update Google Sheet."
+msgstr "ไม่สามารถอัปเดต Google ชีตได้"
 
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
@@ -386,6 +544,10 @@ msgstr "สร้าง {0}"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Create another account and upload files to a vendor server"
 msgstr "ต้องสมัครบัญชีเพิ่มอีก และอัปโหลดไฟล์ขึ้นเซิร์ฟเวอร์ผู้ให้บริการ"
+
+#: src/lib/tool-summary.ts
+msgid "Creating a calendar event — {summary}"
+msgstr "กำลังสร้างกิจกรรมในปฏิทิน — {summary}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
@@ -411,6 +573,15 @@ msgstr "รหัสโมเดลกำหนดเอง"
 msgid "Custom model ID…"
 msgstr "รหัสโมเดลกำหนดเอง…"
 
+#. placeholder {0}: points.length
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Data summary ({0} points)"
+msgstr "สรุปข้อมูล ({0} จุด)"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Data table"
+msgstr "ตารางข้อมูล"
+
 #: src/lib/hatchling-presets.ts
 msgid "Data wrangler"
 msgstr "นักจัดระเบียบข้อมูล"
@@ -418,6 +589,10 @@ msgstr "นักจัดระเบียบข้อมูล"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Data wrangler · isolated workspace"
 msgstr "นักจัดระเบียบข้อมูล · พื้นที่ทำงานแยกอิสระ"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Dataset profile"
+msgstr "โปรไฟล์ชุดข้อมูล"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Decline"
@@ -434,6 +609,10 @@ msgstr "บอกผลลัพธ์ที่คุณต้องการ…
 #: src/lib/hatchling-presets.ts
 msgid "Desk runner"
 msgstr "ผู้ดูแลโต๊ะงาน"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Dialog"
+msgstr "กล่องโต้ตอบ"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect"
@@ -459,6 +638,10 @@ msgstr "ยกเลิกการเชื่อมต่อ Slack"
 msgid "Disconnect web search"
 msgstr "ยกเลิกการเชื่อมต่อการค้นหาเว็บ"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Distinct"
+msgstr "ไม่ซ้ำ"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Doing"
 msgstr "กำลังทำ"
@@ -479,9 +662,15 @@ msgstr "เรียบร้อย — เบราว์เซอร์นี�
 msgid "Done! Download the HTML report, update a Google Sheet, or send highlights to Slack."
 msgstr "เรียบร้อย! ดาวน์โหลดรายงาน HTML อัปเดต Google Sheet หรือส่งสรุปไฮไลต์เข้า Slack ได้เลย"
 
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/workspace-catalog.tsx
 msgid "Download"
 msgstr "ดาวน์โหลด"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Download .patch"
+msgstr "ดาวน์โหลด .patch"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
@@ -511,6 +700,10 @@ msgstr "ทุกการแก้ไขจะแสดงส่วนต่า
 msgid "Each run"
 msgstr "แต่ละรอบ"
 
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Embedded apps are disabled for this hatchling."
+msgstr "แอปที่ฝังไว้ถูกปิดใช้งานสำหรับแฮตช์ลิงนี้"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Every"
 msgstr "ทุก ๆ"
@@ -535,13 +728,36 @@ msgstr "ทุกอย่างทำงานอยู่ในแท็บเ
 msgid "Example conversation"
 msgstr "ตัวอย่างบทสนทนา"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export blocked"
+msgstr "การส่งออกถูกบล็อก"
+
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Export HTML"
+msgstr "ส่งออก HTML"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export JSON"
 msgstr "ส่งออก JSON"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export safe CSV"
+msgstr "ส่งออก CSV ที่ปลอดภัย"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export this hatchling"
 msgstr "ส่งออกลูกเจี๊ยบตัวนี้"
+
+#. placeholder {0}: exported.fileName
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Exported {0}"
+msgstr "ส่งออก {0} แล้ว"
+
+#. placeholder {0}: sortedRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Exported {0} rows"
+msgstr "ส่งออกแล้ว {0} แถว"
 
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials."
@@ -559,13 +775,33 @@ msgstr "เร็ว — ลงมือทำเลย (ย้อนกลั�
 msgid "Fast, and still yours."
 msgstr "ทำงานไว และยังเป็นของคุณเต็มร้อย"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "File could not be read."
+msgstr "ไม่สามารถอ่านไฟล์ได้"
+
 #: src/components/chat/useGoogleConnector.ts
 msgid "File handover cancelled — nothing was shared."
 msgstr "ยกเลิกการส่งไฟล์แล้ว — ไม่มีอะไรถูกแชร์"
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Filter options…"
+msgstr "กรองตัวเลือก…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows"
+msgstr "กรองแถว"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows…"
+msgstr "กรองแถว…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Fix messy spreadsheets"
 msgstr "แก้สเปรดชีตที่รกยุ่งเหยิง"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Formula"
+msgstr "สูตร"
 
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google access revoked for this tab."
@@ -590,6 +826,10 @@ msgstr "มีคำขอส่งไฟล์ Google"
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google revocation failed."
 msgstr "เพิกถอนการเข้าถึง Google ไม่สำเร็จ"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Google Sheet preview"
+msgstr "ตัวอย่าง Google ชีต"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Google's own picker opens next — only the files you choose there are shared."
@@ -646,9 +886,21 @@ msgstr "ซ่อนแถบด้านข้างของทีม"
 msgid "Hide the tools sidebar"
 msgstr "ซ่อนแถบด้านข้างเครื่องมือ"
 
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Hover or focus a mark to inspect"
+msgstr "ชี้เมาส์หรือโฟกัสที่จุดข้อมูลเพื่อดูรายละเอียด"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "How it works"
 msgstr "วิธีใช้งาน"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image preview unavailable"
+msgstr "ไม่สามารถแสดงตัวอย่างรูปภาพได้"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image unavailable under offline/CSP policy"
+msgstr "ไม่สามารถแสดงรูปภาพได้ตามนโยบายออฟไลน์/CSP"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Import a .agent file"
@@ -665,6 +917,18 @@ msgstr "URL ของ Incoming Webhook"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Inspect a hatchling"
 msgstr "ดูข้อมูลลูกเจี๊ยบ"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Inspect sandbox formula"
+msgstr "ตรวจสอบสูตรในแซนด์บ็อกซ์"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Interactive app"
+msgstr "แอปแบบโต้ตอบ"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Isolated sandbox"
+msgstr "แซนด์บ็อกซ์แบบแยกอิสระ"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "It gets to work right away. Every tool call and file edit appears live in the conversation — no black box."
@@ -711,9 +975,21 @@ msgstr "ให้ลูกเจี๊ยบตัวใดก็ได้อ่
 msgid "Listing workspace files"
 msgstr "กำลังดูรายการไฟล์ในพื้นที่ทำงาน"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Literal"
+msgstr "ข้อความตรงตัว"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Load from the registry"
 msgstr "โหลดจากรีจิสทรี"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Loading…"
+msgstr "กำลังโหลด…"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Local QuickJS sandbox"
+msgstr "แซนด์บ็อกซ์ QuickJS ในเครื่อง"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Main desk · everyday partner"
@@ -739,6 +1015,10 @@ msgstr "ทำความรู้จักเหล่าลูกเจี๊
 msgid "Message the agent"
 msgstr "ส่งข้อความถึงผู้ช่วย"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Missing"
+msgstr "ว่าง"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Model"
 msgstr "โมเดล"
@@ -755,9 +1035,18 @@ msgstr "ต้องตรวจสอบ"
 msgid "New chat"
 msgstr "แชทใหม่"
 
+#. placeholder {0}: preview.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "New file ({0} B)"
+msgstr "ไฟล์ใหม่ ({0} B)"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "New ticket title"
 msgstr "ชื่อตั๋วงานใหม่"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Next"
+msgstr "ถัดไป"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Next auto run any moment"
@@ -771,6 +1060,14 @@ msgstr "รอบอัตโนมัติถัดไปในอีกรา
 msgid "No approval pop-ups slowing every step by default. The assistant does the work and shows exact diffs as it goes."
 msgstr "ค่าเริ่มต้นจะไม่มีป๊อปอัปขออนุมัติมาคอยเบรกทุกฝีก้าว ผู้ช่วยจะทำงานให้เลยพร้อมแสดงส่วนต่างที่เปลี่ยนไปแบบจะจะ"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No columns or rows available."
+msgstr "ไม่มีคอลัมน์หรือแถวที่ใช้งานได้"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "No data rows to plot yet."
+msgstr "ยังไม่มีแถวข้อมูลสำหรับพล็อต"
+
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
 msgstr "ยังไม่มีลูกเจี๊ยบ"
@@ -782,6 +1079,10 @@ msgstr "ไม่ต้องติดตั้ง ไม่ต้องมี�
 #: src/components/chat/ToolsSidebar.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
 msgstr "ไม่ต้องใช้คีย์ — ตัวนี้คุยกับ Ollama บนคอมพิวเตอร์ของคุณเอง เริ่ม Ollama โดยอนุญาตเว็บไซต์นี้ (ตั้งค่า OLLAMA_ORIGINS) แล้วเลือกโมเดลที่ดึงมาไว้แล้ว (ollama list)"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No matching rows."
+msgstr "ไม่พบแถวที่ตรงกัน"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "No setup"
@@ -812,12 +1113,28 @@ msgid "On it — running a local cleanup script and building your report now."
 msgstr "จัดให้เลย — กำลังรันสคริปต์จัดระเบียบบนเครื่องและประกอบรายงานให้คุณอยู่"
 
 #: src/components/chat/ToolsSidebar.tsx
-msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
-msgstr "สถานะโมเดลบนเครื่อง: {builtinAvailability} — Chrome 138 ขึ้นไปบนเดสก์ท็อปที่รองรับทำงานได้โดยไม่ต้องใช้คีย์"
+msgid "On-device model download"
+msgstr "การดาวน์โหลดโมเดลบนอุปกรณ์"
+
+#: src/components/chat/ToolsSidebar.tsx
+#~ msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
+#~ msgstr "สถานะโมเดลบนเครื่อง: {builtinAvailability} — Chrome 138 ขึ้นไปบนเดสก์ท็อปที่รองรับทำงานได้โดยไม่ต้องใช้คีย์"
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "On-device model status: {builtinAvailability}. Chrome 148+ on a supported desktop can run tasks without any key."
+msgstr "สถานะโมเดลบนเครื่อง: {builtinAvailability} — Chrome 148 ขึ้นไปบนเดสก์ท็อปที่รองรับทำงานได้โดยไม่ต้องใช้คีย์"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "One assistant for the busywork."
 msgstr "ผู้ช่วยตัวเดียวจบทุกงานจุกจิก"
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Open in Canvas"
+msgstr "เปิดในแคนวาส"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Open sheet"
+msgstr "เปิดชีต"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Open the link — no server, no Docker, no signup. Clean messy spreadsheets with local code, draft Google Docs and Sheets, build one-file HTML reports, or hatch a tiny team of agents right in this tab."
@@ -835,9 +1152,17 @@ msgstr "เปิดแท็บแล้วพิมพ์บอกได้เ
 msgid "Open WasmHatch"
 msgstr "เปิด WasmHatch"
 
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Opened in Canvas"
+msgstr "เปิดอยู่ในแคนวาส"
+
 #: src/App.tsx
 #~ msgid "Opening operator…"
 #~ msgstr "กำลังเปิดโอเปอเรเตอร์…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Opening picker…"
+msgstr "กำลังเปิดหน้าต่างเลือกไฟล์…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
@@ -863,6 +1188,11 @@ msgstr "แพ็กคู่มือและขอบเขตสิทธิ
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "คำสั่งในแพ็กเกจถูกจัดเป็นเนื้อหาที่ไม่น่าเชื่อถือ: มันไม่มีวันเห็นคีย์ของคุณ และใช้ได้เฉพาะความสามารถด้านบนเท่านั้น"
 
+#. placeholder {0}: page + 1
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Page {0} of {totalPages}"
+msgstr "หน้า {0} จาก {totalPages}"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
 msgstr "เชื่อมต่อการอ่านหน้าเว็บแล้ว ลูกเจี๊ยบทุกตัวอ่าน URL ที่ระบุได้ด้วย fetch_page"
@@ -874,6 +1204,10 @@ msgstr "เชื่อมต่อการอ่านหน้าเว็บ
 #: src/components/chat/useSessionConnectors.ts
 msgid "Page reading disconnected."
 msgstr "ยกเลิกการเชื่อมต่อการอ่านหน้าเว็บแล้ว"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Patch export failed."
+msgstr "ส่งออกแพตช์ไม่สำเร็จ"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Pause all auto work"
@@ -916,8 +1250,16 @@ msgid "Posting to Slack — {channel}"
 msgstr "กำลังโพสต์ไปยัง Slack — {channel}"
 
 #: src/components/chat/ToolsSidebar.tsx
+msgid "Prepare on-device model"
+msgstr "เตรียมโมเดลบนอุปกรณ์"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Preparing…"
 msgstr "กำลังเตรียม…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Previous"
+msgstr "ก่อนหน้า"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Primary"
@@ -967,13 +1309,45 @@ msgstr "กำลังเผยแพร่…"
 msgid "Queue a piece of work…"
 msgstr "เพิ่มงานเข้าคิว…"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS · {lastDurationMs} ms"
+msgstr "QuickJS · {lastDurationMs} ms"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS ready"
+msgstr "QuickJS พร้อมใช้งาน"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS transform failed."
+msgstr "การแปลงด้วย QuickJS ล้มเหลว"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Range / Mean"
+msgstr "ช่วง / ค่าเฉลี่ย"
+
 #: src/lib/tool-summary.ts
 msgid "Reading {path}"
 msgstr "กำลังอ่าน {path}"
 
 #: src/lib/tool-summary.ts
+msgid "Reading a Google Doc"
+msgstr "กำลังอ่าน Google เอกสาร"
+
+#: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
 msgstr "กำลังอ่าน Google ชีต"
+
+#: src/lib/tool-summary.ts
+msgid "Reading a Google Slides deck"
+msgstr "กำลังอ่าน Google สไลด์"
+
+#: src/lib/tool-summary.ts
+msgid "Reading web page — {url}"
+msgstr "กำลังอ่านหน้าเว็บ — {url}"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Recalculate"
+msgstr "คำนวณใหม่"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Registry package URL"
@@ -1025,6 +1399,10 @@ msgstr "รีเซ็ตโควตา"
 msgid "Resting"
 msgstr "กำลังพัก"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Restored previous cell values in {range}."
+msgstr "คืนค่าข้อมูลเซลล์ก่อนหน้าใน {range} แล้ว"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Revert"
 msgstr "ย้อนกลับ"
@@ -1057,6 +1435,10 @@ msgstr "กำลังรันสคริปต์ในแซนด์บ็
 msgid "Runs in this browser tab with your API key, local Ollama, or Chrome’s built-in AI — no WasmHatch server in between."
 msgstr "ทำงานในแท็บเบราว์เซอร์นี้ด้วยคีย์ API ของคุณ, Ollama บนเครื่อง หรือ AI ในตัวของ Chrome — ไม่มีเซิร์ฟเวอร์ WasmHatch คั่นกลาง"
 
+#: src/components/ArtifactPanel.tsx
+msgid "Runs isolated from the app: no cookies, no storage, no network. Download to keep it."
+msgstr "ทำงานแยกจากแอป: ไม่มีคุกกี้ ไม่มีพื้นที่จัดเก็บ ไม่เชื่อมต่อเครือข่าย ดาวน์โหลดเพื่อเก็บไว้"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Runs local cleanup scripts on CSV and JSON files so counts and totals never rely on guesswork."
 msgstr "รันสคริปต์จัดระเบียบบนเครื่องกับไฟล์ CSV และ JSON เพื่อให้จำนวนนับและยอดรวมแม่นยำ ไม่ต้องพึ่งการเดาสุ่ม"
@@ -1069,9 +1451,27 @@ msgstr "ทำงานเฉพาะตอนที่แท็บนี้เ
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
 msgstr "เพิ่มสเปรดชีตตัวอย่างไว้ข้าง ๆ ไฟล์ของคุณแล้ว — ไม่ได้แตะต้องไฟล์ของคุณเลย"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Sandbox scripting capability is disabled for this hatchling."
+msgstr "ความสามารถในการรันสคริปต์แซนด์บ็อกซ์ถูกปิดไว้สำหรับลูกเจี๊ยบตัวนี้"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Sandboxed"
+msgstr "อยู่ในแซนด์บ็อกซ์"
+
+#. placeholder {0}: result.path
+#. placeholder {1}: result.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Saved {0} ({1} bytes). Undo is available in chat."
+msgstr "บันทึก {0} ({1} ไบต์) แล้ว สามารถเลิกทำได้ในแชต"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Say what you need"
 msgstr "บอกสิ่งที่ต้องการ"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Scope: drive.file — writes RAW literal values only to spreadsheets created or handed over in this session."
+msgstr "ขอบเขต: drive.file — เขียนค่าข้อความตรงตัว (RAW) เฉพาะในสเปรดชีตที่สร้างหรือส่งมอบในเซสชันนี้เท่านั้น"
 
 #. placeholder {0}: selected.thread.capabilities.join(", ")
 #: src/components/chat/TeamSidebar.tsx
@@ -1082,9 +1482,18 @@ msgstr "เครื่องมือที่อนุญาต: {0}"
 msgid "Scoped tools: conversation only"
 msgstr "เครื่องมือที่อนุญาต: สนทนาอย่างเดียว"
 
+#. placeholder {0}: scriptPath.trim()
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Script ({0})"
+msgstr "สคริปต์ ({0})"
+
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
 msgstr "กำลังค้นเว็บ — {query}"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Select an option…"
+msgstr "เลือกตัวเลือก…"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Self-contained HTML pages render right beside the chat, ready to download or share."
@@ -1094,9 +1503,30 @@ msgstr "หน้าเว็บ HTML ที่จบในตัวจะแส
 msgid "Send"
 msgstr "ส่ง"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Send to Slack"
+msgstr "ส่งไปยัง Slack"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Sending…"
+msgstr "กำลังส่ง…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Separate desks, zero collisions"
 msgstr "แยกโต๊ะชัดเจน งานไม่ชนกัน"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Series"
+msgstr "ชุดข้อมูล"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Share Google Drive files"
+msgstr "แชร์ไฟล์ Google Drive"
+
+#. placeholder {0}: pickedFiles.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Shared files ({0}):"
+msgstr "ไฟล์ที่แชร์ ({0}):"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Shared ticket board & honest auto work"
@@ -1109,6 +1539,11 @@ msgstr "แสดงแถบด้านข้างของทีม"
 #: src/pages/ChatPage.tsx
 msgid "Show the tools sidebar"
 msgstr "แสดงแถบด้านข้างเครื่องมือ"
+
+#. placeholder {0}: dataset.rows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "showing first {0} rows"
+msgstr "กำลังแสดง {0} แถวแรก"
 
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack bot token connected. Channel tools are active for every hatchling."
@@ -1130,9 +1565,19 @@ msgstr "ติดต่อ Slack ไม่ได้ โปรดตรวจส�
 msgid "Slack disconnected."
 msgstr "ยกเลิกการเชื่อมต่อ Slack แล้ว"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Slack message preview"
+msgstr "ตัวอย่างข้อความ Slack"
+
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
 msgstr "Slack ปฏิเสธโทเคนนั้น โปรดติดตั้งแอปใน Slack ใหม่ คัดลอกโทเคนของบอตอันใหม่ แล้วลองอีกครั้ง"
+
+#. placeholder {0}: col.label
+#. placeholder {1}: filteredRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Sorted by {0}, {nextDirection}, {1} rows"
+msgstr "เรียงตาม {0}, {nextDirection}, {1} แถว"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Sources:"
@@ -1153,6 +1598,10 @@ msgstr "กดดาวบน GitHub"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Starting with WasmHatch"
 msgstr "เริ่มต้นกับ WasmHatch"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Starts with a spreadsheet formula character"
+msgstr "ขึ้นต้นด้วยอักขระสูตรของสเปรดชีต"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Stop"
@@ -1227,6 +1676,10 @@ msgstr "โมเดลค้นเว็บผ่าน {0} ได้ ค่า
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
 msgstr "โมเดลบนเครื่องยังไม่รองรับภาษานี้และจะตอบเป็นภาษาอังกฤษ ส่วนผู้ให้บริการคลาวด์ตอบเป็นภาษาของคุณได้"
 
+#: src/pages/ChatPage.tsx
+msgid "The on-device model is ready."
+msgstr "โมเดลบนอุปกรณ์พร้อมใช้งานแล้ว"
+
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "The package could not be hatched."
 msgstr "ฟักแพ็กเกจไม่ได้"
@@ -1291,6 +1744,10 @@ msgstr "ช่วยแปลงบันทึกการอัปเดตช
 msgid "Turn this sales export into a clean summary I can share."
 msgstr "ช่วยเปลี่ยนไฟล์ส่งออกยอดขายนี้เป็นสรุปอ่านง่ายที่ส่งต่อให้ทีมได้หน่อย"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Type"
+msgstr "ประเภท"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Type it like you’d tell a teammate. Drop in local files, connect Google in a couple of clicks, or point at local Ollama or MCP."
 msgstr "พิมพ์เหมือนคุยกับเพื่อนร่วมทีมได้เลย ลากไฟล์ในเครื่องมาวาง เชื่อมต่อ Google ในไม่กี่คลิก หรือชี้ไปที่ Ollama หรือ MCP บนเครื่องก็ได้"
@@ -1307,15 +1764,29 @@ msgstr "ย้อนกลับ"
 msgid "Undo anything in one click"
 msgstr "ย้อนกลับได้ทุกอย่างในคลิกเดียว"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Undo write"
+msgstr "เลิกทำการเขียน"
+
 #. placeholder {0}: capabilities.unknown.join(", ")
 #: src/components/chat/ChatTranscript.tsx
 msgid "Unrecognized requests (granted nothing): {0}"
 msgstr "คำขอที่ไม่รู้จัก (ไม่ให้สิทธิ์ใด ๆ): {0}"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Up to date"
+msgstr "เป็นข้อมูลล่าสุด"
+
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
 msgid "Update {0}"
 msgstr "อัปเดต {0}"
+
+#. placeholder {0}: commitState.updatedCells
+#. placeholder {1}: commitState.range
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Updated {0} cells in {1}."
+msgstr "อัปเดต {0} เซลล์ใน {1} แล้ว"
 
 #: src/lib/tool-summary.ts
 msgid "Updating a Google Sheet"
@@ -1333,6 +1804,14 @@ msgstr "URL (เครื่องนี้เท่านั้น)"
 msgid "Using {server} — {tool}"
 msgstr "กำลังใช้ {server} — {tool}"
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Video unavailable in this tab"
+msgstr "ไม่สามารถเล่นวิดีโอในแท็บนี้ได้"
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "View actions"
+msgstr "การทำงานของมุมมอง"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "view diff"
 msgstr "ดูการเปลี่ยนแปลง"
@@ -1340,6 +1819,10 @@ msgstr "ดูการเปลี่ยนแปลง"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
 msgstr "อยากได้มากกว่าหนึ่งช่อง? สร้างแอป Slack เล็ก ๆ จาก manifest สำเร็จรูปใน <0>docs/slack.md</0> แล้ววางโทเคนของบอต ผู้ช่วยจะดูรายชื่อช่องสาธารณะและโพสต์ลงช่องไหนก็ได้ โดยยังคงไม่อ่านข้อความใด ๆ โทเคนจะอยู่แค่ในหน่วยความจำของแท็บนี้"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "WasmHatch cannot browse your Drive on its own — only the exact files you select in Google's picker are shared."
+msgstr "WasmHatch ไม่สามารถเรียกดู Drive ของคุณเองได้ จะแชร์เฉพาะไฟล์ที่คุณเลือกในหน้าต่างเลือกไฟล์ของ Google เท่านั้น"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Watch it happen"
@@ -1385,6 +1868,14 @@ msgstr "กำลังทำงาน…"
 msgid "Works the ticket board, Google files, Slack, and MCP."
 msgstr "ดูแลบอร์ดตั๋วงาน ไฟล์ Google, Slack และ MCP"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace diff"
+msgstr "ความต่างของพื้นที่ทำงาน"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace read access is disabled for this hatchling."
+msgstr "สิทธิ์การอ่านพื้นที่ทำงานถูกปิดไว้สำหรับลูกเจี๊ยบตัวนี้"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Wrestle with config files just to wire up tools"
 msgstr "ต้องปล้ำกับไฟล์ตั้งค่ามากมายแค่เพื่อเชื่อมเครื่องมือเข้าด้วยกัน"
@@ -1393,9 +1884,25 @@ msgstr "ต้องปล้ำกับไฟล์ตั้งค่ามา
 msgid "Write approval required"
 msgstr "ต้องอนุมัติการเขียนก่อน"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Write could not be applied."
+msgstr "ไม่สามารถบันทึกการเขียนได้"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write to Google Sheet"
+msgstr "เขียนลงใน Google ชีต"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write-only preview: posts to your connected Slack channel or webhook and never reads message history."
+msgstr "ตัวอย่างแบบเขียนอย่างเดียว: โพสต์ไปยังช่อง Slack หรือเว็บฮุกที่เชื่อมต่อโดยไม่อ่านประวัติข้อความ"
+
 #: src/lib/tool-summary.ts
 msgid "Writing {path}"
 msgstr "กำลังเขียน {path}"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Writing…"
+msgstr "กำลังเขียน…"
 
 #: src/pages/ChatPage.tsx
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."

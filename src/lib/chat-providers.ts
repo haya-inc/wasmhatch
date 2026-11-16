@@ -57,6 +57,11 @@ export interface CloudProviderDef {
   defaultModel: string;
 }
 
+// Model IDs checked on 2026-11-16 against the providers' published catalogs:
+// https://platform.claude.com/docs/en/models/overview
+// https://developers.openai.com/api/docs/models
+// https://openrouter.ai/api/v1/models (text output + tools + chat/completions)
+// https://ollama.com/library/{lfm3,qwen3.6,llama4}
 export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
   {
     id: "anthropic",
@@ -69,11 +74,12 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
     keyPlaceholder: "sk-ant-…",
     webSearch: "server-tool",
     models: [
-      { value: "claude-sonnet-5", label: "Claude Sonnet 5 — fast and capable (recommended)" },
-      { value: "claude-opus-4-8", label: "Claude Opus 4.8 — most capable" },
-      { value: "claude-haiku-4-5", label: "Claude Haiku 4.5 — fastest, lowest cost" }
+      { value: "claude-sonnet-5-5", label: "Claude Sonnet 5.5 — fast and capable (recommended)" },
+      { value: "claude-opus-5-5", label: "Claude Opus 5.5 — complex work" },
+      { value: "claude-fable-5-2", label: "Claude Fable 5.2 — most capable" },
+      { value: "claude-haiku-5-5", label: "Claude Haiku 5.5 — fastest, lowest cost" }
     ],
-    defaultModel: "claude-sonnet-5"
+    defaultModel: "claude-sonnet-5-5"
   },
   {
     id: "openai",
@@ -85,11 +91,12 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
     host: "api.openai.com",
     keyPlaceholder: "sk-…",
     models: [
-      { value: "gpt-5.6-terra", label: "GPT-5.6 Terra — fast and capable (recommended)" },
-      { value: "gpt-5.6-sol", label: "GPT-5.6 Sol — most capable" },
-      { value: "gpt-5.6-luna", label: "GPT-5.6 Luna — fastest, lowest cost" }
+      { value: "gpt-6.1-terra", label: "GPT-6.1 Terra — fast and capable (recommended)" },
+      { value: "gpt-6.1-sol", label: "GPT-6.1 Sol — complex work" },
+      { value: "gpt-6-astra", label: "GPT-6 Astra — most capable" },
+      { value: "gpt-6-luna", label: "GPT-6 Luna — fastest, lowest cost" }
     ],
-    defaultModel: "gpt-5.6-terra"
+    defaultModel: "gpt-6.1-terra"
   },
   {
     id: "openrouter",
@@ -102,14 +109,16 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
     keyPlaceholder: "sk-or-…",
     webSearch: "plugin",
     models: [
-      { value: "anthropic/claude-sonnet-5", label: "Claude Sonnet 5 (recommended)" },
-      { value: "anthropic/claude-opus-4.8", label: "Claude Opus 4.8" },
-      { value: "openai/gpt-5.2", label: "GPT-5.2" },
-      { value: "google/gemini-3.5-flash", label: "Gemini 3.5 Flash" },
-      { value: "x-ai/grok-4.3", label: "Grok 4.3" },
-      { value: "deepseek/deepseek-chat", label: "DeepSeek V3" }
+      { value: "anthropic/claude-sonnet-5.5", label: "Claude Sonnet 5.5 (recommended)" },
+      { value: "anthropic/claude-opus-5.5", label: "Claude Opus 5.5" },
+      { value: "anthropic/claude-fable-5.2", label: "Claude Fable 5.2" },
+      { value: "anthropic/claude-haiku-5.5", label: "Claude Haiku 5.5" },
+      { value: "openai/gpt-6.1-sol", label: "GPT-6.1 Sol" },
+      { value: "google/gemini-4-hydrogen", label: "Gemini 4 Hydrogen" },
+      { value: "x-ai/grok-4.7", label: "Grok 4.7" },
+      { value: "deepseek/deepseek-v4.1-flash-1017", label: "DeepSeek V4.1 Flash (1017)" }
     ],
-    defaultModel: "anthropic/claude-sonnet-5"
+    defaultModel: "anthropic/claude-sonnet-5.5"
   },
   {
     id: "ollama",
@@ -122,10 +131,11 @@ export const CLOUD_PROVIDERS: readonly CloudProviderDef[] = [
     keyPlaceholder: "",
     keyless: true,
     models: [
-      { value: "llama3.2", label: "Llama 3.2 (local)" },
-      { value: "qwen2.5", label: "Qwen 2.5 (local)" }
+      { value: "lfm3", label: "LFM3 1.7B — lightweight (local, ~1.7 GB)" },
+      { value: "qwen3.6", label: "Qwen 3.6 — capable (local, ~23 GB)" },
+      { value: "llama4", label: "Llama 4 Scout (local, ~67 GB)" }
     ],
-    defaultModel: "llama3.2"
+    defaultModel: "lfm3"
   }
 ];
 

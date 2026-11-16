@@ -27,7 +27,7 @@ export const ARTIFACT_IFRAME_SANDBOX = "allow-scripts";
 
 /** Iframe-level CSP injected into every artifact document. */
 export const ARTIFACT_IFRAME_CSP =
-  "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; script-src 'unsafe-inline'";
+  "default-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; script-src 'unsafe-inline'";
 
 export const ARTIFACT_TOOL: AgentToolDefinition = {
   name: "create_artifact",
@@ -94,17 +94,57 @@ export function artifactDownloadName(title: string): string {
   return `${slug || "artifact"}.html`;
 }
 
+function skipWhitespaceAndComments(html: string, start: number): number {
+  let cursor = start;
+  while (cursor < html.length) {
+    const ws = /^\s+/.exec(html.slice(cursor));
+    if (ws) {
+      cursor += ws[0].length;
+      continue;
+    }
+    if (html.startsWith("<!--", cursor)) {
+      const end = html.indexOf("-->", cursor + 4);
+      if (end < 0) return html.length;
+      cursor = end + 3;
+      continue;
+    }
+    break;
+  }
+  return cursor;
+}
+
 /**
- * Inject the iframe-level CSP meta tag into the document head. If the
- * document has a <head>, the meta goes right after it; otherwise a head is
- * prepended so the policy still applies before any content parses.
+ * Inject the iframe-level CSP meta tag into the document head. Scans only the
+ * valid HTML prologue (comments, doctype, `<html>`) before accepting `<head>`
+ * so comments or body markup cannot trick injection past executable tags.
  */
 export function withInjectedCsp(html: string, csp: string = ARTIFACT_IFRAME_CSP): string {
-  const meta = `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
-  const headMatch = html.match(/<head(\s[^>]*)?>/i);
-  if (headMatch && headMatch.index !== undefined) {
-    const insertAt = headMatch.index + headMatch[0].length;
+  const escapedCsp = csp.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${escapedCsp}">`;
+
+  let cursor = skipWhitespaceAndComments(html, 0);
+  let afterDoctype = 0;
+  const doctypeMatch = /^<!doctype\b[^>]*>/i.exec(html.slice(cursor));
+  if (doctypeMatch) {
+    cursor += doctypeMatch[0].length;
+    afterDoctype = cursor;
+    cursor = skipWhitespaceAndComments(html, cursor);
+  }
+  const htmlTagMatch = /^<html(?:\s[^>]*)?>/i.exec(html.slice(cursor));
+  if (htmlTagMatch) {
+    cursor += htmlTagMatch[0].length;
+    cursor = skipWhitespaceAndComments(html, cursor);
+  }
+  const headMatch = /^<head(?:\s[^>]*)?>/i.exec(html.slice(cursor));
+  if (headMatch) {
+    const insertAt = cursor + headMatch[0].length;
     return `${html.slice(0, insertAt)}${meta}${html.slice(insertAt)}`;
+  }
+  if (htmlTagMatch) {
+    return `${html.slice(0, cursor)}<head>${meta}</head>${html.slice(cursor)}`;
+  }
+  if (afterDoctype > 0) {
+    return `${html.slice(0, afterDoctype)}<head>${meta}</head>${html.slice(afterDoctype)}`;
   }
   return `<head>${meta}</head>${html}`;
 }

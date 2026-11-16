@@ -30,7 +30,7 @@ mode working for people who prefer approvals.
 
 Open or resume a browser-based environment with
 [GitHub Codespaces](https://codespaces.new/haya-inc/wasmhatch?quickstart=1).
-The repository pins Node 22 on Debian 12, installs the exact lockfile, and
+The repository pins Node 26 on Debian 12, installs the exact lockfile, and
 installs Chromium plus its Linux dependencies for the Playwright suite. Start
 the app with `npm run dev`; port 5173 opens in the forwarded preview.
 

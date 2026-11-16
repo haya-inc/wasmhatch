@@ -23,6 +23,17 @@ msgstr "{0, plural, one {connected · # tool} other {connected · # tools}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 
+#. placeholder {0}: parsed.yTitle
+#. placeholder {1}: parsed.xTitle
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "{0} by {1}"
+msgstr "{0} by {1}"
+
+#. placeholder {0}: dataset.columns.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} columns"
+msgstr "{0} columns"
+
 #. placeholder {0}: journal.events.length
 #. placeholder {1}: journal.metrics.toolCalls
 #. placeholder {2}: journal.metrics.commits
@@ -35,6 +46,27 @@ msgstr "{0} events · {1} tool calls · {2} writes"
 msgid "{0} files:"
 msgstr "{0} files:"
 
+#. placeholder {0}: col.formulaWarningCount
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula"
+msgstr "{0} formula"
+
+#. placeholder {0}: dataset.formulaWarnings.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula warnings"
+msgstr "{0} formula warnings"
+
+#. placeholder {0}: result.path
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} is already up to date."
+msgstr "{0} is already up to date."
+
+#. placeholder {0}: preview.totalLines
+#. placeholder {1}: preview.byteLength
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} lines · {1} B"
+msgstr "{0} lines · {1} B"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/components/chat/TeamSidebar.tsx
 msgid "{0} min"
@@ -46,10 +78,34 @@ msgstr "{0} min"
 msgid "{0} of {1} auto runs left."
 msgstr "{0} of {1} auto runs left."
 
+#. placeholder {0}: filteredRows.length
+#. placeholder {1}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} of {1} rows"
+msgstr "{0} of {1} rows"
+
+#. placeholder {0}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} rows"
+msgstr "{0} rows"
+
+#. placeholder {0}: matrix.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{0} rows · {totalCells} cells"
+msgstr "{0} rows · {totalCells} cells"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ToolsSidebar.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
 msgstr "{0}'s workspace — each hatchling keeps its own files."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{formulaCount} formula cells neutralized on export"
+msgstr "{formulaCount} formula cells neutralized on export"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{formulaCount} formula-prefixed cells (written as literal text)"
+msgstr "{formulaCount} formula-prefixed cells (written as literal text)"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "{minutes} min"
@@ -147,6 +203,10 @@ msgid "Add a sample spreadsheet"
 msgstr "Add a sample spreadsheet"
 
 #: src/lib/tool-summary.ts
+msgid "Adding a slide — {title}"
+msgstr "Adding a slide — {title}"
+
+#: src/lib/tool-summary.ts
 msgid "Adding a ticket — {title}"
 msgstr "Adding a ticket — {title}"
 
@@ -171,6 +231,19 @@ msgstr "API key"
 msgid "Appending text to a Google Doc"
 msgstr "Appending text to a Google Doc"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Apply to workspace"
+msgstr "Apply to workspace"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Applying…"
+msgstr "Applying…"
+
+#. placeholder {0}: artifact.title
+#: src/components/ArtifactPanel.tsx
+msgid "Artifact: {0}"
+msgstr "Artifact: {0}"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ChatTranscript.tsx
 msgid "Ask {0} for the outcome you need…"
@@ -191,6 +264,10 @@ msgstr "Asking for Google files"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Assistant"
 msgstr "Assistant"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Audio unavailable in this tab"
+msgstr "Audio unavailable in this tab"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Auto — match this browser"
@@ -264,9 +341,29 @@ msgstr "bytes. Nothing is written until you decide."
 msgid "Cancel"
 msgstr "Cancel"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas"
+msgstr "Canvas"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas actions"
+msgstr "Canvas actions"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Careful — asks before saving"
 msgstr "Careful — asks before saving"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Chart specification could not be parsed."
+msgstr "Chart specification could not be parsed."
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "Check Chrome's on-device AI requirements"
+msgstr "Check Chrome's on-device AI requirements"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Google Calendar"
+msgstr "Checking Google Calendar"
 
 #: src/lib/tool-summary.ts
 msgid "Checking Slack channels"
@@ -280,9 +377,17 @@ msgstr "Checking the ticket board"
 msgid "Checks the shared ticket board on your timer and turns finished notes into single-file HTML dashboards."
 msgstr "Checks the shared ticket board on your timer and turns finished notes into single-file HTML dashboards."
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose Drive files…"
+msgstr "Choose Drive files…"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Choose files…"
 msgstr "Choose files…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose specific Google Drive files to grant access for this task."
+msgstr "Choose specific Google Drive files to grant access for this task."
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
@@ -300,9 +405,25 @@ msgstr "Cleans and checks CSV / JSON files with local code."
 msgid "Clipboard API is not available in this browser."
 msgstr "Clipboard API is not available in this browser."
 
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/basic-catalog-react.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column"
+msgstr "Column"
+
+#. placeholder {0}: profiles.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column statistics ({0})"
+msgstr "Column statistics ({0})"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Computing…"
+msgstr "Computing…"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Connect"
@@ -370,13 +491,50 @@ msgstr "Connects every hatchling to tools from an MCP server on your machine (St
 msgid "Contribute"
 msgstr "Contribute"
 
+#: src/components/a2ui/CanvasStage.tsx
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copied"
 msgstr "Copied"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copied standalone HTML to clipboard"
+msgstr "Copied standalone HTML to clipboard"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copy"
 msgstr "Copy"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copy HTML"
+msgstr "Copy HTML"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Could not compute diff preview."
+msgstr "Could not compute diff preview."
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Could not copy HTML to clipboard"
+msgstr "Could not copy HTML to clipboard"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not open Google Drive picker."
+msgstr "Could not open Google Drive picker."
+
+#: src/pages/ChatPage.tsx
+msgid "Could not prepare the on-device model: {reason}"
+msgstr "Could not prepare the on-device model: {reason}"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not send Slack message."
+msgstr "Could not send Slack message."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not undo Google Sheet write."
+msgstr "Could not undo Google Sheet write."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not update Google Sheet."
+msgstr "Could not update Google Sheet."
 
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
@@ -386,6 +544,10 @@ msgstr "Create {0}"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Create another account and upload files to a vendor server"
 msgstr "Create another account and upload files to a vendor server"
+
+#: src/lib/tool-summary.ts
+msgid "Creating a calendar event — {summary}"
+msgstr "Creating a calendar event — {summary}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
@@ -411,6 +573,15 @@ msgstr "Custom model ID"
 msgid "Custom model ID…"
 msgstr "Custom model ID…"
 
+#. placeholder {0}: points.length
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Data summary ({0} points)"
+msgstr "Data summary ({0} points)"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Data table"
+msgstr "Data table"
+
 #: src/lib/hatchling-presets.ts
 msgid "Data wrangler"
 msgstr "Data wrangler"
@@ -418,6 +589,10 @@ msgstr "Data wrangler"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Data wrangler · isolated workspace"
 msgstr "Data wrangler · isolated workspace"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Dataset profile"
+msgstr "Dataset profile"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Decline"
@@ -434,6 +609,10 @@ msgstr "Describe the outcome you need…"
 #: src/lib/hatchling-presets.ts
 msgid "Desk runner"
 msgstr "Desk runner"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Dialog"
+msgstr "Dialog"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect"
@@ -459,6 +638,10 @@ msgstr "Disconnect Slack"
 msgid "Disconnect web search"
 msgstr "Disconnect web search"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Distinct"
+msgstr "Distinct"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Doing"
 msgstr "Doing"
@@ -479,9 +662,15 @@ msgstr "Done — this browser will keep your data safe."
 msgid "Done! Download the HTML report, update a Google Sheet, or send highlights to Slack."
 msgstr "Done! Download the HTML report, update a Google Sheet, or send highlights to Slack."
 
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/workspace-catalog.tsx
 msgid "Download"
 msgstr "Download"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Download .patch"
+msgstr "Download .patch"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
@@ -511,6 +700,10 @@ msgstr "Each change shows its exact diff with one-click undo. Prefer to approve 
 msgid "Each run"
 msgstr "Each run"
 
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Embedded apps are disabled for this hatchling."
+msgstr "Embedded apps are disabled for this hatchling."
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Every"
 msgstr "Every"
@@ -535,13 +728,36 @@ msgstr "Everything lives in your browser tab — there is no WasmHatch server to
 msgid "Example conversation"
 msgstr "Example conversation"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export blocked"
+msgstr "Export blocked"
+
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Export HTML"
+msgstr "Export HTML"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export JSON"
 msgstr "Export JSON"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export safe CSV"
+msgstr "Export safe CSV"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export this hatchling"
 msgstr "Export this hatchling"
+
+#. placeholder {0}: exported.fileName
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Exported {0}"
+msgstr "Exported {0}"
+
+#. placeholder {0}: sortedRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Exported {0} rows"
+msgstr "Exported {0} rows"
 
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials."
@@ -559,13 +775,33 @@ msgstr "Fast — just does it (undo anytime)"
 msgid "Fast, and still yours."
 msgstr "Fast, and still yours."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "File could not be read."
+msgstr "File could not be read."
+
 #: src/components/chat/useGoogleConnector.ts
 msgid "File handover cancelled — nothing was shared."
 msgstr "File handover cancelled — nothing was shared."
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Filter options…"
+msgstr "Filter options…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows"
+msgstr "Filter rows"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows…"
+msgstr "Filter rows…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Fix messy spreadsheets"
 msgstr "Fix messy spreadsheets"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Formula"
+msgstr "Formula"
 
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google access revoked for this tab."
@@ -590,6 +826,10 @@ msgstr "Google file handover requested"
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google revocation failed."
 msgstr "Google revocation failed."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Google Sheet preview"
+msgstr "Google Sheet preview"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Google's own picker opens next — only the files you choose there are shared."
@@ -646,9 +886,21 @@ msgstr "Hide the team sidebar"
 msgid "Hide the tools sidebar"
 msgstr "Hide the tools sidebar"
 
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Hover or focus a mark to inspect"
+msgstr "Hover or focus a mark to inspect"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "How it works"
 msgstr "How it works"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image preview unavailable"
+msgstr "Image preview unavailable"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image unavailable under offline/CSP policy"
+msgstr "Image unavailable under offline/CSP policy"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Import a .agent file"
@@ -665,6 +917,18 @@ msgstr "Incoming Webhook URL"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Inspect a hatchling"
 msgstr "Inspect a hatchling"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Inspect sandbox formula"
+msgstr "Inspect sandbox formula"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Interactive app"
+msgstr "Interactive app"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Isolated sandbox"
+msgstr "Isolated sandbox"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "It gets to work right away. Every tool call and file edit appears live in the conversation — no black box."
@@ -711,9 +975,21 @@ msgstr "Lets any hatchling read one specific page as clean text with fetch_page 
 msgid "Listing workspace files"
 msgstr "Listing workspace files"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Literal"
+msgstr "Literal"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Load from the registry"
 msgstr "Load from the registry"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Loading…"
+msgstr "Loading…"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Local QuickJS sandbox"
+msgstr "Local QuickJS sandbox"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Main desk · everyday partner"
@@ -739,6 +1015,10 @@ msgstr "Meet the hatchlings"
 msgid "Message the agent"
 msgstr "Message the agent"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Missing"
+msgstr "Missing"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Model"
 msgstr "Model"
@@ -755,9 +1035,18 @@ msgstr "Needs attention"
 msgid "New chat"
 msgstr "New chat"
 
+#. placeholder {0}: preview.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "New file ({0} B)"
+msgstr "New file ({0} B)"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "New ticket title"
 msgstr "New ticket title"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Next"
+msgstr "Next"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Next auto run any moment"
@@ -771,6 +1060,14 @@ msgstr "Next auto run in ~{minutes} min"
 msgid "No approval pop-ups slowing every step by default. The assistant does the work and shows exact diffs as it goes."
 msgstr "No approval pop-ups slowing every step by default. The assistant does the work and shows exact diffs as it goes."
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No columns or rows available."
+msgstr "No columns or rows available."
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "No data rows to plot yet."
+msgstr "No data rows to plot yet."
+
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
 msgstr "No hatchlings yet."
@@ -782,6 +1079,10 @@ msgstr "No install, no account"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
 msgstr "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No matching rows."
+msgstr "No matching rows."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "No setup"
@@ -812,12 +1113,28 @@ msgid "On it — running a local cleanup script and building your report now."
 msgstr "On it — running a local cleanup script and building your report now."
 
 #: src/components/chat/ToolsSidebar.tsx
-msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
-msgstr "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
+msgid "On-device model download"
+msgstr "On-device model download"
+
+#: src/components/chat/ToolsSidebar.tsx
+#~ msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
+#~ msgstr "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "On-device model status: {builtinAvailability}. Chrome 148+ on a supported desktop can run tasks without any key."
+msgstr "On-device model status: {builtinAvailability}. Chrome 148+ on a supported desktop can run tasks without any key."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "One assistant for the busywork."
 msgstr "One assistant for the busywork."
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Open in Canvas"
+msgstr "Open in Canvas"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Open sheet"
+msgstr "Open sheet"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Open the link — no server, no Docker, no signup. Clean messy spreadsheets with local code, draft Google Docs and Sheets, build one-file HTML reports, or hatch a tiny team of agents right in this tab."
@@ -835,9 +1152,17 @@ msgstr "Open the tab and ask. That’s the whole onboarding."
 msgid "Open WasmHatch"
 msgstr "Open WasmHatch"
 
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Opened in Canvas"
+msgstr "Opened in Canvas"
+
 #: src/App.tsx
 #~ msgid "Opening operator…"
 #~ msgstr "Opening operator…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Opening picker…"
+msgstr "Opening picker…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
@@ -863,6 +1188,11 @@ msgstr "Package any hatchling’s playbook and scoped permissions (never your ke
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 
+#. placeholder {0}: page + 1
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Page {0} of {totalPages}"
+msgstr "Page {0} of {totalPages}"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
 msgstr "Page reading connected. Every hatchling can read a specific URL with fetch_page."
@@ -874,6 +1204,10 @@ msgstr "Page reading connected. Hatchlings can now read a specific page with fet
 #: src/components/chat/useSessionConnectors.ts
 msgid "Page reading disconnected."
 msgstr "Page reading disconnected."
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Patch export failed."
+msgstr "Patch export failed."
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Pause all auto work"
@@ -916,8 +1250,16 @@ msgid "Posting to Slack — {channel}"
 msgstr "Posting to Slack — {channel}"
 
 #: src/components/chat/ToolsSidebar.tsx
+msgid "Prepare on-device model"
+msgstr "Prepare on-device model"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Preparing…"
 msgstr "Preparing…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Previous"
+msgstr "Previous"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Primary"
@@ -967,13 +1309,45 @@ msgstr "Publishing…"
 msgid "Queue a piece of work…"
 msgstr "Queue a piece of work…"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS · {lastDurationMs} ms"
+msgstr "QuickJS · {lastDurationMs} ms"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS ready"
+msgstr "QuickJS ready"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS transform failed."
+msgstr "QuickJS transform failed."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Range / Mean"
+msgstr "Range / Mean"
+
 #: src/lib/tool-summary.ts
 msgid "Reading {path}"
 msgstr "Reading {path}"
 
 #: src/lib/tool-summary.ts
+msgid "Reading a Google Doc"
+msgstr "Reading a Google Doc"
+
+#: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
 msgstr "Reading a Google Sheet"
+
+#: src/lib/tool-summary.ts
+msgid "Reading a Google Slides deck"
+msgstr "Reading a Google Slides deck"
+
+#: src/lib/tool-summary.ts
+msgid "Reading web page — {url}"
+msgstr "Reading web page — {url}"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Recalculate"
+msgstr "Recalculate"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Registry package URL"
@@ -1025,6 +1399,10 @@ msgstr "Reset budget"
 msgid "Resting"
 msgstr "Resting"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Restored previous cell values in {range}."
+msgstr "Restored previous cell values in {range}."
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Revert"
 msgstr "Revert"
@@ -1057,6 +1435,10 @@ msgstr "Running a sandboxed script"
 msgid "Runs in this browser tab with your API key, local Ollama, or Chrome’s built-in AI — no WasmHatch server in between."
 msgstr "Runs in this browser tab with your API key, local Ollama, or Chrome’s built-in AI — no WasmHatch server in between."
 
+#: src/components/ArtifactPanel.tsx
+msgid "Runs isolated from the app: no cookies, no storage, no network. Download to keep it."
+msgstr "Runs isolated from the app: no cookies, no storage, no network. Download to keep it."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Runs local cleanup scripts on CSV and JSON files so counts and totals never rely on guesswork."
 msgstr "Runs local cleanup scripts on CSV and JSON files so counts and totals never rely on guesswork."
@@ -1069,9 +1451,27 @@ msgstr "Runs only while this tab is open, in Fast mode, with its own token budge
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
 msgstr "Sample spreadsheet added next to your files — nothing of yours was touched."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Sandbox scripting capability is disabled for this hatchling."
+msgstr "Sandbox scripting capability is disabled for this hatchling."
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Sandboxed"
+msgstr "Sandboxed"
+
+#. placeholder {0}: result.path
+#. placeholder {1}: result.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Saved {0} ({1} bytes). Undo is available in chat."
+msgstr "Saved {0} ({1} bytes). Undo is available in chat."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Say what you need"
 msgstr "Say what you need"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Scope: drive.file — writes RAW literal values only to spreadsheets created or handed over in this session."
+msgstr "Scope: drive.file — writes RAW literal values only to spreadsheets created or handed over in this session."
 
 #. placeholder {0}: selected.thread.capabilities.join(", ")
 #: src/components/chat/TeamSidebar.tsx
@@ -1082,9 +1482,18 @@ msgstr "Scoped tools: {0}"
 msgid "Scoped tools: conversation only"
 msgstr "Scoped tools: conversation only"
 
+#. placeholder {0}: scriptPath.trim()
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Script ({0})"
+msgstr "Script ({0})"
+
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
 msgstr "Searching the web — {query}"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Select an option…"
+msgstr "Select an option…"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Self-contained HTML pages render right beside the chat, ready to download or share."
@@ -1094,9 +1503,30 @@ msgstr "Self-contained HTML pages render right beside the chat, ready to downloa
 msgid "Send"
 msgstr "Send"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Send to Slack"
+msgstr "Send to Slack"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Sending…"
+msgstr "Sending…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Separate desks, zero collisions"
 msgstr "Separate desks, zero collisions"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Series"
+msgstr "Series"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Share Google Drive files"
+msgstr "Share Google Drive files"
+
+#. placeholder {0}: pickedFiles.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Shared files ({0}):"
+msgstr "Shared files ({0}):"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Shared ticket board & honest auto work"
@@ -1109,6 +1539,11 @@ msgstr "Show the team sidebar"
 #: src/pages/ChatPage.tsx
 msgid "Show the tools sidebar"
 msgstr "Show the tools sidebar"
+
+#. placeholder {0}: dataset.rows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "showing first {0} rows"
+msgstr "showing first {0} rows"
 
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack bot token connected. Channel tools are active for every hatchling."
@@ -1130,9 +1565,19 @@ msgstr "Slack could not be reached. Check your connection and try again."
 msgid "Slack disconnected."
 msgstr "Slack disconnected."
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Slack message preview"
+msgstr "Slack message preview"
+
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
 msgstr "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
+
+#. placeholder {0}: col.label
+#. placeholder {1}: filteredRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Sorted by {0}, {nextDirection}, {1} rows"
+msgstr "Sorted by {0}, {nextDirection}, {1} rows"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Sources:"
@@ -1153,6 +1598,10 @@ msgstr "Star on GitHub"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Starting with WasmHatch"
 msgstr "Starting with WasmHatch"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Starts with a spreadsheet formula character"
+msgstr "Starts with a spreadsheet formula character"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Stop"
@@ -1227,6 +1676,10 @@ msgstr "The model can search the web through {0}. Searches are billed by your pr
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
 msgstr "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
 
+#: src/pages/ChatPage.tsx
+msgid "The on-device model is ready."
+msgstr "The on-device model is ready."
+
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "The package could not be hatched."
 msgstr "The package could not be hatched."
@@ -1291,6 +1744,10 @@ msgstr "Turn these release notes into a Google Doc and a short slide deck."
 msgid "Turn this sales export into a clean summary I can share."
 msgstr "Turn this sales export into a clean summary I can share."
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Type"
+msgstr "Type"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Type it like you’d tell a teammate. Drop in local files, connect Google in a couple of clicks, or point at local Ollama or MCP."
 msgstr "Type it like you’d tell a teammate. Drop in local files, connect Google in a couple of clicks, or point at local Ollama or MCP."
@@ -1307,15 +1764,29 @@ msgstr "Undo"
 msgid "Undo anything in one click"
 msgstr "Undo anything in one click"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Undo write"
+msgstr "Undo write"
+
 #. placeholder {0}: capabilities.unknown.join(", ")
 #: src/components/chat/ChatTranscript.tsx
 msgid "Unrecognized requests (granted nothing): {0}"
 msgstr "Unrecognized requests (granted nothing): {0}"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Up to date"
+msgstr "Up to date"
+
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
 msgid "Update {0}"
 msgstr "Update {0}"
+
+#. placeholder {0}: commitState.updatedCells
+#. placeholder {1}: commitState.range
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Updated {0} cells in {1}."
+msgstr "Updated {0} cells in {1}."
 
 #: src/lib/tool-summary.ts
 msgid "Updating a Google Sheet"
@@ -1333,6 +1804,14 @@ msgstr "URL (this machine only)"
 msgid "Using {server} — {tool}"
 msgstr "Using {server} — {tool}"
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Video unavailable in this tab"
+msgstr "Video unavailable in this tab"
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "View actions"
+msgstr "View actions"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "view diff"
 msgstr "view diff"
@@ -1340,6 +1819,10 @@ msgstr "view diff"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
 msgstr "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "WasmHatch cannot browse your Drive on its own — only the exact files you select in Google's picker are shared."
+msgstr "WasmHatch cannot browse your Drive on its own — only the exact files you select in Google's picker are shared."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Watch it happen"
@@ -1385,6 +1868,14 @@ msgstr "Working…"
 msgid "Works the ticket board, Google files, Slack, and MCP."
 msgstr "Works the ticket board, Google files, Slack, and MCP."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace diff"
+msgstr "Workspace diff"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace read access is disabled for this hatchling."
+msgstr "Workspace read access is disabled for this hatchling."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Wrestle with config files just to wire up tools"
 msgstr "Wrestle with config files just to wire up tools"
@@ -1393,9 +1884,25 @@ msgstr "Wrestle with config files just to wire up tools"
 msgid "Write approval required"
 msgstr "Write approval required"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Write could not be applied."
+msgstr "Write could not be applied."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write to Google Sheet"
+msgstr "Write to Google Sheet"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write-only preview: posts to your connected Slack channel or webhook and never reads message history."
+msgstr "Write-only preview: posts to your connected Slack channel or webhook and never reads message history."
+
 #: src/lib/tool-summary.ts
 msgid "Writing {path}"
 msgstr "Writing {path}"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Writing…"
+msgstr "Writing…"
 
 #: src/pages/ChatPage.tsx
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."

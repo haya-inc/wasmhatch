@@ -27,8 +27,9 @@ describe("summarizeToolCall", () => {
     expect(summarizeToolCall("run_script", { script: "(input) => 1" })).toBe("Running a sandboxed script");
   });
 
-  it("summarizes web_search with its query", () => {
+  it("summarizes web_search with its query and fetch_page with its url", () => {
     expect(summarizeToolCall("web_search", { query: "wasm news" })).toBe("Searching the web — wasm news");
+    expect(summarizeToolCall("fetch_page", { url: "https://example.com" })).toBe("Reading web page — https://example.com");
   });
 
   // Artifact tool
@@ -73,9 +74,17 @@ describe("summarizeToolCall", () => {
     );
   });
 
-  it("summarizes append_google_doc_text", () => {
+  it("summarizes append_google_doc_text and sensitive Google tools", () => {
     expect(summarizeToolCall("append_google_doc_text", { documentId: "xyz789", text: "Hello" })).toBe(
       "Appending text to a Google Doc"
+    );
+    expect(summarizeToolCall("read_google_doc", { url: "https://docs.google.com/document/d/1" })).toBe(
+      "Reading a Google Doc"
+    );
+    expect(summarizeToolCall("add_google_slide", { title: "Summary" })).toBe("Adding a slide — Summary");
+    expect(summarizeToolCall("list_calendar_events", {})).toBe("Checking Google Calendar");
+    expect(summarizeToolCall("create_calendar_event", { summary: "Sync" })).toBe(
+      "Creating a calendar event — Sync"
     );
   });
 

@@ -26,6 +26,18 @@ export interface AsyncTextStore {
 }
 
 class OpfsTextStore implements AsyncTextStore {
+  private readonly queues = new Map<string, Promise<unknown>>();
+
+  private enqueue<T>(key: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.queues.get(key) ?? Promise.resolve();
+    const current = previous.then(operation, operation);
+    const tracked = current.finally(() => {
+      if (this.queues.get(key) === tracked) this.queues.delete(key);
+    });
+    this.queues.set(key, tracked);
+    return current;
+  }
+
   private async directory(): Promise<FileSystemDirectoryHandle> {
     const originRoot = await navigator.storage.getDirectory();
     return originRoot.getDirectoryHandle(META_ROOT, { create: true });
@@ -33,32 +45,38 @@ class OpfsTextStore implements AsyncTextStore {
 
   async read(key: string): Promise<string | null> {
     assertKey(key);
-    try {
-      const directory = await this.directory();
-      const handle = await directory.getFileHandle(key);
-      return await (await handle.getFile()).text();
-    } catch {
-      return null;
-    }
+    return this.enqueue(key, async () => {
+      try {
+        const directory = await this.directory();
+        const handle = await directory.getFileHandle(key);
+        return await (await handle.getFile()).text();
+      } catch {
+        return null;
+      }
+    });
   }
 
   async write(key: string, value: string): Promise<void> {
     assertKey(key);
-    const directory = await this.directory();
-    const handle = await directory.getFileHandle(key, { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(value);
-    await writable.close();
+    return this.enqueue(key, async () => {
+      const directory = await this.directory();
+      const handle = await directory.getFileHandle(key, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(value);
+      await writable.close();
+    });
   }
 
   async remove(key: string): Promise<void> {
     assertKey(key);
-    try {
-      const directory = await this.directory();
-      await directory.removeEntry(key);
-    } catch {
-      /* removing something already gone is success */
-    }
+    return this.enqueue(key, async () => {
+      try {
+        const directory = await this.directory();
+        await directory.removeEntry(key);
+      } catch {
+        /* removing something already gone is success */
+      }
+    });
   }
 }
 

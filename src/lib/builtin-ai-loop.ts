@@ -6,7 +6,7 @@
 // key, no network, everything on-device. Tool results are treated strictly as
 // data and nothing returned by the model or a tool is ever evaluated as code.
 
-import { callWithLanguageFallback } from "./builtin-ai-language";
+import { callWithLanguageFallback, type BuiltinLanguageOptions } from "./builtin-ai-language";
 
 export type BuiltinAiToolLoopAvailability = "available" | "downloadable" | "downloading" | "unavailable";
 
@@ -19,11 +19,75 @@ export interface BuiltinTool {
 export type BuiltinToolExecutor = (name: string, args: Record<string, unknown>) => Promise<string>;
 
 export interface BuiltinAiSessionLike {
+  readonly contextWindow?: number;
+  readonly contextUsage?: number;
+  measureContextUsage?(
+    input: string,
+    options?: { responseConstraint?: Record<string, unknown>; signal?: AbortSignal; omitResponseConstraintInput?: boolean }
+  ): Promise<number>;
   prompt(
     input: string,
-    options?: { responseConstraint?: Record<string, unknown>; signal?: AbortSignal }
+    options?: { responseConstraint?: Record<string, unknown>; signal?: AbortSignal; omitResponseConstraintInput?: boolean }
   ): Promise<string>;
   destroy?(): void;
+}
+
+export interface BuiltinAiDownloadMonitor {
+  addEventListener(type: "downloadprogress", listener: (event: { loaded: number }) => void): void;
+}
+
+/** The subset of the native Prompt API used by the app. */
+export interface ChromeLanguageModelApi {
+  availability?(options?: BuiltinLanguageOptions): Promise<string>;
+  create(options: {
+    signal?: AbortSignal;
+    initialPrompts?: readonly { role: "system"; content: string }[];
+    expectedInputs?: BuiltinLanguageOptions["expectedInputs"];
+    expectedOutputs?: BuiltinLanguageOptions["expectedOutputs"];
+    monitor?: (monitor: BuiltinAiDownloadMonitor) => void;
+  }): Promise<BuiltinAiSessionLike>;
+}
+
+export interface CreateBuiltinAiSessionOptions {
+  signal?: AbortSignal;
+  initialPrompts?: readonly { role: "system"; content: string }[];
+  /** Native download progress is a fraction between 0 and 1. */
+  onDownloadProgress?: (progress: number) => void;
+}
+
+/**
+ * Call this directly from a user gesture when a download is needed. In
+ * particular, do not await an availability probe before starting create():
+ * slow probes can outlive Chrome's transient user activation.
+ */
+export async function createBuiltinAiSession(
+  options: CreateBuiltinAiSessionOptions = {},
+  globalObject: { LanguageModel?: ChromeLanguageModelApi } = globalThis as typeof globalThis & { LanguageModel?: ChromeLanguageModelApi }
+): Promise<BuiltinAiSessionLike> {
+  throwIfAborted(options.signal);
+  const api = globalObject.LanguageModel;
+  if (!api || typeof api.create !== "function") {
+    throw new Error("Chrome built-in AI is not available in this browser.");
+  }
+  const session = await callWithLanguageFallback((languageOptions) => api.create({
+    ...languageOptions,
+    signal: options.signal,
+    initialPrompts: options.initialPrompts,
+    ...(options.onDownloadProgress ? {
+      monitor: (monitor: BuiltinAiDownloadMonitor) => {
+        monitor.addEventListener("downloadprogress", (event) => {
+          if (!options.signal?.aborted && Number.isFinite(event.loaded)) {
+            options.onDownloadProgress?.(Math.max(0, Math.min(1, event.loaded)));
+          }
+        });
+      }
+    } : {})
+  }));
+  if (options.signal?.aborted) {
+    session.destroy?.();
+    throwIfAborted(options.signal);
+  }
+  return session;
 }
 
 /** Tests inject fakes; production passes a thin wrapper around LanguageModel.create(). */
@@ -88,7 +152,7 @@ export async function detectBuiltinAiToolLoopSupport(
   }
   try {
     const status: unknown = await callWithLanguageFallback((languageOptions) =>
-      (candidate.availability as (options: unknown) => Promise<unknown>)(languageOptions)
+      (candidate.availability as (options: unknown) => Promise<unknown>).call(candidate, languageOptions)
     );
     return typeof status === "string" && (AVAILABILITY_STATES as readonly string[]).includes(status)
       ? status as BuiltinAiToolLoopAvailability
@@ -109,35 +173,31 @@ interface TranscriptEntry {
   resultExcerpt: string;
 }
 
-// The response schema is the whole tool-calling emulation: the Prompt API's
-// responseConstraint forces the model to pick exactly one branch of the union.
-// If a given Chrome build rejects "oneOf", flatten this into a single object
-// schema with an "action" enum and optional fields.
+// Keep the grammar a single object rather than a root union: support for
+// complex JSON Schema grammars varies across Chrome's on-device models.
+// parseLoopAction below enforces the fields required by each action before
+// any tool is allowed to execute.
 function buildResponseConstraint(tools: readonly BuiltinTool[]): Record<string, unknown> {
+  const finalBranch: Record<string, unknown> = {
+    type: "object",
+    properties: {
+      action: { type: "string", enum: ["final"] },
+      answer: { type: "string", minLength: 1 }
+    },
+    required: ["action", "answer"],
+    additionalProperties: false
+  };
+  if (!tools.length) return finalBranch;
   return {
-    oneOf: [
-      {
-        type: "object",
-        properties: {
-          action: { type: "string", enum: ["tool_call"] },
-          tool: tools.length
-            ? { type: "string", enum: tools.map((tool) => tool.name) }
-            : { type: "string" },
-          arguments: { type: "object" }
-        },
-        required: ["action", "tool", "arguments"],
-        additionalProperties: false
-      },
-      {
-        type: "object",
-        properties: {
-          action: { type: "string", enum: ["final"] },
-          answer: { type: "string", minLength: 1 }
-        },
-        required: ["action", "answer"],
-        additionalProperties: false
-      }
-    ]
+    type: "object",
+    properties: {
+      action: { type: "string", enum: ["tool_call", "final"] },
+      tool: { type: "string", enum: tools.map((tool) => tool.name) },
+      arguments: { type: "object" },
+      answer: { type: "string" }
+    },
+    required: ["action"],
+    additionalProperties: false
   };
 }
 
@@ -148,13 +208,14 @@ function truncateExcerpt(text: string, cap: number): { excerpt: string; truncate
   return { excerpt: `${text.slice(0, cut)}${TRUNCATION_MARKER}`, truncated: true };
 }
 
-function renderTranscript(entries: readonly TranscriptEntry[]): string {
+function renderTranscript(entries: readonly TranscriptEntry[], charCap = TRANSCRIPT_CHAR_CAP): string {
+  if (charCap <= 0) return entries.length ? OMITTED_STEPS_NOTE : "";
   const lines: string[] = [];
   let total = 0;
   for (let index = entries.length - 1; index >= 0; index -= 1) {
     const entry = entries[index];
     const line = `${entry.step}. ${entry.tool}(${entry.argumentsExcerpt}) => ${entry.resultExcerpt}`;
-    if (total + line.length + 1 > TRANSCRIPT_CHAR_CAP) {
+    if (total + line.length + 1 > charCap) {
       lines.unshift(OMITTED_STEPS_NOTE);
       break;
     }
@@ -263,6 +324,12 @@ export async function runBuiltinAiToolLoop(request: BuiltinAiToolLoopRequest): P
   // Nano sessions accumulate context, so every run gets a fresh session and
   // context is re-fed explicitly through the bounded transcript instead.
   const session = await request.createSession();
+  // Older Chrome builds do not expose token measurement. They retain the
+  // character caps above; current builds can make a precise budget check.
+  const initialContextUsage = session.contextUsage ?? 0;
+  const inputBudget = session.contextWindow !== undefined
+    ? session.contextWindow - initialContextUsage - 1_024
+    : undefined;
   try {
     for (let step = 1; step <= maxSteps; step += 1) {
       let action: ParsedAction | null = null;
@@ -272,13 +339,28 @@ export async function runBuiltinAiToolLoop(request: BuiltinAiToolLoopRequest): P
         attempt += 1;
         throwIfAborted(request.signal);
         request.onEvent?.({ type: "model-turn", step, attempt });
-        const prompt = buildTurnPrompt({
-          task,
-          tools: request.tools,
-          transcript: renderTranscript(transcriptEntries),
-          correction
-        });
-        const raw = await session.prompt(prompt, { responseConstraint, signal: request.signal });
+        const promptOptions = { responseConstraint, signal: request.signal, omitResponseConstraintInput: true };
+        let transcriptCap = TRANSCRIPT_CHAR_CAP;
+        let prompt: string;
+        while (true) {
+          prompt = buildTurnPrompt({
+            task,
+            tools: request.tools,
+            transcript: renderTranscript(transcriptEntries, transcriptCap),
+            correction
+          });
+          if (!session.measureContextUsage || inputBudget === undefined || !Number.isFinite(inputBudget)) break;
+          throwIfAborted(request.signal);
+          const usage = await session.measureContextUsage(prompt, promptOptions);
+          if (usage <= inputBudget) break;
+          if (transcriptEntries.length === 0 || transcriptCap === 0) {
+            throw new Error("This request exceeds Chrome's on-device context window. Shorten the message or disconnect unused tools, then try again.");
+          }
+          // Retain the task, tool definitions, and safety instructions intact;
+          // only older tool-result excerpts are allowed to leave the prompt.
+          transcriptCap = transcriptCap > 256 ? Math.floor(transcriptCap / 2) : 0;
+        }
+        const raw = await session.prompt(prompt, promptOptions);
         const parsed = parseLoopAction(raw, toolNames);
         if (parsed.ok) {
           action = parsed.value;

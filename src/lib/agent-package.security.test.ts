@@ -187,4 +187,14 @@ describe("portable agent package hardening", () => {
       files
     )).rejects.toThrow("must not be empty");
   });
+
+  it("rejects packages targeting an incompatible core version on import", async () => {
+    const futurePkg = await createPortableAgentPackage(
+      { ...draft, compatibleCore: { minInclusive: "2.0.0", maxExclusive: "3.0.0" } },
+      files
+    );
+    await expect(readPortableAgentPackage(futurePkg.bytes)).rejects.toThrow(
+      "requires WasmHatch core >= 2.0.0 and < 3.0.0"
+    );
+  });
 });

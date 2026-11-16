@@ -33,6 +33,9 @@ function memoryWorkspace(initial: Record<string, string> = {}): WorkspaceStore {
     async writeFile(path: string, content: string) {
       files.set(path, content);
     },
+    async deleteFile(path: string) {
+      files.delete(path);
+    },
     async replaceBaseline() { /* not needed */ },
     async replaceAll() { /* not needed */ },
     async clear() {

@@ -9,6 +9,9 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: "node",
+      // Keep A2UI imports inside Vite so the patched zod/v3 alias also applies
+      // to its dependencies rather than being bypassed by Node externalization.
+      server: { deps: { inline: [/@a2ui\//] } },
       include: ["src/**/*.test.{ts,tsx}"],
       exclude: ["e2e/**", "node_modules/**", "dist/**"]
     }

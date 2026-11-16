@@ -23,6 +23,17 @@ msgstr "{0, plural, other {đã kết nối · # công cụ}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, other {Đã trao # tệp Google cho trợ lý.}}"
 
+#. placeholder {0}: parsed.yTitle
+#. placeholder {1}: parsed.xTitle
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "{0} by {1}"
+msgstr "{0} theo {1}"
+
+#. placeholder {0}: dataset.columns.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} columns"
+msgstr "{0} cột"
+
 #. placeholder {0}: journal.events.length
 #. placeholder {1}: journal.metrics.toolCalls
 #. placeholder {2}: journal.metrics.commits
@@ -35,6 +46,27 @@ msgstr "{0} sự kiện · {1} lần gọi công cụ · {2} lần ghi"
 msgid "{0} files:"
 msgstr "{0} tệp:"
 
+#. placeholder {0}: col.formulaWarningCount
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula"
+msgstr "{0} công thức"
+
+#. placeholder {0}: dataset.formulaWarnings.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula warnings"
+msgstr "{0} cảnh báo công thức"
+
+#. placeholder {0}: result.path
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} is already up to date."
+msgstr "{0} đã ở trạng thái mới nhất."
+
+#. placeholder {0}: preview.totalLines
+#. placeholder {1}: preview.byteLength
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} lines · {1} B"
+msgstr "{0} dòng · {1} B"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/components/chat/TeamSidebar.tsx
 msgid "{0} min"
@@ -46,10 +78,34 @@ msgstr "{0} phút"
 msgid "{0} of {1} auto runs left."
 msgstr "Còn {0}/{1} lượt chạy tự động."
 
+#. placeholder {0}: filteredRows.length
+#. placeholder {1}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} of {1} rows"
+msgstr "{0} / {1} hàng"
+
+#. placeholder {0}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} rows"
+msgstr "{0} hàng"
+
+#. placeholder {0}: matrix.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{0} rows · {totalCells} cells"
+msgstr "{0} hàng · {totalCells} ô"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ToolsSidebar.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
 msgstr "Không gian làm việc của {0} — mỗi gà con giữ tệp riêng của mình."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{formulaCount} formula cells neutralized on export"
+msgstr "Đã vô hiệu hóa {formulaCount} ô công thức khi xuất"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{formulaCount} formula-prefixed cells (written as literal text)"
+msgstr "{formulaCount} ô có tiền tố công thức (được ghi dưới dạng văn bản thuần)"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "{minutes} min"
@@ -147,6 +203,10 @@ msgid "Add a sample spreadsheet"
 msgstr "Thêm bảng tính mẫu"
 
 #: src/lib/tool-summary.ts
+msgid "Adding a slide — {title}"
+msgstr "Đang thêm trang chiếu — {title}"
+
+#: src/lib/tool-summary.ts
 msgid "Adding a ticket — {title}"
 msgstr "Đang thêm phiếu việc — {title}"
 
@@ -171,6 +231,19 @@ msgstr "Khóa API"
 msgid "Appending text to a Google Doc"
 msgstr "Đang thêm nội dung vào Google Tài liệu"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Apply to workspace"
+msgstr "Áp dụng vào không gian làm việc"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Applying…"
+msgstr "Đang áp dụng…"
+
+#. placeholder {0}: artifact.title
+#: src/components/ArtifactPanel.tsx
+msgid "Artifact: {0}"
+msgstr "Thành phẩm: {0}"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ChatTranscript.tsx
 msgid "Ask {0} for the outcome you need…"
@@ -191,6 +264,10 @@ msgstr "Đang xin tệp Google"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Assistant"
 msgstr "Trợ lý"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Audio unavailable in this tab"
+msgstr "Âm thanh không khả dụng trong thẻ này"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Auto — match this browser"
@@ -264,9 +341,29 @@ msgstr "byte. Chưa có gì được ghi cho đến khi bạn quyết định."
 msgid "Cancel"
 msgstr "Hủy"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas"
+msgstr "Khung vẽ"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas actions"
+msgstr "Thao tác khung vẽ"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Careful — asks before saving"
 msgstr "Cẩn trọng — hỏi trước khi lưu"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Chart specification could not be parsed."
+msgstr "Không thể phân tích đặc tả biểu đồ."
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "Check Chrome's on-device AI requirements"
+msgstr "Xem yêu cầu của AI tích hợp trong Chrome"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Google Calendar"
+msgstr "Đang xem Google Lịch"
 
 #: src/lib/tool-summary.ts
 msgid "Checking Slack channels"
@@ -280,9 +377,17 @@ msgstr "Đang xem bảng phiếu việc"
 msgid "Checks the shared ticket board on your timer and turns finished notes into single-file HTML dashboards."
 msgstr "Kiểm tra bảng phiếu việc chung theo bộ hẹn giờ của bạn và biến các ghi chú đã xong thành bảng tổng hợp HTML một tệp."
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose Drive files…"
+msgstr "Chọn tệp trên Drive…"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Choose files…"
 msgstr "Chọn tệp…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose specific Google Drive files to grant access for this task."
+msgstr "Chọn các tệp Google Drive cụ thể để cấp quyền truy cập cho tác vụ này."
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
@@ -300,9 +405,25 @@ msgstr "Làm sạch và kiểm tra tệp CSV / JSON bằng mã chạy cục bộ
 msgid "Clipboard API is not available in this browser."
 msgstr "API bộ nhớ tạm không khả dụng trong trình duyệt này."
 
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/basic-catalog-react.tsx
 msgid "Close"
 msgstr "Đóng"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column"
+msgstr "Cột"
+
+#. placeholder {0}: profiles.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column statistics ({0})"
+msgstr "Thống kê cột ({0})"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Computing…"
+msgstr "Đang tính toán…"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Connect"
@@ -370,13 +491,50 @@ msgstr "Kết nối mọi gà con với các công cụ từ máy chủ MCP trê
 msgid "Contribute"
 msgstr "Đóng góp"
 
+#: src/components/a2ui/CanvasStage.tsx
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copied"
 msgstr "Đã sao chép"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copied standalone HTML to clipboard"
+msgstr "Đã sao chép HTML độc lập vào bảng nhớ tạm"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copy"
 msgstr "Sao chép"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copy HTML"
+msgstr "Sao chép HTML"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Could not compute diff preview."
+msgstr "Không thể tính toán bản xem trước thay đổi."
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Could not copy HTML to clipboard"
+msgstr "Không thể sao chép HTML vào bảng nhớ tạm"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not open Google Drive picker."
+msgstr "Không thể mở trình chọn tệp Google Drive."
+
+#: src/pages/ChatPage.tsx
+msgid "Could not prepare the on-device model: {reason}"
+msgstr "Không thể chuẩn bị mô hình trên thiết bị: {reason}"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not send Slack message."
+msgstr "Không thể gửi tin nhắn Slack."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not undo Google Sheet write."
+msgstr "Không thể hoàn tác thao tác ghi vào Google Trang tính."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not update Google Sheet."
+msgstr "Không thể cập nhật Google Trang tính."
 
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
@@ -386,6 +544,10 @@ msgstr "Tạo {0}"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Create another account and upload files to a vendor server"
 msgstr "Phải tạo thêm tài khoản mới rồi tải tệp lên máy chủ của bên thứ ba"
+
+#: src/lib/tool-summary.ts
+msgid "Creating a calendar event — {summary}"
+msgstr "Đang tạo sự kiện lịch — {summary}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
@@ -411,6 +573,15 @@ msgstr "ID mô hình tùy chỉnh"
 msgid "Custom model ID…"
 msgstr "ID mô hình tùy chỉnh…"
 
+#. placeholder {0}: points.length
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Data summary ({0} points)"
+msgstr "Tóm tắt dữ liệu ({0} điểm)"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Data table"
+msgstr "Bảng dữ liệu"
+
 #: src/lib/hatchling-presets.ts
 msgid "Data wrangler"
 msgstr "Phụ trách dữ liệu"
@@ -418,6 +589,10 @@ msgstr "Phụ trách dữ liệu"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Data wrangler · isolated workspace"
 msgstr "Phụ trách dữ liệu · không gian làm việc tách biệt"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Dataset profile"
+msgstr "Hồ sơ tập dữ liệu"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Decline"
@@ -434,6 +609,10 @@ msgstr "Mô tả kết quả bạn cần…"
 #: src/lib/hatchling-presets.ts
 msgid "Desk runner"
 msgstr "Điều phối bàn làm việc"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Dialog"
+msgstr "Hộp thoại"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect"
@@ -459,6 +638,10 @@ msgstr "Ngắt kết nối Slack"
 msgid "Disconnect web search"
 msgstr "Ngắt kết nối tìm kiếm web"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Distinct"
+msgstr "Khác biệt"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Doing"
 msgstr "Đang làm"
@@ -479,9 +662,15 @@ msgstr "Xong — trình duyệt này sẽ giữ an toàn dữ liệu của bạn
 msgid "Done! Download the HTML report, update a Google Sheet, or send highlights to Slack."
 msgstr "Xong rồi! Tải báo cáo HTML về, cập nhật Google Sheet hoặc gửi các điểm chính qua Slack ngay nhé."
 
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/workspace-catalog.tsx
 msgid "Download"
 msgstr "Tải xuống"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Download .patch"
+msgstr "Tải xuống .patch"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
@@ -511,6 +700,10 @@ msgstr "Mỗi thay đổi đều hiện rõ phần khác biệt kèm nút hoàn 
 msgid "Each run"
 msgstr "Mỗi lượt chạy"
 
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Embedded apps are disabled for this hatchling."
+msgstr "Ứng dụng nhúng đã bị tắt đối với hatchling này."
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Every"
 msgstr "Mỗi"
@@ -535,13 +728,36 @@ msgstr "Mọi thứ diễn ra ngay trong thẻ trình duyệt của bạn — kh
 msgid "Example conversation"
 msgstr "Ví dụ cuộc trò chuyện"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export blocked"
+msgstr "Đã chặn xuất"
+
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Export HTML"
+msgstr "Xuất HTML"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export JSON"
 msgstr "Xuất JSON"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export safe CSV"
+msgstr "Xuất CSV an toàn"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export this hatchling"
 msgstr "Xuất gà con này"
+
+#. placeholder {0}: exported.fileName
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Exported {0}"
+msgstr "Đã xuất {0}"
+
+#. placeholder {0}: sortedRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Exported {0} rows"
+msgstr "Đã xuất {0} hàng"
 
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials."
@@ -559,13 +775,33 @@ msgstr "Nhanh — cứ làm luôn (hoàn tác được bất cứ lúc nào)"
 msgid "Fast, and still yours."
 msgstr "Nhanh gọn, mà quyền kiểm soát vẫn ở bạn."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "File could not be read."
+msgstr "Không thể đọc tệp."
+
 #: src/components/chat/useGoogleConnector.ts
 msgid "File handover cancelled — nothing was shared."
 msgstr "Đã hủy trao tệp — chưa chia sẻ gì cả."
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Filter options…"
+msgstr "Lọc tùy chọn…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows"
+msgstr "Lọc hàng"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows…"
+msgstr "Lọc hàng…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Fix messy spreadsheets"
 msgstr "Dọn gọn bảng tính lộn xộn"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Formula"
+msgstr "Công thức"
 
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google access revoked for this tab."
@@ -590,6 +826,10 @@ msgstr "Yêu cầu trao tệp Google"
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google revocation failed."
 msgstr "Thu hồi quyền truy cập Google thất bại."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Google Sheet preview"
+msgstr "Xem trước Google Trang tính"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Google's own picker opens next — only the files you choose there are shared."
@@ -646,9 +886,21 @@ msgstr "Ẩn thanh bên nhóm"
 msgid "Hide the tools sidebar"
 msgstr "Ẩn thanh bên công cụ"
 
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Hover or focus a mark to inspect"
+msgstr "Di chuột hoặc chọn một điểm đánh dấu để xem chi tiết"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "How it works"
 msgstr "Cách hoạt động"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image preview unavailable"
+msgstr "Không có bản xem trước hình ảnh"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image unavailable under offline/CSP policy"
+msgstr "Hình ảnh không khả dụng theo chính sách ngoại tuyến/CSP"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Import a .agent file"
@@ -665,6 +917,18 @@ msgstr "URL Incoming Webhook"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Inspect a hatchling"
 msgstr "Xem thông tin gà con"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Inspect sandbox formula"
+msgstr "Xem công thức sandbox"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Interactive app"
+msgstr "Ứng dụng tương tác"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Isolated sandbox"
+msgstr "Hộp cát cô lập"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "It gets to work right away. Every tool call and file edit appears live in the conversation — no black box."
@@ -711,9 +975,21 @@ msgstr "Cho phép bất kỳ gà con nào đọc một trang cụ thể dưới 
 msgid "Listing workspace files"
 msgstr "Đang liệt kê tệp trong không gian làm việc"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Literal"
+msgstr "Nguyên văn"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Load from the registry"
 msgstr "Tải từ sổ đăng ký"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Loading…"
+msgstr "Đang tải…"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Local QuickJS sandbox"
+msgstr "Sandbox QuickJS cục bộ"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Main desk · everyday partner"
@@ -739,6 +1015,10 @@ msgstr "Làm quen với đàn gà con"
 msgid "Message the agent"
 msgstr "Gửi tin nhắn cho trợ lý"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Missing"
+msgstr "Thiếu"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Model"
 msgstr "Mô hình"
@@ -755,9 +1035,18 @@ msgstr "Cần chú ý"
 msgid "New chat"
 msgstr "Cuộc trò chuyện mới"
 
+#. placeholder {0}: preview.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "New file ({0} B)"
+msgstr "Tệp mới ({0} B)"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "New ticket title"
 msgstr "Tiêu đề phiếu việc mới"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Next"
+msgstr "Tiếp"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Next auto run any moment"
@@ -771,6 +1060,14 @@ msgstr "Lượt chạy tự động tiếp theo sau khoảng {minutes} phút"
 msgid "No approval pop-ups slowing every step by default. The assistant does the work and shows exact diffs as it goes."
 msgstr "Mặc định không có hộp thoại xin phép làm chậm từng bước. Trợ lý chủ động làm việc và hiển thị chi tiết từng thay đổi ngay trong lúc chạy."
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No columns or rows available."
+msgstr "Không có cột hoặc hàng nào."
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "No data rows to plot yet."
+msgstr "Chưa có hàng dữ liệu nào để vẽ biểu đồ."
+
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
 msgstr "Chưa có gà con nào."
@@ -782,6 +1079,10 @@ msgstr "Không cài đặt, không cần tài khoản"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
 msgstr "Không cần khóa — kết nối với Ollama trên chính máy của bạn. Hãy khởi động Ollama với trang này được cho phép (đặt OLLAMA_ORIGINS), rồi chọn mô hình bạn đã tải về (ollama list)."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No matching rows."
+msgstr "Không có hàng nào khớp."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "No setup"
@@ -812,12 +1113,28 @@ msgid "On it — running a local cleanup script and building your report now."
 msgstr "Bắt tay làm ngay — đang chạy kịch bản làm sạch cục bộ và dựng báo cáo cho bạn đây."
 
 #: src/components/chat/ToolsSidebar.tsx
-msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
-msgstr "Trạng thái mô hình trên thiết bị: {builtinAvailability}. Chrome 138+ trên máy tính được hỗ trợ có thể chạy tác vụ mà không cần khóa."
+msgid "On-device model download"
+msgstr "Tải mô hình trên thiết bị"
+
+#: src/components/chat/ToolsSidebar.tsx
+#~ msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
+#~ msgstr "Trạng thái mô hình trên thiết bị: {builtinAvailability}. Chrome 138+ trên máy tính được hỗ trợ có thể chạy tác vụ mà không cần khóa."
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "On-device model status: {builtinAvailability}. Chrome 148+ on a supported desktop can run tasks without any key."
+msgstr "Trạng thái mô hình trên thiết bị: {builtinAvailability}. Chrome 148+ trên máy tính được hỗ trợ có thể chạy tác vụ mà không cần khóa."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "One assistant for the busywork."
 msgstr "Một trợ lý cân gọn mọi việc lặt vặt."
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Open in Canvas"
+msgstr "Mở trong Khung vẽ"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Open sheet"
+msgstr "Mở trang tính"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Open the link — no server, no Docker, no signup. Clean messy spreadsheets with local code, draft Google Docs and Sheets, build one-file HTML reports, or hatch a tiny team of agents right in this tab."
@@ -835,9 +1152,17 @@ msgstr "Mở thẻ lên và nói điều bạn cần. Toàn bộ bước làm qu
 msgid "Open WasmHatch"
 msgstr "Mở WasmHatch"
 
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Opened in Canvas"
+msgstr "Đã mở trong Khung vẽ"
+
 #: src/App.tsx
 #~ msgid "Opening operator…"
 #~ msgstr "Đang mở trang điều hành…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Opening picker…"
+msgstr "Đang mở trình chọn…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
@@ -863,6 +1188,11 @@ msgstr "Đóng gói cẩm nang và phạm vi quyền hạn của bất kỳ gà 
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "Chỉ dẫn trong gói được coi là nội dung không đáng tin: chúng không bao giờ thấy khóa của bạn và chỉ các khả năng ở trên là khả dụng."
 
+#. placeholder {0}: page + 1
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Page {0} of {totalPages}"
+msgstr "Trang {0} / {totalPages}"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
 msgstr "Đã kết nối đọc trang. Mỗi gà con có thể đọc một URL cụ thể bằng fetch_page."
@@ -874,6 +1204,10 @@ msgstr "Đã kết nối đọc trang. Gà con giờ có thể đọc một tran
 #: src/components/chat/useSessionConnectors.ts
 msgid "Page reading disconnected."
 msgstr "Đã ngắt kết nối đọc trang."
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Patch export failed."
+msgstr "Xuất bản vá thất bại."
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Pause all auto work"
@@ -916,8 +1250,16 @@ msgid "Posting to Slack — {channel}"
 msgstr "Đang đăng lên Slack — {channel}"
 
 #: src/components/chat/ToolsSidebar.tsx
+msgid "Prepare on-device model"
+msgstr "Chuẩn bị mô hình trên thiết bị"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Preparing…"
 msgstr "Đang chuẩn bị…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Previous"
+msgstr "Trước"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Primary"
@@ -967,13 +1309,45 @@ msgstr "Đang đăng…"
 msgid "Queue a piece of work…"
 msgstr "Thêm một việc vào hàng chờ…"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS · {lastDurationMs} ms"
+msgstr "QuickJS · {lastDurationMs} ms"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS ready"
+msgstr "QuickJS sẵn sàng"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS transform failed."
+msgstr "Biến đổi QuickJS thất bại."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Range / Mean"
+msgstr "Khoảng / Trung bình"
+
 #: src/lib/tool-summary.ts
 msgid "Reading {path}"
 msgstr "Đang đọc {path}"
 
 #: src/lib/tool-summary.ts
+msgid "Reading a Google Doc"
+msgstr "Đang đọc Google Tài liệu"
+
+#: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
 msgstr "Đang đọc Google Trang tính"
+
+#: src/lib/tool-summary.ts
+msgid "Reading a Google Slides deck"
+msgstr "Đang đọc Google Trang trình bày"
+
+#: src/lib/tool-summary.ts
+msgid "Reading web page — {url}"
+msgstr "Đang đọc trang web — {url}"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Recalculate"
+msgstr "Tính lại"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Registry package URL"
@@ -1025,6 +1399,10 @@ msgstr "Đặt lại số lượt"
 msgid "Resting"
 msgstr "Đang nghỉ"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Restored previous cell values in {range}."
+msgstr "Đã khôi phục giá trị ô trước đó trong {range}."
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Revert"
 msgstr "Hoàn tác"
@@ -1057,6 +1435,10 @@ msgstr "Đang chạy tập lệnh trong môi trường cách ly"
 msgid "Runs in this browser tab with your API key, local Ollama, or Chrome’s built-in AI — no WasmHatch server in between."
 msgstr "Chạy ngay trong thẻ trình duyệt này với khóa API của bạn, Ollama cục bộ hoặc AI tích hợp của Chrome — không có máy chủ WasmHatch nào đứng giữa."
 
+#: src/components/ArtifactPanel.tsx
+msgid "Runs isolated from the app: no cookies, no storage, no network. Download to keep it."
+msgstr "Chạy tách biệt khỏi ứng dụng: không cookie, không bộ nhớ, không mạng. Tải xuống để lưu giữ."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Runs local cleanup scripts on CSV and JSON files so counts and totals never rely on guesswork."
 msgstr "Chạy kịch bản làm sạch cục bộ trên tệp CSV và JSON nên số đếm và tổng cộng luôn chuẩn xác, không bao giờ đoán mò."
@@ -1069,9 +1451,27 @@ msgstr "Chỉ chạy khi tab này đang mở, ở chế độ Nhanh, với hạn
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
 msgstr "Đã thêm bảng tính mẫu bên cạnh các tệp của bạn — không tệp nào của bạn bị đụng đến."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Sandbox scripting capability is disabled for this hatchling."
+msgstr "Khả năng chạy kịch bản sandbox đã bị tắt cho gà con này."
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Sandboxed"
+msgstr "Trong hộp cát"
+
+#. placeholder {0}: result.path
+#. placeholder {1}: result.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Saved {0} ({1} bytes). Undo is available in chat."
+msgstr "Đã lưu {0} ({1} byte). Có thể hoàn tác trong cuộc trò chuyện."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Say what you need"
 msgstr "Nói điều bạn cần"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Scope: drive.file — writes RAW literal values only to spreadsheets created or handed over in this session."
+msgstr "Phạm vi: drive.file — chỉ ghi giá trị nguyên văn (RAW) vào bảng tính được tạo hoặc cấp quyền trong phiên này."
 
 #. placeholder {0}: selected.thread.capabilities.join(", ")
 #: src/components/chat/TeamSidebar.tsx
@@ -1082,9 +1482,18 @@ msgstr "Công cụ được cấp quyền: {0}"
 msgid "Scoped tools: conversation only"
 msgstr "Công cụ được cấp quyền: chỉ trò chuyện"
 
+#. placeholder {0}: scriptPath.trim()
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Script ({0})"
+msgstr "Kịch bản ({0})"
+
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
 msgstr "Đang tìm trên web — {query}"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Select an option…"
+msgstr "Chọn một tùy chọn…"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Self-contained HTML pages render right beside the chat, ready to download or share."
@@ -1094,9 +1503,30 @@ msgstr "Trang HTML trọn gói hiển thị ngay bên cạnh khung trò chuyện
 msgid "Send"
 msgstr "Gửi"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Send to Slack"
+msgstr "Gửi tới Slack"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Sending…"
+msgstr "Đang gửi…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Separate desks, zero collisions"
 msgstr "Bàn ai nấy ngồi, không lo đụng độ"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Series"
+msgstr "Chuỗi"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Share Google Drive files"
+msgstr "Chia sẻ tệp Google Drive"
+
+#. placeholder {0}: pickedFiles.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Shared files ({0}):"
+msgstr "Tệp đã chia sẻ ({0}):"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Shared ticket board & honest auto work"
@@ -1109,6 +1539,11 @@ msgstr "Hiện thanh bên nhóm"
 #: src/pages/ChatPage.tsx
 msgid "Show the tools sidebar"
 msgstr "Hiện thanh bên công cụ"
+
+#. placeholder {0}: dataset.rows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "showing first {0} rows"
+msgstr "đang hiển thị {0} hàng đầu tiên"
 
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack bot token connected. Channel tools are active for every hatchling."
@@ -1130,9 +1565,19 @@ msgstr "Không thể kết nối tới Slack. Hãy kiểm tra mạng rồi thử
 msgid "Slack disconnected."
 msgstr "Đã ngắt kết nối Slack."
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Slack message preview"
+msgstr "Xem trước tin nhắn Slack"
+
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
 msgstr "Slack đã từ chối token đó. Hãy cài lại ứng dụng trong Slack, sao chép token bot mới rồi thử lại."
+
+#. placeholder {0}: col.label
+#. placeholder {1}: filteredRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Sorted by {0}, {nextDirection}, {1} rows"
+msgstr "Đã sắp xếp theo {0}, {nextDirection}, {1} hàng"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Sources:"
@@ -1153,6 +1598,10 @@ msgstr "Tặng sao trên GitHub"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Starting with WasmHatch"
 msgstr "Bắt đầu với WasmHatch"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Starts with a spreadsheet formula character"
+msgstr "Bắt đầu bằng ký tự công thức bảng tính"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Stop"
@@ -1227,6 +1676,10 @@ msgstr "Mô hình có thể tìm kiếm trên web thông qua {0}. Lượt tìm k
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
 msgstr "Mô hình trên thiết bị chưa nói được ngôn ngữ này và sẽ trả lời bằng tiếng Anh; các nhà cung cấp đám mây trả lời bằng ngôn ngữ của bạn."
 
+#: src/pages/ChatPage.tsx
+msgid "The on-device model is ready."
+msgstr "Mô hình trên thiết bị đã sẵn sàng."
+
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "The package could not be hatched."
 msgstr "Không ấp nở được gói."
@@ -1291,6 +1744,10 @@ msgstr "Chuyển ghi chú phát hành này thành một tài liệu Google Doc v
 msgid "Turn this sales export into a clean summary I can share."
 msgstr "Biến tệp xuất doanh số này thành bản tóm tắt gọn đẹp để mình chia sẻ cho mọi người."
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Type"
+msgstr "Kiểu"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Type it like you’d tell a teammate. Drop in local files, connect Google in a couple of clicks, or point at local Ollama or MCP."
 msgstr "Cứ gõ tự nhiên như đang nhắn với đồng nghiệp. Kéo thả tệp trên máy vào, kết nối Google trong vài cú nhấp, hoặc trỏ tới Ollama hay MCP cục bộ."
@@ -1307,15 +1764,29 @@ msgstr "Hoàn tác"
 msgid "Undo anything in one click"
 msgstr "Hoàn tác mọi thứ chỉ với một cú nhấp"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Undo write"
+msgstr "Hoàn tác ghi"
+
 #. placeholder {0}: capabilities.unknown.join(", ")
 #: src/components/chat/ChatTranscript.tsx
 msgid "Unrecognized requests (granted nothing): {0}"
 msgstr "Yêu cầu không nhận diện được (không cấp gì): {0}"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Up to date"
+msgstr "Đã cập nhật"
+
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
 msgid "Update {0}"
 msgstr "Cập nhật {0}"
+
+#. placeholder {0}: commitState.updatedCells
+#. placeholder {1}: commitState.range
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Updated {0} cells in {1}."
+msgstr "Đã cập nhật {0} ô trong {1}."
 
 #: src/lib/tool-summary.ts
 msgid "Updating a Google Sheet"
@@ -1333,6 +1804,14 @@ msgstr "URL (chỉ trên máy này)"
 msgid "Using {server} — {tool}"
 msgstr "Đang dùng {server} — {tool}"
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Video unavailable in this tab"
+msgstr "Video không khả dụng trong thẻ này"
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "View actions"
+msgstr "Thao tác chế độ xem"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "view diff"
 msgstr "xem thay đổi"
@@ -1340,6 +1819,10 @@ msgstr "xem thay đổi"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
 msgstr "Muốn nhiều hơn một kênh? Hãy tạo một ứng dụng Slack nhỏ từ manifest có sẵn trong <0>docs/slack.md</0> rồi dán token bot của nó: trợ lý sẽ liệt kê được các kênh công khai và đăng vào bất kỳ kênh nào. Nó vẫn không đọc tin nhắn nào. Token chỉ nằm trong bộ nhớ của thẻ này."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "WasmHatch cannot browse your Drive on its own — only the exact files you select in Google's picker are shared."
+msgstr "WasmHatch không thể tự duyệt Drive của bạn — chỉ những tệp chính xác mà bạn chọn trong trình chọn của Google mới được chia sẻ."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Watch it happen"
@@ -1385,6 +1868,14 @@ msgstr "Đang làm việc…"
 msgid "Works the ticket board, Google files, Slack, and MCP."
 msgstr "Phụ trách bảng phiếu việc, tệp Google, Slack và MCP."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace diff"
+msgstr "Khác biệt không gian làm việc"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace read access is disabled for this hatchling."
+msgstr "Quyền đọc không gian làm việc đã bị tắt cho gà con này."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Wrestle with config files just to wire up tools"
 msgstr "Vật lộn với hàng tá tệp cấu hình chỉ để nối các công cụ lại với nhau"
@@ -1393,9 +1884,25 @@ msgstr "Vật lộn với hàng tá tệp cấu hình chỉ để nối các cô
 msgid "Write approval required"
 msgstr "Cần duyệt trước khi ghi"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Write could not be applied."
+msgstr "Không thể áp dụng thao tác ghi."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write to Google Sheet"
+msgstr "Ghi vào Google Trang tính"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write-only preview: posts to your connected Slack channel or webhook and never reads message history."
+msgstr "Xem trước chỉ ghi: đăng lên kênh hoặc webhook Slack đã kết nối và không bao giờ đọc lịch sử tin nhắn."
+
 #: src/lib/tool-summary.ts
 msgid "Writing {path}"
 msgstr "Đang ghi {path}"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Writing…"
+msgstr "Đang ghi…"
 
 #: src/pages/ChatPage.tsx
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."

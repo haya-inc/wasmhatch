@@ -15,6 +15,7 @@ import { GOOGLE_CONNECTOR_TOOLS, createGoogleConnectorExecutor } from "./google-
 import { GOOGLE_PICKER_TOOL, createGooglePickerExecutor, type PickedDriveFile } from "./google-picker";
 import { GOOGLE_SENSITIVE_TOOLS, createGoogleSensitiveExecutor } from "./google-sensitive-connectors";
 import { filterToolsByCapabilities } from "./hatchling-capabilities";
+import { formatMcpCallResultForAssistant, type McpRawToolResult } from "./mcp-client";
 import type { McpConnectedServer } from "./mcp-registry";
 import type { appendRunJournalEvent } from "./run-journal";
 import { SLACK_API_TOOLS, createSlackApiExecutor, slackProxyBaseUrl } from "./slack-tools";
@@ -58,6 +59,7 @@ export function assembleHatchlingTools(input: ToolAssemblyInput): AgentToolDefin
 
 export interface HatchlingToolRouterOptions {
   threadId: string;
+  threadName?: string;
   workspace: WorkspaceStore;
   permissions: SessionPermissionStore;
   gate: PermissionGate;
@@ -72,6 +74,13 @@ export interface HatchlingToolRouterOptions {
   slack?: { getWebhookUrl: () => string; getToken?: () => string };
   web?: { getTavilyKey: () => string; getJinaKey: () => string };
   mcpServers: readonly McpConnectedServer[];
+  onMcpUiResult?: (event: {
+    server: McpConnectedServer;
+    tool: string;
+    args: Record<string, unknown>;
+    raw: McpRawToolResult;
+    signal?: AbortSignal;
+  }) => Promise<string | null> | string | null;
   recordJournal: JournalRecorder;
 }
 
@@ -81,11 +90,29 @@ const SLACK_WEBHOOK_TOOL_NAMES = new Set(SLACK_WEBHOOK_TOOLS.map((tool) => tool.
 const SLACK_API_TOOL_NAMES = new Set(SLACK_API_TOOLS.map((tool) => tool.name));
 const TICKET_TOOL_NAMES = new Set(TICKET_TOOLS.map((tool) => tool.name));
 
+const EXTERNAL_WRITE_TOOLS = new Set([
+  "create_google_doc",
+  "create_google_sheet",
+  "create_google_slides",
+  "update_google_sheet_values",
+  "append_google_doc_text",
+  "write_google_sheet",
+  "append_google_doc",
+  "add_google_slide",
+  "create_calendar_event",
+  "post_slack_message",
+  "send_slack_channel_message"
+]);
+
+const externalPreviewEncoder = new TextEncoder();
+
 export function createHatchlingToolExecutor(options: HatchlingToolRouterOptions): AgentToolExecutor {
   const workspaceExecute = createChatToolExecutor({
     workspace: options.workspace,
     permissions: options.permissions,
     gate: options.gate,
+    threadId: options.threadId,
+    threadName: options.threadName,
     policy: options.policy,
     onAppliedWrite: options.onAppliedWrite,
     runScript: (source, scriptInput, runOptions) =>
@@ -108,16 +135,60 @@ export function createHatchlingToolExecutor(options: HatchlingToolRouterOptions)
   }));
   const ticketExecute = createTicketToolExecutor(options.tickets, options.threadId);
 
-  const mcpRoutes = new Map<string, { server: McpConnectedServer; tool: string }>();
+  const mcpRoutes = new Map<string, { server: McpConnectedServer; tool: string; readOnly?: boolean }>();
   for (const mcpServer of options.mcpServers) {
     for (const [name, route] of mcpServer.toolset.routes) {
-      mcpRoutes.set(name, { server: mcpServer, tool: route.tool });
+      mcpRoutes.set(name, { server: mcpServer, tool: route.tool, readOnly: route.readOnly });
     }
   }
+
+  const gateExternalEffect = async (
+    name: string,
+    args: Record<string, unknown>,
+    signal?: AbortSignal
+  ): Promise<{ rejected: true; content: string } | { rejected: false }> => {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    if (options.policy() !== "careful") return { rejected: false };
+    const permKey = `external:${name}`;
+    if (options.permissions.isAlwaysAllowed(permKey)) return { rejected: false };
+    const rawPreview = JSON.stringify(args, null, 2) ?? "{}";
+    const clipped = rawPreview.length > 8_192 ? `${rawPreview.slice(0, 8_192)}\n… (truncated)` : rawPreview;
+    const diff = clipped.split("\n").map((line) => `+ ${line}`).join("\n");
+    const creates = name.startsWith("create_") ||
+      name === "add_google_slide" ||
+      name === "post_slack_message" ||
+      name === "send_slack_channel_message";
+    const decision = await options.gate(
+      {
+        path: permKey,
+        diff,
+        creates,
+        beforeBytes: 0,
+        afterBytes: externalPreviewEncoder.encode(rawPreview).byteLength,
+        threadId: options.threadId,
+        ...(options.threadName ? { threadName: options.threadName } : {}),
+        kind: "external"
+      },
+      { signal }
+    );
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    options.permissions.record(permKey, decision);
+    if (decision === "reject") {
+      return {
+        rejected: true,
+        content: `The user rejected this external action (${name}). Do not retry the same call; ask what they want instead.`
+      };
+    }
+    return { rejected: false };
+  };
 
   const dispatch: AgentToolExecutor = async (name, args, context) => {
     if (name === ARTIFACT_TOOL.name) return artifactExecute(name, args, context);
     if (TICKET_TOOL_NAMES.has(name)) return ticketExecute(name, args, context);
+    if (EXTERNAL_WRITE_TOOLS.has(name)) {
+      const approval = await gateExternalEffect(name, args, context?.signal);
+      if (approval.rejected) return { content: approval.content, isError: true };
+    }
     if (GOOGLE_TOOL_NAMES.has(name)) return googleExecute(name, args, context);
     if (name === GOOGLE_PICKER_TOOL.name) return pickerExecute(name, args, context);
     if (GOOGLE_SENSITIVE_TOOL_NAMES.has(name)) return googleSensitiveExecute(name, args, context);
@@ -126,7 +197,34 @@ export function createHatchlingToolExecutor(options: HatchlingToolRouterOptions)
     if (name === WEB_SEARCH_FALLBACK_TOOL.name || name === FETCH_PAGE_TOOL.name) return webExecute(name, args, context);
     const mcpRoute = mcpRoutes.get(name);
     if (mcpRoute) {
+      if (!mcpRoute.readOnly) {
+        const approval = await gateExternalEffect(name, args, context?.signal);
+        if (approval.rejected) return { content: approval.content, isError: true };
+      }
       try {
+        if (mcpRoute.server.connection.callToolRaw && options.onMcpUiResult) {
+          const raw = await mcpRoute.server.connection.callToolRaw(
+            mcpRoute.tool,
+            args,
+            context?.signal
+          );
+          let uiNote: string | null = null;
+          try {
+            uiNote = await options.onMcpUiResult({
+              server: mcpRoute.server,
+              tool: mcpRoute.tool,
+              args,
+              raw,
+              signal: context?.signal
+            });
+          } catch {
+            uiNote = null;
+          }
+          return formatMcpCallResultForAssistant(raw, {
+            stripUserOnlyBlocks: true,
+            uiNote
+          });
+        }
         return await mcpRoute.server.connection.callTool(mcpRoute.tool, args, context?.signal);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") throw error;

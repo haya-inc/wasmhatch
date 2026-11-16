@@ -9,7 +9,7 @@ function defaultConfig(overrides: Partial<RunConfig> = {}): RunConfig {
   return {
     provider: "anthropic",
     apiKey: "sk-ant-test-key",
-    model: "claude-sonnet-4-6",
+    model: "claude-sonnet-5-5",
     webSearch: false,
     writeMode: "autonomous",
     builtinAvailability: "unavailable",
@@ -77,6 +77,66 @@ describe("HatchlingSwarm", () => {
     await swarm.removeHatchling(secondId);
     expect(swarm.selectedThreadId).toBe(MAIN_THREAD_ID);
     expect(swarm.listThreads()).toHaveLength(1);
+    swarm.dispose();
+  });
+
+  it("runs Chrome's prepared model with declared languages and a compact response grammar", async () => {
+    const destroy = vi.fn();
+    const prompt = vi.fn()
+      .mockResolvedValueOnce(JSON.stringify({ action: "tool_call", tool: "list_files", arguments: {} }))
+      .mockResolvedValueOnce(JSON.stringify({ action: "final", answer: "The workspace is empty." }));
+    const create = vi.fn(async () => ({ prompt, destroy }));
+    const swarm = new HatchlingSwarm({
+      getConfig: () => defaultConfig({ provider: "builtin", apiKey: "", model: "", builtinAvailability: "available" }),
+      gate: async () => "allow-once",
+      onArtifact: () => {},
+      google: { isConnected: () => false, sensitiveEnabled: false, getToken: async () => "" },
+      getBuiltinApi: () => ({ create }),
+      metaStore: new MemoryTextStore(),
+      createTicker: () => ({ dispose: () => {} })
+    });
+    await swarm.ready;
+    await swarm.send(MAIN_THREAD_ID, "List my files.");
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      expectedInputs: [{ type: "text", languages: ["en"] }],
+      expectedOutputs: [{ type: "text", languages: ["en"] }],
+      initialPrompts: [expect.objectContaining({ role: "system" })]
+    }));
+    const initialOptions = create.mock.calls[0] as unknown as [{ initialPrompts: { content: string }[] }];
+    expect(initialOptions[0].initialPrompts[0].content.length).toBeLessThan(5_000);
+    expect(initialOptions[0].initialPrompts[0].content).toContain('<a2ui>');
+    expect(prompt).toHaveBeenCalledTimes(2);
+    expect(prompt.mock.calls[0][1]).toMatchObject({
+      responseConstraint: { type: "object", required: ["action"] },
+      omitResponseConstraintInput: true
+    });
+    expect(prompt.mock.calls[0][1].responseConstraint).not.toHaveProperty("oneOf");
+    expect(swarm.getState(MAIN_THREAD_ID)?.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "tool", toolName: "list_files", toolState: "done" }),
+      expect.objectContaining({ kind: "assistant", text: "The workspace is empty." })
+    ]));
+    expect(destroy).toHaveBeenCalledOnce();
+    swarm.dispose();
+  });
+
+  it("directs first-time Chrome users to prepare the model instead of claiming a download started", async () => {
+    const create = vi.fn();
+    const swarm = new HatchlingSwarm({
+      getConfig: () => defaultConfig({ provider: "builtin", builtinAvailability: "downloadable" }),
+      gate: async () => "allow-once",
+      onArtifact: () => {},
+      google: { isConnected: () => false, sensitiveEnabled: false, getToken: async () => "" },
+      getBuiltinApi: () => ({ create }),
+      metaStore: new MemoryTextStore(),
+      createTicker: () => ({ dispose: () => {} })
+    });
+    await swarm.ready;
+    await swarm.send(MAIN_THREAD_ID, "Hello.");
+    expect(create).not.toHaveBeenCalled();
+    expect(swarm.getState(MAIN_THREAD_ID)?.items).toContainEqual(expect.objectContaining({
+      kind: "notice", text: expect.stringContaining("Prepare Chrome's on-device model")
+    }));
     swarm.dispose();
   });
 
@@ -166,6 +226,51 @@ describe("HatchlingSwarm", () => {
     await vi.waitFor(() => {
       expect(swarm.getState(MAIN_THREAD_ID)?.autoSkipNote).toMatch(/Add an API key/);
     });
+    swarm.dispose();
+  });
+
+  it("reverts newly created files by deleting them and refuses to clobber subsequent edits", async () => {
+    const provider = scriptedProvider([
+      [
+        { type: "tool-call-start", index: 0, callId: "c1", name: "write_file" },
+        { type: "tool-call-args-delta", index: 0, argsJsonDelta: JSON.stringify({ path: "fresh.txt", content: "v1\n" }) },
+        { type: "tool-call-end", index: 0 },
+        { type: "message-end", stopReason: "tool-use" }
+      ],
+      [{ type: "text-delta", text: "Created." }, { type: "message-end", stopReason: "end-turn" }],
+      [
+        { type: "tool-call-start", index: 0, callId: "c2", name: "write_file" },
+        { type: "tool-call-args-delta", index: 0, argsJsonDelta: JSON.stringify({ path: "edited.txt", content: "v1\n" }) },
+        { type: "tool-call-end", index: 0 },
+        { type: "message-end", stopReason: "tool-use" }
+      ],
+      [{ type: "text-delta", text: "Created second." }, { type: "message-end", stopReason: "end-turn" }]
+    ]);
+
+    const swarm = new HatchlingSwarm({
+      getConfig: () => defaultConfig(),
+      gate: async () => "allow-once",
+      onArtifact: () => {},
+      google: { isConnected: () => false, sensitiveEnabled: false, getToken: async () => "" },
+      metaStore: new MemoryTextStore(),
+      createTicker: () => ({ dispose: () => {} }),
+      createCloudProvider: () => provider
+    });
+    await swarm.ready;
+
+    await swarm.send(MAIN_THREAD_ID, "Create fresh.txt");
+    const writes1 = swarm.getState(MAIN_THREAD_ID)!.items.filter((item) => item.kind === "write");
+    expect(await swarm.revertWrite(MAIN_THREAD_ID, writes1[0].id)).toBe(true);
+    expect(await swarm.workspaceFor(MAIN_THREAD_ID).listFiles()).toEqual([]);
+
+    await swarm.send(MAIN_THREAD_ID, "Create edited.txt");
+    await swarm.workspaceFor(MAIN_THREAD_ID).writeFile("edited.txt", "manual v2\n");
+    const writes2 = swarm.getState(MAIN_THREAD_ID)!.items.filter((item) => item.kind === "write");
+    expect(await swarm.revertWrite(MAIN_THREAD_ID, writes2[1].id)).toBe(false);
+    expect(await swarm.workspaceFor(MAIN_THREAD_ID).readFile("edited.txt")).toBe("manual v2\n");
+
+    await swarm.setSchedule(MAIN_THREAD_ID, { intervalMinutes: Number.NaN });
+    expect(swarm.getState(MAIN_THREAD_ID)!.thread.schedule.intervalMinutes).toBe(10);
     swarm.dispose();
   });
 });

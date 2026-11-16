@@ -19,7 +19,7 @@ function streamResponse(body: string, init?: ResponseInit) {
 }
 
 const request: ProviderRequest = {
-  model: "gpt-5.6-luna",
+  model: "gpt-6-luna",
   system: "You are a test agent.",
   messages: [{ role: "user", parts: [{ type: "text", text: "hi" }] }],
   tools: [{ name: "lookup", description: "Look something up.", inputSchema: { type: "object" } }],
@@ -93,6 +93,7 @@ describe("createOpenAiResponsesProvider", () => {
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
     expect(body.stream).toBe(true);
     expect(body.store).toBe(false);
+    expect(body.include).toEqual(["reasoning.encrypted_content"]);
     expect(body.max_output_tokens).toBe(512);
     expect(body.instructions).toBe("You are a test agent.");
     expect(body.tools).toEqual([
@@ -219,5 +220,36 @@ describe("createOpenAiResponsesProvider", () => {
     const errored = chunkLine({ type: "error", code: "server_error", message: "boom" });
     const fetchImpl2 = vi.fn(async () => streamResponse(errored));
     await expect(collect(provider(fetchImpl2))).rejects.toThrow("openai reported a stream error: boom");
+  });
+
+  it("omits empty tools and keeps reasoning items ahead of paired output while dropping orphaned reasoning", async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(happyStream));
+    const orphanReasoning = { id: "rs_orphan", type: "reasoning", summary: [] };
+    await collect(provider(fetchImpl), {
+      ...request,
+      tools: [],
+      messages: [
+        { role: "user", parts: [{ type: "text", text: "hi" }] },
+        {
+          role: "assistant",
+          parts: [
+            { type: "text", text: "Answer first in parts" },
+            { type: "provider_raw", providerId: "openai", block: reasoningItem }
+          ]
+        },
+        {
+          role: "assistant",
+          parts: [{ type: "provider_raw", providerId: "openai", block: orphanReasoning }]
+        }
+      ]
+    });
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect("tools" in body).toBe(false);
+    expect(body.input).toEqual([
+      { role: "user", content: [{ type: "input_text", text: "hi" }] },
+      reasoningItem,
+      { role: "assistant", content: [{ type: "output_text", text: "Answer first in parts" }] }
+    ]);
   });
 });

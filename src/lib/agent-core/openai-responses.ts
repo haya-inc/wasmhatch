@@ -48,16 +48,38 @@ function toWireInput(providerId: string, messages: readonly AgentMessage[]) {
           part.block.type === "function_call" && typeof part.block.call_id === "string"
         ) rawCallIds.add(part.block.call_id);
       }
+      const turnItems: Array<Record<string, unknown>> = [];
       for (const part of message.parts) {
         if (part.type === "text") {
-          if (part.text) wire.push({ role: "assistant", content: [{ type: "output_text", text: part.text }] });
+          if (part.text) turnItems.push({ role: "assistant", content: [{ type: "output_text", text: part.text }] });
         } else if (part.type === "provider_raw") {
-          if (part.providerId === providerId) wire.push(part.block);
+          if (part.providerId === providerId) turnItems.push(part.block);
         } else if (part.type === "tool_call" && !rawCallIds.has(part.callId)) {
           // History from another provider: synthesize the function call item.
-          wire.push({ type: "function_call", call_id: part.callId, name: part.name, arguments: JSON.stringify(part.args) });
+          turnItems.push({ type: "function_call", call_id: part.callId, name: part.name, arguments: JSON.stringify(part.args) });
         }
       }
+      // OpenAI Responses rejects any `reasoning` input item that is not
+      // followed by its associated `assistant` message or `function_call`.
+      // Streaming text deltas can arrive before `output_item.done` for
+      // reasoning, and `max_output_tokens` can cut off mid-reasoning.
+      const trailingReasoning: Array<Record<string, unknown>> = [];
+      while (turnItems.length > 0 && turnItems[turnItems.length - 1].type === "reasoning") {
+        trailingReasoning.unshift(turnItems.pop()!);
+      }
+      if (trailingReasoning.length > 0 && turnItems.length > 0) {
+        let anchorIndex = -1;
+        for (let idx = turnItems.length - 1; idx >= 0; idx -= 1) {
+          if (turnItems[idx].role === "assistant" || turnItems[idx].type === "function_call") {
+            anchorIndex = idx;
+            break;
+          }
+        }
+        if (anchorIndex !== -1) {
+          turnItems.splice(anchorIndex, 0, ...trailingReasoning);
+        }
+      }
+      wire.push(...turnItems);
     } else if (message.role === "tool") {
       for (const part of message.parts) {
         if (part.type !== "tool_result") continue;
@@ -141,20 +163,22 @@ export function createOpenAiResponsesProvider(options: OpenAiResponsesProviderOp
   return {
     id: providerId,
     async *stream(request: ProviderRequest, signal?: AbortSignal): AsyncGenerator<ProviderStreamEvent, void, void> {
+      const wireTools = request.tools.map((tool) => ({
+        type: "function",
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.inputSchema,
+        strict: false
+      }));
       const body = JSON.stringify({
         model: request.model,
         max_output_tokens: request.maxOutputTokens,
         ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
         store: false,
+        include: ["reasoning.encrypted_content"],
         stream: true,
         // Chat tool schemas are looser than strict mode allows, so opt out.
-        tools: request.tools.map((tool) => ({
-          type: "function",
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-          strict: false
-        })),
+        ...(wireTools.length ? { tools: wireTools } : {}),
         instructions: request.system,
         input: toWireInput(providerId, request.messages)
       });

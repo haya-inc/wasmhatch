@@ -17,7 +17,7 @@ const requiredDirectives = [
   "default-src 'none'",
   "base-uri 'none'",
   "object-src 'none'",
-  "frame-src https://accounts.google.com/gsi/ https://docs.google.com https://drive.google.com",
+  "frame-src 'self' https://accounts.google.com/gsi/ https://docs.google.com https://drive.google.com",
   "form-action 'none'",
   "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client https://apis.google.com",
   "style-src 'self' https://accounts.google.com/gsi/style",
@@ -90,6 +90,36 @@ function verifyPolicy(policy, label, { requireFrameAncestors = false } = {}) {
 
 verifyPolicy(metaPolicy, "Built meta CSP");
 verifyPolicy(vercelPolicy, "vercel.json header CSP", { requireFrameAncestors: true });
+
+const vercelConnectTokens = new Set((vercelPolicy.match(/connect-src ([^;]+)/)?.[1] ?? "").split(/\s+/).filter(Boolean));
+for (const token of vercelConnectTokens) {
+  if (!requiredConnectSrc.includes(token)) {
+    throw new Error(`vercel.json connect-src contains an unaudited origin: ${token}`);
+  }
+}
+if (!process.env.VITE_SLACK_PROXY_URL && !process.env.VITE_REGISTRY_URL && !process.env.VITE_EXTRA_MCP_SERVERS) {
+  const metaConnectTokens = new Set((metaPolicy.match(/connect-src ([^;]+)/)?.[1] ?? "").split(/\s+/).filter(Boolean));
+  for (const token of metaConnectTokens) {
+    if (!vercelConnectTokens.has(token)) {
+      throw new Error(`Built meta CSP connect-src drifted from vercel.json: ${token}`);
+    }
+  }
+}
+
+const sandboxHtml = readFileSync(new URL("../dist/artifact-sandbox.html", import.meta.url), "utf8");
+if (!sandboxHtml.includes("default-src 'none'") || /https?:/i.test(sandboxHtml) || !sandboxHtml.includes('window.origin !== "null"')) {
+  throw new Error("Built dist/artifact-sandbox.html is missing its null-origin or no-network CSP guard.");
+}
+const sandboxRule = vercelConfig.headers?.find((rule) => rule.source === "/artifact-sandbox.html");
+const sandboxHeaderMap = new Map((sandboxRule?.headers ?? []).map((entry) => [entry.key, entry.value]));
+const sandboxVercelCsp = sandboxHeaderMap.get("Content-Security-Policy") ?? "";
+if (
+  !sandboxVercelCsp.includes("default-src 'none'") ||
+  !sandboxVercelCsp.includes("frame-ancestors 'self'") ||
+  sandboxHeaderMap.get("X-Frame-Options") !== "SAMEORIGIN"
+) {
+  throw new Error("vercel.json /artifact-sandbox.html rule must enforce default-src 'none', frame-ancestors 'self', and X-Frame-Options: SAMEORIGIN.");
+}
 
 if (headerMap.get("X-Frame-Options") !== "DENY") {
   throw new Error("vercel.json is missing X-Frame-Options: DENY.");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LOCALE_CODES, SOURCE_LOCALE, UI_LOCALES, isSupportedLocale, resolveLocale } from "./locales";
+import { LOCALE_CODES, SOURCE_LOCALE, UI_LOCALES, canonicalLocale, isSupportedLocale, resolveLocale } from "./locales";
 
 describe("locale registry", () => {
   it("keeps codes unique and resolvable by Intl", () => {
@@ -15,9 +15,12 @@ describe("locale registry", () => {
     }
   });
 
-  it("treats codes case-insensitively", () => {
+  it("treats codes case-insensitively and canonicalizes mixed-case tags", () => {
     expect(isSupportedLocale("PT-br")).toBe(true);
     expect(isSupportedLocale("xx")).toBe(false);
+    expect(canonicalLocale("zh-hans")).toBe("zh-Hans");
+    expect(canonicalLocale("pt-br")).toBe("pt-BR");
+    expect(canonicalLocale("xx")).toBeNull();
   });
 });
 

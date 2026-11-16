@@ -20,16 +20,56 @@ export const MCP_PROTOCOL_VERSION = "2025-06-18";
 const REQUEST_TIMEOUT_MS = 60_000;
 const MAX_TOOL_PAGES = 10;
 const MAX_RESULT_CHARS = 256 * 1024;
+const MAX_JSON_RESPONSE_BYTES = 4 * 1024 * 1024;
+const HEADER_VALUE_PATTERN = /^[\x21-\x7e]{1,4096}$/;
+const BEARER_TOKEN_PATTERN = /^[\x21-\x7e]{1,16384}$/;
 
 export interface McpToolInfo {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  readOnlyHint?: boolean;
+  uiResourceUris?: string[];
 }
 
 export interface McpCallResult {
   content: string;
   isError: boolean;
+}
+
+export interface McpContentAnnotations {
+  audience?: readonly string[];
+  priority?: number;
+}
+
+export interface McpResourceContentItem {
+  uri?: string;
+  mimeType?: string;
+  text?: string;
+  blob?: string;
+  _meta?: Record<string, unknown>;
+}
+
+export interface McpRawContentBlock {
+  type: string;
+  text?: string;
+  uri?: string;
+  mimeType?: string;
+  resource?: McpResourceContentItem;
+  annotations?: McpContentAnnotations;
+  _meta?: Record<string, unknown>;
+}
+
+export interface McpRawToolResult {
+  content: McpRawContentBlock[];
+  structuredContent?: Record<string, unknown>;
+  _meta?: Record<string, unknown>;
+  isError: boolean;
+}
+
+export interface McpReadResourceResult {
+  contents: McpResourceContentItem[];
+  _meta?: Record<string, unknown>;
 }
 
 export interface McpConnectionOptions {
@@ -48,6 +88,62 @@ interface JsonRpcResponse {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function extractUiResourceUris(source: Record<string, unknown>): string[] {
+  const meta = isRecord(source._meta) ? source._meta : null;
+  const ui = meta && isRecord(meta.ui) ? meta.ui : null;
+  const raw = ui?.resourceUri;
+  const list = Array.isArray(raw) ? raw : raw !== undefined ? [raw] : [];
+  return [...new Set(list.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0))];
+}
+
+function isUserOnlyAudience(annotations: McpContentAnnotations | undefined): boolean {
+  if (!annotations || !Array.isArray(annotations.audience) || annotations.audience.length === 0) {
+    return false;
+  }
+  return annotations.audience.includes("user") && !annotations.audience.includes("assistant");
+}
+
+function isUiResourceMime(mimeType: string | undefined, uri: string | undefined): boolean {
+  if (typeof uri === "string" && (uri.startsWith("a2ui://") || uri.startsWith("ui://"))) {
+    return true;
+  }
+  if (typeof mimeType !== "string") return false;
+  const lower = mimeType.toLowerCase();
+  if (lower === "application/a2ui+json") return true;
+  const parts = lower.split(";").map((part) => part.trim());
+  return parts[0] === "text/html" && parts.includes("profile=mcp-app");
+}
+
+export function formatMcpCallResultForAssistant(
+  raw: McpRawToolResult,
+  options: { stripUserOnlyBlocks?: boolean; uiNote?: string | null } = {}
+): McpCallResult {
+  const parts: string[] = [];
+  for (const part of raw.content) {
+    if (options.stripUserOnlyBlocks) {
+      if (isUserOnlyAudience(part.annotations)) continue;
+      if (part.type === "resource" && isUiResourceMime(part.resource?.mimeType, part.resource?.uri)) continue;
+      if (part.type === "resource_link" && isUiResourceMime(part.mimeType, part.uri)) continue;
+    }
+    if (part.type === "text" && typeof part.text === "string") parts.push(part.text);
+    else if (part.type === "image") parts.push("[image content omitted]");
+    else if (part.type === "audio") parts.push("[audio content omitted]");
+    else if (part.type === "resource" && part.resource && typeof part.resource.text === "string") {
+      parts.push(part.resource.text);
+    } else if (part.type === "resource_link" && typeof part.uri === "string") {
+      parts.push(`[resource: ${part.uri}]`);
+    }
+  }
+  if (options.uiNote) {
+    parts.push(options.uiNote);
+  }
+  let content = parts.join("\n");
+  if (content.length > MAX_RESULT_CHARS) {
+    content = `${content.slice(0, MAX_RESULT_CHARS)}\n[truncated]`;
+  }
+  return { content, isError: raw.isError };
 }
 
 function combineSignals(signals: Array<AbortSignal | undefined>): AbortSignal {
@@ -74,7 +170,11 @@ export class McpConnection {
 
   constructor(options: McpConnectionOptions) {
     this.url = options.url;
-    this.bearerToken = options.bearerToken;
+    const trimmedToken = options.bearerToken?.trim();
+    if (trimmedToken && !BEARER_TOKEN_PATTERN.test(trimmedToken)) {
+      throw new Error("The MCP access token contains invalid characters.");
+    }
+    this.bearerToken = trimmedToken || undefined;
     this.fetchImpl = options.fetchImpl ?? ((...args) => fetch(...args));
     this.requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   }
@@ -114,13 +214,17 @@ export class McpConnection {
       method: "POST",
       headers: this.headers(),
       body: JSON.stringify({ jsonrpc: "2.0", ...(id === undefined ? {} : { id }), method, ...(params ? { params } : {}) }),
+      credentials: "omit",
+      redirect: "error",
       signal
     });
-    const storedSession = response.headers.get("Mcp-Session-Id");
-    if (storedSession) this.sessionId = storedSession;
     if (!response.ok) {
       response.body?.cancel().catch(() => undefined);
       throw this.describeHttpError(response.status);
+    }
+    const storedSession = response.headers.get("Mcp-Session-Id")?.trim();
+    if (storedSession && HEADER_VALUE_PATTERN.test(storedSession)) {
+      this.sessionId = storedSession;
     }
     if (options.notification || response.status === 202 || response.status === 204) {
       response.body?.cancel().catch(() => undefined);
@@ -138,16 +242,31 @@ export class McpConnection {
         }
         // Server-initiated requests and notifications are out of v1 scope; skip them.
         if (isRecord(message) && message.id === id && ("result" in message || "error" in message)) {
-          response.body.cancel().catch(() => undefined);
           return message as JsonRpcResponse;
         }
       }
       throw new Error("The MCP server closed the stream without answering the request.");
     }
-    const parsed: unknown = await response.json();
+    const declaredLength = Number(response.headers.get("Content-Length"));
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_RESPONSE_BYTES) {
+      response.body?.cancel().catch(() => undefined);
+      throw new Error("The MCP server response exceeded the 4 MB limit.");
+    }
+    const rawText = await response.text();
+    if (rawText.length > MAX_JSON_RESPONSE_BYTES) {
+      throw new Error("The MCP server response exceeded the 4 MB limit.");
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      throw new Error("The MCP server answered with unreadable JSON.");
+    }
     const messages = Array.isArray(parsed) ? parsed : [parsed];
     for (const message of messages) {
-      if (isRecord(message) && message.id === id) return message as JsonRpcResponse;
+      if (isRecord(message) && message.id === id && ("result" in message || "error" in message)) {
+        return message as JsonRpcResponse;
+      }
     }
     throw new Error("The MCP server answered with a response for a different request.");
   }
@@ -166,11 +285,29 @@ export class McpConnection {
   async initialize(signal?: AbortSignal): Promise<void> {
     const result = await this.request("initialize", {
       protocolVersion: MCP_PROTOCOL_VERSION,
-      capabilities: {},
+      capabilities: {
+        a2ui: {
+          version: "1.0",
+          acceptsInlineCatalogs: false,
+          mimeTypes: ["application/a2ui+json", "text/html;profile=mcp-app"],
+          supportedCatalogIds: [
+            "https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json",
+            "https://a2ui.org/specification/v1_0/catalogs/vegachart/catalog.json",
+            "https://a2ui.org/specification/v1_0/catalogs/mcp/catalog.json",
+            "https://a2ui.org/specification/v0_9/basic_catalog.json",
+            "wasmhatch:tabular:v1",
+            "wasmhatch:workspace:v1",
+            "wasmhatch:connectors:v1"
+          ]
+        }
+      },
       clientInfo: { name: "WasmHatch", version: "1" }
     }, signal);
     if (!isRecord(result)) throw new Error("The MCP server sent a malformed initialize result.");
-    this.negotiatedVersion = typeof result.protocolVersion === "string" ? result.protocolVersion : MCP_PROTOCOL_VERSION;
+    const candidateVersion = typeof result.protocolVersion === "string" ? result.protocolVersion.trim() : "";
+    this.negotiatedVersion = candidateVersion && HEADER_VALUE_PATTERN.test(candidateVersion)
+      ? candidateVersion
+      : MCP_PROTOCOL_VERSION;
     const serverInfo = isRecord(result.serverInfo) ? result.serverInfo : null;
     this.serverName = serverInfo && typeof serverInfo.name === "string" ? serverInfo.name : null;
     await this.send("notifications/initialized", undefined, { notification: true, signal });
@@ -186,10 +323,14 @@ export class McpConnection {
       }
       for (const entry of result.tools) {
         if (!isRecord(entry) || typeof entry.name !== "string" || !entry.name) continue;
+        const annotations = isRecord(entry.annotations) ? entry.annotations : null;
+        const uiResourceUris = extractUiResourceUris(entry);
         tools.push({
           name: entry.name,
           description: typeof entry.description === "string" ? entry.description : "",
-          inputSchema: isRecord(entry.inputSchema) ? entry.inputSchema : { type: "object" }
+          inputSchema: isRecord(entry.inputSchema) ? entry.inputSchema : { type: "object" },
+          ...(annotations?.readOnlyHint === true ? { readOnlyHint: true } : {}),
+          ...(uiResourceUris.length > 0 ? { uiResourceUris } : {})
         });
       }
       cursor = typeof result.nextCursor === "string" && result.nextCursor ? result.nextCursor : undefined;
@@ -198,28 +339,77 @@ export class McpConnection {
     return tools;
   }
 
-  async callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<McpCallResult> {
+  async readResource(uri: string, signal?: AbortSignal): Promise<McpReadResourceResult> {
+    const result = await this.request("resources/read", { uri }, signal);
+    if (!isRecord(result) || !Array.isArray(result.contents)) {
+      throw new Error("The MCP server sent a malformed resources/read result.");
+    }
+    const contents: McpResourceContentItem[] = [];
+    for (const item of result.contents) {
+      if (!isRecord(item)) continue;
+      contents.push({
+        ...(typeof item.uri === "string" ? { uri: item.uri } : {}),
+        ...(typeof item.mimeType === "string" ? { mimeType: item.mimeType } : {}),
+        ...(typeof item.text === "string" ? { text: item.text } : {}),
+        ...(typeof item.blob === "string" ? { blob: item.blob } : {}),
+        ...(isRecord(item._meta) ? { _meta: item._meta } : {})
+      });
+    }
+    return {
+      contents,
+      ...(isRecord(result._meta) ? { _meta: result._meta } : {})
+    };
+  }
+
+  async callToolRaw(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<McpRawToolResult> {
     const result = await this.request("tools/call", { name, arguments: args }, signal);
     if (!isRecord(result)) throw new Error("The MCP server sent a malformed tools/call result.");
-    const parts: string[] = [];
+    const content: McpRawContentBlock[] = [];
     if (Array.isArray(result.content)) {
       for (const part of result.content) {
-        if (!isRecord(part)) continue;
-        if (part.type === "text" && typeof part.text === "string") parts.push(part.text);
-        else if (part.type === "image") parts.push("[image content omitted]");
-        else if (part.type === "audio") parts.push("[audio content omitted]");
-        else if (part.type === "resource" && isRecord(part.resource) && typeof part.resource.text === "string") {
-          parts.push(part.resource.text);
-        } else if (part.type === "resource_link" && typeof part.uri === "string") {
-          parts.push(`[resource: ${part.uri}]`);
-        }
+        if (!isRecord(part) || typeof part.type !== "string") continue;
+        const annotations = isRecord(part.annotations) ? part.annotations : null;
+        const parsedAnnotations: McpContentAnnotations | undefined = annotations
+          ? {
+              ...(Array.isArray(annotations.audience)
+                ? { audience: annotations.audience.filter((a): a is string => typeof a === "string") }
+                : {}),
+              ...(typeof annotations.priority === "number" ? { priority: annotations.priority } : {})
+            }
+          : undefined;
+        const resource = isRecord(part.resource) ? part.resource : null;
+        content.push({
+          type: part.type,
+          ...(typeof part.text === "string" ? { text: part.text } : {}),
+          ...(typeof part.uri === "string" ? { uri: part.uri } : {}),
+          ...(typeof part.mimeType === "string" ? { mimeType: part.mimeType } : {}),
+          ...(resource
+            ? {
+                resource: {
+                  ...(typeof resource.uri === "string" ? { uri: resource.uri } : {}),
+                  ...(typeof resource.mimeType === "string" ? { mimeType: resource.mimeType } : {}),
+                  ...(typeof resource.text === "string" ? { text: resource.text } : {}),
+                  ...(typeof resource.blob === "string" ? { blob: resource.blob } : {}),
+                  ...(isRecord(resource._meta) ? { _meta: resource._meta } : {})
+                }
+              }
+            : {}),
+          ...(parsedAnnotations ? { annotations: parsedAnnotations } : {}),
+          ...(isRecord(part._meta) ? { _meta: part._meta } : {})
+        });
       }
     }
-    let content = parts.join("\n");
-    if (content.length > MAX_RESULT_CHARS) {
-      content = `${content.slice(0, MAX_RESULT_CHARS)}\n[truncated]`;
-    }
-    return { content, isError: result.isError === true };
+    return {
+      content,
+      ...(isRecord(result.structuredContent) ? { structuredContent: result.structuredContent } : {}),
+      ...(isRecord(result._meta) ? { _meta: result._meta } : {}),
+      isError: result.isError === true
+    };
+  }
+
+  async callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<McpCallResult> {
+    const raw = await this.callToolRaw(name, args, signal);
+    return formatMcpCallResultForAssistant(raw);
   }
 
   /** Best-effort session teardown; a server without sessions just 405s. */
@@ -241,7 +431,7 @@ export class McpConnection {
 export interface McpToolset {
   definitions: AgentToolDefinition[];
   /** Namespaced tool name → the server id and original tool name to call. */
-  routes: Map<string, { serverId: string; tool: string }>;
+  routes: Map<string, { serverId: string; tool: string; readOnly?: boolean }>;
 }
 
 const MAX_TOOL_NAME_CHARS = 64;
@@ -254,16 +444,22 @@ const MAX_TOOL_DESCRIPTION_CHARS = 600;
  */
 export function buildMcpToolset(serverId: string, serverLabel: string, tools: readonly McpToolInfo[]): McpToolset {
   const definitions: AgentToolDefinition[] = [];
-  const routes = new Map<string, { serverId: string; tool: string }>();
+  const routes = new Map<string, { serverId: string; tool: string; readOnly?: boolean }>();
   for (const tool of tools) {
     const safeTool = tool.name.replace(/[^A-Za-z0-9_-]/g, "_");
-    let name = `mcp_${serverId}_${safeTool}`.slice(0, MAX_TOOL_NAME_CHARS);
+    const baseName = `mcp_${serverId}_${safeTool}`;
+    let name = baseName.slice(0, MAX_TOOL_NAME_CHARS);
     for (let suffix = 2; routes.has(name); suffix += 1) {
-      name = `${name.slice(0, MAX_TOOL_NAME_CHARS - 4)}_${suffix}`;
+      const suffixPart = `_${suffix}`;
+      name = `${baseName.slice(0, Math.max(1, MAX_TOOL_NAME_CHARS - suffixPart.length))}${suffixPart}`;
     }
     const description = `[${serverLabel} via MCP] ${tool.description}`.trim().slice(0, MAX_TOOL_DESCRIPTION_CHARS);
     definitions.push({ name, description, inputSchema: tool.inputSchema });
-    routes.set(name, { serverId, tool: tool.name });
+    routes.set(name, {
+      serverId,
+      tool: tool.name,
+      ...(tool.readOnlyHint ? { readOnly: true } : {})
+    });
   }
   return { definitions, routes };
 }

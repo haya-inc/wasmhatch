@@ -23,6 +23,17 @@ msgstr "{0, plural, one {bağlı · # araç} other {bağlı · # araç}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, one {Asistana # Google dosyası verildi.} other {Asistana # Google dosyası verildi.}}"
 
+#. placeholder {0}: parsed.yTitle
+#. placeholder {1}: parsed.xTitle
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "{0} by {1}"
+msgstr "{1} bazında {0}"
+
+#. placeholder {0}: dataset.columns.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} columns"
+msgstr "{0} sütun"
+
 #. placeholder {0}: journal.events.length
 #. placeholder {1}: journal.metrics.toolCalls
 #. placeholder {2}: journal.metrics.commits
@@ -35,6 +46,27 @@ msgstr "{0} olay · {1} araç çağrısı · {2} yazma"
 msgid "{0} files:"
 msgstr "{0} dosya:"
 
+#. placeholder {0}: col.formulaWarningCount
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula"
+msgstr "{0} formül"
+
+#. placeholder {0}: dataset.formulaWarnings.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula warnings"
+msgstr "{0} formül uyarısı"
+
+#. placeholder {0}: result.path
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} is already up to date."
+msgstr "{0} zaten güncel."
+
+#. placeholder {0}: preview.totalLines
+#. placeholder {1}: preview.byteLength
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} lines · {1} B"
+msgstr "{0} satır · {1} B"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/components/chat/TeamSidebar.tsx
 msgid "{0} min"
@@ -46,10 +78,34 @@ msgstr "{0} dk"
 msgid "{0} of {1} auto runs left."
 msgstr "Otomatik çalıştırma hakkı: {0}/{1} kaldı."
 
+#. placeholder {0}: filteredRows.length
+#. placeholder {1}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} of {1} rows"
+msgstr "{0} / {1} satır"
+
+#. placeholder {0}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} rows"
+msgstr "{0} satır"
+
+#. placeholder {0}: matrix.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{0} rows · {totalCells} cells"
+msgstr "{0} satır · {totalCells} hücre"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ToolsSidebar.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
 msgstr "{0} adlı civcivin çalışma alanı — her civciv kendi dosyalarını tutar."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{formulaCount} formula cells neutralized on export"
+msgstr "Dışa aktarma sırasında {formulaCount} formül hücresi etkisizleştirildi"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{formulaCount} formula-prefixed cells (written as literal text)"
+msgstr "Formül önekli {formulaCount} hücre (düz metin olarak yazılır)"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "{minutes} min"
@@ -147,6 +203,10 @@ msgid "Add a sample spreadsheet"
 msgstr "Örnek e-tablo ekle"
 
 #: src/lib/tool-summary.ts
+msgid "Adding a slide — {title}"
+msgstr "Slayt ekleniyor — {title}"
+
+#: src/lib/tool-summary.ts
 msgid "Adding a ticket — {title}"
 msgstr "Görev ekleniyor — {title}"
 
@@ -171,6 +231,19 @@ msgstr "API anahtarı"
 msgid "Appending text to a Google Doc"
 msgstr "Google Dokümanlar belgesine metin ekleniyor"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Apply to workspace"
+msgstr "Çalışma alanına uygula"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Applying…"
+msgstr "Uygulanıyor…"
+
+#. placeholder {0}: artifact.title
+#: src/components/ArtifactPanel.tsx
+msgid "Artifact: {0}"
+msgstr "Çıktı: {0}"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ChatTranscript.tsx
 msgid "Ask {0} for the outcome you need…"
@@ -191,6 +264,10 @@ msgstr "Google dosyaları isteniyor"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Assistant"
 msgstr "Asistan"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Audio unavailable in this tab"
+msgstr "Bu sekmede ses kullanılamıyor"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Auto — match this browser"
@@ -264,9 +341,29 @@ msgstr "bayt. Siz karar verene kadar hiçbir şey yazılmaz."
 msgid "Cancel"
 msgstr "İptal"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas"
+msgstr "Tuval"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas actions"
+msgstr "Tuval eylemleri"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Careful — asks before saving"
 msgstr "Dikkatli — kaydetmeden önce sorar"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Chart specification could not be parsed."
+msgstr "Grafik tanımı ayrıştırılamadı."
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "Check Chrome's on-device AI requirements"
+msgstr "Chrome’un yerleşik yapay zekâ gereksinimlerini kontrol edin"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Google Calendar"
+msgstr "Google Takvim kontrol ediliyor"
 
 #: src/lib/tool-summary.ts
 msgid "Checking Slack channels"
@@ -280,9 +377,17 @@ msgstr "Görev panosu kontrol ediliyor"
 msgid "Checks the shared ticket board on your timer and turns finished notes into single-file HTML dashboards."
 msgstr "Belirlediğiniz zamanlayıcıyla ortak görev panosunu kontrol eder ve tamamlanan notları tek dosyalık HTML panolarına dönüştürür."
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose Drive files…"
+msgstr "Drive dosyalarını seçin…"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Choose files…"
 msgstr "Dosyaları seç…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose specific Google Drive files to grant access for this task."
+msgstr "Bu görev için erişim izni vermek üzere belirli Google Drive dosyalarını seçin."
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
@@ -300,9 +405,25 @@ msgstr "CSV / JSON dosyalarını yerel kodla temizler ve doğrular."
 msgid "Clipboard API is not available in this browser."
 msgstr "Pano API'si bu tarayıcıda kullanılamıyor."
 
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/basic-catalog-react.tsx
 msgid "Close"
 msgstr "Kapat"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column"
+msgstr "Sütun"
+
+#. placeholder {0}: profiles.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column statistics ({0})"
+msgstr "Sütun istatistikleri ({0})"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Computing…"
+msgstr "Hesaplanıyor…"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Connect"
@@ -370,13 +491,50 @@ msgstr "Tüm civcivleri bilgisayarınızdaki bir MCP sunucusunun araçlarına ba
 msgid "Contribute"
 msgstr "Katkıda bulun"
 
+#: src/components/a2ui/CanvasStage.tsx
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copied"
 msgstr "Kopyalandı"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copied standalone HTML to clipboard"
+msgstr "Bağımsız HTML panoya kopyalandı"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copy"
 msgstr "Kopyala"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copy HTML"
+msgstr "HTML Kopyala"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Could not compute diff preview."
+msgstr "Fark önizlemesi hesaplanamadı."
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Could not copy HTML to clipboard"
+msgstr "HTML panoya kopyalanamadı"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not open Google Drive picker."
+msgstr "Google Drive seçicisi açılamadı."
+
+#: src/pages/ChatPage.tsx
+msgid "Could not prepare the on-device model: {reason}"
+msgstr "Cihazdaki model hazırlanamadı: {reason}"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not send Slack message."
+msgstr "Slack mesajı gönderilemedi."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not undo Google Sheet write."
+msgstr "Google E-Tablo yazma işlemi geri alınamadı."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not update Google Sheet."
+msgstr "Google E-Tablosu güncellenemedi."
 
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
@@ -386,6 +544,10 @@ msgstr "{0} dosyasını oluştur"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Create another account and upload files to a vendor server"
 msgstr "Yeni bir hesap daha açıp dosyaları bir sağlayıcının sunucusuna yüklemek"
+
+#: src/lib/tool-summary.ts
+msgid "Creating a calendar event — {summary}"
+msgstr "Takvim etkinliği oluşturuluyor — {summary}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
@@ -411,6 +573,15 @@ msgstr "Özel model kimliği"
 msgid "Custom model ID…"
 msgstr "Özel model kimliği…"
 
+#. placeholder {0}: points.length
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Data summary ({0} points)"
+msgstr "Veri özeti ({0} nokta)"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Data table"
+msgstr "Veri tablosu"
+
 #: src/lib/hatchling-presets.ts
 msgid "Data wrangler"
 msgstr "Veri Düzenleyici"
@@ -418,6 +589,10 @@ msgstr "Veri Düzenleyici"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Data wrangler · isolated workspace"
 msgstr "Veri Düzenleyici · yalıtılmış çalışma alanı"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Dataset profile"
+msgstr "Veri kümesi profili"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Decline"
@@ -434,6 +609,10 @@ msgstr "İstediğiniz sonucu anlatın…"
 #: src/lib/hatchling-presets.ts
 msgid "Desk runner"
 msgstr "Masa Sorumlusu"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Dialog"
+msgstr "İletişim kutusu"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect"
@@ -459,6 +638,10 @@ msgstr "Slack bağlantısını kes"
 msgid "Disconnect web search"
 msgstr "Web aramasının bağlantısını kes"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Distinct"
+msgstr "Benzersiz"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Doing"
 msgstr "Yapılıyor"
@@ -479,9 +662,15 @@ msgstr "Tamam — bu tarayıcı verilerinizi güvende tutacak."
 msgid "Done! Download the HTML report, update a Google Sheet, or send highlights to Slack."
 msgstr "Hazır! HTML raporunu indirin, bir Google Sheet dosyasını güncelleyin ya da öne çıkanları Slack'e gönderin."
 
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/workspace-catalog.tsx
 msgid "Download"
 msgstr "İndir"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Download .patch"
+msgstr ".patch indir"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
@@ -511,6 +700,10 @@ msgstr "Her değişiklik tam fark görünümüyle gelir ve tek tıkla geri alın
 msgid "Each run"
 msgstr "Her çalıştırmada"
 
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Embedded apps are disabled for this hatchling."
+msgstr "Bu hatchling için gömülü uygulamalar devre dışı bırakıldı."
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Every"
 msgstr "Her"
@@ -535,13 +728,36 @@ msgstr "Her şey tarayıcı sekmenizde yaşar — dosyalarınızı yükleyeceği
 msgid "Example conversation"
 msgstr "Örnek sohbet"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export blocked"
+msgstr "Dışa aktarma engellendi"
+
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Export HTML"
+msgstr "HTML Dışa Aktar"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export JSON"
 msgstr "JSON olarak dışa aktar"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export safe CSV"
+msgstr "Güvenli CSV dışa aktar"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export this hatchling"
 msgstr "Bu civcivi dışa aktar"
+
+#. placeholder {0}: exported.fileName
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Exported {0}"
+msgstr "{0} dışa aktarıldı"
+
+#. placeholder {0}: sortedRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Exported {0} rows"
+msgstr "{0} satır dışa aktarıldı"
 
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials."
@@ -559,13 +775,33 @@ msgstr "Hızlı — hemen yapar (istediğiniz an geri alın)"
 msgid "Fast, and still yours."
 msgstr "Hızlı, üstelik tamamen sizin."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "File could not be read."
+msgstr "Dosya okunamadı."
+
 #: src/components/chat/useGoogleConnector.ts
 msgid "File handover cancelled — nothing was shared."
 msgstr "Dosya devri iptal edildi — hiçbir şey paylaşılmadı."
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Filter options…"
+msgstr "Seçenekleri filtrele…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows"
+msgstr "Satırları filtrele"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows…"
+msgstr "Satırları filtrele…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Fix messy spreadsheets"
 msgstr "Dağınık e-tabloları toparlayın"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Formula"
+msgstr "Formül"
 
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google access revoked for this tab."
@@ -590,6 +826,10 @@ msgstr "Google dosya devri istendi"
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google revocation failed."
 msgstr "Google erişimi iptal edilemedi."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Google Sheet preview"
+msgstr "Google E-Tablo önizlemesi"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Google's own picker opens next — only the files you choose there are shared."
@@ -646,9 +886,21 @@ msgstr "Ekip kenar çubuğunu gizle"
 msgid "Hide the tools sidebar"
 msgstr "Araçlar kenar çubuğunu gizle"
 
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Hover or focus a mark to inspect"
+msgstr "İncelemek için bir işaretin üzerine gelin veya odaklanın"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "How it works"
 msgstr "Nasıl çalışır"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image preview unavailable"
+msgstr "Görsel önizlemesi kullanılamıyor"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image unavailable under offline/CSP policy"
+msgstr "Çevrimdışı/CSP politikası nedeniyle görsel kullanılamıyor"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Import a .agent file"
@@ -665,6 +917,18 @@ msgstr "Incoming Webhook URL'si"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Inspect a hatchling"
 msgstr "Bir civcivi incele"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Inspect sandbox formula"
+msgstr "Sandbox formülünü incele"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Interactive app"
+msgstr "Etkileşimli uygulama"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Isolated sandbox"
+msgstr "Yalıtılmış kum havuzu"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "It gets to work right away. Every tool call and file edit appears live in the conversation — no black box."
@@ -711,9 +975,21 @@ msgstr "Her civcivin fetch_page ile belirli bir sayfayı temiz metin olarak okum
 msgid "Listing workspace files"
 msgstr "Çalışma alanı dosyaları listeleniyor"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Literal"
+msgstr "Düz metin"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Load from the registry"
 msgstr "Kayıt defterinden yükle"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Loading…"
+msgstr "Yükleniyor…"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Local QuickJS sandbox"
+msgstr "Yerel QuickJS sandbox"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Main desk · everyday partner"
@@ -739,6 +1015,10 @@ msgstr "Civcivlerle tanışın"
 msgid "Message the agent"
 msgstr "Asistana mesaj gönder"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Missing"
+msgstr "Eksik"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Model"
 msgstr "Model"
@@ -755,9 +1035,18 @@ msgstr "Dikkat gerekiyor"
 msgid "New chat"
 msgstr "Yeni sohbet"
 
+#. placeholder {0}: preview.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "New file ({0} B)"
+msgstr "Yeni dosya ({0} B)"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "New ticket title"
 msgstr "Yeni görev başlığı"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Next"
+msgstr "Sonraki"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Next auto run any moment"
@@ -771,6 +1060,14 @@ msgstr "Sonraki otomatik çalıştırmaya yaklaşık {minutes} dk"
 msgid "No approval pop-ups slowing every step by default. The assistant does the work and shows exact diffs as it goes."
 msgstr "Varsayılan olarak her adımda hızınızı kesen onay pencereleri çıkmaz. Asistan işi yapar ve ilerlerken tam farkları gösterir."
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No columns or rows available."
+msgstr "Kullanılabilir sütun veya satır yok."
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "No data rows to plot yet."
+msgstr "Henüz çizilecek veri satırı yok."
+
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
 msgstr "Henüz civciv yok."
@@ -782,6 +1079,10 @@ msgstr "Kurulum yok, hesap yok"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
 msgstr "Anahtar gerekmez — bu, kendi bilgisayarınızdaki Ollama ile konuşur. Ollama'yı bu siteye izin vererek başlatın (OLLAMA_ORIGINS ayarlayın), ardından indirdiğiniz modeli seçin (ollama list)."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No matching rows."
+msgstr "Eşleşen satır yok."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "No setup"
@@ -812,12 +1113,28 @@ msgid "On it — running a local cleanup script and building your report now."
 msgstr "Hemen bakıyorum — yerel temizleme betiğini çalıştırıp raporunuzu şimdi hazırlıyorum."
 
 #: src/components/chat/ToolsSidebar.tsx
-msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
-msgstr "Cihaz üstü model durumu: {builtinAvailability}. Desteklenen bir masaüstünde Chrome 138+ görevleri hiçbir anahtar olmadan çalıştırabilir."
+msgid "On-device model download"
+msgstr "Cihazdaki model indiriliyor"
+
+#: src/components/chat/ToolsSidebar.tsx
+#~ msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
+#~ msgstr "Cihaz üstü model durumu: {builtinAvailability}. Desteklenen bir masaüstünde Chrome 138+ görevleri hiçbir anahtar olmadan çalıştırabilir."
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "On-device model status: {builtinAvailability}. Chrome 148+ on a supported desktop can run tasks without any key."
+msgstr "Cihaz üstü model durumu: {builtinAvailability}. Desteklenen bir masaüstünde Chrome 148+ görevleri hiçbir anahtar olmadan çalıştırabilir."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "One assistant for the busywork."
 msgstr "Angarya işler için tek bir asistan."
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Open in Canvas"
+msgstr "Tuvalde aç"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Open sheet"
+msgstr "Tabloyu aç"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Open the link — no server, no Docker, no signup. Clean messy spreadsheets with local code, draft Google Docs and Sheets, build one-file HTML reports, or hatch a tiny team of agents right in this tab."
@@ -835,9 +1152,17 @@ msgstr "Sekmeyi açın ve ne istediğinizi söyleyin. Tüm başlangıç bundan i
 msgid "Open WasmHatch"
 msgstr "WasmHatch'i aç"
 
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Opened in Canvas"
+msgstr "Tuvalde açıldı"
+
 #: src/App.tsx
 #~ msgid "Opening operator…"
 #~ msgstr "Operatör açılıyor…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Opening picker…"
+msgstr "Seçici açılıyor…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
@@ -863,6 +1188,11 @@ msgstr "Herhangi bir civcivin kılavuzunu ve kapsamlı izinlerini (anahtarların
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "Paketlenmiş talimatlar güvenilmeyen içerik olarak ele alınır: anahtarlarınızı asla görmezler ve yalnızca yukarıdaki yetenekler kullanılabilir."
 
+#. placeholder {0}: page + 1
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Page {0} of {totalPages}"
+msgstr "Sayfa {0} / {totalPages}"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
 msgstr "Sayfa okuma bağlandı. Her civciv fetch_page ile belirli bir URL'yi okuyabilir."
@@ -874,6 +1204,10 @@ msgstr "Sayfa okuma bağlandı. Civcivler artık fetch_page ile belirli bir sayf
 #: src/components/chat/useSessionConnectors.ts
 msgid "Page reading disconnected."
 msgstr "Sayfa okumanın bağlantısı kesildi."
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Patch export failed."
+msgstr "Yama dışa aktarma başarısız oldu."
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Pause all auto work"
@@ -916,8 +1250,16 @@ msgid "Posting to Slack — {channel}"
 msgstr "Slack'e gönderiliyor — {channel}"
 
 #: src/components/chat/ToolsSidebar.tsx
+msgid "Prepare on-device model"
+msgstr "Cihazdaki modeli hazırla"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Preparing…"
 msgstr "Hazırlanıyor…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Previous"
+msgstr "Önceki"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Primary"
@@ -967,13 +1309,45 @@ msgstr "Yayınlanıyor…"
 msgid "Queue a piece of work…"
 msgstr "Sıraya bir iş ekleyin…"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS · {lastDurationMs} ms"
+msgstr "QuickJS · {lastDurationMs} ms"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS ready"
+msgstr "QuickJS hazır"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS transform failed."
+msgstr "QuickJS dönüşümü başarısız oldu."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Range / Mean"
+msgstr "Aralık / Ortalama"
+
 #: src/lib/tool-summary.ts
 msgid "Reading {path}"
 msgstr "{path} okunuyor"
 
 #: src/lib/tool-summary.ts
+msgid "Reading a Google Doc"
+msgstr "Google Dokümanlar belgesi okunuyor"
+
+#: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
 msgstr "Google E-Tablolar dosyası okunuyor"
+
+#: src/lib/tool-summary.ts
+msgid "Reading a Google Slides deck"
+msgstr "Google Slaytlar sunusu okunuyor"
+
+#: src/lib/tool-summary.ts
+msgid "Reading web page — {url}"
+msgstr "Web sayfası okunuyor — {url}"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Recalculate"
+msgstr "Yeniden hesapla"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Registry package URL"
@@ -1025,6 +1399,10 @@ msgstr "Hakkı sıfırla"
 msgid "Resting"
 msgstr "Dinleniyor"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Restored previous cell values in {range}."
+msgstr "{range} aralığındaki önceki hücre değerleri geri yüklendi."
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Revert"
 msgstr "Geri al"
@@ -1057,6 +1435,10 @@ msgstr "Korumalı alanda bir betik çalıştırılıyor"
 msgid "Runs in this browser tab with your API key, local Ollama, or Chrome’s built-in AI — no WasmHatch server in between."
 msgstr "API anahtarınız, yerel Ollama veya yerleşik Chrome yapay zekâsıyla bu tarayıcı sekmesinde çalışır — arada hiçbir WasmHatch sunucusu yoktur."
 
+#: src/components/ArtifactPanel.tsx
+msgid "Runs isolated from the app: no cookies, no storage, no network. Download to keep it."
+msgstr "Uygulamadan yalıtılmış çalışır: çerez yok, depolama yok, ağ erişimi yok. Saklamak için indirin."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Runs local cleanup scripts on CSV and JSON files so counts and totals never rely on guesswork."
 msgstr "CSV ve JSON dosyalarında yerel temizleme betikleri çalıştırır; böylece sayımlar ve toplamlar asla tahmine dayanmaz."
@@ -1069,9 +1451,27 @@ msgstr "Yalnızca bu sekme açıkken, Hızlı modda ve kendi jeton hakkıyla ça
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
 msgstr "Örnek e-tablo dosyalarınızın yanına eklendi — sizin hiçbir dosyanıza dokunulmadı."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Sandbox scripting capability is disabled for this hatchling."
+msgstr "Bu civciv için sandbox betik çalıştırma özelliği devre dışı."
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Sandboxed"
+msgstr "Kum havuzunda"
+
+#. placeholder {0}: result.path
+#. placeholder {1}: result.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Saved {0} ({1} bytes). Undo is available in chat."
+msgstr "{0} kaydedildi ({1} bayt). Sohbetten geri alınabilir."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Say what you need"
 msgstr "Ne gerektiğini söyleyin"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Scope: drive.file — writes RAW literal values only to spreadsheets created or handed over in this session."
+msgstr "Kapsam: drive.file — yalnızca bu oturumda oluşturulan veya seçilen e-tablolara RAW düz değerler yazar."
 
 #. placeholder {0}: selected.thread.capabilities.join(", ")
 #: src/components/chat/TeamSidebar.tsx
@@ -1082,9 +1482,18 @@ msgstr "İzinli araçlar: {0}"
 msgid "Scoped tools: conversation only"
 msgstr "İzinli araçlar: yalnızca sohbet"
 
+#. placeholder {0}: scriptPath.trim()
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Script ({0})"
+msgstr "Betik ({0})"
+
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
 msgstr "Web'de aranıyor — {query}"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Select an option…"
+msgstr "Bir seçenek belirleyin…"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Self-contained HTML pages render right beside the chat, ready to download or share."
@@ -1094,9 +1503,30 @@ msgstr "Kendi kendine yeten HTML sayfaları sohbetin hemen yanında açılır; i
 msgid "Send"
 msgstr "Gönder"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Send to Slack"
+msgstr "Slack'e gönder"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Sending…"
+msgstr "Gönderiliyor…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Separate desks, zero collisions"
 msgstr "Ayrı masalar, sıfır çakışma"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Series"
+msgstr "Seri"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Share Google Drive files"
+msgstr "Google Drive dosyalarını paylaş"
+
+#. placeholder {0}: pickedFiles.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Shared files ({0}):"
+msgstr "Paylaşılan dosyalar ({0}):"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Shared ticket board & honest auto work"
@@ -1109,6 +1539,11 @@ msgstr "Ekip kenar çubuğunu göster"
 #: src/pages/ChatPage.tsx
 msgid "Show the tools sidebar"
 msgstr "Araçlar kenar çubuğunu göster"
+
+#. placeholder {0}: dataset.rows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "showing first {0} rows"
+msgstr "ilk {0} satır gösteriliyor"
 
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack bot token connected. Channel tools are active for every hatchling."
@@ -1130,9 +1565,19 @@ msgstr "Slack'e ulaşılamadı. Bağlantınızı kontrol edip yeniden deneyin."
 msgid "Slack disconnected."
 msgstr "Slack bağlantısı kesildi."
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Slack message preview"
+msgstr "Slack mesajı önizlemesi"
+
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
 msgstr "Slack bu token'ı reddetti. Uygulamayı Slack'te yeniden yükleyin, yeni bir bot token'ı kopyalayın ve tekrar deneyin."
+
+#. placeholder {0}: col.label
+#. placeholder {1}: filteredRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Sorted by {0}, {nextDirection}, {1} rows"
+msgstr "{0} sütununa göre sıralandı, {nextDirection}, {1} satır"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Sources:"
@@ -1153,6 +1598,10 @@ msgstr "GitHub'da yıldızla"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Starting with WasmHatch"
 msgstr "WasmHatch ile başlamak"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Starts with a spreadsheet formula character"
+msgstr "Hesap tablosu formül karakteriyle başlıyor"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Stop"
@@ -1227,6 +1676,10 @@ msgstr "Model {0} üzerinden web'de arama yapabilir. Aramalar, jetonlarla birlik
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
 msgstr "Cihaz üstü model bu dili henüz konuşamıyor ve İngilizce yanıt verecek; bulut sağlayıcılar sizin dilinizde yanıtlar."
 
+#: src/pages/ChatPage.tsx
+msgid "The on-device model is ready."
+msgstr "Cihazdaki model hazır."
+
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "The package could not be hatched."
 msgstr "Paket yumurtadan çıkarılamadı."
@@ -1291,6 +1744,10 @@ msgstr "Bu sürüm notlarını bir Google Doc belgesine ve kısa bir sunuma dön
 msgid "Turn this sales export into a clean summary I can share."
 msgstr "Bu satış dışa aktarımını paylaşabileceğim temiz bir özete dönüştür."
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Type"
+msgstr "Tür"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Type it like you’d tell a teammate. Drop in local files, connect Google in a couple of clicks, or point at local Ollama or MCP."
 msgstr "Bir ekip arkadaşınıza anlatır gibi yazın. Yerel dosyaları sürükleyip bırakın, birkaç tıkla Google'ı bağlayın ya da yerel Ollama veya MCP'ye yönlendirin."
@@ -1307,15 +1764,29 @@ msgstr "Geri al"
 msgid "Undo anything in one click"
 msgstr "Her şeyi tek tıkla geri alın"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Undo write"
+msgstr "Yazmayı geri al"
+
 #. placeholder {0}: capabilities.unknown.join(", ")
 #: src/components/chat/ChatTranscript.tsx
 msgid "Unrecognized requests (granted nothing): {0}"
 msgstr "Tanınmayan istekler (hiçbir şey verilmedi): {0}"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Up to date"
+msgstr "Güncel"
+
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
 msgid "Update {0}"
 msgstr "{0} dosyasını güncelle"
+
+#. placeholder {0}: commitState.updatedCells
+#. placeholder {1}: commitState.range
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Updated {0} cells in {1}."
+msgstr "{1} içinde {0} hücre güncellendi."
 
 #: src/lib/tool-summary.ts
 msgid "Updating a Google Sheet"
@@ -1333,6 +1804,14 @@ msgstr "URL (yalnızca bu makine)"
 msgid "Using {server} — {tool}"
 msgstr "{server} kullanılıyor — {tool}"
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Video unavailable in this tab"
+msgstr "Bu sekmede video kullanılamıyor"
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "View actions"
+msgstr "Görünüm eylemleri"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "view diff"
 msgstr "farkı gör"
@@ -1340,6 +1819,10 @@ msgstr "farkı gör"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
 msgstr "Birden çok kanal mı gerekiyor? <0>docs/slack.md</0> içindeki hazır manifest ile küçük bir Slack uygulaması oluşturun ve bot token'ını yapıştırın: asistan artık herkese açık kanalları listeleyebilir ve hepsine mesaj gönderebilir. Yine hiçbir mesaj okumaz. Token bu sekmenin belleğinde kalır."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "WasmHatch cannot browse your Drive on its own — only the exact files you select in Google's picker are shared."
+msgstr "WasmHatch, Drive'ınıza kendi başına göz atamaz; yalnızca Google seçicisinde seçtiğiniz dosyalar paylaşılır."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Watch it happen"
@@ -1385,6 +1868,14 @@ msgstr "Çalışıyor…"
 msgid "Works the ticket board, Google files, Slack, and MCP."
 msgstr "Görev panosu, Google dosyaları, Slack ve MCP ile ilgilenir."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace diff"
+msgstr "Çalışma alanı farkı"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace read access is disabled for this hatchling."
+msgstr "Bu civciv için çalışma alanı okuma erişimi devre dışı."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Wrestle with config files just to wire up tools"
 msgstr "Sırf araçları birbirine bağlamak için ayar dosyalarıyla boğuşmak"
@@ -1393,9 +1884,25 @@ msgstr "Sırf araçları birbirine bağlamak için ayar dosyalarıyla boğuşmak
 msgid "Write approval required"
 msgstr "Yazma onayı gerekli"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Write could not be applied."
+msgstr "Yazma işlemi uygulanamadı."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write to Google Sheet"
+msgstr "Google E-Tablosuna yaz"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write-only preview: posts to your connected Slack channel or webhook and never reads message history."
+msgstr "Yalnızca yazma önizlemesi: bağlı Slack kanalınıza veya webhook'unuza gönderir ve mesaj geçmişini asla okumaz."
+
 #: src/lib/tool-summary.ts
 msgid "Writing {path}"
 msgstr "{path} yazılıyor"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Writing…"
+msgstr "Yazılıyor…"
 
 #: src/pages/ChatPage.tsx
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."

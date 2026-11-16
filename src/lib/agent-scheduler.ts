@@ -81,9 +81,12 @@ export function applyAutoRunOutcome(
 
 /** Resets spend and failure accounting when the user raises or refreshes the cap. */
 export function resetAutoRunBudget(schedule: ThreadSchedule, maxAutoRuns?: number): ThreadSchedule {
+  const requested = typeof maxAutoRuns === "number" && Number.isFinite(maxAutoRuns)
+    ? maxAutoRuns
+    : schedule.maxAutoRuns;
   const cap = Math.min(
     SCHEDULE_LIMITS.maxMaxAutoRuns,
-    Math.max(1, Math.round(maxAutoRuns ?? schedule.maxAutoRuns))
+    Math.max(1, Math.round(requested))
   );
   return { ...schedule, maxAutoRuns: cap, autoRuns: 0, consecutiveFailures: 0 };
 }

@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <title>WasmHatch MCP App Sandbox Proxy</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      (() => {
+        if (!window.parent || window.parent === window) return;
+
+        // Defense-in-depth isolation check: whether hosted on `/a2ui-mcp-sandbox.html`
+        // with `sandbox="allow-scripts"` (opaque `"null"` origin) or on a dedicated
+        // `VITE_USERCONTENT_ORIGIN` domain, this proxy MUST NEVER share same-origin
+        // DOM access with `window.top`.
+        function canAccessTopWindow() {
+          try {
+            return Boolean(window.top && window.top.location && window.top.location.href);
+          } catch {
+            return false;
+          }
+        }
+
+        if (canAccessTopWindow()) {
+          return;
+        }
+
+        const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+        const MAX_DEPTH = 10;
+        const MAX_RELAY_BYTES = 65536;
+        const MAX_RESOURCE_HTML_BYTES = 2 * 1024 * 1024;
+        const ALLOWED_SANDBOX_TOKENS = new Set([
+          "allow-scripts",
+          "allow-forms",
+          "allow-modals",
+          "allow-popups",
+          "allow-downloads"
+        ]);
+        const CSP_DIRECTIVE_NAMES = new Set([
+          "default-src",
+          "script-src",
+          "style-src",
+          "img-src",
+          "font-src",
+          "connect-src",
+          "media-src",
+          "object-src",
+          "frame-src",
+          "child-src",
+          "worker-src",
+          "frame-ancestors",
+          "form-action",
+          "base-uri",
+          "manifest-src",
+          "navigate-to",
+          "report-uri",
+          "report-to",
+          "Require-trusted-types-for",
+          "trusted-types",
+          "upgrade-insecure-requests",
+          "block-all-mixed-content",
+          "sandbox"
+        ]);
+
+        const encoder = new TextEncoder();
+
+        function parseExpectedHostOrigin() {
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const raw = params.get("hostOrigin");
+            if (!raw) return null;
+            const parsed = new URL(raw);
+            if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+              return parsed.origin;
+            }
+          } catch {
+            // Opaque null-origin URLs or malformed query strings fall back to parent source check.
+          }
+          return null;
+        }
+
+        const configuredHostOrigin = parseExpectedHostOrigin();
+        let pinnedHostOriginObject = null;
+        let pinnedHostOriginString = configuredHostOrigin;
+        let innerFrame = null;
+
+        function matchesHostEvent(event) {
+          if (event.source !== window.parent) return false;
+          if (typeof Origin !== "undefined" && typeof Origin.from === "function") {
+            try {
+              const incoming = Origin.from(event);
+              if (pinnedHostOriginObject) {
+                return pinnedHostOriginObject.isSameOrigin(incoming);
+              }
+              if (configuredHostOrigin) {
+                const expected = Origin.parse(configuredHostOrigin);
+                if (!expected.isSameOrigin(incoming)) return false;
+              }
+              pinnedHostOriginObject = incoming;
+              if (!incoming.opaque && typeof event.origin === "string" && event.origin !== "null") {
+                pinnedHostOriginString = event.origin;
+              }
+              return true;
+            } catch {
+              // Fall through to URL origin validation below.
+            }
+          }
+          if (configuredHostOrigin) {
+            if (typeof event.origin !== "string" || event.origin === "null") return false;
+            try {
+              if (new URL(event.origin).origin !== configuredHostOrigin) return false;
+            } catch {
+              return false;
+            }
+          } else if (
+            pinnedHostOriginString &&
+            pinnedHostOriginString !== "null" &&
+            event.origin !== pinnedHostOriginString
+          ) {
+            return false;
+          } else if (typeof event.origin === "string" && event.origin !== "null") {
+            pinnedHostOriginString = event.origin;
+          }
+          return true;
+        }
+
+        function postToHost(payload) {
+          const target =
+            pinnedHostOriginString && pinnedHostOriginString !== "null"
+              ? pinnedHostOriginString
+              : "*";
+          window.parent.postMessage(payload, target);
+        }
+
+        function checkDepthAndPrototype(val, depth) {
+          if (depth > MAX_DEPTH) return false;
+          if (val === null || typeof val !== "object") return true;
+          if (Array.isArray(val)) {
+            for (let i = 0; i < val.length; i += 1) {
+              if (!checkDepthAndPrototype(val[i], depth + 1)) return false;
+            }
+            return true;
+          }
+          const proto = Object.getPrototypeOf(val);
+          if (proto !== null && proto !== Object.prototype) return false;
+          const keys = Object.keys(val);
+          for (let i = 0; i < keys.length; i += 1) {
+            const key = keys[i];
+            if (FORBIDDEN_KEYS.has(key)) return false;
+            if (!checkDepthAndPrototype(val[key], depth + 1)) return false;
+          }
+          return true;
+        }
+
+        function isValidJsonRpc(data, maxBytes) {
+          if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+          if (data.jsonrpc !== "2.0") return false;
+          const hasMethod = typeof data.method === "string" && data.method.length > 0;
+          const hasId = typeof data.id === "string" || typeof data.id === "number";
+          if (!hasMethod && !hasId) return false;
+          if (!checkDepthAndPrototype(data, 0)) return false;
+          try {
+            const bytes = encoder.encode(JSON.stringify(data)).byteLength;
+            if (bytes > maxBytes) return false;
+          } catch {
+            return false;
+          }
+          return true;
+        }
+
+        function sanitizeDomainToken(raw) {
+          if (typeof raw !== "string") return "";
+          const cleaned = raw
+            .replace(/[;"'<>\\\s\x00-\x1f\x7f]/g, "")
+            .trim();
+          if (!cleaned || cleaned.startsWith("'") || CSP_DIRECTIVE_NAMES.has(cleaned.toLowerCase())) {
+            return "";
+          }
+          try {
+            if (cleaned.startsWith("https://") || cleaned.startsWith("http://") || cleaned.startsWith("wss://")) {
+              const parsed = new URL(cleaned);
+              if (
+                parsed.protocol === "http:" &&
+                parsed.hostname !== "localhost" &&
+                parsed.hostname !== "127.0.0.1"
+              ) {
+                return "";
+              }
+              return parsed.origin;
+            }
+          } catch {
+            return "";
+          }
+          return "";
+        }
+
+        function sanitizeList(list) {
+          if (!Array.isArray(list)) return [];
+          const out = [];
+          for (let i = 0; i < list.length; i += 1) {
+            const token = sanitizeDomainToken(list[i]);
+            if (token && !out.includes(token)) out.push(token);
+          }
+          return out;
+        }
+
+        function buildCspContent(csp) {
+          const connectDomains = sanitizeList(csp && csp.connectDomains);
+          const resourceDomains = sanitizeList(csp && csp.resourceDomains);
+          const frameDomains = sanitizeList(csp && csp.frameDomains);
+          const resSuffix = resourceDomains.length ? " " + resourceDomains.join(" ") : "";
+
+          return [
+            "default-src 'none'",
+            "script-src 'unsafe-inline' blob:" + resSuffix,
+            "style-src 'unsafe-inline'" + resSuffix,
+            "img-src data: blob:" + resSuffix,
+            "font-src data:" + resSuffix,
+            "media-src data: blob:" + resSuffix,
+            "connect-src " + (connectDomains.length ? connectDomains.join(" ") : "'none'"),
+            "frame-src " + (frameDomains.length ? frameDomains.join(" ") : "'none'"),
+            "object-src 'none'",
+            "base-uri 'none'",
+            "form-action 'none'"
+          ].join("; ");
+        }
+
+        function escapeAttr(value) {
+          return value
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        }
+
+        function injectMetaCsp(html, cspContent) {
+          const tag = '<meta http-equiv="Content-Security-Policy" content="' + escapeAttr(cspContent) + '">';
+          if (/<head[^>]*>/i.test(html)) {
+            return html.replace(/<head[^>]*>/i, (match) => match + tag);
+          }
+          if (/<html[^>]*>/i.test(html)) {
+            return html.replace(/<html[^>]*>/i, (match) => match + "<head>" + tag + "</head>");
+          }
+          return "<!doctype html><html><head>" + tag + "</head><body>" + html + "</body></html>";
+        }
+
+        function sanitizeSandboxFlags(rawFlags) {
+          const flags = new Set(["allow-scripts"]);
+          if (typeof rawFlags === "string") {
+            const parts = rawFlags.trim().split(/\s+/);
+            for (let i = 0; i < parts.length; i += 1) {
+              const token = parts[i].toLowerCase();
+              if (token !== "allow-same-origin" && ALLOWED_SANDBOX_TOKENS.has(token)) {
+                flags.add(token);
+              }
+            }
+          }
+          return Array.from(flags).join(" ");
+        }
+
+        function buildAllowAttribute(permissions) {
+          if (!permissions || typeof permissions !== "object") return "";
+          const allow = [];
+          if (permissions.camera) allow.push("camera 'src'");
+          if (permissions.microphone) allow.push("microphone 'src'");
+          if (permissions.geolocation) allow.push("geolocation 'src'");
+          if (permissions.clipboardWrite) allow.push("clipboard-write 'src'");
+          return allow.join("; ");
+        }
+
+        function mountInnerGuest(params) {
+          if (!params || typeof params.html !== "string") return;
+          if (innerFrame && innerFrame.parentNode) {
+            innerFrame.parentNode.removeChild(innerFrame);
+          }
+          const frame = document.createElement("iframe");
+          frame.setAttribute("sandbox", sanitizeSandboxFlags(params.sandbox));
+          frame.setAttribute("referrerpolicy", "no-referrer");
+          const allowAttr = buildAllowAttribute(params.permissions);
+          if (allowAttr) {
+            frame.setAttribute("allow", allowAttr);
+          }
+          const cspContent = buildCspContent(params.csp);
+          frame.srcdoc = injectMetaCsp(params.html, cspContent);
+          document.body.appendChild(frame);
+          innerFrame = frame;
+        }
+
+        window.addEventListener("message", (event) => {
+          if (event.source === window.parent) {
+            if (!matchesHostEvent(event)) return;
+            const data = event.data;
+            const isResourceDelivery =
+              data &&
+              typeof data === "object" &&
+              data.method === "ui/notifications/sandbox-resource-ready";
+            const limit = isResourceDelivery ? MAX_RESOURCE_HTML_BYTES : MAX_RELAY_BYTES;
+            if (!isValidJsonRpc(data, limit)) return;
+
+            if (isResourceDelivery) {
+              mountInnerGuest(data.params);
+              return;
+            }
+            if (innerFrame && innerFrame.contentWindow) {
+              // Inner guest always runs with `sandbox="allow-scripts"` (opaque `"null"` origin),
+              // so HTML requires `"*"` as targetOrigin while `innerFrame.contentWindow` pins the recipient.
+              innerFrame.contentWindow.postMessage(data, "*");
+            }
+            return;
+          }
+
+          if (innerFrame && event.source === innerFrame.contentWindow) {
+            if (!isValidJsonRpc(event.data, MAX_RELAY_BYTES)) return;
+            postToHost(event.data);
+          }
+        });
+
+        postToHost({
+          jsonrpc: "2.0",
+          method: "ui/notifications/sandbox-proxy-ready",
+          params: {}
+        });
+      })();
+    </script>
+  </body>
+</html>
+

@@ -233,7 +233,7 @@ export function TeamSidebar({ swarm, threads, selectedId, selected, onNotice }: 
             value={ticketDraft}
             onChange={(event) => setTicketDraft(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
+              if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) {
                 event.preventDefault();
                 void addTicket();
               }

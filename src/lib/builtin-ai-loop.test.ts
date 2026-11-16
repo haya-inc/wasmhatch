@@ -3,10 +3,12 @@ import {
   DEFAULT_MAX_STEPS,
   TOOL_RESULT_EXCERPT_CHAR_CAP,
   TRANSCRIPT_CHAR_CAP,
+  createBuiltinAiSession,
   detectBuiltinAiToolLoopSupport,
   runBuiltinAiToolLoop,
   type BuiltinAiLoopEvent,
   type BuiltinAiSessionLike,
+  type ChromeLanguageModelApi,
   type BuiltinTool
 } from "./builtin-ai-loop";
 import { i18n } from "./i18n";
@@ -85,6 +87,17 @@ describe("detectBuiltinAiToolLoopSupport", () => {
     }));
   });
 
+  it("retains the native API receiver when probing availability", async () => {
+    const api = {
+      async availability() {
+        if (this !== api) throw new TypeError("Illegal invocation");
+        return "available";
+      },
+      create: vi.fn()
+    };
+    await expect(detectBuiltinAiToolLoopSupport({ LanguageModel: api })).resolves.toBe("available");
+  });
+
   it("declares the UI language alongside English when the Prompt API supports it", async () => {
     i18n.load("ja", {});
     i18n.activate("ja");
@@ -113,7 +126,115 @@ describe("detectBuiltinAiToolLoopSupport", () => {
   });
 });
 
+describe("createBuiltinAiSession", () => {
+  it("starts native creation before yielding so a user gesture can start the download", async () => {
+    const progress = vi.fn();
+    const controller = new AbortController();
+    const session: BuiltinAiSessionLike = { prompt: async () => "ok", destroy: vi.fn() };
+    let emitProgress: ((event: { loaded: number }) => void) | undefined;
+    const api: ChromeLanguageModelApi = {
+      create: vi.fn(async function (this: ChromeLanguageModelApi, options: Parameters<ChromeLanguageModelApi["create"]>[0]) {
+        expect(this).toBe(api);
+        options.monitor?.({ addEventListener: (_type, listener) => { emitProgress = listener; } });
+        return session;
+      })
+    };
+    const result = createBuiltinAiSession({ signal: controller.signal, onDownloadProgress: progress }, { LanguageModel: api });
+    expect(api.create).toHaveBeenCalledOnce();
+    expect(api.create).toHaveBeenCalledWith(expect.objectContaining({
+      signal: controller.signal,
+      expectedInputs: [{ type: "text", languages: ["en"] }],
+      expectedOutputs: [{ type: "text", languages: ["en"] }]
+    }));
+    emitProgress?.({ loaded: 0.45 });
+    expect(progress).toHaveBeenLastCalledWith(0.45);
+    emitProgress?.({ loaded: Number.NaN });
+    expect(progress).toHaveBeenCalledOnce();
+    await expect(result).resolves.toBe(session);
+  });
+
+  it("falls back to English when native creation rejects the UI language", async () => {
+    i18n.load("ja", {});
+    i18n.activate("ja");
+    try {
+      const session: BuiltinAiSessionLike = { prompt: async () => "ok" };
+      const create = vi.fn()
+        .mockRejectedValueOnce(new DOMException("Unsupported language", "NotSupportedError"))
+        .mockResolvedValueOnce(session);
+      await expect(createBuiltinAiSession({}, { LanguageModel: { create } })).resolves.toBe(session);
+      expect(create.mock.calls[0][0].expectedInputs[0].languages).toEqual(["en", "ja"]);
+      expect(create.mock.calls[1][0].expectedInputs[0].languages).toEqual(["en"]);
+    } finally {
+      i18n.activate("en");
+    }
+  });
+
+  it("releases a session if cancellation happened while native creation was pending", async () => {
+    const controller = new AbortController();
+    const destroy = vi.fn();
+    const session: BuiltinAiSessionLike = { prompt: async () => "ok", destroy };
+    const result = createBuiltinAiSession({ signal: controller.signal }, {
+      LanguageModel: { create: async () => { controller.abort(); return session; } }
+    });
+    await expect(result).rejects.toMatchObject({ name: "AbortError" });
+    expect(destroy).toHaveBeenCalledOnce();
+  });
+
+  it("rejects cancellation and missing APIs before starting a download", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const create = vi.fn();
+    await expect(createBuiltinAiSession({ signal: controller.signal }, { LanguageModel: { create } }))
+      .rejects.toMatchObject({ name: "AbortError" });
+    expect(create).not.toHaveBeenCalled();
+    await expect(createBuiltinAiSession({}, {})).rejects.toThrow("not available");
+  });
+});
+
 describe("runBuiltinAiToolLoop", () => {
+  it("shrinks tool history to fit the native token budget while retaining the task and tool schemas", async () => {
+    const calls: PromptCall[] = [];
+    const destroy = vi.fn();
+    const measureContextUsage = vi.fn(async (input: string) => input.length);
+    const session = {
+      contextWindow: 4_000,
+      contextUsage: 1_000,
+      measureContextUsage,
+      destroy,
+      async prompt(input: string, options: PromptOptions) {
+        calls.push({ input, options });
+        // Previous turns can be evicted by Chrome; the fixed initial prompt
+        // budget, rather than current accumulated history, must be reserved.
+        session.contextUsage = 3_900;
+        return calls.length === 1 ? toolCall("read_file", { path: "notes.txt" }) : finalAnswer("done");
+      }
+    };
+    await expect(runBuiltinAiToolLoop({
+      task: "Inspect notes.txt.", tools: TOOLS,
+      execute: async () => "x".repeat(1_500), createSession: async () => session
+    })).resolves.toMatchObject({ status: "completed" });
+    expect(measureContextUsage.mock.calls.length).toBeGreaterThan(2);
+    expect(calls[1].input).toContain("earlier steps omitted");
+    expect(calls[1].input).toContain("Inspect notes.txt.");
+    expect(calls[1].input).toContain('"path"');
+    expect(calls[1].input.length).toBeLessThanOrEqual(1_976);
+    expect(destroy).toHaveBeenCalledOnce();
+  });
+
+  it("rejects oversized essential input before native prompting and releases the session", async () => {
+    const prompt = vi.fn();
+    const destroy = vi.fn();
+    await expect(runBuiltinAiToolLoop({
+      task: "Read the files.", tools: TOOLS, execute: async () => "unused",
+      createSession: async () => ({
+        contextWindow: 1_200, contextUsage: 100,
+        measureContextUsage: async () => 500, prompt, destroy
+      })
+    })).rejects.toThrow("Shorten the message or disconnect unused tools");
+    expect(prompt).not.toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalledOnce();
+  });
+
   it("runs two tool calls then finishes with a constrained final answer", async () => {
     const { calls, destroy, createSession } = scriptedSessionFactory([
       toolCall("list_files", {}),

@@ -43,8 +43,13 @@ export const UI_LOCALES: readonly UiLocale[] = [
 
 export const LOCALE_CODES: readonly string[] = UI_LOCALES.map((locale) => locale.code);
 
+export function canonicalLocale(code: string): string | null {
+  const match = UI_LOCALES.find((locale) => locale.code.toLowerCase() === code.toLowerCase());
+  return match ? match.code : null;
+}
+
 export function isSupportedLocale(code: string): boolean {
-  return UI_LOCALES.some((locale) => locale.code.toLowerCase() === code.toLowerCase());
+  return canonicalLocale(code) !== null;
 }
 
 interface LocaleShape {

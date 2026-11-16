@@ -12,6 +12,7 @@ export interface WorkspaceStore {
   readFile(path: string): Promise<string>;
   readBaselineFile(path: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
+  deleteFile(path: string): Promise<void>;
   replaceBaseline(files: WorkspaceFile[]): Promise<void>;
   replaceAll(files: WorkspaceFile[]): Promise<void>;
   clear(): Promise<void>;
@@ -87,8 +88,16 @@ class LocalStorageWorkspace implements WorkspaceStore {
   }
 
   private load(key = this.workingKey): Record<string, string> {
+    const map: Record<string, string> = Object.create(null);
     const saved = localStorage.getItem(key);
-    return saved ? (JSON.parse(saved) as Record<string, string>) : {};
+    if (!saved) return map;
+    const parsed: unknown = JSON.parse(saved);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      for (const [entryKey, value] of Object.entries(parsed)) {
+        if (typeof value === "string") map[entryKey] = value;
+      }
+    }
+    return map;
   }
 
   private save(files: Record<string, string>, key = this.workingKey) {
@@ -110,16 +119,16 @@ class LocalStorageWorkspace implements WorkspaceStore {
 
   async readFile(path: string) {
     const normalized = normalizeWorkspacePath(path);
-    const content = this.load()[normalized];
-    if (content === undefined) throw new Error(`File not found: ${normalized}`);
-    return content;
+    const files = this.load();
+    if (!Object.hasOwn(files, normalized)) throw new Error(`File not found: ${normalized}`);
+    return files[normalized];
   }
 
   async readBaselineFile(path: string) {
     const normalized = normalizeWorkspacePath(path);
-    const content = this.load(this.baselineKey)[normalized];
-    if (content === undefined) throw new Error(`Baseline file not found: ${normalized}`);
-    return content;
+    const files = this.load(this.baselineKey);
+    if (!Object.hasOwn(files, normalized)) throw new Error(`Baseline file not found: ${normalized}`);
+    return files[normalized];
   }
 
   async writeFile(path: string, content: string) {
@@ -128,8 +137,18 @@ class LocalStorageWorkspace implements WorkspaceStore {
     this.save(files);
   }
 
+  async deleteFile(path: string) {
+    const normalized = normalizeWorkspacePath(path);
+    const files = this.load();
+    if (Object.hasOwn(files, normalized)) {
+      delete files[normalized];
+      this.save(files);
+    }
+  }
+
   async replaceAll(files: WorkspaceFile[]) {
-    const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
+    const next: Record<string, string> = Object.create(null);
+    for (const file of files) next[normalizeWorkspacePath(file.path)] = file.content;
     const previousWorking = localStorage.getItem(this.workingKey);
     const previousBaseline = localStorage.getItem(this.baselineKey);
     try {
@@ -147,7 +166,8 @@ class LocalStorageWorkspace implements WorkspaceStore {
   }
 
   async replaceBaseline(files: WorkspaceFile[]) {
-    const next = Object.fromEntries(files.map((file) => [normalizeWorkspacePath(file.path), file.content]));
+    const next: Record<string, string> = Object.create(null);
+    for (const file of files) next[normalizeWorkspacePath(file.path)] = file.content;
     const previous = localStorage.getItem(this.baselineKey);
     try {
       this.save(next, this.baselineKey);
@@ -254,6 +274,22 @@ class OpfsWorkspace implements WorkspaceStore {
 
   async writeFile(path: string, content: string) {
     await this.writeToRoot(path, content, this.roots.working);
+  }
+
+  async deleteFile(path: string) {
+    const parts = normalizeWorkspacePath(path).split("/");
+    const fileName = parts.pop()!;
+    try {
+      let directory = await this.root(this.roots.working);
+      for (const part of parts) {
+        directory = await directory.getDirectoryHandle(part, { create: false });
+      }
+      await directory.removeEntry(fileName);
+    } catch (error) {
+      if (!(error && typeof error === "object" && "name" in error && error.name === "NotFoundError")) {
+        throw error;
+      }
+    }
   }
 
   private async writeToRoot(path: string, content: string, rootName: string) {
@@ -429,6 +465,6 @@ export const sampleWorkspace: WorkspaceFile[] = [
   },
   {
     path: "package.json",
-    content: `{"name":"tiny-hatch","private":true,"type":"module","scripts":{"test":"vitest run"},"devDependencies":{"vitest":"^2.1.8"}}\n`
+    content: `{"name":"tiny-hatch","private":true,"type":"module","scripts":{"test":"vitest run"},"devDependencies":{"vitest":"^5.1.0"}}\n`
   }
 ];

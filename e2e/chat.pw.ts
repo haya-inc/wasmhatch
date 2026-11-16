@@ -114,3 +114,60 @@ test("records the run in the journal and exports it as credential-redacted JSON"
   expect(exported.privacy.credentialFieldsIncluded).toBe(false);
   expect(JSON.stringify(exported)).not.toContain("sk-e2e-journal-secret");
 });
+
+test("renders HTML artifacts with inline style and script inside an opaque-origin sandbox without CSP violations", async ({ page }) => {
+  const cspOrPageErrors: string[] = [];
+  page.on("pageerror", (error) => cspOrPageErrors.push(error.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error" && /Content Security Policy/i.test(msg.text())) {
+      cspOrPageErrors.push(msg.text());
+    }
+  });
+
+  let callCount = 0;
+  const artifactHtml = [
+    "<!doctype html>",
+    "<html><head><style>body { background-color: rgb(18, 52, 86); color: rgb(255, 255, 255); }</style></head>",
+    "<body><p id=\"out\">pending</p>",
+    "<script>document.getElementById('out').textContent = 'executed:' + window.origin;</script>",
+    "</body></html>"
+  ].join("");
+
+  await page.route("https://api.openai.com/v1/responses", async (route) => {
+    callCount += 1;
+    const fcItem = {
+      id: "fc_art",
+      type: "function_call",
+      call_id: "call_art",
+      name: "create_artifact",
+      arguments: JSON.stringify({ title: "Interactive Report", html: artifactHtml })
+    };
+    const events = callCount === 1
+      ? [
+          { type: "response.output_item.done", output_index: 0, item: fcItem },
+          { type: "response.completed", response: { status: "completed", output: [fcItem], usage: { input_tokens: 5, output_tokens: 5 } } }
+        ]
+      : [
+          { type: "response.output_text.delta", output_index: 0, delta: "Rendered your report." },
+          { type: "response.completed", response: { status: "completed", output: [{ id: "msg_2", type: "message" }], usage: { input_tokens: 5, output_tokens: 5 } } }
+        ];
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join("")
+    });
+  });
+
+  await page.goto("/?view=chat");
+  await page.getByLabel("Provider").selectOption("openai");
+  await page.getByLabel("API key", { exact: true }).fill("sk-e2e-artifact");
+  await page.getByLabel("Message the agent").fill("Build an interactive report.");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.locator(".chat-assistant").last()).toContainText("Rendered your report.");
+  const frame = page.frameLocator(".artifact-frame");
+  await expect(frame.locator("#out")).toHaveText("executed:null");
+  const bgColor = await frame.locator("body").evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(bgColor).toBe("rgb(18, 52, 86)");
+  expect(cspOrPageErrors).toEqual([]);
+});

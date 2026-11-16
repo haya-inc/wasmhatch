@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import {
@@ -19,7 +19,7 @@ import {
   Ticket,
   Zap
 } from "lucide-react";
-import { localePreference, setLocalePreference } from "../lib/i18n";
+import { i18n, localePreference, setLocalePreference } from "../lib/i18n";
 import { AUTO_LOCALE, UI_LOCALES } from "../lib/locales";
 import type { OfficeCharacter } from "../lib/pixel-office";
 import { HatchlingOffice } from "../components/HatchlingOffice";
@@ -29,6 +29,14 @@ const repositoryUrl = "https://github.com/haya-inc/wasmhatch";
 type ShowcaseChickId = "pip" | "mame" | "yuzu";
 
 export function BusinessLandingPage() {
+  useSyncExternalStore(
+    useCallback((onStoreChange) => {
+      i18n.on("change", onStoreChange);
+      return () => { i18n.removeListener("change", onStoreChange); };
+    }, []),
+    () => i18n.locale,
+    () => i18n.locale
+  );
   const homeUrl = import.meta.env.BASE_URL;
   const appUrl = `${homeUrl}?view=chat`;
   const [activeChick, setActiveChick] = useState<ShowcaseChickId>("pip");

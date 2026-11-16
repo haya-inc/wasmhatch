@@ -235,7 +235,7 @@ async function docEndIndex(context: GoogleRequestContext, documentId: string): P
 }
 
 function defaultIdFactory(): string {
-  return `wh${Math.random().toString(36).slice(2, 12)}`;
+  return `wh${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
 }
 
 export function createGoogleSensitiveExecutor(

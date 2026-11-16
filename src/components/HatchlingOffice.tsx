@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { i18n } from "../lib/i18n";
 import {
   describeOffice,
   hitTestOffice,
@@ -22,30 +23,44 @@ export function HatchlingOffice({
   characters: readonly OfficeCharacter[];
   onSelect: (id: string) => void;
 }) {
+  const activeLocaleCode = useSyncExternalStore(
+    useCallback((onStoreChange) => {
+      i18n.on("change", onStoreChange);
+      return () => { i18n.removeListener("change", onStoreChange); };
+    }, []),
+    () => i18n.locale,
+    () => i18n.locale
+  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const charactersRef = useRef(characters);
   charactersRef.current = characters;
+  const frameRef = useRef(0);
   const { width, height } = officeGrid(characters.length);
 
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    renderOffice(ctx, charactersRef.current, frameRef.current);
+  }, []);
+
   useEffect(() => {
-    let frame = 0;
-    const draw = () => {
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext("2d");
-      if (!canvas || !ctx) return;
-      renderOffice(ctx, charactersRef.current, frame);
-    };
+    draw();
+  }, [characters, draw]);
+
+  useEffect(() => {
     draw();
     const timer = setInterval(() => {
       // A hidden tab throttles this timer; that only pauses the decoration.
       if (document.visibilityState === "hidden") return;
-      frame += 1;
+      if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+      frameRef.current += 1;
       draw();
     }, FRAME_MS);
     return () => clearInterval(timer);
-  }, [width, height]);
+  }, [draw, width, height]);
 
-  const label = useMemo(() => describeOffice(characters), [characters]);
+  const label = useMemo(() => describeOffice(characters), [activeLocaleCode, characters]);
 
   return (
     <canvas

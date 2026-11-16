@@ -213,7 +213,11 @@ export class TicketBoard {
     });
   }
 
-  update(id: string, patch: TicketPatch): Promise<Ticket> {
+  update(
+    id: string,
+    patch: TicketPatch,
+    options?: { actorThreadId?: string; claim?: boolean }
+  ): Promise<Ticket> {
     return this.enqueue(async () => {
       const tickets = await this.ensureLoaded();
       const ticket = tickets.find((entry) => entry.id === id);
@@ -221,11 +225,34 @@ export class TicketBoard {
       if (patch.status !== undefined && !isStatus(patch.status)) {
         throw new Error("status must be one of todo, doing, done, blocked.");
       }
+      let nextTitle: string | undefined;
       if (patch.title !== undefined) {
-        const title = clampText(patch.title, TICKET_LIMITS.maxTitleChars);
-        if (!title) throw new Error("A ticket needs a non-empty title.");
-        ticket.title = title;
+        if (typeof patch.title !== "string") throw new Error("title must be a string.");
+        nextTitle = clampText(patch.title, TICKET_LIMITS.maxTitleChars);
+        if (!nextTitle) throw new Error("A ticket needs a non-empty title.");
       }
+      if (patch.detail !== undefined && typeof patch.detail !== "string") {
+        throw new Error("detail must be a string.");
+      }
+      if (patch.note !== undefined && typeof patch.note !== "string") {
+        throw new Error("note must be a string.");
+      }
+
+      if (options?.claim) {
+        if (!options.actorThreadId) throw new Error("actorThreadId is required to claim a ticket.");
+        if (ticket.status === "done") throw new Error(`Ticket ${id} is already done.`);
+        if (ticket.assignee && ticket.assignee !== options.actorThreadId) {
+          throw new Error(`Ticket ${id} is already claimed by another hatchling (${ticket.assignee}). Pick a different ticket.`);
+        }
+      } else if (options?.actorThreadId && ticket.assignee && ticket.assignee !== options.actorThreadId) {
+        throw new Error(`Ticket ${id} is claimed by another hatchling (${ticket.assignee}). Pick a different ticket.`);
+      }
+
+      if (options?.claim && options.actorThreadId) {
+        ticket.assignee = options.actorThreadId;
+        if (patch.status === undefined) ticket.status = "doing";
+      }
+      if (nextTitle !== undefined) ticket.title = nextTitle;
       if (patch.detail !== undefined) ticket.detail = clampText(patch.detail, TICKET_LIMITS.maxDetailChars);
       if (patch.status !== undefined) ticket.status = patch.status;
       if (patch.assignee !== undefined) ticket.assignee = patch.assignee;
@@ -243,21 +270,7 @@ export class TicketBoard {
    * claimers get one winner and one clear error, never duplicate work.
    */
   claim(id: string, threadId: string): Promise<Ticket> {
-    return this.enqueue(async () => {
-      const tickets = await this.ensureLoaded();
-      const ticket = tickets.find((entry) => entry.id === id);
-      if (!ticket) throw new Error(`No ticket with id ${id}.`);
-      if (ticket.status === "done") throw new Error(`Ticket ${id} is already done.`);
-      if (ticket.assignee && ticket.assignee !== threadId) {
-        throw new Error(`Ticket ${id} is already claimed by another hatchling (${ticket.assignee}). Pick a different ticket.`);
-      }
-      ticket.assignee = threadId;
-      ticket.status = "doing";
-      ticket.updatedAt = this.now().toISOString();
-      await this.persist();
-      this.emit();
-      return { ...ticket };
-    });
+    return this.update(id, {}, { actorThreadId: threadId, claim: true });
   }
 
   remove(id: string): Promise<void> {
@@ -367,17 +380,17 @@ export function createTicketToolExecutor(board: TicketBoard, threadId: string): 
       if (name === "update_ticket") {
         const id = args.id;
         if (typeof id !== "string" || !id.trim()) return fail("id must be a non-empty string.");
-        let ticket: Ticket | null = null;
-        if (args.claim === true) {
-          ticket = await board.claim(id.trim(), threadId);
+        if (args.claim !== undefined && typeof args.claim !== "boolean") {
+          return fail("claim must be a boolean.");
         }
+        const claim = args.claim === true;
         const patch: TicketPatch = {};
         if (args.status !== undefined) {
           if (!isStatus(args.status)) return fail("status must be one of todo, doing, done, blocked.");
           patch.status = args.status;
         }
         if (args.title !== undefined) {
-          if (typeof args.title !== "string") return fail("title must be a string.");
+          if (typeof args.title !== "string" || !args.title.trim()) return fail("title must be a non-empty string.");
           patch.title = args.title;
         }
         if (args.detail !== undefined) {
@@ -388,10 +401,10 @@ export function createTicketToolExecutor(board: TicketBoard, threadId: string): 
           if (typeof args.note !== "string") return fail("note must be a string.");
           patch.note = args.note;
         }
-        if (Object.keys(patch).length) {
-          ticket = await board.update(id.trim(), patch);
+        if (!claim && !Object.keys(patch).length) {
+          return fail("Nothing to change: pass claim, status, title, detail, or note.");
         }
-        if (!ticket) return fail("Nothing to change: pass claim, status, title, detail, or note.");
+        const ticket = await board.update(id.trim(), patch, { actorThreadId: threadId, claim });
         return ok(JSON.stringify({ updated: ticketForModel(ticket) }));
       }
 

@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAnthropicProvider } from "./anthropic";
+import { runAgentLoop } from "./loop";
+import { createOpenAiCompatibleProvider } from "./openai-compatible";
+import { createOpenAiResponsesProvider } from "./openai-responses";
+import type { AgentLoopEvent } from "./types";
 import type { ProviderRequest, ProviderStreamEvent } from "./types";
 
 const encoder = new TextEncoder();
@@ -21,7 +25,7 @@ function streamResponse(body: string, init?: ResponseInit) {
 }
 
 const request: ProviderRequest = {
-  model: "claude-sonnet-5",
+  model: "claude-sonnet-5-5",
   system: "You are a test agent.",
   messages: [{ role: "user", parts: [{ type: "text", text: "hi" }] }],
   tools: [{ name: "lookup", description: "Look something up.", inputSchema: { type: "object" } }],
@@ -49,6 +53,86 @@ const happyStream = sse([
 ]);
 
 describe("createAnthropicProvider", () => {
+  it("round-trips signed and redacted thinking between tool calls without exposing it to the UI or other providers", async () => {
+    const event = (type: string, data: Record<string, unknown> = {}) => ({ event: type, data: { type, ...data } });
+    const toolBlock = (index: number, id: string, q: string) => [
+      event("content_block_start", { index, content_block: { type: "tool_use", id, name: "lookup", input: {} } }),
+      event("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: JSON.stringify({ q }) } }),
+      event("content_block_stop", { index })
+    ];
+    const firstTurn = sse([
+      event("message_start", { message: { usage: { input_tokens: 42 } } }),
+      event("content_block_start", { index: 0, content_block: { type: "thinking", thinking: "", signature: "" } }),
+      event("content_block_delta", { index: 0, delta: { type: "thinking_delta", thinking: "Use " } }),
+      event("content_block_delta", { index: 0, delta: { type: "thinking_delta", thinking: "lookup." } }),
+      event("content_block_delta", { index: 0, delta: { type: "signature_delta", signature: "signed-" } }),
+      event("content_block_delta", { index: 0, delta: { type: "signature_delta", signature: "first" } }),
+      event("content_block_stop", { index: 0 }),
+      ...toolBlock(1, "toolu_1", "first"),
+      event("content_block_start", { index: 2, content_block: { type: "redacted_thinking", data: "opaque-redacted-state" } }),
+      event("content_block_stop", { index: 2 }),
+      // Current models normally omit the readable summary but still return a signature.
+      event("content_block_start", { index: 3, content_block: { type: "thinking", thinking: "", signature: "" } }),
+      event("content_block_delta", { index: 3, delta: { type: "signature_delta", signature: "signed-second" } }),
+      event("content_block_stop", { index: 3 }),
+      ...toolBlock(4, "toolu_2", "second"),
+      event("message_delta", { delta: { stop_reason: "tool_use" }, usage: { output_tokens: 17 } }),
+      event("message_stop")
+    ]);
+    const finalTurn = sse([
+      event("content_block_start", { index: 0, content_block: { type: "text", text: "" } }),
+      event("content_block_delta", { index: 0, delta: { type: "text_delta", text: "Done." } }),
+      event("content_block_stop", { index: 0 }),
+      event("message_delta", { delta: { stop_reason: "end_turn" } }),
+      event("message_stop")
+    ]);
+    let turn = 0;
+    const fetchImpl = vi.fn(async () => streamResponse(turn++ === 0 ? firstTurn : finalTurn));
+    const uiEvents: AgentLoopEvent[] = [];
+    const result = await runAgentLoop({
+      provider: createAnthropicProvider({ apiKey: "sk-test", fetchImpl }),
+      model: "claude-opus-5-5",
+      system: request.system,
+      task: "Look up both values.",
+      tools: request.tools,
+      execute: async () => ({ content: "found" }),
+      onEvent: (value) => uiEvents.push(value)
+    });
+    expect(result.status).toBe("completed");
+    expect(result.finalText).toBe("Done.");
+    const continuation = JSON.parse(String(((fetchImpl.mock.calls[1] as unknown[])[1] as RequestInit).body)) as {
+      messages: Array<{ role: string; content: Array<Record<string, unknown>> }>;
+    };
+    expect(continuation.messages[1]).toEqual({
+      role: "assistant",
+      content: [
+        { type: "thinking", thinking: "Use lookup.", signature: "signed-first" },
+        { type: "tool_use", id: "toolu_1", name: "lookup", input: { q: "first" } },
+        { type: "redacted_thinking", data: "opaque-redacted-state" },
+        { type: "thinking", thinking: "", signature: "signed-second" },
+        { type: "tool_use", id: "toolu_2", name: "lookup", input: { q: "second" } }
+      ]
+    });
+    expect(continuation.messages[2].content.map((block) => block.tool_use_id)).toEqual(["toolu_1", "toolu_2"]);
+    expect(JSON.stringify(uiEvents)).not.toMatch(/Use lookup|signed-|opaque-redacted-state/);
+
+    const responsesFetch = vi.fn(async () => streamResponse(
+      `data: ${JSON.stringify({ type: "response.completed", response: { status: "completed", output: [] } })}\n\n`
+    ));
+    const compatibleFetch = vi.fn(async () => streamResponse(
+      `data: ${JSON.stringify({ choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })}\n\n`
+    ));
+    const crossProviderRequest = { ...request, model: "gpt-6.1-sol", messages: result.messages };
+    await collect(createOpenAiResponsesProvider({ apiKey: "sk-test", baseUrl: "https://api.openai.com/v1", fetchImpl: responsesFetch }), crossProviderRequest);
+    await collect(createOpenAiCompatibleProvider({ apiKey: "sk-test", baseUrl: "https://openrouter.ai/api/v1", fetchImpl: compatibleFetch }), crossProviderRequest);
+    for (const otherFetch of [responsesFetch, compatibleFetch]) {
+      const body = String(((otherFetch.mock.calls[0] as unknown[])[1] as RequestInit).body);
+      expect(body).not.toMatch(/Use lookup|signed-|opaque-redacted-state|redacted_thinking/);
+      expect(body).toContain("toolu_1");
+      expect(body).toContain("Done.");
+    }
+  });
+
   it("maps streaming events onto the unified schema in wire order", async () => {
     const fetchImpl = vi.fn(async () => streamResponse(happyStream));
     const provider = createAnthropicProvider({ apiKey: "sk-test", fetchImpl });
@@ -134,6 +218,35 @@ describe("createAnthropicProvider", () => {
     const fetchImpl = vi.fn(async () => streamResponse(errored));
     const provider = createAnthropicProvider({ apiKey: "sk-test", fetchImpl });
     await expect(collect(provider)).rejects.toThrow(/overloaded/);
+  });
+
+  it("merges consecutive same-role turns, drops empty text blocks, and omits empty tools", async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(happyStream));
+    const provider = createAnthropicProvider({ apiKey: "sk-test", fetchImpl });
+    await collect(provider, {
+      ...request,
+      tools: [],
+      messages: [
+        { role: "user", parts: [{ type: "text", text: "first" }] },
+        { role: "assistant", parts: [{ type: "text", text: "" }, { type: "tool_call", callId: "t1", name: "lookup", args: {} }] },
+        { role: "tool", parts: [{ type: "tool_result", callId: "t1", name: "lookup", content: "ok", isError: false }] },
+        { role: "user", parts: [{ type: "text", text: "follow-up" }] }
+      ]
+    });
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as { tools?: unknown; messages: Array<{ role: string; content: unknown[] }> };
+    expect("tools" in body).toBe(false);
+    expect(body.messages).toEqual([
+      { role: "user", content: [{ type: "text", text: "first" }] },
+      { role: "assistant", content: [{ type: "tool_use", id: "t1", name: "lookup", input: {} }] },
+      {
+        role: "user",
+        content: [
+          { type: "tool_result", tool_use_id: "t1", content: "ok", is_error: false },
+          { type: "text", text: "follow-up" }
+        ]
+      }
+    ]);
   });
 });
 

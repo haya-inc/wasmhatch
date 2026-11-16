@@ -10,6 +10,7 @@
  */
 
 import {
+  PORTABLE_AGENT_LIMITS,
   PORTABLE_AGENT_MEDIA_TYPE,
   createPortableAgentPackage,
   type PortableAgentExample,
@@ -19,9 +20,14 @@ import {
 import { HATCHLING_CAPABILITY_IDS } from "./hatchling-capabilities";
 import { MAX_INSTRUCTION_CHARS, type HatchlingProfile, type HatchlingThread } from "./agent-threads";
 import { isProtectedAgentPath } from "./secrets";
-import type { WorkspaceFile } from "./workspace";
+import { normalizeWorkspacePath, type WorkspaceFile } from "./workspace";
 
 export const PORTABLE_ENTRYPOINT = "AGENTS.md";
+
+const REGISTRY_TOKEN_PATTERN = /^[\x21-\x7e]{1,16384}$/;
+const PUBLISHER_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
+const AGENT_ID_PATTERN = /^[a-z][a-z0-9-]{0,63}$/;
+const REVISION_SHA256_PATTERN = /^(?:sha256:)?[a-f0-9]{64}$/;
 
 /** Deployment-baked registry origin (VITE_REGISTRY_URL); undefined = none. */
 export function registryBaseUrl(): string | undefined {
@@ -30,7 +36,8 @@ export function registryBaseUrl(): string | undefined {
   if (!raw) return undefined;
   try {
     const url = new URL(raw);
-    if (url.protocol !== "https:" && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return undefined;
+    const isLoopbackHttp = url.protocol === "http:" && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+    if (url.protocol !== "https:" && !isLoopbackHttp) return undefined;
     return url.origin;
   } catch {
     return undefined;
@@ -79,7 +86,16 @@ export async function buildPortableHatchling(
   meta: PortableExportMeta = {}
 ): Promise<PortableAgentPackage> {
   const files = workspaceFiles.filter((file) => !isProtectedAgentPath(file.path));
-  if (!files.some((file) => file.path === PORTABLE_ENTRYPOINT)) {
+  const existingEntry = files.find(
+    (file) => normalizeWorkspacePath(file.path).toLowerCase() === PORTABLE_ENTRYPOINT.toLowerCase()
+  );
+  const entrypoint = existingEntry ? normalizeWorkspacePath(existingEntry.path) : PORTABLE_ENTRYPOINT;
+  if (!existingEntry) {
+    if (files.length >= PORTABLE_AGENT_LIMITS.files) {
+      throw new Error(
+        `Workspace already has ${files.length} files (the ${PORTABLE_AGENT_LIMITS.files}-file package limit) and no ${PORTABLE_ENTRYPOINT}; add ${PORTABLE_ENTRYPOINT} or remove a file before exporting.`
+      );
+    }
     const body = thread.instructions.trim() || `You are ${thread.name}, a WasmHatch hatchling. Do the user's task with your available tools.`;
     files.unshift({ path: PORTABLE_ENTRYPOINT, content: `${body}\n` });
   }
@@ -89,7 +105,7 @@ export async function buildPortableHatchling(
     summary: (meta.summary ?? "").trim() || `${thread.name} — a portable WasmHatch hatchling.`,
     version: (meta.version ?? "").trim() || "1.0.0",
     license: (meta.license ?? "").trim() || "Apache-2.0",
-    entrypoint: PORTABLE_ENTRYPOINT,
+    entrypoint,
     permissions: {
       tools: thread.capabilities ?? [...HATCHLING_CAPABILITY_IDS],
       networkOrigins: []
@@ -119,7 +135,38 @@ export interface RegistryPublishResult {
 }
 
 function requireRegistryUrl(baseUrl: string): string {
+  let url: URL;
+  try {
+    url = new URL(baseUrl);
+  } catch {
+    throw new Error("Registry base URL is invalid.");
+  }
+  const isLoopbackHttp = url.protocol === "http:" && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+  if ((url.protocol !== "https:" && !isLoopbackHttp) || url.username || url.password) {
+    throw new Error("Registry base URL must use HTTPS (or HTTP on localhost) without embedded credentials.");
+  }
   return baseUrl.replace(/\/+$/, "");
+}
+
+function requireRegistryToken(token: string): string {
+  const trimmed = token.trim();
+  if (!trimmed) throw new Error("A registry publish token is required.");
+  if (!REGISTRY_TOKEN_PATTERN.test(trimmed)) {
+    throw new Error("The registry publish token contains invalid characters.");
+  }
+  return trimmed;
+}
+
+function assertRegistryIds(publisherId: string, agentId: string, sha256?: string): void {
+  if (!PUBLISHER_ID_PATTERN.test(publisherId)) {
+    throw new Error("Invalid registry publisher ID.");
+  }
+  if (!AGENT_ID_PATTERN.test(agentId)) {
+    throw new Error("Invalid registry agent ID.");
+  }
+  if (sha256 !== undefined && !REVISION_SHA256_PATTERN.test(sha256)) {
+    throw new Error("Invalid registry revision digest.");
+  }
 }
 
 /** POSTs a package to the registry; the token stays in the caller's memory. */
@@ -129,16 +176,17 @@ export async function publishToRegistry(
   pkg: PortableAgentPackage,
   options: { fetchImpl?: typeof fetch; signal?: AbortSignal } = {}
 ): Promise<RegistryPublishResult> {
-  if (!token.trim()) throw new Error("A registry publish token is required.");
+  const cleanToken = requireRegistryToken(token);
+  const root = requireRegistryUrl(baseUrl);
   const fetchImpl = options.fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init));
   const copy = new Uint8Array(pkg.bytes.byteLength);
   copy.set(pkg.bytes);
   let response: Response;
   try {
-    response = await fetchImpl(`${requireRegistryUrl(baseUrl)}/v1/agents`, {
+    response = await fetchImpl(`${root}/v1/agents`, {
       method: "POST",
       headers: {
-        authorization: `Bearer ${token}`,
+        authorization: `Bearer ${cleanToken}`,
         "content-type": PORTABLE_AGENT_MEDIA_TYPE
       },
       body: copy.buffer,
@@ -174,6 +222,7 @@ export async function publishToRegistry(
   if (typeof body.publisherId !== "string" || typeof body.agentId !== "string" || !sha256) {
     throw new Error("The registry returned an incomplete publish result.");
   }
+  assertRegistryIds(body.publisherId, body.agentId, sha256);
   return {
     publisherId: body.publisherId,
     agentId: body.agentId,
@@ -195,13 +244,15 @@ export async function unpublishFromRegistry(
   agentId: string,
   options: { fetchImpl?: typeof fetch; signal?: AbortSignal } = {}
 ): Promise<void> {
-  if (!token.trim()) throw new Error("A registry publish token is required.");
+  const cleanToken = requireRegistryToken(token);
+  const root = requireRegistryUrl(baseUrl);
+  assertRegistryIds(publisherId, agentId);
   const fetchImpl = options.fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init));
   let response: Response;
   try {
-    response = await fetchImpl(`${requireRegistryUrl(baseUrl)}/v1/agents/${publisherId}/${agentId}`, {
+    response = await fetchImpl(`${root}/v1/agents/${publisherId}/${agentId}`, {
       method: "DELETE",
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${cleanToken}` },
       signal: options.signal
     });
   } catch (error) {
@@ -222,7 +273,7 @@ export async function unpublishFromRegistry(
 /** The immutable package URL for a published revision. */
 export function registryPackageUrl(baseUrl: string, result: RegistryPublishResult): string {
   const root = requireRegistryUrl(baseUrl);
-  // Publisher/agent ids and the sha256 are all URL-safe by their patterns.
+  assertRegistryIds(result.publisherId, result.agentId, result.sha256);
   return `${root}/v1/agents/${result.publisherId}/${result.agentId}/revisions/${result.sha256}/package`;
 }
 

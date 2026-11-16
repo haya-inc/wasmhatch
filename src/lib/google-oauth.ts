@@ -193,6 +193,7 @@ export class GoogleOAuthSession {
   #credential: SessionCredential | null = null;
   #state: GoogleOAuthStatus["state"] = "disconnected";
   #authorizing = false;
+  #silentInFlight: { key: string; promise: Promise<GoogleOAuthStatus> } | null = null;
 
   constructor(
     private readonly loadRuntime: () => Promise<GoogleIdentityOAuthRuntime> = loadGoogleIdentityServices,
@@ -242,79 +243,94 @@ export class GoogleOAuthSession {
     scopeValues: readonly string[] = [GOOGLE_SHEETS_SCOPE],
     options?: { silent?: boolean }
   ) {
+    const silent = options?.silent === true;
+    if (silent && this.#silentInFlight) {
+      const clientId = requireClientId(clientIdValue);
+      const scopes = requireScopes(scopeValues);
+      if (this.#silentInFlight.key === `${clientId}\n${scopes.join(" ")}`) {
+        return this.#silentInFlight.promise;
+      }
+    }
     if (this.#authorizing) throw new GoogleOAuthError("authorization_in_progress", "Google authorization is already in progress.");
     const clientId = requireClientId(clientIdValue);
     const scopes = requireScopes(scopeValues);
-    const silent = options?.silent === true;
     this.#authorizing = true;
-    try {
-      const runtime = await this.loadRuntime();
-      return await new Promise<GoogleOAuthStatus>((resolve, reject) => {
-        let settled = false;
-        const finish = (result: { status?: GoogleOAuthStatus; error?: Error }) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          if (result.error) reject(result.error);
-          else resolve(result.status!);
-        };
-        const timer = globalThis.setTimeout(() => {
-          finish({ error: new GoogleOAuthError("authorization_timeout", "Google authorization did not complete in time.") });
-        }, silent ? SILENT_AUTHORIZATION_TIMEOUT_MS : AUTHORIZATION_TIMEOUT_MS);
-        let client: GoogleTokenClient;
-        try {
-          client = runtime.initTokenClient({
-            client_id: clientId,
-            scope: scopes.join(" "),
-            include_granted_scopes: false,
-            callback: (response) => {
-              if (settled) return;
-              try {
-                if (response.error) {
-                  finish({ error: oauthFailure(response.error) });
-                  return;
+    const runAttempt = async (): Promise<GoogleOAuthStatus> => {
+      try {
+        const runtime = await this.loadRuntime();
+        return await new Promise<GoogleOAuthStatus>((resolve, reject) => {
+          let settled = false;
+          const finish = (result: { status?: GoogleOAuthStatus; error?: Error }) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            if (result.error) reject(result.error);
+            else resolve(result.status!);
+          };
+          const timer = globalThis.setTimeout(() => {
+            finish({ error: new GoogleOAuthError("authorization_timeout", "Google authorization did not complete in time.") });
+          }, silent ? SILENT_AUTHORIZATION_TIMEOUT_MS : AUTHORIZATION_TIMEOUT_MS);
+          let client: GoogleTokenClient;
+          try {
+            client = runtime.initTokenClient({
+              client_id: clientId,
+              scope: scopes.join(" "),
+              include_granted_scopes: false,
+              callback: (response) => {
+                if (settled) return;
+                try {
+                  if (response.error) {
+                    finish({ error: oauthFailure(response.error) });
+                    return;
+                  }
+                  if (!runtime.hasGrantedAllScopes(response, ...scopes)) {
+                    finish({ error: new GoogleOAuthError("scope_not_granted", "Google did not grant the complete Sheets scope.") });
+                    return;
+                  }
+                  const token = typeof response.access_token === "string" ? response.access_token.trim() : "";
+                  const seconds = typeof response.expires_in === "string"
+                    ? Number(response.expires_in)
+                    : response.expires_in;
+                  if (!token || token.length > TOKEN_MAX_LENGTH || /[\u0000-\u001f\u007f]/.test(token)) {
+                    finish({ error: new GoogleOAuthError("invalid_token", "Google returned an invalid access token.") });
+                    return;
+                  }
+                  if (response.token_type !== undefined && String(response.token_type).toLowerCase() !== "bearer") {
+                    finish({ error: new GoogleOAuthError("invalid_token_type", "Google returned an unsupported token type.") });
+                    return;
+                  }
+                  if (!Number.isFinite(seconds) || (seconds as number) <= 30 || (seconds as number) > 24 * 60 * 60) {
+                    finish({ error: new GoogleOAuthError("invalid_expiry", "Google returned an invalid token expiry.") });
+                    return;
+                  }
+                  this.#credential = Object.freeze({
+                    accessToken: token,
+                    expiresAtMs: this.now() + Math.floor(seconds as number) * 1000,
+                    scopes
+                  });
+                  this.#state = "connected";
+                  finish({ status: this.status() });
+                } catch {
+                  finish({ error: new GoogleOAuthError("invalid_response", "Google authorization returned an invalid response.") });
                 }
-                if (!runtime.hasGrantedAllScopes(response, ...scopes)) {
-                  finish({ error: new GoogleOAuthError("scope_not_granted", "Google did not grant the complete Sheets scope.") });
-                  return;
-                }
-                const token = typeof response.access_token === "string" ? response.access_token.trim() : "";
-                const seconds = typeof response.expires_in === "string"
-                  ? Number(response.expires_in)
-                  : response.expires_in;
-                if (!token || token.length > TOKEN_MAX_LENGTH || /[\u0000-\u001f\u007f]/.test(token)) {
-                  finish({ error: new GoogleOAuthError("invalid_token", "Google returned an invalid access token.") });
-                  return;
-                }
-                if (response.token_type !== undefined && String(response.token_type).toLowerCase() !== "bearer") {
-                  finish({ error: new GoogleOAuthError("invalid_token_type", "Google returned an unsupported token type.") });
-                  return;
-                }
-                if (!Number.isFinite(seconds) || (seconds as number) <= 30 || (seconds as number) > 24 * 60 * 60) {
-                  finish({ error: new GoogleOAuthError("invalid_expiry", "Google returned an invalid token expiry.") });
-                  return;
-                }
-                this.#credential = Object.freeze({
-                  accessToken: token,
-                  expiresAtMs: this.now() + Math.floor(seconds as number) * 1000,
-                  scopes
-                });
-                this.#state = "connected";
-                finish({ status: this.status() });
-              } catch {
-                finish({ error: new GoogleOAuthError("invalid_response", "Google authorization returned an invalid response.") });
-              }
-            },
-            error_callback: (error) => finish({ error: popupFailure(error.type) })
-          });
-          client.requestAccessToken({ prompt: silent ? "" : "select_account" });
-        } catch {
-          finish({ error: new GoogleOAuthError("authorization_start_failed", "Google authorization could not be started.") });
-        }
-      });
-    } finally {
-      this.#authorizing = false;
+              },
+              error_callback: (error) => finish({ error: popupFailure(error.type) })
+            });
+            client.requestAccessToken({ prompt: silent ? "" : "select_account" });
+          } catch {
+            finish({ error: new GoogleOAuthError("authorization_start_failed", "Google authorization could not be started.") });
+          }
+        });
+      } finally {
+        this.#authorizing = false;
+        this.#silentInFlight = null;
+      }
+    };
+    const promise = runAttempt();
+    if (silent) {
+      this.#silentInFlight = { key: `${clientId}\n${scopes.join(" ")}`, promise };
     }
+    return promise;
   }
 
   async revoke() {

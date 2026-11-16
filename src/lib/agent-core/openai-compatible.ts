@@ -121,15 +121,16 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
   return {
     id: providerId,
     async *stream(request: ProviderRequest, signal?: AbortSignal): AsyncGenerator<ProviderStreamEvent, void, void> {
+      const wireTools = request.tools.map((tool) => ({
+        type: "function",
+        function: { name: tool.name, description: tool.description, parameters: tool.inputSchema }
+      }));
       const body = JSON.stringify({
         model: request.model,
         [maxTokensParam]: request.maxOutputTokens,
         ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
         ...(options.webPlugin ? { plugins: [{ id: "web" }] } : {}),
-        tools: request.tools.map((tool) => ({
-          type: "function",
-          function: { name: tool.name, description: tool.description, parameters: tool.inputSchema }
-        })),
+        ...(wireTools.length ? { tools: wireTools } : {}),
         messages: toWireMessages(request.system, request.messages),
         stream: true,
         stream_options: { include_usage: true }
@@ -156,10 +157,22 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
       if (!response.ok) throw await requestError(providerId, response);
       if (!response.body) throw new Error(`${providerId} returned no response stream.`);
 
+      let nextToolSlot = 0;
+      const slotByCallId = new Map<string, number>();
+      const slotByWireIndex = new Map<number, { slot: number; callId: string }>();
       const startedToolIndexes = new Set<number>();
       let usage: AgentUsage | undefined;
       let stopReason: AgentStopReason = "other";
       let sawDone = false;
+
+      const allocateToolSlot = (preferred?: number): number => {
+        if (preferred !== undefined && preferred >= 0 && !startedToolIndexes.has(preferred)) {
+          nextToolSlot = Math.max(nextToolSlot, preferred + 1);
+          return preferred;
+        }
+        while (startedToolIndexes.has(nextToolSlot)) nextToolSlot += 1;
+        return nextToolSlot++;
+      };
 
       for await (const sseEvent of readSseStream(response.body, signal)) {
         if (sseEvent.data === "[DONE]") {
@@ -207,17 +220,29 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
           for (const rawCall of delta.tool_calls) {
             if (!rawCall || typeof rawCall !== "object") continue;
             const call = rawCall as Record<string, unknown>;
-            const index = typeof call.index === "number" ? call.index : 0;
+            const wireIndex = typeof call.index === "number" ? call.index : 0;
+            const rawId = typeof call.id === "string" && call.id ? call.id : undefined;
             const fn = call.function as Record<string, unknown> | undefined;
-            if (!startedToolIndexes.has(index)) {
-              const callId = typeof call.id === "string" && call.id ? call.id : `call_${index}`;
-              const name = typeof fn?.name === "string" ? fn.name : "";
-              if (!name) throw new Error(`${providerId} started a tool call without a name.`);
-              startedToolIndexes.add(index);
-              yield { type: "tool-call-start", index, callId, name };
+            let slot: number;
+            if (rawId && slotByCallId.has(rawId)) {
+              slot = slotByCallId.get(rawId)!;
+            } else {
+              const existing = slotByWireIndex.get(wireIndex);
+              if (!existing || (rawId && existing.callId !== rawId)) {
+                slot = allocateToolSlot(existing ? undefined : wireIndex);
+                const callId = rawId ?? `call_${slot}`;
+                const name = typeof fn?.name === "string" ? fn.name : "";
+                if (!name) throw new Error(`${providerId} started a tool call without a name.`);
+                startedToolIndexes.add(slot);
+                slotByCallId.set(callId, slot);
+                slotByWireIndex.set(wireIndex, { slot, callId });
+                yield { type: "tool-call-start", index: slot, callId, name };
+              } else {
+                slot = existing.slot;
+              }
             }
             if (typeof fn?.arguments === "string" && fn.arguments) {
-              yield { type: "tool-call-args-delta", index, argsJsonDelta: fn.arguments };
+              yield { type: "tool-call-args-delta", index: slot, argsJsonDelta: fn.arguments };
             }
           }
         }

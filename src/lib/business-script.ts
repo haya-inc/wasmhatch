@@ -120,7 +120,9 @@ export async function executeBusinessScript(
     (() => {
       "use strict";
       const input = JSON.parse(${JSON.stringify(serializedInput)});
-      const transform = (${normalizedSource});
+      const transform = (
+${normalizedSource}
+);
       if (typeof transform !== "function") throw new Error("Script must evaluate to a function.");
       const output = transform(input);
       if (output && typeof output.then === "function") {

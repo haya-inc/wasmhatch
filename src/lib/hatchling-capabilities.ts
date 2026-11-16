@@ -75,6 +75,19 @@ export function isKnownCapability(value: string): value is HatchlingCapability {
 }
 
 /**
+ * Checks whether a hatchling's capability allowlist permits `capability`.
+ * A `null` allowlist means unrestricted (ordinary hatchling default); an
+ * array allowlist fails closed unless `capability` is explicitly present.
+ */
+export function hasCapability(
+  capabilities: readonly string[] | null | undefined,
+  capability: HatchlingCapability
+): boolean {
+  if (capabilities === null || capabilities === undefined) return true;
+  return capabilities.includes(capability);
+}
+
+/**
  * Applies a hatchling's capability allowlist to an assembled tool list.
  * A null list means "everything" (the ordinary hatchling default).
  */

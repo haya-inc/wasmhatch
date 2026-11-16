@@ -26,13 +26,73 @@ function linguiMacros(): Plugin {
         plugins: ["@lingui/babel-plugin-lingui-macro"],
         sourceMaps: true
       });
-      return result?.code ? { code: result.code, map: result.map } : null;
+      return result?.code
+        ? { code: result.code, map: result.map ? JSON.stringify(result.map) : null }
+        : null;
+    }
+  };
+}
+
+/**
+ * `@a2ui/agent` includes two optional Node disk helpers (`FileSystemCatalogProvider`
+ * and `SkillSet.exportToDirectory`) that import `fs` and `path` at module top level.
+ * Shimming those two imports strictly for browser bundles keeps `InMemoryCatalogProvider`,
+ * `A2uiGenerator`, `StreamedAnswer`, and `SkillGenerator` 100% browser-native with zero
+ * Rollup externalization warnings.
+ */
+function a2uiBrowserNodeShims(): Plugin {
+  const VIRTUAL_FS = "\0a2ui-browser-fs";
+  const VIRTUAL_PATH = "\0a2ui-browser-path";
+  return {
+    name: "a2ui-browser-node-shims",
+    enforce: "pre",
+    resolveId(source, importer, options) {
+      if (options?.ssr || !importer?.includes("@a2ui/agent")) return null;
+      if (source === "fs" || source === "node:fs") return VIRTUAL_FS;
+      if (source === "path" || source === "node:path") return VIRTUAL_PATH;
+      return null;
+    },
+    load(id) {
+      if (id === VIRTUAL_FS) {
+        return [
+          "function unsupported(op) { throw new Error(`Node fs.${op} is not available in the browser.`); }",
+          "export function readFileSync() { return unsupported('readFileSync'); }",
+          "export function writeFileSync() { return unsupported('writeFileSync'); }",
+          "export function mkdirSync() { return unsupported('mkdirSync'); }",
+          "export function rmSync() { return unsupported('rmSync'); }",
+          "export function existsSync() { return false; }",
+          "export function realpathSync(p) { return String(p); }"
+        ].join("\n");
+      }
+      if (id === VIRTUAL_PATH) {
+        return [
+          "export const sep = '/';",
+          "export const posix = { isAbsolute: (p) => String(p).startsWith('/') };",
+          "export const win32 = { isAbsolute: (p) => /^([a-zA-Z]:[\\\\/]|\\\\\\\\)/.test(String(p)) };",
+          "export function dirname(p) {",
+          "  const s = String(p).replace(/\\\\/g, '/').replace(/\\/+$/, '');",
+          "  const idx = s.lastIndexOf('/');",
+          "  return idx < 0 ? '.' : idx === 0 ? '/' : s.slice(0, idx);",
+          "}",
+          "export function join(...parts) {",
+          "  return parts.filter(Boolean).join('/').replace(/\\/+/g, '/');",
+          "}",
+          "export function resolve(...parts) { return join(...parts); }"
+        ].join("\n");
+      }
+      return null;
     }
   };
 }
 
 export default defineConfig(({ command, mode }) => ({
   base: mode === "github-pages" ? "/wasmhatch/" : "/",
+  resolve: {
+    // A2UI requires the v3 schema API. Use the security-patched compatibility
+    // entry from the single official Zod 4 installation (including instanceof).
+    alias: [{ find: /^zod$/, replacement: "zod/v3" }],
+    dedupe: ["zod"]
+  },
   plugins: [
     {
       name: "html-content-security-policy",
@@ -79,8 +139,22 @@ export default defineConfig(({ command, mode }) => ({
           if (registryRaw) {
             try {
               const registryUrl = new URL(registryRaw);
-              const loopback = registryUrl.hostname === "localhost" || registryUrl.hostname === "127.0.0.1";
+              const loopback = registryUrl.protocol === "http:" && (registryUrl.hostname === "localhost" || registryUrl.hostname === "127.0.0.1");
               if (registryUrl.protocol === "https:" || loopback) registryOrigin = ` ${registryUrl.origin}`;
+            } catch {
+              // Malformed values are dropped.
+            }
+          }
+          // Optional isolated usercontent origin (VITE_USERCONTENT_ORIGIN) for
+          // double-iframe MCP App sandboxing on a separate domain.
+          const usercontentRaw = loadEnv(mode, process.cwd(), "VITE_").VITE_USERCONTENT_ORIGIN;
+          let usercontentFrameOrigin = "";
+          if (usercontentRaw) {
+            try {
+              const usercontentUrl = new URL(usercontentRaw);
+              if (usercontentUrl.protocol === "https:") {
+                usercontentFrameOrigin = ` ${usercontentUrl.origin}`;
+              }
             } catch {
               // Malformed values are dropped.
             }
@@ -98,7 +172,7 @@ export default defineConfig(({ command, mode }) => ({
             "default-src 'none'",
             "base-uri 'none'",
             "object-src 'none'",
-            `frame-src ${googleIdentityBase} ${pickerFrameOrigins}`,
+            `frame-src 'self' ${googleIdentityBase} ${pickerFrameOrigins}${usercontentFrameOrigin}`,
             "form-action 'none'",
             `script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client ${pickerScriptOrigin}`,
             stylePolicy,
@@ -116,6 +190,7 @@ export default defineConfig(({ command, mode }) => ({
         }
       }
     },
+    a2uiBrowserNodeShims(),
     linguiMacros(),
     react(),
     lingui()

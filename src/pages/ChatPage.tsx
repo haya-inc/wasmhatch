@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import { CanvasStage } from "../components/a2ui/CanvasStage";
 import { ChatTranscript, type PendingPermission } from "../components/chat/ChatTranscript";
 import { TeamSidebar } from "../components/chat/TeamSidebar";
 import { ToolsSidebar } from "../components/chat/ToolsSidebar";
@@ -10,7 +11,7 @@ import { usePortableAgentFlow } from "../components/chat/usePortableAgentFlow";
 import { useSessionConnectors } from "../components/chat/useSessionConnectors";
 import { HatchlingSwarm, type ChatItem, type RunConfig, type SwarmDeps } from "../lib/agent-session";
 import type { HtmlArtifact } from "../lib/artifact";
-import { detectBuiltinAiToolLoopSupport } from "../lib/builtin-ai-loop";
+import { createBuiltinAiSession, detectBuiltinAiToolLoopSupport } from "../lib/builtin-ai-loop";
 import type { PermissionDecision, WritePermissionRequest } from "../lib/chat-permissions";
 import { getCloudProvider, type ChatProviderId } from "../lib/chat-providers";
 import { loadChatSettings, saveChatSettings } from "../lib/chat-settings";
@@ -42,7 +43,7 @@ function Chevron({ direction }: { direction: "left" | "right" }) {
 
 export function ChatPage() {
   // Re-render the entire chat surface whenever the active Lingui catalog switches.
-  useSyncExternalStore(
+  const locale = useSyncExternalStore(
     useCallback((onStoreChange) => {
       i18n.on("change", onStoreChange);
       return () => { i18n.removeListener("change", onStoreChange); };
@@ -60,11 +61,14 @@ export function ChatPage() {
   const [webSearch, setWebSearch] = useState(initialSettings.webSearch);
   const [writeMode, setWriteMode] = useState<WritePolicy>("autonomous");
   const [builtinAvailability, setBuiltinAvailability] = useState<string>("checking");
+  const [builtinPreparing, setBuiltinPreparing] = useState(false);
+  const [builtinDownloadProgress, setBuiltinDownloadProgress] = useState<number | null>(null);
+  const builtinPreparationRef = useRef<AbortController | null>(null);
   const [permissionQueue, setPermissionQueue] = useState<PendingPermission[]>([]);
-  const [artifact, setArtifact] = useState<HtmlArtifact | null>(null);
+  const [artifactsByThread, setArtifactsByThread] = useState<Record<string, HtmlArtifact | null>>({});
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<string[]>([]);
-  const [viewer, setViewer] = useState<{ path: string; content: string } | null>(null);
+  const [viewer, setViewer] = useState<{ threadId: string; path: string; content: string } | null>(null);
   const [columns, setColumns] = useColumnLayout();
 
   const keysRef = useRef(initialSettings.keys);
@@ -88,9 +92,15 @@ export function ChatPage() {
   const google = useGoogleConnector(notice);
   const connectors = useSessionConnectors(notice);
 
-  const gate = useCallback((request: WritePermissionRequest) => {
+  const gate = useCallback((request: WritePermissionRequest, options?: { signal?: AbortSignal }) => {
+    if (options?.signal?.aborted) return Promise.resolve<PermissionDecision>("reject");
     return new Promise<PermissionDecision>((resolve) => {
-      setPermissionQueue((queue) => [...queue, { request, resolve }]);
+      const entry: PendingPermission = { request, resolve };
+      setPermissionQueue((queue) => [...queue, entry]);
+      options?.signal?.addEventListener("abort", () => {
+        setPermissionQueue((queue) => queue.filter((item) => item !== entry));
+        resolve("reject");
+      }, { once: true });
     });
   }, []);
 
@@ -98,7 +108,10 @@ export function ChatPage() {
     const instance = new HatchlingSwarm({
       getConfig: () => configRef.current,
       gate,
-      onArtifact: setArtifact,
+      onArtifact: (nextArtifact, threadId) => {
+        const owner = threadId ?? swarmRef.current?.selectedThreadId ?? "main";
+        setArtifactsByThread((current) => ({ ...current, [owner]: nextArtifact }));
+      },
       google: google.swarmDeps,
       slack: connectors.slackDeps,
       web: connectors.webDeps,
@@ -122,17 +135,78 @@ export function ChatPage() {
   useHatchUrlSync(swarm, selectedId);
 
   const refreshFiles = useCallback(async () => {
+    const targetThreadId = swarm.selectedThreadId;
     try {
-      const paths = await swarm.workspaceFor(swarm.selectedThreadId).listFiles();
+      const paths = await swarm.workspaceFor(targetThreadId).listFiles();
+      if (swarm.selectedThreadId !== targetThreadId) return;
       setFiles(paths.filter((path) => !isProtectedAgentPath(path)));
     } catch {
-      setFiles([]);
+      if (swarm.selectedThreadId === targetThreadId) setFiles([]);
     }
   }, [swarm]);
 
   useEffect(() => {
-    void detectBuiltinAiToolLoopSupport().then(setBuiltinAvailability);
-  }, []);
+    let cancelled = false;
+    let latestCheck = 0;
+    const refresh = async () => {
+      if (builtinPreparationRef.current) return;
+      const check = ++latestCheck;
+      const availability = await detectBuiltinAiToolLoopSupport();
+      if (!cancelled && check === latestCheck && !builtinPreparationRef.current) {
+        setBuiltinAvailability(availability);
+      }
+    };
+    void refresh();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    const timer = builtinAvailability === "downloading" && !builtinPreparing
+      ? window.setInterval(() => { void refresh(); }, 2_000)
+      : undefined;
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.clearInterval(timer);
+    };
+  }, [locale, provider, builtinAvailability, builtinPreparing]);
+
+  useEffect(() => () => { builtinPreparationRef.current?.abort(); }, []);
+
+  const prepareBuiltin = useCallback(async () => {
+    if (builtinPreparationRef.current) return;
+    const controller = new AbortController();
+    builtinPreparationRef.current = controller;
+    setBuiltinPreparing(true);
+    setBuiltinDownloadProgress(null);
+    setBuiltinAvailability("downloading");
+    try {
+      // Start create() directly from the click, before any asynchronous storage
+      // or availability checks can consume Chrome's transient user activation.
+      const session = await createBuiltinAiSession({
+        signal: controller.signal,
+        onDownloadProgress: setBuiltinDownloadProgress
+      });
+      session.destroy?.();
+      if (!controller.signal.aborted) notice(t`The on-device model is ready.`);
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        const reason = error instanceof Error ? error.message : String(error);
+        notice(t`Could not prepare the on-device model: ${reason}`, "error");
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        const availability = await detectBuiltinAiToolLoopSupport();
+        if (controller.signal.aborted) return;
+        builtinPreparationRef.current = null;
+        setBuiltinAvailability(availability);
+        setBuiltinPreparing(false);
+        setBuiltinDownloadProgress(null);
+      }
+    }
+  }, [notice]);
 
   const selectedWriteCount = selected?.writeCount ?? 0;
   useEffect(() => {
@@ -151,12 +225,9 @@ export function ChatPage() {
     saveChatSettings({ provider, models: modelsRef.current, keys: keysRef.current, rememberKey, webSearch });
   }, [provider, apiKey, model, rememberKey, webSearch]);
 
-  const decidePermission = useCallback((decision: PermissionDecision) => {
-    setPermissionQueue((queue) => {
-      const [first, ...rest] = queue;
-      first?.resolve(decision);
-      return rest;
-    });
+  const decidePermission = useCallback((target: PendingPermission, decision: PermissionDecision) => {
+    target.resolve(decision);
+    setPermissionQueue((queue) => queue.filter((item) => item !== target));
   }, []);
 
   const send = useCallback(async () => {
@@ -171,9 +242,10 @@ export function ChatPage() {
   }, [swarm]);
 
   const startNewChat = useCallback(() => {
-    void swarm.newChat(swarm.selectedThreadId);
-    setArtifact(null);
-    setViewer(null);
+    const threadId = swarm.selectedThreadId;
+    void swarm.newChat(threadId);
+    setArtifactsByThread((current) => ({ ...current, [threadId]: null }));
+    setViewer((current) => (current?.threadId === threadId ? null : current));
   }, [swarm]);
 
   const switchProvider = useCallback((next: ChatProviderId) => {
@@ -208,9 +280,35 @@ export function ChatPage() {
   }, [notice, refreshFiles, swarm]);
 
   const openFile = useCallback(async (path: string) => {
-    const content = await swarm.workspaceFor(swarm.selectedThreadId).readFile(path);
-    setViewer({ path, content });
+    const targetThreadId = swarm.selectedThreadId;
+    const content = await swarm.workspaceFor(targetThreadId).readFile(path);
+    if (swarm.selectedThreadId !== targetThreadId) return;
+    setViewer({ threadId: targetThreadId, path, content });
   }, [swarm]);
+
+  const activeArtifact = artifactsByThread[selectedId] ?? null;
+  const a2ui = swarm.a2uiFor(selectedId);
+  const canvasSurfaces = a2ui?.listCanvasSurfaces() ?? [];
+  const activeCanvasSurfaceId = a2ui?.activeCanvasId ?? null;
+  const hasCanvas = canvasSurfaces.length > 0 || activeArtifact !== null;
+  const activeViewer = viewer && viewer.threadId === selectedId
+    ? { path: viewer.path, content: viewer.content }
+    : null;
+  const closeActiveArtifact = useCallback(() => {
+    setArtifactsByThread((current) => ({ ...current, [selectedId]: null }));
+  }, [selectedId]);
+  const openSurfaceInCanvas = useCallback((surfaceId: string) => {
+    swarm.pinSurfaceToCanvas(selectedId, surfaceId);
+  }, [selectedId, swarm]);
+  const selectCanvasSurface = useCallback((surfaceId: string) => {
+    swarm.selectCanvasSurface(selectedId, surfaceId);
+  }, [selectedId, swarm]);
+  const closeCanvasSurface = useCallback((surfaceId: string) => {
+    swarm.closeCanvasSurface(selectedId, surfaceId);
+  }, [selectedId, swarm]);
+  const exportSurfaceHtml = useCallback((surfaceId: string) => {
+    return swarm.exportSurfaceHtml(selectedId, surfaceId);
+  }, [selectedId, swarm]);
 
   return (
     <div className="fresh chat-shell">
@@ -225,7 +323,7 @@ export function ChatPage() {
         >
           <Chevron direction={columns.left ? "left" : "right"} />
         </button>
-        <a className="chat-brand" href="./">WasmHatch</a>
+        <a className="chat-brand" href={import.meta.env.BASE_URL}>WasmHatch</a>
         <span className="chat-tagline"><Trans>Your AI assistant, right in this tab — fast, visible, and undoable.</Trans></span>
         <div className="chat-header-right">
           {items.length > 0 && (
@@ -246,7 +344,7 @@ export function ChatPage() {
         </div>
       </header>
 
-      <div className={`chat-columns${columns.left ? " has-left" : ""}${columns.right ? " has-right" : ""}`}>
+      <div className={`chat-columns${columns.left ? " has-left" : ""}${hasCanvas ? " has-canvas" : ""}${columns.right ? " has-right" : ""}`}>
         <ChatTranscript
           items={items}
           selected={selected}
@@ -268,7 +366,22 @@ export function ChatPage() {
           portableBusy={portable.portableBusy}
           onConfirmPortablePreview={portable.confirmPortablePreview}
           onDismissPortablePreview={portable.dismissPortablePreview}
+          a2ui={a2ui}
+          onOpenSurfaceInCanvas={openSurfaceInCanvas}
+          onExportSurface={exportSurfaceHtml}
         />
+
+        {hasCanvas && (
+          <CanvasStage
+            surfaces={canvasSurfaces}
+            activeSurfaceId={activeCanvasSurfaceId}
+            onSelectSurface={selectCanvasSurface}
+            onCloseSurface={closeCanvasSurface}
+            onExportSurface={exportSurfaceHtml}
+            artifact={activeArtifact}
+            onCloseArtifact={closeActiveArtifact}
+          />
+        )}
 
         {columns.left && (
           <TeamSidebar
@@ -298,15 +411,16 @@ export function ChatPage() {
             writeMode={writeMode}
             onWriteModeChange={setWriteMode}
             builtinAvailability={builtinAvailability}
+            builtinPreparing={builtinPreparing}
+            builtinDownloadProgress={builtinDownloadProgress}
+            onPrepareBuiltin={prepareBuiltin}
             google={google}
             connectors={connectors}
             portable={portable}
             files={files}
             onOpenFile={openFile}
-            viewer={viewer}
+            viewer={activeViewer}
             onCloseViewer={() => setViewer(null)}
-            artifact={artifact}
-            onCloseArtifact={() => setArtifact(null)}
             onNotice={notice}
           />
         )}

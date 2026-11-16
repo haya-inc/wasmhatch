@@ -66,4 +66,19 @@ describe("archive utilities", () => {
     });
     expect(readZipArchive(archive)).toEqual([{ path: "utf8.txt", content: "plain\n" }]);
   });
+
+  it("rejects deflated entries whose ZIP header lies about uncompressed size", () => {
+    const payload = new Uint8Array(64 * 1024).fill(0x61);
+    const archive = Uint8Array.from(zipSync({ "bomb.txt": payload }, { level: 9 }));
+    const view = new DataView(archive.buffer);
+    // Patch uncompressed size in both Local File Header (offset 22) and Central Directory.
+    view.setUint32(22, 4, true);
+    for (let i = archive.length - 22; i >= 0; i -= 1) {
+      if (view.getUint32(i, true) === 0x02014b50) {
+        view.setUint32(i + 24, 4, true);
+        break;
+      }
+    }
+    expect(() => readZipArchive(archive)).toThrow(/exceeds its declared size|beyond/);
+  });
 });

@@ -1,12 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import type { HatchlingA2uiRuntime } from "../../lib/a2ui/runtime";
 import type { ChatItem, HatchlingState } from "../../lib/agent-session";
 import type { PermissionDecision, WritePermissionRequest } from "../../lib/chat-permissions";
 import { summarizeRequestedCapabilities } from "../../lib/hatchling-capabilities";
+import { SurfaceCard } from "../a2ui/SurfaceCard";
 import { AssistantMarkdown } from "./AssistantMarkdown";
 import type { PendingFilePick } from "./useGoogleConnector";
 import type { PortableAgentPreview } from "./usePortableAgentFlow";
+
+function isSafeHttpUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
 
 export interface PendingPermission {
   request: WritePermissionRequest;
@@ -24,7 +35,7 @@ export interface ChatTranscriptProps {
   onLoadSamples: () => Promise<void>;
   onRevertWrite: (item: ChatItem) => void;
   permissionQueue: readonly PendingPermission[];
-  onDecidePermission: (decision: PermissionDecision) => void;
+  onDecidePermission: (target: PendingPermission, decision: PermissionDecision) => void;
   pickQueue: readonly PendingFilePick[];
   activePick: PendingFilePick | undefined;
   pickerBusy: boolean;
@@ -34,6 +45,9 @@ export interface ChatTranscriptProps {
   portableBusy: boolean;
   onConfirmPortablePreview: () => Promise<void>;
   onDismissPortablePreview: () => void;
+  a2ui?: HatchlingA2uiRuntime | null;
+  onOpenSurfaceInCanvas?: (surfaceId: string) => void;
+  onExportSurface?: (surfaceId: string) => { fileName: string; title: string; html: string } | null;
 }
 
 export function ChatTranscript({
@@ -56,10 +70,14 @@ export function ChatTranscript({
   portablePreview,
   portableBusy,
   onConfirmPortablePreview,
-  onDismissPortablePreview
+  onDismissPortablePreview,
+  a2ui,
+  onOpenSurfaceInCanvas,
+  onExportSurface
 }: ChatTranscriptProps) {
   const listRef = useRef<HTMLDivElement | null>(null);
-  const activePermission = permissionQueue[0];
+  const activePermission =
+    permissionQueue.find((entry) => entry.request.threadId === selected?.thread.id) ?? permissionQueue[0];
 
   // Track which tool-call IDs have been announced to avoid duplicate screen-reader spam.
   const announcedToolIds = useRef<Set<string>>(new Set());
@@ -92,9 +110,9 @@ export function ChatTranscript({
       <div className="chat-transcript" ref={listRef}>
         {/* Screen-reader announcements for tool-chip state transitions */}
         <div
+          className="sr-only"
           aria-live="polite"
           aria-atomic="true"
-          style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
         >
           {toolAnnouncement}
         </div>
@@ -136,6 +154,27 @@ export function ChatTranscript({
               </div>
             );
           }
+          if (item.kind === "surface" && item.surfaceId) {
+            const surface = a2ui?.getSurface(item.surfaceId);
+            const inCanvas = a2ui?.isCanvasSurface(item.surfaceId) ?? false;
+            const isCanvasWorkbench =
+              item.surfaceId.startsWith("canvas_") || surface?.extensions?.placement === "canvas";
+            const liveTitle = a2ui?.getSurfaceTitle(item.surfaceId) ?? item.text;
+            return (
+              <SurfaceCard
+                key={item.id}
+                surfaceId={item.surfaceId}
+                fallbackTitle={item.text}
+                surface={surface}
+                rpcBridge={a2ui?.createSurfaceRpcBridge(item.surfaceId)}
+                title={liveTitle}
+                inCanvas={inCanvas}
+                isCanvasWorkbench={isCanvasWorkbench}
+                onOpenInCanvas={(surfaceId) => onOpenSurfaceInCanvas?.(surfaceId)}
+                onExportHtml={onExportSurface}
+              />
+            );
+          }
           if (item.kind === "write" && item.write) {
             return (
               <div key={item.id} className={item.write.reverted ? "chat-write chat-write-reverted" : "chat-write"}>
@@ -157,7 +196,7 @@ export function ChatTranscript({
                     ))}
                   </pre>
                 </details>
-                {!item.write.creates && !item.write.reverted && (
+                {!item.write.reverted && (
                   <button className="button button-quiet" type="button" onClick={() => { onRevertWrite(item); }}>
                     <Trans>Revert</Trans>
                   </button>
@@ -181,7 +220,9 @@ export function ChatTranscript({
               <div key={item.id} className="chat-sources">
                 <span><Trans>Sources:</Trans></span>
                 {item.sources.map((source, index) => (
-                  <a key={index} href={source.url} target="_blank" rel="noreferrer noopener">{source.title}</a>
+                  isSafeHttpUrl(source.url)
+                    ? <a key={index} href={source.url} target="_blank" rel="noreferrer noopener">{source.title}</a>
+                    : <span key={index}>{source.title}</span>
                 ))}
               </div>
             );
@@ -196,6 +237,7 @@ export function ChatTranscript({
         {activePermission && (
           <section className="chat-permission" aria-label={t`Write approval required`}>
             <h2>
+              {activePermission.request.threadName ? `${activePermission.request.threadName}: ` : ""}
               {activePermission.request.creates
                 ? t`Create ${activePermission.request.path}`
                 : t`Update ${activePermission.request.path}`}
@@ -216,13 +258,13 @@ export function ChatTranscript({
               ))}
             </pre>
             <div className="chat-permission-actions">
-              <button className="button button-primary" type="button" onClick={() => onDecidePermission("allow-once")}>
+              <button className="button button-primary" type="button" onClick={() => onDecidePermission(activePermission, "allow-once")}>
                 <Trans>Allow once</Trans>
               </button>
-              <button className="button" type="button" onClick={() => onDecidePermission("always-allow")}>
+              <button className="button" type="button" onClick={() => onDecidePermission(activePermission, "always-allow")}>
                 <Trans>Always allow this file</Trans>
               </button>
-              <button className="button button-quiet" type="button" onClick={() => onDecidePermission("reject")}>
+              <button className="button button-quiet" type="button" onClick={() => onDecidePermission(activePermission, "reject")}>
                 <Trans>Reject</Trans>
               </button>
             </div>
@@ -302,7 +344,7 @@ export function ChatTranscript({
           rows={3}
           onChange={(event) => onInputChange(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
+            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
               event.preventDefault();
               void onSend();
             }

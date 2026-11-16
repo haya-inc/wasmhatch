@@ -25,6 +25,40 @@ export interface ChatSettingsStores {
 const STORAGE_KEY = "wasmhatch-chat-settings-v1";
 const CLOUD_PROVIDERS: readonly CloudChatProvider[] = CLOUD_PROVIDER_IDS;
 
+// Upgrade only IDs that the app previously offered. Arbitrary custom IDs and
+// dated snapshots stay as chosen. Local Ollama models also stay unchanged:
+// replacing an installed tag with an uninstalled one would break existing setups.
+const PREVIOUS_MODEL_CHOICES: Partial<Record<CloudChatProvider, Readonly<Record<string, string>>>> = {
+  anthropic: {
+    "claude-sonnet-5": "claude-sonnet-5-5",
+    "claude-opus-4-8": "claude-opus-5-5",
+    "claude-haiku-4-5": "claude-haiku-5-5"
+  },
+  openai: {
+    "gpt-5.6-terra": "gpt-6.1-terra",
+    "gpt-5.6-sol": "gpt-6.1-sol",
+    "gpt-5.6-luna": "gpt-6-luna"
+  },
+  openrouter: {
+    "anthropic/claude-sonnet-5": "anthropic/claude-sonnet-5.5",
+    "anthropic/claude-opus-4.8": "anthropic/claude-opus-5.5",
+    "openai/gpt-5.2": "openai/gpt-6.1-sol",
+    "google/gemini-3.5-flash": "google/gemini-4-hydrogen",
+    "x-ai/grok-4.3": "x-ai/grok-4.7",
+    "deepseek/deepseek-chat": "deepseek/deepseek-v4.1-flash-1017"
+  }
+};
+
+function upgradeSavedModels(models: ChatSettingsSnapshot["models"]): ChatSettingsSnapshot["models"] {
+  const upgraded = { ...models };
+  for (const provider of CLOUD_PROVIDERS) {
+    const model = models[provider];
+    const choices = PREVIOUS_MODEL_CHOICES[provider];
+    if (model && choices && Object.hasOwn(choices, model)) upgraded[provider] = choices[model];
+  }
+  return upgraded;
+}
+
 function defaultStores(): ChatSettingsStores {
   try {
     return {
@@ -90,7 +124,7 @@ export function loadChatSettings(stores: ChatSettingsStores = defaultStores()): 
   const base = session ?? local ?? {};
   return {
     provider: base.provider ?? "builtin",
-    models: base.models ?? {},
+    models: upgradeSavedModels(base.models ?? {}),
     keys: base.keys ?? {},
     // Remembering is a device-level choice, so the persistent store decides it.
     rememberKey: local?.rememberKey ?? base.rememberKey ?? false,

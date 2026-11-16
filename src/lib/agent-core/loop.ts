@@ -16,6 +16,7 @@ import type {
   AgentSoftBudget,
   AgentStopReason,
   AgentToolDefinition,
+  AgentToolCallPart,
   AgentToolExecutor,
   AgentToolResultPart,
   AgentBudgetUsage
@@ -44,6 +45,7 @@ interface PendingToolCall {
   callId: string;
   name: string;
   argsJson: string;
+  part: AgentToolCallPart;
 }
 
 function isAbortError(error: unknown) {
@@ -68,8 +70,18 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
   if (!request.messages?.length && !request.task?.trim()) {
     throw new Error("Agent loop needs a task or a prior transcript.");
   }
-  const budget: AgentSoftBudget = { ...DEFAULT_AGENT_BUDGET, ...request.budget };
-  const maxOutputTokensPerTurn = request.maxOutputTokensPerTurn ?? DEFAULT_MAX_OUTPUT_TOKENS_PER_TURN;
+  const finiteLimit = (value: number | undefined, fallback: number, min: number = 0) =>
+    typeof value === "number" && Number.isFinite(value) && value >= min ? Math.floor(value) : fallback;
+  const budget: AgentSoftBudget = {
+    maxTurns: finiteLimit(request.budget?.maxTurns, DEFAULT_AGENT_BUDGET.maxTurns),
+    maxOutputTokens: finiteLimit(request.budget?.maxOutputTokens, DEFAULT_AGENT_BUDGET.maxOutputTokens),
+    maxToolCalls: finiteLimit(request.budget?.maxToolCalls, DEFAULT_AGENT_BUDGET.maxToolCalls)
+  };
+  const maxOutputTokensPerTurn = finiteLimit(
+    request.maxOutputTokensPerTurn,
+    DEFAULT_MAX_OUTPUT_TOKENS_PER_TURN,
+    1
+  );
   const messages: AgentMessage[] = request.messages
     ? request.messages.map((message) => ({ role: message.role, parts: [...message.parts] }))
     : [];
@@ -99,8 +111,7 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
 
     let turnText = "";
     const pendingCalls = new Map<number, PendingToolCall>();
-    // Streamed parts in wire order, so server-tool blocks (executed on the
-    // provider's side) replay in history exactly where they appeared.
+    // Preserve wire order, including thinking blocks between tool calls.
     const streamedParts: AgentMessage["parts"] = [];
     let stopReason: AgentStopReason = "other";
 
@@ -124,7 +135,9 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
           else streamedParts.push({ type: "text", text: event.text });
           emit({ type: "text-delta", turn: usage.turns, text: event.text });
         } else if (event.type === "tool-call-start") {
-          pendingCalls.set(event.index, { callId: event.callId, name: event.name, argsJson: "" });
+          const part: AgentToolCallPart = { type: "tool_call", callId: event.callId, name: event.name, args: {} };
+          pendingCalls.set(event.index, { callId: event.callId, name: event.name, argsJson: "", part });
+          streamedParts.push(part);
         } else if (event.type === "tool-call-args-delta") {
           const pending = pendingCalls.get(event.index);
           if (pending) pending.argsJson += event.argsJsonDelta;
@@ -170,10 +183,9 @@ export async function runAgentLoop(request: AgentLoopRequest): Promise<AgentLoop
       const parsed = parseToolArgs(call.argsJson);
       if ("args" in parsed) {
         parsedCalls.push({ call, args: parsed.args });
-        assistantParts.push({ type: "tool_call", callId: call.callId, name: call.name, args: parsed.args });
+        call.part.args = parsed.args;
       } else {
         parsedCalls.push({ call, parseError: parsed.parseError });
-        assistantParts.push({ type: "tool_call", callId: call.callId, name: call.name, args: {} });
       }
     }
     if (assistantParts.length) messages.push({ role: "assistant", parts: assistantParts });

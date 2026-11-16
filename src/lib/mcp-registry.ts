@@ -6,7 +6,14 @@
  */
 
 import type { AgentToolOutcome } from "./agent-core/types";
-import { buildMcpToolset, McpConnection, type McpToolInfo, type McpToolset } from "./mcp-client";
+import {
+  buildMcpToolset,
+  McpConnection,
+  type McpRawToolResult,
+  type McpReadResourceResult,
+  type McpToolInfo,
+  type McpToolset
+} from "./mcp-client";
 import { isAllowedMcpUrl, isLoopbackUrl, MCP_SERVERS, type McpServerDef } from "./mcp-servers";
 
 export interface McpServerStatus {
@@ -21,6 +28,8 @@ export interface McpConnectionLike {
   initialize(): Promise<void>;
   listTools(): Promise<McpToolInfo[]>;
   callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<AgentToolOutcome>;
+  callToolRaw?(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<McpRawToolResult>;
+  readResource?(uri: string, signal?: AbortSignal): Promise<McpReadResourceResult>;
   close(): Promise<void>;
 }
 
@@ -29,6 +38,7 @@ export interface McpConnectedServer {
   readonly url: string;
   readonly connection: McpConnectionLike;
   readonly toolset: McpToolset;
+  readonly tools?: readonly McpToolInfo[];
   readonly error: string | null;
 }
 
@@ -74,7 +84,7 @@ export class McpRegistry {
     if (server.loopback && !isLoopbackUrl(url)) {
       throw new Error("The local MCP server must stay on this machine (http://localhost or http://127.0.0.1).");
     }
-    if (!server.loopback && !isAllowedMcpUrl(url, this.servers)) {
+    if (!server.loopback && !isAllowedMcpUrl(url, [server])) {
       throw new Error("That URL is outside this deployment's audited MCP allowlist.");
     }
     await this.disconnect(serverId, false);
@@ -83,7 +93,7 @@ export class McpRegistry {
       await connection.initialize();
       const tools = await connection.listTools();
       const toolset = buildMcpToolset(server.id, server.label, tools);
-      this.runtimes.set(serverId, { server, url, connection, toolset, error: null });
+      this.runtimes.set(serverId, { server, url, connection, toolset, tools, error: null });
       this.onChange?.();
       return toolset.definitions.length;
     } catch (error) {

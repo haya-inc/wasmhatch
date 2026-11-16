@@ -75,6 +75,12 @@ Honesty beats surprises. WasmHatch currently does **not**:
 
 The hosted app is the product: **[wasmhatch.com](https://wasmhatch.com/?view=chat)**.
 
+For Chrome's built-in AI, use Chrome 148+ on a
+[supported desktop](https://developer.chrome.com/docs/ai/prompt-api#review_the_hardware_requirements).
+Select **Built into Chrome**, then **Prepare on-device model** if prompted.
+Keep the tab open until preparation finishes; download progress appears in the
+sidebar. Chrome manages the on-device model and its updates automatically.
+
 Run it yourself (it's just a static page):
 
 ```bash
@@ -82,8 +88,11 @@ npm install
 npm run dev
 ```
 
-Requirements: Node.js 20+. `npm test` runs the unit suite, `npm run build`
+Requirements: Node.js 22.19+ (22.x), 24.11+ (24.x), or 26+. `npm test` runs the unit suite, `npm run build`
 produces the deployable `dist/`.
+
+Installation applies a checked [Zod compatibility security backport](docs/zod-v3-security-backport.md).
+Production builds verify it before bundling.
 
 Want your own hosted copy — fork, enable Pages, done? See the
 [fork guide](docs/fork-guide.md), including bring-your-own Google client ID.

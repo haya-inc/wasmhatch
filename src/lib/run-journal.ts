@@ -153,7 +153,9 @@ export function redactRunJournalText(value: string) {
   return value
     .replace(/\bAuthorization\s*:\s*Bearer\s+[^\s,;]+/gi, "Authorization header [REDACTED]")
     .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/gi, "Bearer [REDACTED]")
-    .replace(/\b(?:sk-(?:ant-|proj-|svcacct-)?|gh[pousr]_)[A-Za-z0-9_-]{8,}\b/g, "[REDACTED_API_KEY]")
+    .replace(/https:\/\/hooks\.slack\.com\/services\/[^\s"'<>]+/gi, "[REDACTED_SLACK_WEBHOOK]")
+    .replace(/\b(?:xox[bpaers]-[A-Za-z0-9-]+|xapp-[A-Za-z0-9-]+)\b/g, "[REDACTED_SLACK_TOKEN]")
+    .replace(/\b(?:sk-(?:ant-|proj-|svcacct-)?|gh[pousr]_|tvly-|jina_)[A-Za-z0-9_-]{8,}\b/g, "[REDACTED_API_KEY]")
     .replace(/\bya29\.[A-Za-z0-9._-]+\b/g, "[REDACTED_OAUTH_TOKEN]")
     .replace(/\bAIza[A-Za-z0-9_-]{20,}\b/g, "[REDACTED_API_KEY]")
     .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, "[REDACTED_JWT]")

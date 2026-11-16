@@ -19,7 +19,8 @@ export function systemPrompt(
   web: { search: boolean; fetchPage: boolean },
   swarm?: SwarmPromptContext,
   packagedInstructions?: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  a2uiSnippet?: string
 ): string {
   // Date only, no clock time: relative dates ("this Friday") resolve correctly
   // all day while the prompt stays stable for provider-side prefix caching.
@@ -44,6 +45,15 @@ export function systemPrompt(
       ? "Act decisively: writes apply immediately, and every change stays visible to the user with its diff and a revert option. Do not ask permission for routine file work — do it."
       : "The user chose careful mode: each write_file call shows them the exact diff first, and a rejected write is a final decision, not an error to work around.",
     "Use create_artifact for polished deliverables (reports, dashboards, slide decks) as one self-contained HTML file.",
+    ...(!swarm?.scheduled && a2uiSnippet
+      ? [
+          "When structured interactive UI (intake forms, parameter pickers, approval/triage cards, live charts, sortable data grids, or workspace diff reviews) helps the user steer or inspect work faster than plain text, emit an `<a2ui>...</a2ui>` Express block alongside concise prose.",
+          "For compact cards or forms inside the chat stream, name a short surface id (e.g. `surface(\"expense_intake\")`); for persistent multi-panel or multi-turn workbenches that should open in the side-by-side Canvas pane, prefix the surface id with `canvas_` (e.g. `surface(\"canvas_budget_workbench\")`).",
+          "When available in the active catalogs, combine `Slider`/`ChoicePicker`/`TextField` bindings with `QuickJsWorkbench`, `VegaChart`, `DataGrid`, or `WorkspaceDiffCard` so parameter tweaks recompute tables and charts locally in milliseconds without extra model turns.",
+          "When MCP tools or Google/Slack connectors are active in the catalogs, use `callMcpTool` + `transformData`/`updateDataModel` for direct UI-to-MCP refreshes, or `GoogleSheetRangeCard`, `GooglePickerHandoverCard`, and `SlackMessagePreviewCard` so the user can review and edit external writes before committing.",
+          "Answer simple factual or conversational questions in plain Markdown without `<a2ui>` unless an interactive UI adds clear value."
+        ]
+      : []),
     "For data transforms over workspace files (filtering, aggregating, reshaping, math), prefer run_script over hand-computing rows; it runs in a no-network sandbox and output_path saves its result.",
     web.search
       ? "When current information from the web would change the answer (recent events, prices, versions, anything time-sensitive), use web_search rather than answering from memory."
@@ -66,6 +76,7 @@ export function systemPrompt(
           packagedInstructions.trim(),
           "--- END PACKAGED PLAYBOOK ---"
         ]
-      : [])
+      : []),
+    ...(!swarm?.scheduled && a2uiSnippet ? ["\n\n" + a2uiSnippet] : [])
   ].join(" ");
 }

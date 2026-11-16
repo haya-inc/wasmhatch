@@ -8,16 +8,22 @@
  */
 
 import { i18n } from "@lingui/core";
-import { AUTO_LOCALE, SOURCE_LOCALE, isSupportedLocale, resolveLocale } from "./locales";
+import { AUTO_LOCALE, SOURCE_LOCALE, canonicalLocale, resolveLocale } from "./locales";
 
 export { i18n };
 
 const STORAGE_KEY = "wasmhatch-locale-v1";
 
+function normalizePreference(preference: string | null | undefined): string | null {
+  if (!preference) return null;
+  if (preference === AUTO_LOCALE) return AUTO_LOCALE;
+  return canonicalLocale(preference);
+}
+
 function readStoredPreference(): string {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw && (raw === AUTO_LOCALE || isSupportedLocale(raw))) return raw;
+    const normalized = normalizePreference(localStorage.getItem(STORAGE_KEY));
+    if (normalized) return normalized;
   } catch {
     // Blocked storage falls back to auto-detection.
   }
@@ -84,7 +90,7 @@ export async function initI18n(): Promise<void> {
 
 /** Persist a preference ("auto" or a locale code) and switch to it in place. */
 export async function setLocalePreference(preference: string): Promise<void> {
-  const next = preference === AUTO_LOCALE || isSupportedLocale(preference) ? preference : AUTO_LOCALE;
+  const next = normalizePreference(preference) ?? AUTO_LOCALE;
   writeStoredPreference(next);
   await activate(effectiveLocale(next));
 }

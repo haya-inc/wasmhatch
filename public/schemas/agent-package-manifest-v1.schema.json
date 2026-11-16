@@ -52,7 +52,7 @@
           "type": "array",
           "maxItems": 32,
           "uniqueItems": true,
-          "items": { "type": "string", "format": "uri", "pattern": "^https://" }
+          "items": { "type": "string", "format": "uri", "pattern": "^https://[^/?#@]+$" }
         }
       }
     },

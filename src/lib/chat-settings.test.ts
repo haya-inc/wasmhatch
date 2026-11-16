@@ -34,7 +34,7 @@ class BrokenStore implements KeyValueStore {
 
 const snapshot = (overrides: Partial<ChatSettingsSnapshot> = {}): ChatSettingsSnapshot => ({
   provider: "anthropic",
-  models: { anthropic: "claude-sonnet-5" },
+  models: { anthropic: "claude-sonnet-5-5" },
   keys: { anthropic: "sk-ant-test" },
   rememberKey: false,
   webSearch: true,
@@ -42,6 +42,59 @@ const snapshot = (overrides: Partial<ChatSettingsSnapshot> = {}): ChatSettingsSn
 });
 
 describe("chat settings persistence", () => {
+  it("upgrades saved cloud presets when restoring existing tabs or devices", () => {
+    const local = new FakeStore();
+    const session = new FakeStore();
+    saveChatSettings(snapshot({
+      models: {
+        anthropic: "claude-sonnet-5",
+        openai: "gpt-5.6-terra",
+        openrouter: "google/gemini-3.5-flash"
+      }
+    }), { session, local });
+
+    const expected = {
+      anthropic: "claude-sonnet-5-5",
+      openai: "gpt-6.1-terra",
+      openrouter: "google/gemini-4-hydrogen"
+    };
+    expect(loadChatSettings({ session, local }).models).toEqual(expected);
+    expect(loadChatSettings({ session: new FakeStore(), local }).models).toEqual(expected);
+    // A regular save records the migrated selections for subsequent loads.
+    saveChatSettings(loadChatSettings({ session, local }), { session, local });
+    expect(loadChatSettings({ session, local }).models).toEqual(expected);
+  });
+
+  it.each([
+    ["anthropic", "claude-opus-4-8", "claude-opus-5-5"],
+    ["anthropic", "claude-haiku-4-5", "claude-haiku-5-5"],
+    ["openai", "gpt-5.6-sol", "gpt-6.1-sol"],
+    ["openai", "gpt-5.6-luna", "gpt-6-luna"],
+    ["openrouter", "anthropic/claude-sonnet-5", "anthropic/claude-sonnet-5.5"],
+    ["openrouter", "anthropic/claude-opus-4.8", "anthropic/claude-opus-5.5"],
+    ["openrouter", "openai/gpt-5.2", "openai/gpt-6.1-sol"],
+    ["openrouter", "x-ai/grok-4.3", "x-ai/grok-4.7"],
+    ["openrouter", "deepseek/deepseek-chat", "deepseek/deepseek-v4.1-flash-1017"]
+  ])("upgrades the former %s preset %s to %s", (provider, previous, current) => {
+    const session = new FakeStore();
+    session.setItem("wasmhatch-chat-settings-v1", JSON.stringify({ models: { [provider]: previous } }));
+    expect(loadChatSettings({ session }).models).toEqual({ [provider]: current });
+  });
+
+  it("preserves custom IDs, pinned snapshots, and installed local model tags", () => {
+    const session = new FakeStore();
+    const settings = snapshot({
+      models: {
+        anthropic: "claude-sonnet-4-20250514",
+        openai: "ft:custom-model",
+        openrouter: "toString",
+        ollama: "llama3.2"
+      }
+    });
+    saveChatSettings(settings, { session });
+    expect(loadChatSettings({ session })).toEqual(settings);
+  });
+
   it("returns defaults when nothing is stored", () => {
     expect(loadChatSettings({ session: new FakeStore(), local: new FakeStore() })).toEqual({
       provider: "builtin",
@@ -125,7 +178,7 @@ describe("chat settings persistence", () => {
     const local = new FakeStore();
     const openrouter: ChatSettingsSnapshot = {
       provider: "openrouter",
-      models: { openrouter: "anthropic/claude-sonnet-5" },
+      models: { openrouter: "anthropic/claude-sonnet-5.5" },
       keys: { openrouter: "sk-or-test" },
       rememberKey: true,
       webSearch: false

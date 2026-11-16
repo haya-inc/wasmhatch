@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; script-src 'unsafe-inline'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <title>WasmHatch Artifact Sandbox</title>
+  </head>
+  <body>
+    <script>
+      (() => {
+        if (window.origin !== "null" || !window.parent || window.parent === window) return;
+        let rendered = false;
+        window.addEventListener("message", (event) => {
+          if (rendered || event.source !== window.parent) return;
+          const data = event.data;
+          if (!data || data.type !== "wasmhatch:render-artifact" || typeof data.html !== "string") return;
+          rendered = true;
+          document.open();
+          document.write(data.html);
+          document.close();
+        });
+        window.parent.postMessage({ type: "wasmhatch:artifact-ready" }, "*");
+      })();
+    </script>
+  </body>
+</html>

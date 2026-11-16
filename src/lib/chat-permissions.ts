@@ -19,20 +19,39 @@ export interface WritePermissionRequest {
   creates: boolean;
   beforeBytes: number;
   afterBytes: number;
+  /** Optional hatchling identity when multiple hatchlings share one session UI. */
+  threadId?: string;
+  threadName?: string;
+  /** Distinguishes workspace file writes from external connector/MCP side effects. */
+  kind?: "workspace" | "external";
 }
 
-export type PermissionGate = (request: WritePermissionRequest) => Promise<PermissionDecision>;
+export type PermissionGate = (
+  request: WritePermissionRequest,
+  options?: { signal?: AbortSignal }
+) => Promise<PermissionDecision>;
+
+function normalizePermissionKey(path: string): string {
+  if (path.startsWith("external:")) {
+    const target = path.slice("external:".length).trim();
+    if (!target || target.length > 256 || /[\u0000-\u001f\u007f]/.test(target)) {
+      throw new Error("Invalid external permission key.");
+    }
+    return `external:${target}`;
+  }
+  return normalizeWorkspacePath(path);
+}
 
 export class SessionPermissionStore {
   private readonly alwaysAllowed = new Set<string>();
 
   isAlwaysAllowed(path: string): boolean {
-    return this.alwaysAllowed.has(normalizeWorkspacePath(path));
+    return this.alwaysAllowed.has(normalizePermissionKey(path));
   }
 
   record(path: string, decision: PermissionDecision): void {
     if (decision === "always-allow") {
-      this.alwaysAllowed.add(normalizeWorkspacePath(path));
+      this.alwaysAllowed.add(normalizePermissionKey(path));
     }
   }
 
@@ -41,7 +60,7 @@ export class SessionPermissionStore {
   }
 
   revoke(path: string): void {
-    this.alwaysAllowed.delete(normalizeWorkspacePath(path));
+    this.alwaysAllowed.delete(normalizePermissionKey(path));
   }
 
   clear(): void {

@@ -93,4 +93,12 @@ describe("withInjectedCsp", () => {
     expect(result.startsWith("<head><meta http-equiv=\"Content-Security-Policy\"")).toBe(true);
     expect(result.endsWith("<h1>bare</h1>")).toBe(true);
   });
+
+  it("ignores <head> decoys inside comments or body markup and preserves doctype prologues", () => {
+    const commented = withInjectedCsp("<!-- <head> --><body><script>1</script><head></head></body>");
+    expect(commented.indexOf("Content-Security-Policy")).toBeLessThan(commented.indexOf("<body>"));
+
+    const doctyped = withInjectedCsp("<!doctype html>\n<html><body><h1>ok</h1></body></html>");
+    expect(doctyped.startsWith("<!doctype html>\n<html><head><meta http-equiv=\"Content-Security-Policy\"")).toBe(true);
+  });
 });

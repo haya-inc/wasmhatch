@@ -24,7 +24,13 @@ jobs:
         uses: haya-inc/clawsembly/actions/promotion-policy@v0.1.0-alpha.6
         with:
           mode: observe
-      - run: |
-          echo "OpenClaw promotion decision: ${{ steps.policy.outputs.decision }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Candidate: ${{ steps.policy.outputs.candidate_version }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Reasons: ${{ steps.policy.outputs.reasons }}" >> "$GITHUB_STEP_SUMMARY"
+      - env:
+          DECISION: ${{ steps.policy.outputs.decision }}
+          CANDIDATE_VERSION: ${{ steps.policy.outputs.candidate_version }}
+          REASONS: ${{ steps.policy.outputs.reasons }}
+        run: |
+          {
+            printf 'OpenClaw promotion decision: %s\n' "$DECISION"
+            printf 'Candidate: %s\n' "$CANDIDATE_VERSION"
+            printf 'Reasons: %s\n' "$REASONS"
+          } >> "$GITHUB_STEP_SUMMARY"

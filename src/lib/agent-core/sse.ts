@@ -48,17 +48,15 @@ export class SseDecoder {
 }
 
 function findEventBoundary(buffer: string): { index: number; length: number } | undefined {
-  const lf = buffer.indexOf("\n\n");
-  const crlf = buffer.indexOf("\r\n\r\n");
-  if (lf === -1 && crlf === -1) return undefined;
-  if (crlf !== -1 && (lf === -1 || crlf < lf)) return { index: crlf, length: 4 };
-  return { index: lf, length: 2 };
+  const match = buffer.match(/\r?\n\r?\n/);
+  if (!match || match.index === undefined) return undefined;
+  return { index: match.index, length: match[0].length };
 }
 
 function parseEventBlock(block: string): SseEvent | undefined {
   let event = "message";
   const data: string[] = [];
-  for (const rawLine of block.split(/\r?\n/)) {
+  for (const rawLine of block.split(/\r\n|\n|\r/)) {
     if (!rawLine || rawLine.startsWith(":")) continue;
     const separator = rawLine.indexOf(":");
     const field = separator === -1 ? rawLine : rawLine.slice(0, separator);
@@ -81,17 +79,24 @@ export async function* readSseStream(
 ): AsyncGenerator<SseEvent, void, void> {
   const decoder = new SseDecoder();
   const reader = body.getReader();
+  let streamDrained = false;
   try {
     for (;;) {
       if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        streamDrained = true;
+        break;
+      }
       if (value) {
         for (const event of decoder.decode(value)) yield event;
       }
     }
     for (const event of decoder.finish()) yield event;
   } finally {
+    if (!streamDrained) {
+      await reader.cancel().catch(() => undefined);
+    }
     reader.releaseLock();
   }
 }

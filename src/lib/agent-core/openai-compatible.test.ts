@@ -19,7 +19,7 @@ function streamResponse(body: string, init?: ResponseInit) {
 }
 
 const request: ProviderRequest = {
-  model: "gpt-5.2",
+  model: "openai/gpt-6.1-sol",
   system: "You are a test agent.",
   messages: [{ role: "user", parts: [{ type: "text", text: "hi" }] }],
   tools: [{ name: "lookup", description: "Look something up.", inputSchema: { type: "object" } }],
@@ -173,6 +173,37 @@ describe("createOpenAiCompatibleProvider", () => {
     expect(events).toEqual([
       { type: "text-delta", text: "ok" },
       { type: "message-end", stopReason: "end-turn", usage: undefined }
+    ]);
+  });
+
+  it("keeps parallel tool calls separate when compatible servers reuse index 0 with distinct ids", async () => {
+    const colliding = [
+      chunkLine({
+        choices: [{
+          index: 0,
+          delta: {
+            tool_calls: [
+              { index: 0, id: "call_1", type: "function", function: { name: "lookup", arguments: "{\"q\":\"a\"}" } },
+              { index: 0, id: "call_2", type: "function", function: { name: "lookup", arguments: "{\"q\":\"b\"}" } }
+            ]
+          }
+        }]
+      }),
+      chunkLine({ choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] }),
+      "data: [DONE]\n\n"
+    ].join("");
+    const fetchImpl = vi.fn(async () => streamResponse(colliding));
+    const events = await collect(provider(fetchImpl), { ...request, tools: [] });
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect("tools" in (JSON.parse(init.body as string) as Record<string, unknown>)).toBe(false);
+    expect(events).toEqual([
+      { type: "tool-call-start", index: 0, callId: "call_1", name: "lookup" },
+      { type: "tool-call-args-delta", index: 0, argsJsonDelta: "{\"q\":\"a\"}" },
+      { type: "tool-call-start", index: 1, callId: "call_2", name: "lookup" },
+      { type: "tool-call-args-delta", index: 1, argsJsonDelta: "{\"q\":\"b\"}" },
+      { type: "tool-call-end", index: 0 },
+      { type: "tool-call-end", index: 1 },
+      { type: "message-end", stopReason: "tool-use", usage: undefined }
     ]);
   });
 });

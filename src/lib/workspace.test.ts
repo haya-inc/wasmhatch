@@ -86,6 +86,7 @@ describe("measureWorkspaceUsage", () => {
       readFile: vi.fn().mockImplementation(async (path) => path === "a.txt" ? "hello" : "日本"),
       readBaselineFile: vi.fn().mockResolvedValue("hi"),
       writeFile: vi.fn(),
+      deleteFile: vi.fn(),
       replaceBaseline: vi.fn(),
       replaceAll: vi.fn(),
       clear: vi.fn()

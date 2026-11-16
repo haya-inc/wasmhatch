@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { HatchlingState, HatchlingSwarm } from "../../lib/agent-session";
 import { createZipArchive } from "../../lib/archive";
-import type { HtmlArtifact } from "../../lib/artifact";
 import { downloadBytes, downloadTextFile } from "../../lib/browser-download";
 import { PROMPT_API_LANGUAGES } from "../../lib/builtin-ai-language";
 import { CLOUD_PROVIDERS, getCloudProvider, type ChatProviderId } from "../../lib/chat-providers";
@@ -18,7 +17,6 @@ import {
   requestPersistentStorage,
   type BrowserStorageStatus
 } from "../../lib/workspace";
-import { ArtifactPanel } from "../ArtifactPanel";
 import { GOOGLE_CLIENT_ID, GOOGLE_SENSITIVE_ENABLED, type GoogleConnectorController } from "./useGoogleConnector";
 import type { PortableAgentFlowController } from "./usePortableAgentFlow";
 import type { SessionConnectorsController } from "./useSessionConnectors";
@@ -54,6 +52,9 @@ export interface ToolsSidebarProps {
   writeMode: WritePolicy;
   onWriteModeChange: (mode: WritePolicy) => void;
   builtinAvailability: string;
+  builtinPreparing: boolean;
+  builtinDownloadProgress: number | null;
+  onPrepareBuiltin: () => Promise<void>;
   google: GoogleConnectorController;
   connectors: SessionConnectorsController;
   portable: PortableAgentFlowController;
@@ -61,8 +62,6 @@ export interface ToolsSidebarProps {
   onOpenFile: (path: string) => Promise<void>;
   viewer: { path: string; content: string } | null;
   onCloseViewer: () => void;
-  artifact: HtmlArtifact | null;
-  onCloseArtifact: () => void;
   onNotice: (text: string, tone?: "info" | "error") => void;
 }
 
@@ -83,6 +82,9 @@ export function ToolsSidebar({
   writeMode,
   onWriteModeChange,
   builtinAvailability,
+  builtinPreparing,
+  builtinDownloadProgress,
+  onPrepareBuiltin,
   google,
   connectors,
   portable,
@@ -90,8 +92,6 @@ export function ToolsSidebar({
   onOpenFile,
   viewer,
   onCloseViewer,
-  artifact,
-  onCloseArtifact,
   onNotice
 }: ToolsSidebarProps) {
   // UI language. Changing it activates the catalog in place (no reload), and
@@ -105,6 +105,7 @@ export function ToolsSidebar({
   const [pinNote, setPinNote] = useState("");
   const [backupBusy, setBackupBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const clipboardAvailable = typeof navigator !== "undefined" && !!navigator.clipboard;
 
@@ -346,9 +347,30 @@ export function ToolsSidebar({
           </>
         )}
         {provider === "builtin" && builtinAvailability !== "available" && (
-          <p className="chat-hint">
-            <Trans>On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key.</Trans>
-          </p>
+          <>
+            <p className="chat-hint">
+              <Trans>On-device model status: {builtinAvailability}. Chrome 148+ on a supported desktop can run tasks without any key.</Trans>
+            </p>
+            {(builtinAvailability === "downloadable" || builtinAvailability === "downloading") && (
+              <>
+                <button className="button" type="button" disabled={builtinPreparing} onClick={() => { void onPrepareBuiltin(); }}>
+                  {builtinPreparing ? t`Preparing…` : t`Prepare on-device model`}
+                </button>
+                {builtinPreparing && (
+                  <progress
+                    aria-label={t`On-device model download`}
+                    max={1}
+                    value={builtinDownloadProgress !== null && builtinDownloadProgress < 1 ? builtinDownloadProgress : undefined}
+                  />
+                )}
+              </>
+            )}
+            {builtinAvailability === "unavailable" && (
+              <a className="chat-hint" href="https://developer.chrome.com/docs/ai/prompt-api#review_the_hardware_requirements" target="_blank" rel="noopener noreferrer">
+                <Trans>Check Chrome's on-device AI requirements</Trans>
+              </a>
+            )}
+          </>
         )}
         {provider === "builtin" && !PROMPT_API_LANGUAGES.includes(activeLocale().split("-")[0]) && (
           <p className="chat-hint">
@@ -672,20 +694,26 @@ export function ToolsSidebar({
 
       <section className="chat-panel">
         <h2><Trans>Portable agents</Trans></h2>
-        <label className="button chat-file-button">
+        <button
+          className="button chat-file-button"
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <Trans>Import a .agent file</Trans>
-          <input
-            type="file"
-            accept=".agent,application/zip"
-            aria-label={t`Import portable agent file`}
-            hidden
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (file) void portable.importPortableFile(file);
-            }}
-          />
-        </label>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".agent,application/zip"
+          aria-label={t`Import portable agent file`}
+          tabIndex={-1}
+          hidden
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) void portable.importPortableFile(file);
+          }}
+        />
         <button className="button" type="button" disabled={portable.portableBusy || !selected} onClick={() => { void portable.exportPortable(); }}>
           <Trans>Export this hatchling</Trans>
         </button>
@@ -743,8 +771,6 @@ export function ToolsSidebar({
           <button className="button button-quiet" type="button" onClick={onCloseViewer}><Trans>Close</Trans></button>
         </section>
       )}
-
-      <ArtifactPanel artifact={artifact} onClose={onCloseArtifact} />
     </aside>
   );
 }

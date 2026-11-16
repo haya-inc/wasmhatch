@@ -77,7 +77,13 @@ export function requireRange(args: Record<string, unknown>, fallback?: string): 
   const value = args.range === undefined && fallback !== undefined ? fallback : args.range;
   if (typeof value !== "string" || !value.trim()) invalid("range must be a non-empty A1-notation string.");
   const range = (value as string).trim();
-  if (range.length > RANGE_MAX_LENGTH || /[\u0000-\u001f\u007f]/.test(range)) invalid("range is not a valid A1-notation string.");
+  if (
+    range.length > RANGE_MAX_LENGTH ||
+    /^\.+$/.test(range) ||
+    /[\u0000-\u001f\u007f]/.test(range)
+  ) {
+    invalid("range is not a valid A1-notation string.");
+  }
   return range;
 }
 
@@ -148,18 +154,33 @@ export async function googleFetch(
   init: { method: string; body?: unknown }
 ): Promise<Response> {
   if (context.signal?.aborted) throw new DOMException("Aborted", "AbortError");
-  const token = await context.getToken(context.signal);
-  return context.fetchImpl(url, {
-    method: init.method,
-    headers: {
-      authorization: `Bearer ${token}`,
-      ...(init.body === undefined ? {} : { "content-type": "application/json" })
-    },
-    body: init.body === undefined ? undefined : JSON.stringify(init.body),
-    signal: context.signal,
-    cache: "no-store",
-    credentials: "omit"
-  });
+  const token = (await context.getToken(context.signal)).trim();
+  if (!token || !/^[\x21-\x7e]{1,16384}$/.test(token)) {
+    const error = new Error("Google authorization token is invalid or unavailable. Reconnect Google and retry.");
+    error.name = "ConnectorContractError";
+    throw error;
+  }
+  try {
+    return await context.fetchImpl(url, {
+      method: init.method,
+      headers: {
+        authorization: `Bearer ${token}`,
+        ...(init.body === undefined ? {} : { "content-type": "application/json" })
+      },
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      signal: context.signal,
+      cache: "no-store",
+      credentials: "omit"
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    if (error instanceof Error && error.message.includes(token)) {
+      const scrubbed = new Error(error.message.split(token).join("[REDACTED]"));
+      scrubbed.name = error.name;
+      throw scrubbed;
+    }
+    throw error;
+  }
 }
 
 /**

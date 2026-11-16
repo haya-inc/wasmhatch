@@ -147,9 +147,22 @@ describe("ticket tools", () => {
     expect(refused.isError).toBe(true);
     expect(refused.content).toMatch(/already claimed/);
 
+    const hijack = await theirs("update_ticket", { id: ticket.id, status: "done" }, {});
+    expect(hijack.isError).toBe(true);
+    expect(hijack.content).toMatch(/claimed by another hatchling \(h-mine11\)/);
+
     const finished = await mine("update_ticket", { id: ticket.id, status: "done", note: "shipped" }, {});
     expect(finished.isError).toBeFalsy();
     expect(board.list()[0]).toMatchObject({ status: "done", note: "shipped" });
+
+    const ticket2 = await board.create({ title: "One-shot", createdBy: "user" });
+    const claimAndDone = await mine("update_ticket", { id: ticket2.id, claim: true, status: "done", note: "fast" }, {});
+    expect(claimAndDone.isError).toBeFalsy();
+    expect(board.list().find((entry) => entry.id === ticket2.id)).toMatchObject({
+      assignee: "h-mine11",
+      status: "done",
+      note: "fast"
+    });
   });
 
   it("validates arguments without touching the board", async () => {

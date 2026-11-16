@@ -1,6 +1,6 @@
 {
   "name": "WasmHatch contributor",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:4-22-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:5-26-bookworm",
   "init": true,
   "remoteUser": "node",
   "forwardPorts": [5173],

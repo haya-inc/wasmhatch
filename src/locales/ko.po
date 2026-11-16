@@ -23,6 +23,17 @@ msgstr "{0, plural, other {연결됨 · 도구 #개}}"
 msgid "{0, plural, one {Handed # Google file to the agent.} other {Handed # Google files to the agent.}}"
 msgstr "{0, plural, other {Google 파일 #개를 에이전트에게 건넸습니다.}}"
 
+#. placeholder {0}: parsed.yTitle
+#. placeholder {1}: parsed.xTitle
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "{0} by {1}"
+msgstr "{1}별 {0}"
+
+#. placeholder {0}: dataset.columns.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} columns"
+msgstr "{0}개 열"
+
 #. placeholder {0}: journal.events.length
 #. placeholder {1}: journal.metrics.toolCalls
 #. placeholder {2}: journal.metrics.commits
@@ -35,6 +46,27 @@ msgstr "이벤트 {0}건 · 도구 호출 {1}회 · 쓰기 {2}건"
 msgid "{0} files:"
 msgstr "파일 {0}개:"
 
+#. placeholder {0}: col.formulaWarningCount
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula"
+msgstr "수식 {0}개"
+
+#. placeholder {0}: dataset.formulaWarnings.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} formula warnings"
+msgstr "수식 경고 {0}건"
+
+#. placeholder {0}: result.path
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} is already up to date."
+msgstr "{0} 파일은 이미 최신 상태예요."
+
+#. placeholder {0}: preview.totalLines
+#. placeholder {1}: preview.byteLength
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "{0} lines · {1} B"
+msgstr "{0}줄 · {1} B"
+
 #. placeholder {0}: selectedSchedule.intervalMinutes
 #: src/components/chat/TeamSidebar.tsx
 msgid "{0} min"
@@ -46,10 +78,34 @@ msgstr "{0}분"
 msgid "{0} of {1} auto runs left."
 msgstr "자동 실행 남은 횟수: {0}/{1}."
 
+#. placeholder {0}: filteredRows.length
+#. placeholder {1}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} of {1} rows"
+msgstr "{1}행 중 {0}행"
+
+#. placeholder {0}: dataset.totalRows
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{0} rows"
+msgstr "{0}행"
+
+#. placeholder {0}: matrix.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{0} rows · {totalCells} cells"
+msgstr "{0}개 행 · {totalCells}개 셀"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ToolsSidebar.tsx
 msgid "{0}'s workspace — each hatchling keeps its own files."
 msgstr "{0}의 작업 공간 — 해츨링마다 자기 파일을 따로 보관해요."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "{formulaCount} formula cells neutralized on export"
+msgstr "내보낼 때 수식 셀 {formulaCount}개를 안전하게 무력화했어요"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "{formulaCount} formula-prefixed cells (written as literal text)"
+msgstr "수식 접두사 셀 {formulaCount}개(일반 텍스트로 기록됨)"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "{minutes} min"
@@ -147,6 +203,10 @@ msgid "Add a sample spreadsheet"
 msgstr "샘플 스프레드시트 추가"
 
 #: src/lib/tool-summary.ts
+msgid "Adding a slide — {title}"
+msgstr "슬라이드 추가 중 — {title}"
+
+#: src/lib/tool-summary.ts
 msgid "Adding a ticket — {title}"
 msgstr "티켓 추가 중 — {title}"
 
@@ -171,6 +231,19 @@ msgstr "API 키"
 msgid "Appending text to a Google Doc"
 msgstr "Google 문서에 텍스트 추가 중"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Apply to workspace"
+msgstr "작업 공간에 적용"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Applying…"
+msgstr "적용 중…"
+
+#. placeholder {0}: artifact.title
+#: src/components/ArtifactPanel.tsx
+msgid "Artifact: {0}"
+msgstr "결과물: {0}"
+
 #. placeholder {0}: selected.thread.name
 #: src/components/chat/ChatTranscript.tsx
 msgid "Ask {0} for the outcome you need…"
@@ -191,6 +264,10 @@ msgstr "Google 파일 요청 중"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Assistant"
 msgstr "어시스턴트"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Audio unavailable in this tab"
+msgstr "이 탭에서는 오디오를 사용할 수 없습니다"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Auto — match this browser"
@@ -264,9 +341,29 @@ msgstr "바이트. 결정하기 전에는 아무것도 기록되지 않아요."
 msgid "Cancel"
 msgstr "취소"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas"
+msgstr "캔버스"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Canvas actions"
+msgstr "캔버스 작업"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Careful — asks before saving"
 msgstr "신중 — 저장 전에 물어봐요"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Chart specification could not be parsed."
+msgstr "차트 명세를 해석할 수 없어요."
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "Check Chrome's on-device AI requirements"
+msgstr "Chrome 내장 AI 사용 요건 확인"
+
+#: src/lib/tool-summary.ts
+msgid "Checking Google Calendar"
+msgstr "Google 캘린더 확인 중"
 
 #: src/lib/tool-summary.ts
 msgid "Checking Slack channels"
@@ -280,9 +377,17 @@ msgstr "티켓 보드 확인 중"
 msgid "Checks the shared ticket board on your timer and turns finished notes into single-file HTML dashboards."
 msgstr "설정한 타이머에 맞춰 공유 티켓 보드를 확인하고, 완료된 메모를 단일 파일 HTML 대시보드로 정리해요."
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose Drive files…"
+msgstr "Drive 파일 선택…"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Choose files…"
 msgstr "파일 선택…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Choose specific Google Drive files to grant access for this task."
+msgstr "이 작업에 대한 액세스를 허용할 특정 Google Drive 파일을 선택하세요."
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Claude and OpenRouter search from the provider's own side — this key is the fallback that gives every other provider (Chrome built-in, Ollama, OpenAI) a web_search tool. A free key takes a minute at tavily.com. It goes only to api.tavily.com and stays in this tab's memory."
@@ -300,9 +405,25 @@ msgstr "로컬 코드를 실행해 CSV / JSON 파일을 깔끔하게 다듬고 �
 msgid "Clipboard API is not available in this browser."
 msgstr "이 브라우저에서는 클립보드 API를 사용할 수 없습니다."
 
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/basic-catalog-react.tsx
 msgid "Close"
 msgstr "닫기"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column"
+msgstr "열"
+
+#. placeholder {0}: profiles.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Column statistics ({0})"
+msgstr "열 통계 ({0})"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Computing…"
+msgstr "계산 중…"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Connect"
@@ -370,13 +491,50 @@ msgstr "내 컴퓨터의 MCP 서버(Streamable HTTP)가 제공하는 도구에 �
 msgid "Contribute"
 msgstr "기여하기"
 
+#: src/components/a2ui/CanvasStage.tsx
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copied"
 msgstr "복사됨"
 
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copied standalone HTML to clipboard"
+msgstr "독립 실행형 HTML을 클립보드에 복사했습니다"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Copy"
 msgstr "복사"
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Copy HTML"
+msgstr "HTML 복사"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Could not compute diff preview."
+msgstr "변경분 미리보기를 계산할 수 없어요."
+
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Could not copy HTML to clipboard"
+msgstr "클립보드에 HTML을 복사하지 못했습니다"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not open Google Drive picker."
+msgstr "Google Drive 파일 선택기를 열지 못했습니다."
+
+#: src/pages/ChatPage.tsx
+msgid "Could not prepare the on-device model: {reason}"
+msgstr "기기 내 모델을 준비하지 못했습니다: {reason}"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not send Slack message."
+msgstr "Slack 메시지를 보내지 못했습니다."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not undo Google Sheet write."
+msgstr "Google 스프레드시트 쓰기를 실행 취소하지 못했습니다."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Could not update Google Sheet."
+msgstr "Google 스프레드시트를 업데이트하지 못했습니다."
 
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
@@ -386,6 +544,10 @@ msgstr "{0} 만들기"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Create another account and upload files to a vendor server"
 msgstr "또 다른 계정을 만들고 외부 업체 서버에 파일을 업로드해야 함"
+
+#: src/lib/tool-summary.ts
+msgid "Creating a calendar event — {summary}"
+msgstr "캘린더 일정 만드는 중 — {summary}"
 
 #: src/lib/tool-summary.ts
 msgid "Creating a Google Doc — {title}"
@@ -411,6 +573,15 @@ msgstr "커스텀 모델 ID"
 msgid "Custom model ID…"
 msgstr "커스텀 모델 ID…"
 
+#. placeholder {0}: points.length
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Data summary ({0} points)"
+msgstr "데이터 요약 ({0}개 지점)"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Data table"
+msgstr "데이터 표"
+
 #: src/lib/hatchling-presets.ts
 msgid "Data wrangler"
 msgstr "데이터 정리 담당"
@@ -418,6 +589,10 @@ msgstr "데이터 정리 담당"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Data wrangler · isolated workspace"
 msgstr "데이터 정리 담당 · 분리된 작업 공간"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Dataset profile"
+msgstr "데이터셋 프로파일"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Decline"
@@ -434,6 +609,10 @@ msgstr "원하는 결과를 적어 보세요…"
 #: src/lib/hatchling-presets.ts
 msgid "Desk runner"
 msgstr "데스크 운영 담당"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Dialog"
+msgstr "대화상자"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Disconnect"
@@ -459,6 +638,10 @@ msgstr "Slack 연결 해제"
 msgid "Disconnect web search"
 msgstr "웹 검색 연결 해제"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Distinct"
+msgstr "고유값"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Doing"
 msgstr "진행 중"
@@ -479,9 +662,15 @@ msgstr "완료 — 이 브라우저가 데이터를 안전하게 보관해요."
 msgid "Done! Download the HTML report, update a Google Sheet, or send highlights to Slack."
 msgstr "다 됐어요! HTML 리포트를 내려받거나, Google Sheet를 업데이트하거나, 핵심 요약을 Slack으로 보내 보세요."
 
+#: src/components/ArtifactPanel.tsx
 #: src/components/chat/ToolsSidebar.tsx
+#: src/lib/a2ui/workspace-catalog.tsx
 msgid "Download"
 msgstr "다운로드"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Download .patch"
+msgstr ".patch 다운로드"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Downloads this hatchling's files as one ZIP you can keep anywhere — add a file first."
@@ -511,6 +700,10 @@ msgstr "모든 변경 사항은 정확한 비교 내역과 함께 표시되며 �
 msgid "Each run"
 msgstr "매번 실행할 지시"
 
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Embedded apps are disabled for this hatchling."
+msgstr "이 해츨링에서는 임베디드 앱이 비활성화되어 있습니다."
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "Every"
 msgstr "간격"
@@ -535,13 +728,36 @@ msgstr "모든 것이 브라우저 탭 안에서 돌아갑니다 — 파일을 �
 msgid "Example conversation"
 msgstr "대화 예시"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export blocked"
+msgstr "내보내기 차단됨"
+
+#: src/components/a2ui/CanvasStage.tsx
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Export HTML"
+msgstr "HTML 내보내기"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export JSON"
 msgstr "JSON 내보내기"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Export safe CSV"
+msgstr "안전한 CSV 내보내기"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Export this hatchling"
 msgstr "이 해츨링 내보내기"
+
+#. placeholder {0}: exported.fileName
+#: src/components/a2ui/CanvasStage.tsx
+msgid "Exported {0}"
+msgstr "{0} 내보내기 완료"
+
+#. placeholder {0}: sortedRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Exported {0} rows"
+msgstr "{0}행을 내보냈어요"
 
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "Exported this hatchling as a portable .agent file. It contains its playbook, workspace files, and requested capabilities — never credentials."
@@ -559,13 +775,33 @@ msgstr "빠름 — 바로 실행해요(언제든 되돌릴 수 있어요)"
 msgid "Fast, and still yours."
 msgstr "빠르지만, 주도권은 온전히 내 것."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "File could not be read."
+msgstr "파일을 읽을 수 없어요."
+
 #: src/components/chat/useGoogleConnector.ts
 msgid "File handover cancelled — nothing was shared."
 msgstr "파일 전달이 취소되었습니다 — 아무것도 공유되지 않았습니다."
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Filter options…"
+msgstr "옵션 필터링…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows"
+msgstr "행 필터링"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Filter rows…"
+msgstr "행 필터링…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Fix messy spreadsheets"
 msgstr "지저분한 스프레드시트 정리"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Formula"
+msgstr "수식"
 
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google access revoked for this tab."
@@ -590,6 +826,10 @@ msgstr "Google 파일 전달 요청"
 #: src/components/chat/useGoogleConnector.ts
 msgid "Google revocation failed."
 msgstr "Google 액세스 해제에 실패했어요."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Google Sheet preview"
+msgstr "Google 스프레드시트 미리보기"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Google's own picker opens next — only the files you choose there are shared."
@@ -646,9 +886,21 @@ msgstr "팀 사이드바 숨기기"
 msgid "Hide the tools sidebar"
 msgstr "도구 사이드바 숨기기"
 
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Hover or focus a mark to inspect"
+msgstr "마크에 마우스를 올리거나 포커스해 살펴보기"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "How it works"
 msgstr "작동 방식"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image preview unavailable"
+msgstr "이미지 미리보기를 사용할 수 없습니다"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Image unavailable under offline/CSP policy"
+msgstr "오프라인/CSP 정책에 따라 이미지를 표시할 수 없습니다"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Import a .agent file"
@@ -665,6 +917,18 @@ msgstr "Incoming Webhook URL"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Inspect a hatchling"
 msgstr "해츨링 살펴보기"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Inspect sandbox formula"
+msgstr "샌드박스 수식 살펴보기"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Interactive app"
+msgstr "인터랙티브 앱"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Isolated sandbox"
+msgstr "격리된 샌드박스"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "It gets to work right away. Every tool call and file edit appears live in the conversation — no black box."
@@ -711,9 +975,21 @@ msgstr "모든 해츨링이 fetch_page로 특정 페이지를 깔끔한 텍스�
 msgid "Listing workspace files"
 msgstr "작업 공간 파일 목록 확인 중"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Literal"
+msgstr "리터럴"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Load from the registry"
 msgstr "레지스트리에서 불러오기"
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Loading…"
+msgstr "불러오는 중…"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Local QuickJS sandbox"
+msgstr "로컬 QuickJS 샌드박스"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Main desk · everyday partner"
@@ -739,6 +1015,10 @@ msgstr "해츨링 만나보기"
 msgid "Message the agent"
 msgstr "에이전트에게 보낼 메시지"
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Missing"
+msgstr "결측값"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Model"
 msgstr "모델"
@@ -755,9 +1035,18 @@ msgstr "확인 필요"
 msgid "New chat"
 msgstr "새 채팅"
 
+#. placeholder {0}: preview.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "New file ({0} B)"
+msgstr "새 파일 ({0} B)"
+
 #: src/components/chat/TeamSidebar.tsx
 msgid "New ticket title"
 msgstr "새 티켓 제목"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Next"
+msgstr "다음"
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Next auto run any moment"
@@ -771,6 +1060,14 @@ msgstr "다음 자동 실행까지 약 {minutes}분"
 msgid "No approval pop-ups slowing every step by default. The assistant does the work and shows exact diffs as it goes."
 msgstr "기본 모드에서는 매 단계마다 승인 팝업으로 흐름을 끊지 않아요. 어시스턴트가 척척 일을 처리하면서 정확한 변경 내역을 그때그때 보여줍니다."
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No columns or rows available."
+msgstr "표시할 열이나 행이 없어요."
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "No data rows to plot yet."
+msgstr "아직 차트에 그릴 데이터 행이 없어요."
+
 #: src/lib/pixel-office.ts
 msgid "No hatchlings yet."
 msgstr "아직 해츨링이 없어요."
@@ -782,6 +1079,10 @@ msgstr "설치 불필요, 계정 불필요"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "No key needed — this talks to Ollama on your own computer. Start Ollama with this site allowed (set OLLAMA_ORIGINS), then pick the model you've pulled (ollama list)."
 msgstr "키가 필요 없어요 — 내 컴퓨터의 Ollama와 통신해요. 이 사이트를 허용한 상태로(OLLAMA_ORIGINS 설정) Ollama를 실행한 뒤, 받아 둔 모델(ollama list)을 선택하세요."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "No matching rows."
+msgstr "일치하는 행이 없어요."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "No setup"
@@ -812,12 +1113,28 @@ msgid "On it — running a local cleanup script and building your report now."
 msgstr "알겠어요 — 지금 로컬 정리 스크립트를 돌리고 리포트를 만들고 있어요."
 
 #: src/components/chat/ToolsSidebar.tsx
-msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
-msgstr "온디바이스 모델 상태: {builtinAvailability}. 지원되는 데스크톱의 Chrome 138+에서는 키 없이 작업을 실행할 수 있어요."
+msgid "On-device model download"
+msgstr "기기 내 모델 다운로드"
+
+#: src/components/chat/ToolsSidebar.tsx
+#~ msgid "On-device model status: {builtinAvailability}. Chrome 138+ on a supported desktop can run tasks without any key."
+#~ msgstr "온디바이스 모델 상태: {builtinAvailability}. 지원되는 데스크톱의 Chrome 138+에서는 키 없이 작업을 실행할 수 있어요."
+
+#: src/components/chat/ToolsSidebar.tsx
+msgid "On-device model status: {builtinAvailability}. Chrome 148+ on a supported desktop can run tasks without any key."
+msgstr "온디바이스 모델 상태: {builtinAvailability}. 지원되는 데스크톱의 Chrome 148+에서는 키 없이 작업을 실행할 수 있어요."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "One assistant for the busywork."
 msgstr "손 많이 가는 잔업, 어시스턴트 하나로 끝."
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Open in Canvas"
+msgstr "캔버스에서 열기"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Open sheet"
+msgstr "시트 열기"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Open the link — no server, no Docker, no signup. Clean messy spreadsheets with local code, draft Google Docs and Sheets, build one-file HTML reports, or hatch a tiny team of agents right in this tab."
@@ -835,9 +1152,17 @@ msgstr "탭을 열고 필요한 걸 말해보세요. 온보딩은 그게 전부�
 msgid "Open WasmHatch"
 msgstr "WasmHatch 열기"
 
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "Opened in Canvas"
+msgstr "캔버스에 열림"
+
 #: src/App.tsx
 #~ msgid "Opening operator…"
 #~ msgstr "오퍼레이터를 여는 중…"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Opening picker…"
+msgstr "선택기 여는 중…"
 
 #: src/App.tsx
 msgid "Opening WasmHatch…"
@@ -863,6 +1188,11 @@ msgstr "해츨링의 플레이북과 필요한 권한 범위만(API 키는 절�
 msgid "Packaged instructions are treated as untrusted content: they never see your keys and only the capabilities above are available."
 msgstr "패키지의 지시는 신뢰할 수 없는 콘텐츠로 취급됩니다. 당신의 키를 절대 볼 수 없고, 위에 표시된 능력만 사용할 수 있습니다."
 
+#. placeholder {0}: page + 1
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Page {0} of {totalPages}"
+msgstr "{totalPages}페이지 중 {0}페이지"
+
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Page reading connected. Every hatchling can read a specific URL with fetch_page."
 msgstr "페이지 읽기가 연결되었습니다. 모든 해츨링이 fetch_page로 특정 URL을 읽을 수 있습니다."
@@ -874,6 +1204,10 @@ msgstr "페이지 읽기가 연결되었습니다. 이제 해츨링이 fetch_pag
 #: src/components/chat/useSessionConnectors.ts
 msgid "Page reading disconnected."
 msgstr "페이지 읽기 연결이 해제되었습니다."
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Patch export failed."
+msgstr "패치 내보내기에 실패했어요."
 
 #: src/components/chat/TeamSidebar.tsx
 msgid "Pause all auto work"
@@ -916,8 +1250,16 @@ msgid "Posting to Slack — {channel}"
 msgstr "Slack에 게시하는 중 — {channel}"
 
 #: src/components/chat/ToolsSidebar.tsx
+msgid "Prepare on-device model"
+msgstr "기기 내 모델 준비"
+
+#: src/components/chat/ToolsSidebar.tsx
 msgid "Preparing…"
 msgstr "준비 중…"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Previous"
+msgstr "이전"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Primary"
@@ -967,13 +1309,45 @@ msgstr "게시 중…"
 msgid "Queue a piece of work…"
 msgstr "할 일을 하나 등록하세요…"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS · {lastDurationMs} ms"
+msgstr "QuickJS · {lastDurationMs} ms"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS ready"
+msgstr "QuickJS 준비 완료"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "QuickJS transform failed."
+msgstr "QuickJS 변환에 실패했어요."
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Range / Mean"
+msgstr "범위 / 평균"
+
 #: src/lib/tool-summary.ts
 msgid "Reading {path}"
 msgstr "{path} 읽는 중"
 
 #: src/lib/tool-summary.ts
+msgid "Reading a Google Doc"
+msgstr "Google 문서 읽는 중"
+
+#: src/lib/tool-summary.ts
 msgid "Reading a Google Sheet"
 msgstr "Google 스프레드시트 읽는 중"
+
+#: src/lib/tool-summary.ts
+msgid "Reading a Google Slides deck"
+msgstr "Google 프레젠테이션 읽는 중"
+
+#: src/lib/tool-summary.ts
+msgid "Reading web page — {url}"
+msgstr "웹페이지 읽는 중 — {url}"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Recalculate"
+msgstr "다시 계산"
 
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Registry package URL"
@@ -1025,6 +1399,10 @@ msgstr "한도 초기화"
 msgid "Resting"
 msgstr "휴식 중"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Restored previous cell values in {range}."
+msgstr "{range}의 이전 셀 값을 복원했습니다."
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "Revert"
 msgstr "되돌리기"
@@ -1057,6 +1435,10 @@ msgstr "샌드박스에서 스크립트 실행 중"
 msgid "Runs in this browser tab with your API key, local Ollama, or Chrome’s built-in AI — no WasmHatch server in between."
 msgstr "내 API 키, 로컬 Ollama, 또는 Chrome 내장 AI로 이 브라우저 탭 안에서 실행됩니다 — 중간에 끼는 WasmHatch 서버는 없어요."
 
+#: src/components/ArtifactPanel.tsx
+msgid "Runs isolated from the app: no cookies, no storage, no network. Download to keep it."
+msgstr "앱과 격리되어 실행됩니다(쿠키·저장소·네트워크 없음). 보관하려면 다운로드하세요."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Runs local cleanup scripts on CSV and JSON files so counts and totals never rely on guesswork."
 msgstr "CSV와 JSON 파일에 로컬 정리 스크립트를 직접 실행하므로 건수나 합계를 어림짐작으로 계산하지 않아요."
@@ -1069,9 +1451,27 @@ msgstr "이 탭이 열려 있는 동안에만, 빠름 모드로, 전용 토큰 �
 msgid "Sample spreadsheet added next to your files — nothing of yours was touched."
 msgstr "샘플 스프레드시트를 내 파일 옆에 추가했어요 — 기존 파일은 건드리지 않았어요."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Sandbox scripting capability is disabled for this hatchling."
+msgstr "이 해츨링에는 샌드박스 스크립트 기능이 꺼져 있어요."
+
+#: src/lib/a2ui/mcp-catalog.tsx
+msgid "Sandboxed"
+msgstr "샌드박스 보호됨"
+
+#. placeholder {0}: result.path
+#. placeholder {1}: result.afterBytes
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Saved {0} ({1} bytes). Undo is available in chat."
+msgstr "{0} 저장 완료 ({1}바이트). 채팅에서 되돌릴 수 있어요."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Say what you need"
 msgstr "필요한 일을 말하세요"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Scope: drive.file — writes RAW literal values only to spreadsheets created or handed over in this session."
+msgstr "범위: drive.file — 이 세션에서 생성하거나 선택한 스프레드시트에만 RAW 리터럴 값을 기록합니다."
 
 #. placeholder {0}: selected.thread.capabilities.join(", ")
 #: src/components/chat/TeamSidebar.tsx
@@ -1082,9 +1482,18 @@ msgstr "허용된 도구 범위: {0}"
 msgid "Scoped tools: conversation only"
 msgstr "허용된 도구 범위: 대화 전용"
 
+#. placeholder {0}: scriptPath.trim()
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Script ({0})"
+msgstr "스크립트 ({0})"
+
 #: src/lib/tool-summary.ts
 msgid "Searching the web — {query}"
 msgstr "웹 검색 중 — {query}"
+
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Select an option…"
+msgstr "옵션 선택…"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Self-contained HTML pages render right beside the chat, ready to download or share."
@@ -1094,9 +1503,30 @@ msgstr "파일 하나로 완결된 HTML 페이지가 대화창 바로 옆에 그
 msgid "Send"
 msgstr "보내기"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Send to Slack"
+msgstr "Slack으로 보내기"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Sending…"
+msgstr "보내는 중…"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Separate desks, zero collisions"
 msgstr "각자의 책상, 충돌 없는 작업"
+
+#: src/lib/a2ui/vega-chart-catalog.tsx
+msgid "Series"
+msgstr "시리즈"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Share Google Drive files"
+msgstr "Google Drive 파일 공유"
+
+#. placeholder {0}: pickedFiles.length
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Shared files ({0}):"
+msgstr "공유된 파일({0}):"
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Shared ticket board & honest auto work"
@@ -1109,6 +1539,11 @@ msgstr "팀 사이드바 표시"
 #: src/pages/ChatPage.tsx
 msgid "Show the tools sidebar"
 msgstr "도구 사이드바 표시"
+
+#. placeholder {0}: dataset.rows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "showing first {0} rows"
+msgstr "처음 {0}행 표시 중"
 
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack bot token connected. Channel tools are active for every hatchling."
@@ -1130,9 +1565,19 @@ msgstr "Slack에 연결할 수 없습니다. 네트워크를 확인하고 다시
 msgid "Slack disconnected."
 msgstr "Slack 연결이 해제되었습니다."
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Slack message preview"
+msgstr "Slack 메시지 미리보기"
+
 #: src/components/chat/useSessionConnectors.ts
 msgid "Slack rejected that token. Reinstall the app in Slack, copy a fresh bot token, and try again."
 msgstr "Slack이 해당 토큰을 거부했습니다. Slack에서 앱을 다시 설치해 새 봇 토큰을 복사한 뒤 다시 시도하세요."
+
+#. placeholder {0}: col.label
+#. placeholder {1}: filteredRows.length
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Sorted by {0}, {nextDirection}, {1} rows"
+msgstr "{0} 기준 정렬, {nextDirection}, {1}행"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Sources:"
@@ -1153,6 +1598,10 @@ msgstr "GitHub에서 Star 누르기"
 #: src/pages/BusinessLandingPage.tsx
 msgid "Starting with WasmHatch"
 msgstr "WasmHatch로 시작할 때"
+
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Starts with a spreadsheet formula character"
+msgstr "스프레드시트 수식 문자로 시작함"
 
 #: src/components/chat/ChatTranscript.tsx
 msgid "Stop"
@@ -1227,6 +1676,10 @@ msgstr "모델은 {0}을(를) 통해 웹을 검색할 수 있어요. 검색 요�
 msgid "The on-device model does not speak this language yet and will answer in English; cloud providers reply in your language."
 msgstr "온디바이스 모델은 아직 이 언어를 지원하지 않아 영어로 답해요. 클라우드 프로바이더는 이 언어로 답해 줘요."
 
+#: src/pages/ChatPage.tsx
+msgid "The on-device model is ready."
+msgstr "기기 내 모델이 준비되었습니다."
+
 #: src/components/chat/usePortableAgentFlow.ts
 msgid "The package could not be hatched."
 msgstr "패키지를 부화할 수 없습니다."
@@ -1291,6 +1744,10 @@ msgstr "이 릴리스 노트를 Google Doc 문서와 짧은 발표 슬라이드�
 msgid "Turn this sales export into a clean summary I can share."
 msgstr "이 매출 내보내기 파일을 팀에 공유할 수 있게 깔끔한 요약본으로 만들어 줘."
 
+#: src/lib/a2ui/tabular-catalog.tsx
+msgid "Type"
+msgstr "유형"
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Type it like you’d tell a teammate. Drop in local files, connect Google in a couple of clicks, or point at local Ollama or MCP."
 msgstr "동료에게 말하듯 편하게 적어 보세요. 로컬 파일을 끌어다 놓거나, 클릭 몇 번으로 Google을 연결하거나, 로컬 Ollama와 MCP를 이어줄 수 있어요."
@@ -1307,15 +1764,29 @@ msgstr "되돌리기"
 msgid "Undo anything in one click"
 msgstr "클릭 한 번으로 무엇이든 되돌리기"
 
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Undo write"
+msgstr "쓰기 실행 취소"
+
 #. placeholder {0}: capabilities.unknown.join(", ")
 #: src/components/chat/ChatTranscript.tsx
 msgid "Unrecognized requests (granted nothing): {0}"
 msgstr "인식할 수 없는 요청(아무것도 부여되지 않음): {0}"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Up to date"
+msgstr "최신 상태"
+
 #. placeholder {0}: activePermission.request.path
 #: src/components/chat/ChatTranscript.tsx
 msgid "Update {0}"
 msgstr "{0} 업데이트"
+
+#. placeholder {0}: commitState.updatedCells
+#. placeholder {1}: commitState.range
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Updated {0} cells in {1}."
+msgstr "{1}의 셀 {0}개를 업데이트했습니다."
 
 #: src/lib/tool-summary.ts
 msgid "Updating a Google Sheet"
@@ -1333,6 +1804,14 @@ msgstr "URL(이 컴퓨터 전용)"
 msgid "Using {server} — {tool}"
 msgstr "{server} 사용 중 — {tool}"
 
+#: src/lib/a2ui/basic-catalog-react.tsx
+msgid "Video unavailable in this tab"
+msgstr "이 탭에서는 비디오를 사용할 수 없습니다"
+
+#: src/components/a2ui/SurfaceCard.tsx
+msgid "View actions"
+msgstr "보기 작업"
+
 #: src/components/chat/ChatTranscript.tsx
 msgid "view diff"
 msgstr "변경 내용 보기"
@@ -1340,6 +1819,10 @@ msgstr "변경 내용 보기"
 #: src/components/chat/ToolsSidebar.tsx
 msgid "Want more than one channel? Create a tiny Slack app from the ready-made manifest in <0>docs/slack.md</0> and paste its bot token: the agent can then list public channels and post to any of them. It still reads no messages. The token stays in this tab's memory."
 msgstr "채널이 여러 개 필요하면 <0>docs/slack.md</0>의 준비된 manifest로 작은 Slack 앱을 만들고 그 봇 토큰을 붙여넣으세요. 에이전트가 공개 채널을 나열하고 어느 채널에든 게시할 수 있게 됩니다. 메시지는 여전히 읽지 않습니다. 토큰은 이 탭의 메모리에만 남습니다."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "WasmHatch cannot browse your Drive on its own — only the exact files you select in Google's picker are shared."
+msgstr "WasmHatch는 사용자의 Drive를 임의로 탐색할 수 없으며, Google 선택기에서 직접 선택한 파일만 공유됩니다."
 
 #: src/pages/BusinessLandingPage.tsx
 msgid "Watch it happen"
@@ -1385,6 +1868,14 @@ msgstr "작업 중…"
 msgid "Works the ticket board, Google files, Slack, and MCP."
 msgstr "티켓 보드 확인과 Google 파일, Slack, MCP 연동을 맡습니다."
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace diff"
+msgstr "작업 공간 변경분"
+
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Workspace read access is disabled for this hatchling."
+msgstr "이 해츨링에는 작업 공간 읽기 권한이 꺼져 있어요."
+
 #: src/pages/BusinessLandingPage.tsx
 msgid "Wrestle with config files just to wire up tools"
 msgstr "도구 몇 개 연결하려고 복잡한 설정 파일과 씨름해야 함"
@@ -1393,9 +1884,25 @@ msgstr "도구 몇 개 연결하려고 복잡한 설정 파일과 씨름해야 �
 msgid "Write approval required"
 msgstr "쓰기 승인이 필요해요"
 
+#: src/lib/a2ui/workspace-catalog.tsx
+msgid "Write could not be applied."
+msgstr "쓰기 작업을 적용할 수 없어요."
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write to Google Sheet"
+msgstr "Google 스프레드시트에 쓰기"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Write-only preview: posts to your connected Slack channel or webhook and never reads message history."
+msgstr "쓰기 전용 미리보기: 연결된 Slack 채널이나 웹훅에 게시하며 메시지 기록은 절대 읽지 않습니다."
+
 #: src/lib/tool-summary.ts
 msgid "Writing {path}"
 msgstr "{path} 쓰는 중"
+
+#: src/lib/a2ui/connectors-catalog.tsx
+msgid "Writing…"
+msgstr "쓰는 중…"
 
 #: src/pages/ChatPage.tsx
 msgid "Your AI assistant, right in this tab — fast, visible, and undoable."

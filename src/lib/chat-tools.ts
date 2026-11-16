@@ -110,6 +110,8 @@ export interface AppliedWrite {
   creates: boolean;
   /** Content before the write; the UI uses it to offer revert. */
   before: string;
+  /** Content written by this step; checked on revert so newer edits are never clobbered. */
+  after?: string;
   policy: WritePolicy;
 }
 
@@ -118,6 +120,9 @@ export interface ChatToolContext {
   permissions: SessionPermissionStore;
   /** Presents a write request to the user and resolves with their decision (careful policy only). */
   gate: PermissionGate;
+  /** Optional hatchling identity forwarded to permission prompts. */
+  threadId?: string;
+  threadName?: string;
   /** Current write policy; read per call so a mid-session toggle applies immediately. Defaults to autonomous. */
   policy?: () => WritePolicy;
   /** Notifies the UI that a write landed, e.g. to refresh a file list. */
@@ -180,7 +185,13 @@ function clampUtf8(input: string, maxBytes: number): { content: string; truncate
  * and run_script's output_path both land here so a second, less-audited way
  * to change files can never appear.
  */
-async function applyPolicyWrite(context: ChatToolContext, path: string, content: string): Promise<AgentToolOutcome> {
+async function applyPolicyWrite(
+  context: ChatToolContext,
+  path: string,
+  content: string,
+  signal?: AbortSignal
+): Promise<AgentToolOutcome> {
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const afterBytes = encoder.encode(content).byteLength;
   if (afterBytes > CHAT_WRITE_MAX_BYTES) {
     return fail(`content exceeds the ${CHAT_WRITE_MAX_BYTES.toLocaleString()}-byte write limit.`);
@@ -198,22 +209,30 @@ async function applyPolicyWrite(context: ChatToolContext, path: string, content:
   const policy = context.policy?.() ?? "autonomous";
   const diff = createReadableDiff(path, before, content);
   if (policy === "careful" && !context.permissions.isAlwaysAllowed(path)) {
-    const decision = await context.gate({
-      path,
-      diff,
-      creates,
-      beforeBytes: encoder.encode(before).byteLength,
-      afterBytes
-    });
+    const decision = await context.gate(
+      {
+        path,
+        diff,
+        creates,
+        beforeBytes: encoder.encode(before).byteLength,
+        afterBytes,
+        ...(context.threadId ? { threadId: context.threadId } : {}),
+        ...(context.threadName ? { threadName: context.threadName } : {}),
+        kind: "workspace"
+      },
+      { signal }
+    );
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     context.permissions.record(path, decision);
     if (decision === "reject") {
       return fail(`The user rejected this write to ${path}. Do not retry the same change; ask what they want instead.`);
     }
   }
 
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   await context.workspace.writeFile(path, content);
   context.onWrite?.(path);
-  context.onAppliedWrite?.({ path, diff, creates, before, policy });
+  context.onAppliedWrite?.({ path, diff, creates, before, after: content, policy });
   return ok(
     policy === "careful"
       ? `${creates ? "Created" : "Updated"} ${path} (${afterBytes.toLocaleString()} bytes) after user approval.`
@@ -264,7 +283,7 @@ export function createChatToolExecutor(context: ChatToolContext): AgentToolExecu
       if (isProtectedAgentPath(path)) return fail(`Protected file cannot be written by the agent: ${path}`);
       const content = args.content;
       if (typeof content !== "string") return fail("content must be a string.");
-      return applyPolicyWrite(context, path, content);
+      return applyPolicyWrite(context, path, content, callContext?.signal);
     }
 
     if (name === "run_script") {
@@ -316,7 +335,7 @@ export function createChatToolExecutor(context: ChatToolContext): AgentToolExecu
         const fileContent = typeof result.output === "string"
           ? result.output
           : `${JSON.stringify(result.output, null, 2)}\n`;
-        const writeOutcome = await applyPolicyWrite(context, outputPath, fileContent);
+        const writeOutcome = await applyPolicyWrite(context, outputPath, fileContent, callContext?.signal);
         if (writeOutcome.isError) {
           return fail(`The script succeeded in ${durationMs} ms, but the write was not applied: ${writeOutcome.content}`);
         }

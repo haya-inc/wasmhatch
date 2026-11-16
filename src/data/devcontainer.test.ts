@@ -18,10 +18,10 @@ const config = JSON.parse(
 ) as DevContainerConfig;
 
 describe("contributor dev container", () => {
-  it("pins a non-privileged Node 22 environment with deterministic setup", () => {
+  it("pins a non-privileged Node 26 environment with deterministic setup", () => {
     expect(config).toMatchObject({
       name: "WasmHatch contributor",
-      image: "mcr.microsoft.com/devcontainers/javascript-node:4-22-bookworm",
+      image: "mcr.microsoft.com/devcontainers/javascript-node:5-26-bookworm",
       init: true,
       remoteUser: "node",
       forwardPorts: [5173],

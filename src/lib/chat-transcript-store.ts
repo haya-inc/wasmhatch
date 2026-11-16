@@ -28,6 +28,7 @@ export const CHAT_TRANSCRIPT_MAX_BYTES = 1_000_000;
 interface TranscriptItemShape {
   id: number;
   kind: string;
+  surfaceId?: string;
 }
 
 interface TranscriptMessageShape {
@@ -39,6 +40,7 @@ export interface ChatTranscriptSnapshot<TItem extends TranscriptItemShape, TMess
   items: readonly TItem[];
   messages: readonly TMessage[];
   nextId: number;
+  surfaces?: readonly unknown[];
 }
 
 function defaultStore(): KeyValueStore | null {
@@ -63,13 +65,41 @@ function dropOldestTurn<TItem extends TranscriptItemShape, TMessage extends Tran
   const itemBoundary = items.findIndex((item, index) => index > 0 && item.kind === "user");
   const firstUserItem = items.findIndex((item) => item.kind === "user");
   const messageBoundary = messages.findIndex((message, index) => index > 0 && message.role === "user");
+  if (firstUserItem < 0) {
+    // Scheduled auto-runs push a leading `notice` item instead of a `user` bubble.
+    const noticeBoundary = items.findIndex((item, index) => index > 0 && item.kind === "notice");
+    if (noticeBoundary <= 0) return null;
+    if (messages.length === 0 || messageBoundary <= 0) {
+      return { items: items.slice(noticeBoundary), messages: messageBoundary > 0 ? messages.slice(messageBoundary) : [] };
+    }
+    return { items: items.slice(noticeBoundary), messages: messages.slice(messageBoundary) };
+  }
   if (messages.length === 0) {
     // Nothing on the wire side (e.g. the on-device provider): trim by items alone.
-    if (itemBoundary <= 0 || firstUserItem < 0) return null;
+    if (itemBoundary <= 0) return null;
     return { items: items.slice(itemBoundary), messages };
   }
   if (itemBoundary <= 0 || messageBoundary <= 0) return null;
   return { items: items.slice(itemBoundary), messages: messages.slice(messageBoundary) };
+}
+
+function retainReferencedSurfaces<TItem extends TranscriptItemShape>(
+  surfaces: readonly unknown[] | undefined,
+  items: readonly TItem[]
+): readonly unknown[] | undefined {
+  if (!surfaces || surfaces.length === 0) return undefined;
+  const referenced = new Set<string>();
+  for (const item of items) {
+    if (typeof item.surfaceId === "string" && item.surfaceId) {
+      referenced.add(item.surfaceId);
+    }
+  }
+  const filtered = surfaces.filter((entry) => {
+    if (!isRecord(entry) || typeof entry.surfaceId !== "string") return false;
+    if (entry.pinned === true || entry.surfaceId.startsWith("canvas_")) return true;
+    return referenced.has(entry.surfaceId);
+  });
+  return filtered.length > 0 ? filtered : undefined;
 }
 
 /**
@@ -84,13 +114,29 @@ export function serializeTranscript<TItem extends TranscriptItemShape, TMessage 
 ): string | null {
   let items = snapshot.items;
   let messages = snapshot.messages;
-  let serialized = JSON.stringify({ schemaVersion: 1, provider: snapshot.provider, nextId: snapshot.nextId, items, messages });
+  let surfaces = retainReferencedSurfaces(snapshot.surfaces, items);
+  let serialized = JSON.stringify({
+    schemaVersion: 1,
+    provider: snapshot.provider,
+    nextId: snapshot.nextId,
+    items,
+    messages,
+    ...(surfaces ? { surfaces } : {})
+  });
   while (encoder.encode(serialized).byteLength > maxBytes) {
     const trimmed = dropOldestTurn(items, messages);
     if (!trimmed) return null;
     items = trimmed.items;
     messages = trimmed.messages;
-    serialized = JSON.stringify({ schemaVersion: 1, provider: snapshot.provider, nextId: snapshot.nextId, items, messages });
+    surfaces = retainReferencedSurfaces(snapshot.surfaces, items);
+    serialized = JSON.stringify({
+      schemaVersion: 1,
+      provider: snapshot.provider,
+      nextId: snapshot.nextId,
+      items,
+      messages,
+      ...(surfaces ? { surfaces } : {})
+    });
   }
   return serialized;
 }
@@ -113,11 +159,12 @@ export function saveChatTranscript<TItem extends TranscriptItemShape, TMessage e
   }
 }
 
-/** Validates a stored blob structurally; null on any anomaly or provider mismatch. */
+/** Validates a stored blob structurally; null on any anomaly or provider mismatch (unless preserving items). */
 export function parseTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
   raw: string | null,
-  provider: string
-): { items: TItem[]; messages: TMessage[]; nextId: number } | null {
+  provider: string,
+  options: { preserveItemsOnProviderMismatch?: boolean } = {}
+): { items: TItem[]; messages: TMessage[]; nextId: number; surfaces?: unknown[] } | null {
   if (!raw) return null;
   let parsed: unknown;
   try {
@@ -126,26 +173,29 @@ export function parseTranscript<TItem extends TranscriptItemShape, TMessage exte
     return null;
   }
   if (!isRecord(parsed) || parsed.schemaVersion !== 1) return null;
-  // A different provider means a different wire format: that thread is not restorable here.
-  if (parsed.provider !== provider) return null;
+  const providerMatches = parsed.provider === provider;
+  if (!providerMatches && !options.preserveItemsOnProviderMismatch) return null;
   const { items, messages } = parsed;
   if (!Array.isArray(items) || !Array.isArray(messages)) return null;
   if (!items.every((item) => isRecord(item) && typeof item.id === "number" && typeof item.kind === "string")) return null;
   if (!messages.every((message) => isRecord(message) && typeof message.role === "string")) return null;
-  if (items.length === 0 && messages.length === 0) return null;
+  const restoredMessages = providerMatches ? (messages as TMessage[]) : [];
+  const restoredSurfaces = Array.isArray(parsed.surfaces) ? parsed.surfaces : undefined;
+  if (items.length === 0 && restoredMessages.length === 0 && !restoredSurfaces?.length) return null;
   const storedNextId = typeof parsed.nextId === "number" && Number.isSafeInteger(parsed.nextId) ? parsed.nextId : 1;
   const maxItemId = items.reduce((max, item) => Math.max(max, (item as TranscriptItemShape).id), 0);
   return {
     items: items as TItem[],
-    messages: messages as TMessage[],
-    nextId: Math.max(1, storedNextId, maxItemId + 1)
+    messages: restoredMessages,
+    nextId: Math.max(1, storedNextId, maxItemId + 1),
+    ...(restoredSurfaces ? { surfaces: restoredSurfaces } : {})
   };
 }
 
 export function loadChatTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
   provider: string,
   store: KeyValueStore | null = defaultStore()
-): { items: TItem[]; messages: TMessage[]; nextId: number } | null {
+): { items: TItem[]; messages: TMessage[]; nextId: number; surfaces?: unknown[] } | null {
   if (!store) return null;
   let raw: string | null;
   try {
@@ -193,10 +243,11 @@ export async function saveThreadTranscript<TItem extends TranscriptItemShape, TM
 export async function loadThreadTranscript<TItem extends TranscriptItemShape, TMessage extends TranscriptMessageShape>(
   threadId: string,
   provider: string,
-  store: AsyncTextStore
-): Promise<{ items: TItem[]; messages: TMessage[]; nextId: number } | null> {
+  store: AsyncTextStore,
+  options: { preserveItemsOnProviderMismatch?: boolean } = {}
+): Promise<{ items: TItem[]; messages: TMessage[]; nextId: number; surfaces?: unknown[] } | null> {
   try {
-    return parseTranscript<TItem, TMessage>(await store.read(threadKey(threadId)), provider);
+    return parseTranscript<TItem, TMessage>(await store.read(threadKey(threadId)), provider, options);
   } catch {
     return null;
   }

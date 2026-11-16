@@ -1,4 +1,5 @@
-import { strToU8, unzipSync, zipSync } from "fflate";
+import { strToU8, zipSync } from "fflate";
+import { unzipBoundedEntries } from "./archive";
 import { isProtectedAgentPath } from "./secrets";
 import { normalizeWorkspacePath, type WorkspaceFile } from "./workspace";
 
@@ -373,7 +374,8 @@ export async function createPortableAgentPackage(
   });
   const manifestBytes = strToU8(`${JSON.stringify(manifest, null, 2)}\n`);
   if (manifestBytes.byteLength > PORTABLE_AGENT_LIMITS.manifestBytes) throw new Error("Agent manifest exceeds 128 KB.");
-  const archiveEntries: Record<string, Uint8Array> = { [MANIFEST_ENTRY]: manifestBytes };
+  const archiveEntries: Record<string, Uint8Array> = Object.create(null);
+  archiveEntries[MANIFEST_ENTRY] = manifestBytes;
   for (const file of validated.normalizedFiles) archiveEntries[`${FILE_ENTRY_PREFIX}${file.path}`] = strToU8(file.content);
   const bytes = zipSync(archiveEntries, { level: 6 });
   if (bytes.byteLength > PORTABLE_AGENT_LIMITS.archiveBytes) throw new Error("Agent archive exceeds 8 MB.");
@@ -394,42 +396,67 @@ function validateArchiveEntry(name: string) {
   return name;
 }
 
-export async function readPortableAgentPackage(input: Uint8Array): Promise<PortableAgentPackage> {
+function assertCompatibleAgentCore(
+  compatibility: PortableAgentCompatibility,
+  coreVersion: string = PORTABLE_AGENT_CORE_VERSION
+) {
+  const current = parseVersion(coreVersion, "Current core version");
+  const minimum = parseVersion(compatibility.minInclusive, "Minimum compatible core version");
+  const maximum = parseVersion(compatibility.maxExclusive, "Maximum compatible core version");
+  if (compareVersions(current.parts, minimum.parts) < 0 || compareVersions(current.parts, maximum.parts) >= 0) {
+    throw new Error(
+      `Agent package requires WasmHatch core >= ${minimum.value} and < ${maximum.value} (current: ${current.value}).`
+    );
+  }
+}
+
+export async function readPortableAgentPackage(
+  input: Uint8Array,
+  options: { readonly coreVersion?: string } = {}
+): Promise<PortableAgentPackage> {
   const bytes = new Uint8Array(input);
   if (bytes.byteLength > PORTABLE_AGENT_LIMITS.archiveBytes) throw new Error("Agent archive exceeds 8 MB.");
-  let expandedBytes = 0;
+  let declaredExpandedBytes = 0;
   let fileEntries = 0;
   const seen = new Set<string>();
-  let entries: Record<string, Uint8Array>;
-  try {
-    entries = unzipSync(bytes, {
-      filter: (entry) => {
-        if (entry.name.endsWith("/")) return false;
-        const name = validateArchiveEntry(entry.name);
-        if (seen.has(name)) throw new Error(`Agent archive contains a duplicate entry: ${name}`);
-        seen.add(name);
-        if (!Number.isSafeInteger(entry.originalSize) || entry.originalSize < 0) {
-          throw new Error("Agent archive contains an invalid file size.");
-        }
-        const maximum = name === MANIFEST_ENTRY ? PORTABLE_AGENT_LIMITS.manifestBytes : PORTABLE_AGENT_LIMITS.fileBytes;
-        if (entry.originalSize > maximum) throw new Error(`Agent archive entry is too large: ${name}`);
-        expandedBytes += entry.originalSize;
-        if (expandedBytes > PORTABLE_AGENT_LIMITS.expandedBytes + PORTABLE_AGENT_LIMITS.manifestBytes) {
-          throw new Error("Agent archive expands beyond its supported limit.");
-        }
-        if (name !== MANIFEST_ENTRY) {
-          fileEntries += 1;
-          if (fileEntries > PORTABLE_AGENT_LIMITS.files) throw new Error("Agent archive contains too many files.");
-        }
-        return true;
-      }
-    });
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith("Agent archive")) throw error;
-    throw new Error("Agent package is not a valid ZIP archive.");
-  }
+  const maxTotalBytes = PORTABLE_AGENT_LIMITS.expandedBytes + PORTABLE_AGENT_LIMITS.manifestBytes;
 
-  const manifestBytes = entries[MANIFEST_ENTRY];
+  const entries = unzipBoundedEntries(bytes, {
+    maxEntryBytes: (name) =>
+      name === MANIFEST_ENTRY ? PORTABLE_AGENT_LIMITS.manifestBytes : PORTABLE_AGENT_LIMITS.fileBytes,
+    maxTotalBytes,
+    filter: (entry) => {
+      if (entry.name.endsWith("/")) return false;
+      const name = validateArchiveEntry(entry.name);
+      if (seen.has(name)) throw new Error(`Agent archive contains a duplicate entry: ${name}`);
+      seen.add(name);
+      if (!Number.isSafeInteger(entry.declaredSize) || entry.declaredSize < 0) {
+        throw new Error("Agent archive contains an invalid file size.");
+      }
+      const maximum = name === MANIFEST_ENTRY ? PORTABLE_AGENT_LIMITS.manifestBytes : PORTABLE_AGENT_LIMITS.fileBytes;
+      if (entry.declaredSize > maximum) throw new Error(`Agent archive entry is too large: ${name}`);
+      declaredExpandedBytes += entry.declaredSize;
+      if (declaredExpandedBytes > maxTotalBytes) {
+        throw new Error("Agent archive expands beyond its supported limit.");
+      }
+      if (name !== MANIFEST_ENTRY) {
+        fileEntries += 1;
+        if (fileEntries > PORTABLE_AGENT_LIMITS.files) throw new Error("Agent archive contains too many files.");
+      }
+      return true;
+    },
+    onEntryLimitExceeded: (name) => new Error(`Agent archive entry is too large: ${name}`),
+    onTotalLimitExceeded: () => new Error("Agent archive expands beyond its supported limit."),
+    onInvalidZip: () => new Error("Agent package is not a valid ZIP archive."),
+    isPassThroughError: (error) =>
+      error instanceof Error && (
+        error.message.startsWith("Agent archive") ||
+        error.message.startsWith("Agent package cannot contain protected credential material") ||
+        error.message.startsWith("Agent file path")
+      )
+  });
+
+  const manifestBytes = entries.get(MANIFEST_ENTRY);
   if (!manifestBytes) throw new Error("Agent archive is missing its manifest.");
   let manifestValue: unknown;
   try {
@@ -439,17 +466,18 @@ export async function readPortableAgentPackage(input: Uint8Array): Promise<Porta
     throw new Error("Agent manifest is not valid JSON.");
   }
   const manifest = validatePortableAgentManifest(manifestValue);
+  assertCompatibleAgentCore(manifest.compatibleCore, options.coreVersion);
   const files: WorkspaceFile[] = [];
   for (const descriptor of manifest.files) {
     const archivePath = `${FILE_ENTRY_PREFIX}${descriptor.path}`;
-    const contentBytes = entries[archivePath];
+    const contentBytes = entries.get(archivePath);
     if (!contentBytes) throw new Error(`Agent archive is missing a declared file: ${descriptor.path}`);
     if (contentBytes.byteLength !== descriptor.bytes) throw new Error(`Agent file byte count does not match: ${descriptor.path}`);
     if (await hashBytes(contentBytes) !== descriptor.sha256) throw new Error(`Agent file hash does not match: ${descriptor.path}`);
     files.push({ path: descriptor.path, content: decodeText(contentBytes, `Agent file ${descriptor.path}`) });
   }
   const expectedEntries = new Set([MANIFEST_ENTRY, ...manifest.files.map((file) => `${FILE_ENTRY_PREFIX}${file.path}`)]);
-  const extra = Object.keys(entries).find((entry) => !expectedEntries.has(entry));
+  const extra = [...entries.keys()].find((entry) => !expectedEntries.has(entry));
   if (extra) throw new Error(`Agent archive contains an undeclared file: ${extra}`);
   return Object.freeze({ manifest, files: Object.freeze(files), sha256: await hashBytes(bytes), bytes });
 }
@@ -466,6 +494,39 @@ function validatePackageUrl(input: string) {
     throw new Error("Agent packages must use HTTPS URLs without embedded credentials.");
   }
   return url;
+}
+
+async function readBoundedResponseBytes(response: Response, maxBytes: number): Promise<Uint8Array> {
+  if (response.body && typeof response.body.getReader === "function") {
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!value || value.byteLength === 0) continue;
+        total += value.byteLength;
+        if (total > maxBytes) {
+          await reader.cancel().catch(() => undefined);
+          throw new Error("Agent archive exceeds 8 MB.");
+        }
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    const combined = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return combined;
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.byteLength > maxBytes) throw new Error("Agent archive exceeds 8 MB.");
+  return bytes;
 }
 
 export async function fetchPortableAgentPackage(
@@ -485,6 +546,6 @@ export async function fetchPortableAgentPackage(
   if (Number.isFinite(declaredLength) && declaredLength > PORTABLE_AGENT_LIMITS.archiveBytes) {
     throw new Error("Agent archive exceeds 8 MB.");
   }
-  const bytes = new Uint8Array(await response.arrayBuffer());
+  const bytes = await readBoundedResponseBytes(response, PORTABLE_AGENT_LIMITS.archiveBytes);
   return readPortableAgentPackage(bytes);
 }

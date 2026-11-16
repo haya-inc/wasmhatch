@@ -11,8 +11,14 @@ export function App() {
   const route = window.location.pathname.startsWith(basePath)
     ? window.location.pathname.slice(basePath.length)
     : window.location.pathname.slice(1);
-  const requestedView = new URLSearchParams(window.location.search).get("view");
-  if (route.startsWith("chat") || requestedView === "chat") {
+  const params = new URLSearchParams(window.location.search);
+  const requestedView = params.get("view");
+  if (
+    route.startsWith("chat") ||
+    requestedView === "chat" ||
+    params.has("agent") ||
+    params.has("hatch")
+  ) {
     return (
       <Suspense fallback={<div className="route-loading"><Trans>Opening WasmHatch…</Trans></div>}>
         <ChatPage />

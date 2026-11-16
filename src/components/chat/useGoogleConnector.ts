@@ -68,13 +68,17 @@ export function useGoogleConnector(
       }
     },
     ...(googlePickerConfigured() ? {
-      requestFilePick: (reason: string, signal?: AbortSignal) => new Promise<PickedDriveFile[] | null>((resolve) => {
-        setPickQueue((queue) => [...queue, { reason, resolve }]);
-        signal?.addEventListener("abort", () => {
-          resolve(null);
-          setPickQueue((queue) => queue.filter((entry) => entry.resolve !== resolve));
-        }, { once: true });
-      })
+      requestFilePick: (reason: string, signal?: AbortSignal) => {
+        if (signal?.aborted) return Promise.resolve(null);
+        return new Promise<PickedDriveFile[] | null>((resolve) => {
+          const entry: PendingFilePick = { reason, resolve };
+          setPickQueue((queue) => [...queue, entry]);
+          signal?.addEventListener("abort", () => {
+            resolve(null);
+            setPickQueue((queue) => queue.filter((item) => item !== entry));
+          }, { once: true });
+        });
+      }
     } : {})
   }), []);
 
@@ -133,12 +137,15 @@ export function useGoogleConnector(
   const activePick = pickQueue[0];
 
   const declinePick = useCallback(() => {
-    activePick?.resolve(null);
-    setPickQueue((queue) => queue.slice(1));
+    const targetPick = activePick;
+    if (!targetPick) return;
+    targetPick.resolve(null);
+    setPickQueue((queue) => queue.filter((item) => item !== targetPick));
   }, [activePick]);
 
   const chooseFilesForPick = useCallback(async () => {
-    if (!activePick || pickerBusy) return;
+    const targetPick = activePick;
+    if (!targetPick || pickerBusy) return;
     setPickerBusy(true);
     try {
       const token = await googleSession.current.credentialProvider().getToken();
@@ -148,8 +155,8 @@ export function useGoogleConnector(
         appId: GOOGLE_PICKER_APP_ID || undefined,
         title: t`Hand files to WasmHatch`
       });
-      activePick.resolve(files);
-      setPickQueue((queue) => queue.slice(1));
+      targetPick.resolve(files);
+      setPickQueue((queue) => queue.filter((item) => item !== targetPick));
       onNotice(files?.length
         ? plural(files.length, { one: "Handed # Google file to the agent.", other: "Handed # Google files to the agent." })
         : t`File handover cancelled — nothing was shared.`);

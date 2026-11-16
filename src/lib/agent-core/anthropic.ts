@@ -38,21 +38,44 @@ interface AnthropicContentBlock {
   [key: string]: unknown;
 }
 
+function pushWireMessage(
+  wire: Array<{ role: "user" | "assistant"; content: AnthropicContentBlock[] }>,
+  role: "user" | "assistant",
+  blocks: AnthropicContentBlock[]
+) {
+  const nonEmpty = blocks.filter((block) => !(block.type === "text" && typeof block.text === "string" && block.text.length === 0));
+  if (!nonEmpty.length) return;
+  const previous = wire[wire.length - 1];
+  if (previous && previous.role === role) {
+    if (role === "user") {
+      const merged = [...previous.content, ...nonEmpty];
+      const toolResults = merged.filter((block) => block.type === "tool_result");
+      const others = merged.filter((block) => block.type !== "tool_result");
+      previous.content = [...toolResults, ...others];
+    } else {
+      previous.content.push(...nonEmpty);
+    }
+    return;
+  }
+  wire.push({ role, content: nonEmpty });
+}
+
 function toWireMessages(messages: readonly AgentMessage[]) {
   const wire: Array<{ role: "user" | "assistant"; content: AnthropicContentBlock[] }> = [];
   for (const message of messages) {
     if (message.role === "assistant") {
       const content: AnthropicContentBlock[] = [];
       for (const part of message.parts) {
-        if (part.type === "text") content.push({ type: "text", text: part.text });
-        else if (part.type === "tool_call") {
+        if (part.type === "text") {
+          if (part.text) content.push({ type: "text", text: part.text });
+        } else if (part.type === "tool_call") {
           content.push({ type: "tool_use", id: part.callId, name: part.name, input: part.args });
         } else if (part.type === "provider_raw" && part.providerId === "anthropic") {
-          // Server-tool blocks (web search) must round-trip verbatim.
+          // Signed thinking and server-tool blocks must round-trip verbatim.
           content.push(part.block as AnthropicContentBlock);
         }
       }
-      if (content.length) wire.push({ role: "assistant", content });
+      pushWireMessage(wire, "assistant", content);
     } else if (message.role === "tool") {
       const content: AnthropicContentBlock[] = [];
       for (const part of message.parts) {
@@ -65,13 +88,13 @@ function toWireMessages(messages: readonly AgentMessage[]) {
           });
         }
       }
-      if (content.length) wire.push({ role: "user", content });
+      pushWireMessage(wire, "user", content);
     } else {
       const content: AnthropicContentBlock[] = [];
       for (const part of message.parts) {
-        if (part.type === "text") content.push({ type: "text", text: part.text });
+        if (part.type === "text" && part.text) content.push({ type: "text", text: part.text });
       }
-      if (content.length) wire.push({ role: "user", content });
+      pushWireMessage(wire, "user", content);
     }
   }
   return wire;
@@ -128,19 +151,20 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
   return {
     id: "anthropic",
     async *stream(request: ProviderRequest, signal?: AbortSignal): AsyncGenerator<ProviderStreamEvent, void, void> {
+      const wireTools = [
+        ...request.tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          input_schema: tool.inputSchema
+        })),
+        ...(options.webSearch ? [WEB_SEARCH_TOOL] : [])
+      ];
       const body = JSON.stringify({
         model: request.model,
         max_tokens: request.maxOutputTokens,
         system: request.system,
         ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-        tools: [
-          ...request.tools.map((tool) => ({
-            name: tool.name,
-            description: tool.description,
-            input_schema: tool.inputSchema
-          })),
-          ...(options.webSearch ? [WEB_SEARCH_TOOL] : [])
-        ],
+        ...(wireTools.length ? { tools: wireTools } : {}),
         messages: toWireMessages(request.messages),
         stream: true
       });
@@ -168,6 +192,9 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
       if (!response.body) throw new Error("Anthropic returned no response stream.");
 
       const openToolBlocks = new Map<number, true>();
+      // Current Claude models think by default. Their signed blocks are opaque
+      // protocol state, not user-visible text, and must accompany tool results.
+      const openThinkingBlocks = new Map<number, AnthropicContentBlock>();
       // Server tools (web search) stream their input like client tools, but the
       // finished block is replayed verbatim in history instead of executed here.
       const openServerBlocks = new Map<number, { callId: string; name: string; inputJson: string }>();
@@ -194,7 +221,9 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
         } else if (eventType === "content_block_start") {
           const index = typeof payload.index === "number" ? payload.index : 0;
           const block = payload.content_block as Record<string, unknown> | undefined;
-          if (block?.type === "tool_use") {
+          if (block?.type === "thinking" || block?.type === "redacted_thinking") {
+            openThinkingBlocks.set(index, { ...block, type: block.type });
+          } else if (block?.type === "tool_use") {
             const callId = typeof block.id === "string" ? block.id : "";
             const name = typeof block.name === "string" ? block.name : "";
             if (!callId || !name) throw new Error("Anthropic started an invalid tool call.");
@@ -218,7 +247,13 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
         } else if (eventType === "content_block_delta") {
           const index = typeof payload.index === "number" ? payload.index : 0;
           const delta = payload.delta as Record<string, unknown> | undefined;
-          if (delta?.type === "text_delta" && typeof delta.text === "string") {
+          if (delta?.type === "thinking_delta" && typeof delta.thinking === "string") {
+            const block = openThinkingBlocks.get(index);
+            if (block?.type === "thinking") block.thinking = String(block.thinking ?? "") + delta.thinking;
+          } else if (delta?.type === "signature_delta" && typeof delta.signature === "string") {
+            const block = openThinkingBlocks.get(index);
+            if (block?.type === "thinking") block.signature = String(block.signature ?? "") + delta.signature;
+          } else if (delta?.type === "text_delta" && typeof delta.text === "string" && delta.text.length > 0) {
             yield { type: "text-delta", text: delta.text };
           } else if (delta?.type === "input_json_delta" && typeof delta.partial_json === "string") {
             const serverBlock = openServerBlocks.get(index);
@@ -236,6 +271,11 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
           }
         } else if (eventType === "content_block_stop") {
           const index = typeof payload.index === "number" ? payload.index : 0;
+          const thinkingBlock = openThinkingBlocks.get(index);
+          if (thinkingBlock) {
+            openThinkingBlocks.delete(index);
+            yield { type: "provider-raw", block: thinkingBlock };
+          }
           if (openToolBlocks.delete(index)) yield { type: "tool-call-end", index };
           const serverBlock = openServerBlocks.get(index);
           if (serverBlock) {
@@ -257,6 +297,9 @@ export function createAnthropicProvider(options: AnthropicProviderOptions): Agen
           const delta = payload.delta as Record<string, unknown> | undefined;
           if (delta && "stop_reason" in delta) stopReason = mapStopReason(delta.stop_reason);
           const wireUsage = payload.usage as Record<string, unknown> | undefined;
+          if (typeof wireUsage?.input_tokens === "number") {
+            usage = { ...usage, inputTokens: wireUsage.input_tokens };
+          }
           if (typeof wireUsage?.output_tokens === "number") {
             usage = { ...usage, outputTokens: wireUsage.output_tokens };
           }

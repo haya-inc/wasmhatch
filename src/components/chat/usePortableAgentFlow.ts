@@ -143,16 +143,24 @@ export function usePortableAgentFlow(
   useEffect(() => {
     const param = new URLSearchParams(window.location.search).get("agent");
     if (!param) return;
+    let cancelled = false;
     const base = registryBaseUrl();
     if (!isRegistryPackageUrl(param, base)) {
-      onNotice(t`That URL is not on this deployment's registry, so the browser cannot fetch it. Download the .agent file instead and import it here.`, "error");
-      return;
+      void swarm.ready.then(() => {
+        if (!cancelled) {
+          onNotice(t`That URL is not on this deployment's registry, so the browser cannot fetch it. Download the .agent file instead and import it here.`, "error");
+        }
+      });
+      return () => { cancelled = true; };
     }
-    let cancelled = false;
     void fetchPortableAgentPackage(param)
       .then((pkg) => { if (!cancelled) setPortablePreview({ pkg, source: param, action: "hatch" }); })
       .catch((error: unknown) => {
-        if (!cancelled) onNotice(error instanceof Error ? error.message : t`The agent package could not be downloaded.`, "error");
+        void swarm.ready.then(() => {
+          if (!cancelled) {
+            onNotice(error instanceof Error ? error.message : t`The agent package could not be downloaded.`, "error");
+          }
+        });
       });
     return () => { cancelled = true; };
     // Runs once per page load for the initial URL.
